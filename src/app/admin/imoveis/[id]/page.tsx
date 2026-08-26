@@ -4,6 +4,7 @@ import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import MiniMapa from "@/components/map/MiniMapa";
 import DecisaoBotoes from "./DecisaoBotoes";
 import DocumentosImovel from "@/components/crm/DocumentosImovel";
+import ConsultaRural from "@/components/rural/ConsultaRural";
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
@@ -105,6 +106,19 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
             <img key={m.storage_path} src={mediaUrl(m.storage_path)} alt="" className="h-28 w-full object-cover rounded-lg" />
           ))}
         </div>
+      )}
+
+      {p.tipo === "rural" && (
+        <section className="rounded-xl border border-linha bg-white p-5 space-y-3">
+          <div>
+            <h2 className="font-semibold text-verde-escuro">Consulta territorial</h2>
+            <p className="text-sm text-foreground/60">
+              Cruza a área do imóvel com mineração (ANM), terras indígenas (FUNAI), desmatamento (INPE)
+              e pontos de interesse. Cada resultado guarda a origem e a data.
+            </p>
+          </div>
+          <ConsultaRural propertyId={p.id} />
+        </section>
       )}
 
       <section className="rounded-xl border border-linha bg-white p-5 space-y-3">

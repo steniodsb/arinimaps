@@ -1,8 +1,8 @@
 // Verificação visual headless: captura páginas do app com Chrome/Edge local.
-// Uso: node scripts/screenshot.mjs <url> <saida.png> [esperaMs] [largura] [altura]
+// Uso: node scripts/screenshot.mjs <url> <saida.png> [esperaMs] [largura] [altura] [textoDoBotaoParaClicar]
 import puppeteer from "puppeteer-core";
 
-const [, , url, saida, esperaMs = "6000", largura = "1440", altura = "900"] = process.argv;
+const [, , url, saida, esperaMs = "6000", largura = "1440", altura = "900", clicar] = process.argv;
 if (!url || !saida) {
   console.error("Uso: node scripts/screenshot.mjs <url> <saida.png> [esperaMs]");
   process.exit(1);
@@ -29,6 +29,15 @@ try {
   page.on("console", (m) => { if (m.type() === "error") erros.push(m.text().slice(0, 300)); });
   page.on("pageerror", (e) => erros.push("PAGEERROR: " + String(e).slice(0, 300)));
   await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+  if (clicar) {
+    await new Promise((r) => setTimeout(r, 5000));
+    const achou = await page.evaluate((texto) => {
+      const b = [...document.querySelectorAll("button")].find((x) => x.textContent.trim() === texto);
+      if (b) { b.click(); return true; }
+      return false;
+    }, clicar);
+    console.log(achou ? `clicou em "${clicar}"` : `botão "${clicar}" não encontrado`);
+  }
   await new Promise((r) => setTimeout(r, Number(esperaMs)));
   await page.screenshot({ path: saida, type: "png" });
   console.log("salvo:", saida);

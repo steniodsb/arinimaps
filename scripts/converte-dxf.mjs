@@ -1,6 +1,9 @@
-// Converte planta DXF georreferenciada (UTM SIRGAS 2000 22S) em GeoJSON WGS84,
-// sobe para o storage e registra como camada vetorial de cartografia.
-// Uso: node scripts/converte-dxf.mjs <arquivo.dxf> "<Nome do Município>" "<Nome da camada>"
+// Converte planta DXF georreferenciada em GeoJSON WGS84, sobe para o storage
+// e registra como camada vetorial de cartografia.
+//
+// Uso: node scripts/converte-dxf.mjs <arquivo.dxf> "<Município>" ["<Nome>"] [datum] [zona]
+//   datum: sirgas (padrão) | sad69 | corrego
+//   zona:  22 (padrão para o Pontal do Triângulo)
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,9 +12,9 @@ import proj4 from "proj4";
 import { createClient } from "@supabase/supabase-js";
 import pg from "pg";
 
-const [, , arquivoDxf, nomeMunicipio, nomeCamada] = process.argv;
+const [, , arquivoDxf, nomeMunicipio, nomeCamada, datumArg = "sirgas", zonaArg = "22"] = process.argv;
 if (!arquivoDxf || !nomeMunicipio) {
-  console.error('Uso: node scripts/converte-dxf.mjs <arquivo.dxf> "<Município>" "[Nome da camada]"');
+  console.error('Uso: node scripts/converte-dxf.mjs <arquivo.dxf> "<Município>" ["<Nome>"] [sirgas|sad69|corrego] [zona]');
   process.exit(1);
 }
 
@@ -21,18 +24,22 @@ for (const line of readFileSync(join(root, ".env.local"), "utf8").split("\n")) {
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
 }
 
-// SIRGAS 2000 / UTM 22S
-const UTM22S = "+proj=utm +zone=22 +south +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs";
-const paraWgs84 = ([x, y]) => proj4(UTM22S, "EPSG:4326", [x, y]);
+const z = Number(zonaArg);
+const DATUMS = {
+  sirgas: `+proj=utm +zone=${z} +south +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs`,
+  sad69: `+proj=utm +zone=${z} +south +ellps=aust_SA +towgs84=-66.87,4.37,-38.52,0,0,0,0 +units=m +no_defs`,
+  corrego: `+proj=utm +zone=${z} +south +ellps=intl +towgs84=-206,172,-6,0,0,0,0 +units=m +no_defs`,
+};
+const projDef = DATUMS[datumArg] ?? DATUMS.sirgas;
+const paraWgs84 = ([x, y]) => proj4(projDef, "EPSG:4326", [x, y]);
 
-// só linhas dentro de uma janela plausível de UTM (derruba lixo de prancheta em 0,0)
-const dentro = ([x, y]) => x > 100000 && x < 900000 && y > 7000000 && y < 8500000;
+const dentro = ([x, y]) => x > 100000 && x < 900000 && y > 6000000 && y < 10000000;
 const arred = (n) => Math.round(n * 1e6) / 1e6;
 
-console.log(`lendo ${arquivoDxf}…`);
+console.log(`lendo ${arquivoDxf} · datum ${datumArg} · zona ${z}…`);
 const dxf = new DxfParser().parseSync(readFileSync(arquivoDxf, "utf8"));
 
-const porLayer = new Map(); // layer -> array de linestrings [[lng,lat],…]
+const porLayer = new Map();
 let total = 0, descartadas = 0;
 
 function adicionar(layer, pontos) {
@@ -54,10 +61,9 @@ for (const e of dxf.entities ?? []) {
     adicionar(layer, pts);
   }
 }
-console.log(`linhas: ${total} (descartadas fora da janela UTM: ${descartadas})`);
+console.log(`linhas: ${total} (descartadas: ${descartadas})`);
 if (!total) { console.error("nenhuma geometria útil — abortando"); process.exit(1); }
 
-// um MultiLineString por layer do CAD mantém o arquivo pequeno
 const fc = {
   type: "FeatureCollection",
   features: [...porLayer.entries()].map(([layer, linhas]) => ({
@@ -69,12 +75,11 @@ const fc = {
 const json = JSON.stringify(fc);
 console.log(`geojson: ${(json.length / 1024 / 1024).toFixed(1)} MB, ${fc.features.length} layers do CAD`);
 
-// ---------- storage + banco ----------
 const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 const slug = nomeMunicipio.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, "-");
-const path = `cartografia/vetor/${slug}.geojson`;
+const path = `cartografia/vetor/${slug}-${datumArg}.geojson`;
 const { error: upErr } = await supa.storage.from("media").upload(path, Buffer.from(json), {
   contentType: "application/geo+json", upsert: true,
 });
@@ -92,8 +97,8 @@ if (!mun) { console.error(`município "${nomeMunicipio}" não cadastrado`); proc
 
 await db.query(`delete from cartography_layers where municipality_id = $1 and tipo = 'vector'`, [mun.id]);
 await db.query(
-  `insert into cartography_layers (municipality_id, nome, tipo, source_path, tiles_path, status, min_zoom, max_zoom, opacidade_padrao)
-   values ($1, $2, 'vector', $3, $3, 'pronto', 12, 19, 0.85)`,
-  [mun.id, nomeCamada ?? `Planta ${nomeMunicipio}`, path]);
+  `insert into cartography_layers (municipality_id, nome, tipo, source_path, tiles_path, status, min_zoom, max_zoom, opacidade_padrao, datum)
+   values ($1, $2, 'vector', $3, $3, 'pronto', 12, 19, 0.85, $4)`,
+  [mun.id, nomeCamada ?? `Planta ${nomeMunicipio}`, path, datumArg]);
 await db.end();
-console.log(`camada vetorial registrada para ${nomeMunicipio} — já aparece no mapa`);
+console.log(`camada registrada para ${nomeMunicipio} (datum ${datumArg}) — já aparece no mapa`);

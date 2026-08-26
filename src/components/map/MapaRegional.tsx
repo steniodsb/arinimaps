@@ -9,9 +9,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup } from "maplibre-gl";
-import { STATUS_CORES, CENTRO_REGIAO } from "@/lib/map/config";
+import { STATUS_CORES, CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
+import { deslocarGeoJSON } from "@/lib/geo/deslocar";
 import Link from "next/link";
 
 type ImovelProps = {
@@ -32,10 +33,10 @@ type Camada = {
   id: string; nome: string; tipo: "raster" | "vector";
   tiles?: string; geojson?: string;
   min_zoom: number; max_zoom: number; opacidade: number;
+  offset?: { lng: number; lat: number; leste_m: number; norte_m: number };
 };
 
 const ESTILO_RUAS = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
-const TILES_ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
 const CORES_MATCH: unknown[] = [
   "match", ["get", "status"],
@@ -67,6 +68,7 @@ export default function MapaRegional() {
   const municipiosRef = useRef<GeoJSON.FeatureCollection | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const hoverIdRef = useRef<string | null>(null);
+  const cartoVetorIdsRef = useRef<string[]>([]);
 
   const [base, setBase] = useState<"ruas" | "satelite">("ruas");
   const [selecionado, setSelecionado] = useState<ImovelProps | null>(null);
@@ -175,7 +177,7 @@ export default function MapaRegional() {
         municipiosRef.current = municipios;
 
         // satélite fica acima da base vetorial e abaixo das camadas de dados
-        map.addSource("satelite", { type: "raster", tiles: [TILES_ESRI], tileSize: 256, maxzoom: 19 });
+        map.addSource("satelite", SATELITE);
         map.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: "none" } });
 
         // cartografia urbana: raster (tiles) e vetorial (plantas DWG convertidas)
@@ -190,16 +192,23 @@ export default function MapaRegional() {
               paint: { "raster-opacity": c.opacidade },
             });
           } else if (c.tipo === "vector" && c.geojson) {
-            map.addSource(`carto-${c.id}`, { type: "geojson", data: c.geojson });
+            // carrega e aplica o ajuste fino da calibração antes de desenhar
+            const bruto = await fetch(c.geojson).then((r) => r.json()).catch(() => null);
+            if (!bruto) continue;
+            const dados = deslocarGeoJSON(bruto, c.offset?.lng ?? 0, c.offset?.lat ?? 0);
+            map.addSource(`carto-${c.id}`, { type: "geojson", data: dados });
             map.addLayer({
               id: `carto-${c.id}`, type: "line", source: `carto-${c.id}`,
               minzoom: 12,
               paint: {
-                "line-color": ["case", ["==", ["get", "base"], "satelite"], "#ffffff", "#4A5D51"] as never,
+                // cor trocada conforme a base ativa (ver efeito de `base`):
+                // sobre o satélite a planta precisa ser clara para aparecer
+                "line-color": "#3A4A40",
                 "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 15, 0.9, 18, 1.6] as never,
                 "line-opacity": Math.min(0.9, c.opacidade),
               },
             });
+            cartoVetorIdsRef.current.push(`carto-${c.id}`);
           }
         }
 
@@ -301,11 +310,16 @@ export default function MapaRegional() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // base ruas/satélite
+  // base ruas/satélite (a planta da cidade muda de cor para continuar legível)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !pronto || !map.getLayer("satelite")) return;
     map.setLayoutProperty("satelite", "visibility", base === "satelite" ? "visible" : "none");
+    for (const id of cartoVetorIdsRef.current) {
+      if (map.getLayer(id)) {
+        map.setPaintProperty(id, "line-color", base === "satelite" ? "#FFE9A8" : "#3A4A40");
+      }
+    }
   }, [base, pronto]);
 
   // filtros e busca

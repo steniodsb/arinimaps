@@ -6,6 +6,7 @@ import { ator } from "@/lib/authz";
 const CHAVES_PERMITIDAS = [
   "mensalidade_valor_padrao", "comissao_percentual_padrao", "notify_email",
   "suspensao_dias", "poi_raio_rural_m", "poi_raio_urbano_m", "poi_categorias",
+  "whatsapp_central",
 ];
 
 export async function POST(request: Request) {

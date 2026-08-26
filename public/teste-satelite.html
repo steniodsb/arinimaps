@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/vendor/maplibre-gl.css" />
+  <style>
+    html,body{margin:0;font-family:system-ui;background:#111}
+    .grade{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:100vh;gap:2px}
+    .cel{position:relative}
+    .cel .mapa{position:absolute;inset:0}
+    .rotulo{position:absolute;z-index:5;top:8px;left:8px;background:rgba(0,0,0,.75);color:#fff;
+      padding:6px 10px;border-radius:6px;font-size:13px;font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="grade">
+    <div class="cel"><div class="mapa" id="m1"></div><div class="rotulo">Sentinel-2 cloudless (aberto) · fazenda z14</div></div>
+    <div class="cel"><div class="mapa" id="m2"></div><div class="rotulo">Esri World Imagery · fazenda z14</div></div>
+    <div class="cel"><div class="mapa" id="m3"></div><div class="rotulo">Sentinel-2 cloudless (aberto) · cidade z17</div></div>
+    <div class="cel"><div class="mapa" id="m4"></div><div class="rotulo">Esri World Imagery · cidade z17</div></div>
+  </div>
+  <script src="/vendor/maplibre-gl.js"></script>
+  <script>
+    const SENTINEL = "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg";
+    const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+    const FAZENDA = [-50.1515, -19.7157];
+    const CIDADE = [-50.5782, -19.5541];
+
+    function cria(id, tiles, center, zoom) {
+      new maplibregl.Map({
+        container: id,
+        style: {
+          version: 8,
+          sources: { s: { type: "raster", tiles: [tiles], tileSize: 256, maxzoom: 19 } },
+          layers: [{ id: "s", type: "raster", source: "s" }],
+        },
+        center, zoom, attributionControl: false, interactive: false,
+      });
+    }
+    cria("m1", SENTINEL, FAZENDA, 14);
+    cria("m2", ESRI, FAZENDA, 14);
+    cria("m3", SENTINEL, CIDADE, 17);
+    cria("m4", ESRI, CIDADE, 17);
+  </script>
+</body>
+</html>

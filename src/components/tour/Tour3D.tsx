@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as MLMap, ErrorEvent as MLErrorEvent } from "maplibre-gl";
 import { carregarMaplibre } from "@/lib/map/maplibre";
+import { SATELITE } from "@/lib/map/config";
 
 export type TourData = {
   codigo: string;
@@ -113,11 +114,7 @@ export default function Tour3D(dados: TourData) {
           version: 8,
           glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
           sources: {
-            satelite: {
-              type: "raster",
-              tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-              tileSize: 256, maxzoom: 19, attribution: "Imagery © Esri",
-            },
+            satelite: SATELITE,
             dem: {
               type: "raster-dem",
               tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],

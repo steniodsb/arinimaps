@@ -3,6 +3,7 @@ import Image from "next/image";
 import SiteHeader from "@/components/SiteHeader";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea } from "@/lib/format";
+import { lerConfiguracoes, texto } from "@/lib/settings";
 
 // Renderizada por requisição: o build do servidor não tem as envs do Supabase
 // (e assim imóvel publicado aparece na home na hora, sem redeploy).
@@ -30,7 +31,8 @@ async function destaques() {
 }
 
 export default async function Home() {
-  const imoveis = await destaques();
+  const [imoveis, cfg] = await Promise.all([destaques(), lerConfiguracoes()]);
+  const marca = texto(cfg, "nome_sistema", "Arini Imóveis Brasil");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -49,16 +51,15 @@ export default async function Home() {
         <div className="relative mx-auto max-w-6xl px-4 py-24 w-full">
           <div className="max-w-2xl space-y-6">
             <p className="anima-subir text-ouro font-mono text-xs tracking-[0.25em] uppercase">
-              Pontal do Triângulo Mineiro
+              {texto(cfg, "hero_eyebrow", "Pontal do Triângulo Mineiro")}
             </p>
             <h1 className="anima-subir-1 text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.08] text-balance">
-              O mercado imobiliário da região,{" "}
-              <span className="texto-ouro">visto do mapa</span>
+              {texto(cfg, "hero_titulo", "O mercado imobiliário da região,")}{" "}
+              <span className="texto-ouro">{texto(cfg, "hero_destaque", "visto do mapa")}</span>
             </h1>
             <p className="anima-subir-2 text-white/85 text-lg max-w-xl">
-              Fazendas, sítios, lotes e casas com a divisa real da propriedade sobre o satélite,
-              área medida, tour 3D e pontos de interesse ao redor. Toda negociação intermediada
-              pela Arini Negócios Imobiliários.
+              {texto(cfg, "hero_subtitulo",
+                "Fazendas, sítios, lotes e casas com a divisa real da propriedade sobre o satélite, área medida, tour 3D e pontos de interesse ao redor.")}
             </p>
             <div className="anima-subir-3 flex flex-wrap gap-3 pt-2">
               <Link href="/mapa" className="btn-ouro px-8 py-4 text-lg">
@@ -218,8 +219,10 @@ export default async function Home() {
       <footer className="bg-verde-escuro border-t border-white/10 text-white/70 text-sm">
         <div className="mx-auto max-w-6xl px-4 py-8 flex flex-wrap gap-4 items-center justify-between">
           <p>
-            <span className="text-white font-semibold">Arini <span className="texto-ouro">Imóveis Brasil</span></span>
+            <span className="text-white font-semibold texto-ouro">{marca}</span>
             {" "}· Arini Negócios Imobiliários
+            {texto(cfg, "telefone_contato") && <> · {texto(cfg, "telefone_contato")}</>}
+            {texto(cfg, "email_contato") && <> · {texto(cfg, "email_contato")}</>}
           </p>
           <nav className="flex gap-5">
             <Link href="/mapa" className="hover:text-ouro">Mapa</Link>

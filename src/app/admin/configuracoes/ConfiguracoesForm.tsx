@@ -2,64 +2,106 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GRUPOS, type Campo } from "@/lib/configuracoes";
 
-type Cfg = {
-  mensalidade_valor_padrao: string;
-  comissao_percentual_padrao: string;
-  notify_email: string;
-  suspensao_dias: string;
-  poi_raio_rural_m: string;
-  poi_raio_urbano_m: string;
-};
-
-const CAMPOS: { chave: keyof Cfg; label: string; ajuda: string }[] = [
-  { chave: "mensalidade_valor_padrao", label: "Mensalidade padrão do anúncio (R$)", ajuda: "Aplicada a cada imóvel ao ser publicado. 0 = grátis por enquanto." },
-  { chave: "comissao_percentual_padrao", label: "Comissão padrão (%)", ajuda: "Sugerida ao registrar a venda (editável caso a caso)." },
-  { chave: "notify_email", label: "E-mail da central Arini", ajuda: "Recebe avisos de novos leads e vendas." },
-  { chave: "suspensao_dias", label: "Dias de atraso para inadimplência", ajuda: "Usado pelo botão 'Processar inadimplência'." },
-  { chave: "poi_raio_rural_m", label: "Raio de POIs — rural (metros)", ajuda: "Busca de pontos de interesse ao redor de imóveis rurais." },
-  { chave: "poi_raio_urbano_m", label: "Raio de POIs — urbano (metros)", ajuda: "Busca de pontos de interesse ao redor de imóveis urbanos." },
-];
-
-export default function ConfiguracoesForm({ inicial }: { inicial: Cfg }) {
+export default function ConfiguracoesForm({
+  inicial, ehDiretoria,
+}: { inicial: Record<string, unknown>; ehDiretoria: boolean }) {
   const router = useRouter();
-  const [cfg, setCfg] = useState(inicial);
-  const [ocupado, setOcupado] = useState(false);
+  const [aba, setAba] = useState(GRUPOS[0].id);
+  const [valores, setValores] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      Object.entries(inicial).map(([k, v]) => [k, Array.isArray(v) ? v.join("\n") : String(v ?? "")])
+    )
+  );
+  const [sujo, setSujo] = useState<Set<string>>(new Set());
+  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
+  const [erro, setErro] = useState("");
+
+  const grupo = GRUPOS.find((g) => g.id === aba)!;
+  const alterar = (chave: string, v: string) => {
+    setValores((s) => ({ ...s, [chave]: v }));
+    setSujo((s) => new Set(s).add(chave));
+    setMsg(""); setErro("");
+  };
+
+  async function salvar() {
+    setSalvando(true); setMsg(""); setErro("");
+    const corpo = Object.fromEntries([...sujo].map((k) => [k, valores[k]]));
+    const res = await fetch("/api/admin/configuracoes", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo),
+    });
+    const data = await res.json().catch(() => ({}));
+    setSalvando(false);
+    if (res.ok) {
+      setMsg(`${data.salvos} configuração(ões) salva(s). As mudanças já valem no site.`);
+      setSujo(new Set());
+      router.refresh();
+    } else setErro(data.error ?? "Falha ao salvar.");
+  }
+
+  const inputBase = "w-full rounded-lg border border-linha bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition disabled:bg-areia disabled:text-foreground/50";
+
+  function renderCampo(c: Campo) {
+    const bloqueado = c.somenteDiretoria && !ehDiretoria;
+    const v = valores[c.chave] ?? "";
+    return (
+      <div key={c.chave} className={c.tipo === "textarea" || c.tipo === "lista" ? "sm:col-span-2" : ""}>
+        <label className="block text-sm font-medium text-verde-escuro mb-1" htmlFor={c.chave}>
+          {c.rotulo}
+          {c.somenteDiretoria && (
+            <span className="ml-2 text-[10px] uppercase tracking-wide text-ouro-escuro">diretoria</span>
+          )}
+        </label>
+        <div className="relative">
+          {c.tipo === "textarea" || c.tipo === "lista" ? (
+            <textarea id={c.chave} rows={c.tipo === "lista" ? 7 : 3} className={inputBase}
+              value={v} disabled={bloqueado} onChange={(e) => alterar(c.chave, e.target.value)} />
+          ) : (
+            <input id={c.chave} className={inputBase + (c.sufixo ? " pr-14" : "")}
+              inputMode={["numero", "dinheiro", "percentual", "coordenada"].includes(c.tipo) ? "decimal" : undefined}
+              value={v} disabled={bloqueado} onChange={(e) => alterar(c.chave, e.target.value)} />
+          )}
+          {c.sufixo && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-foreground/45">{c.sufixo}</span>
+          )}
+        </div>
+        {c.ajuda && <p className="text-xs text-foreground/50 mt-1">{c.ajuda}</p>}
+      </div>
+    );
+  }
 
   return (
-    <div className="rounded-xl border border-linha bg-white p-5 space-y-4">
-      {CAMPOS.map((c) => (
-        <div key={c.chave}>
-          <label className="block text-sm font-medium text-verde-escuro mb-1">{c.label}</label>
-          <input className="w-full rounded-lg border border-linha bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde"
-            value={cfg[c.chave]} onChange={(e) => setCfg({ ...cfg, [c.chave]: e.target.value })} />
-          <p className="text-xs text-foreground/50 mt-0.5">{c.ajuda}</p>
+    <div className="space-y-5">
+      <div className="flex gap-2 flex-wrap">
+        {GRUPOS.map((g) => (
+          <button key={g.id} onClick={() => setAba(g.id)}
+            className={`rounded-xl px-4 py-2.5 text-sm font-medium border transition flex items-center gap-2
+              ${aba === g.id ? "bg-verde text-white border-verde shadow-sm" : "border-linha bg-white hover:bg-areia"}`}>
+            <span>{g.icone}</span> {g.titulo}
+          </button>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border border-linha bg-white p-6 space-y-5">
+        <div>
+          <h2 className="font-semibold text-verde-escuro text-lg">{grupo.titulo}</h2>
+          <p className="text-sm text-foreground/60">{grupo.descricao}</p>
         </div>
-      ))}
-      {msg && <p className="text-sm text-verde">{msg}</p>}
-      <button disabled={ocupado}
-        className="rounded-lg bg-verde text-white font-medium px-5 py-2 hover:bg-verde-escuro disabled:opacity-50"
-        onClick={async () => {
-          setOcupado(true);
-          setMsg("");
-          const body = {
-            mensalidade_valor_padrao: Number(cfg.mensalidade_valor_padrao.replace(",", ".")) || 0,
-            comissao_percentual_padrao: Number(cfg.comissao_percentual_padrao.replace(",", ".")) || 1,
-            notify_email: cfg.notify_email.trim() || null,
-            suspensao_dias: Number(cfg.suspensao_dias) || 15,
-            poi_raio_rural_m: Number(cfg.poi_raio_rural_m) || 15000,
-            poi_raio_urbano_m: Number(cfg.poi_raio_urbano_m) || 4000,
-          };
-          const res = await fetch("/api/admin/configuracoes", {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-          });
-          setOcupado(false);
-          if (res.ok) { setMsg("Configurações salvas."); router.refresh(); }
-          else setMsg((await res.json()).error ?? "Falha ao salvar.");
-        }}>
-        Salvar
-      </button>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {grupo.campos.map(renderCampo)}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 flex-wrap sticky bottom-4">
+        <button onClick={salvar} disabled={salvando || !sujo.size}
+          className="btn-ouro px-7 py-3 disabled:opacity-45">
+          {salvando ? "Salvando…" : sujo.size ? `Salvar ${sujo.size} alteração(ões)` : "Nada alterado"}
+        </button>
+        {msg && <span className="text-sm text-verde font-medium">{msg}</span>}
+        {erro && <span className="text-sm text-red-700">{erro}</span>}
+      </div>
     </div>
   );
 }

@@ -14,6 +14,7 @@ const MENU = [
   { href: "/admin/relatorios", label: "Relatórios" },
   { href: "/admin/auditoria", label: "Auditoria" },
   { href: "/admin/regioes", label: "Regiões" },
+  { href: "/admin/usuarios", label: "Usuários" },
   { href: "/admin/configuracoes", label: "Configurações" },
 ];
 

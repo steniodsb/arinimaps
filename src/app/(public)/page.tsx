@@ -4,20 +4,29 @@ import SiteHeader from "@/components/SiteHeader";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea } from "@/lib/format";
 
-export const revalidate = 300;
+// Renderizada por requisição: o build do servidor não tem as envs do Supabase
+// (e assim imóvel publicado aparece na home na hora, sem redeploy).
+export const dynamic = "force-dynamic";
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
 }
 
 async function destaques() {
-  const { data } = await supabaseAdmin()
-    .from("properties")
-    .select("codigo, titulo, tipo, valor, municipality:municipalities(nome), geo:property_geometries(area_m2), media:property_media(storage_path, capa)")
-    .in("status", ["publicado", "em_negociacao"])
-    .order("published_at", { ascending: false })
-    .limit(6);
-  return data ?? [];
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
+  try {
+    const { data } = await supabaseAdmin()
+      .from("properties")
+      .select("codigo, titulo, tipo, valor, municipality:municipalities(nome), geo:property_geometries(area_m2), media:property_media(storage_path, capa)")
+      .in("status", ["publicado", "em_negociacao"])
+      .order("published_at", { ascending: false })
+      .limit(6);
+    return data ?? [];
+  } catch (e) {
+    // landing nunca cai por causa do banco: sem destaques, o resto da página segue
+    console.error("destaques da home falharam:", e);
+    return [];
+  }
 }
 
 export default async function Home() {

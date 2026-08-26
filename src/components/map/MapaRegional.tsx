@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup } from "maplibre-gl";
 import { STATUS_CORES, CENTRO_REGIAO } from "@/lib/map/config";
+import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import Link from "next/link";
 
@@ -138,13 +139,14 @@ export default function MapaRegional() {
     let mapa: MLMap | undefined;
 
     (async () => {
-      const maplibregl = await import("maplibre-gl");
+      const maplibregl = await carregarMaplibre();
       if (cancelado || !containerRef.current) return;
       const map = new maplibregl.Map({
         container: containerRef.current,
         style: ESTILO_RUAS,
         center: CENTRO_REGIAO,
         zoom: 9,
+        hash: "pos", // posição na URL → link compartilhável, estilo Google Maps
         fadeDuration: 150,
         attributionControl: { compact: true },
       });
@@ -244,7 +246,8 @@ export default function MapaRegional() {
           };
           walk(f.geometry?.coordinates);
         }
-        if (coords.length) {
+        // respeita posição vinda da URL (#pos=…); sem ela, enquadra a região
+        if (coords.length && !window.location.hash.includes("pos=")) {
           const lngs = coords.map((c) => c[0]);
           const lats = coords.map((c) => c[1]);
           map.fitBounds(

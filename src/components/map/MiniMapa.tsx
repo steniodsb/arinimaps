@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Map as MLMap } from "maplibre-gl";
 import { ESTILO_BASE, STATUS_CORES } from "@/lib/map/config";
+import { carregarMaplibre } from "@/lib/map/maplibre";
 
 type Props = {
   geometry: GeoJSON.Geometry;
@@ -21,7 +22,7 @@ export default function MiniMapa({ geometry, status, className }: Props) {
     let mapa: MLMap | undefined;
 
     (async () => {
-      const maplibregl = await import("maplibre-gl");
+      const maplibregl = await carregarMaplibre();
       if (cancelado || !containerRef.current) return;
 
       const estilo = structuredClone(ESTILO_BASE);

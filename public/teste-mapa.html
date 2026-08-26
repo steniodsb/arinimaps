@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" />
+  <style>html,body,#mapa{margin:0;height:100%;width:100%}</style>
+</head>
+<body>
+  <div id="mapa"></div>
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script>
+    const map = new maplibregl.Map({
+      container: "mapa",
+      style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+      center: [-50.196, -19.728],
+      zoom: 9,
+    });
+    map.on("load", () => { document.title = "LOAD-OK"; });
+    map.on("error", (e) => { document.title = "ERRO: " + (e.error && e.error.message); });
+  </script>
+</body>
+</html>

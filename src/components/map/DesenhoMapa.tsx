@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { Map as MLMap, MapMouseEvent, GeoJSONSource } from "maplibre-gl";
 import { ESTILO_BASE, CENTRO_REGIAO } from "@/lib/map/config";
+import { carregarMaplibre } from "@/lib/map/maplibre";
 
 export type GeometriaEscolhida = {
   geometry: GeoJSON.Geometry;
@@ -51,7 +52,7 @@ export default function DesenhoMapa({ onChange }: Props) {
     let mapa: MLMap | undefined;
 
     (async () => {
-      const maplibregl = await import("maplibre-gl");
+      const maplibregl = await carregarMaplibre();
       if (cancelado || !containerRef.current) return;
       const estilo = structuredClone(ESTILO_BASE);
       estilo.layers = estilo.layers.map((l) => ({

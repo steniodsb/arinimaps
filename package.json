@@ -15,7 +15,7 @@
     "@turf/turf": "^7.4.0",
     "dxf-parser": "^1.1.2",
     "jszip": "^3.10.1",
-    "maplibre-gl": "^6.6.0",
+    "maplibre-gl": "^5.6.0",
     "next": "16.3.2",
     "pg": "^8.23.0",
     "proj4": "^2.21.0",
@@ -32,6 +32,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "puppeteer-core": "^25.9.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

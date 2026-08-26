@@ -11,7 +11,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { Map as MLMap } from "maplibre-gl";
+import type { Map as MLMap, ErrorEvent as MLErrorEvent } from "maplibre-gl";
+import { carregarMaplibre } from "@/lib/map/maplibre";
 
 export type TourData = {
   codigo: string;
@@ -103,7 +104,7 @@ export default function Tour3D(dados: TourData) {
     let raf = 0;
 
     (async () => {
-      const maplibregl = await import("maplibre-gl");
+      const maplibregl = await carregarMaplibre();
       if (cancelado || !containerRef.current) return;
 
       const map = new maplibregl.Map({
@@ -134,7 +135,7 @@ export default function Tour3D(dados: TourData) {
       });
       mapa = map;
       mapRef.current = map;
-      map.on("error", (e) => console.error("[tour] erro do mapa:", e.error?.message ?? e));
+      map.on("error", (e: MLErrorEvent) => console.error("[tour] erro do mapa:", e.error?.message ?? e));
 
       map.on("load", () => {
         map.addSource("imovel", { type: "geojson", data: { type: "Feature", geometry: dados.geometry, properties: {} } });

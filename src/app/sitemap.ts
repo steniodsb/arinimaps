@@ -16,7 +16,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .in("status", ["publicado", "em_negociacao"]);
 
   return [
-    { url: base, changeFrequency: "hourly", priority: 1 },
+    { url: base, changeFrequency: "daily", priority: 1 },
+    { url: `${base}/mapa`, changeFrequency: "hourly", priority: 0.9 },
     ...(imoveis ?? []).map((p) => ({
       url: `${base}/imovel/${p.codigo}`,
       lastModified: new Date(p.updated_at),

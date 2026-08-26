@@ -12,10 +12,10 @@ export default async function SiteHeader() {
     <header className="bg-verde-escuro text-white">
       <div className="mx-auto max-w-7xl px-4 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="font-semibold tracking-tight text-lg">
-          Arini <span className="text-ouro">Maps</span>
+          Arini <span className="text-ouro">Imóveis Brasil</span>
         </Link>
         <nav className="flex items-center gap-5 text-sm">
-          <Link href="/" className="hover:text-ouro">Mapa</Link>
+          <Link href="/mapa" className="hover:text-ouro">Mapa</Link>
           <Link href="/painel/novo" className="hover:text-ouro">Anunciar imóvel</Link>
           {user ? (
             <Link

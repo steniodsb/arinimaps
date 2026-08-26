@@ -32,7 +32,7 @@ export default function Entrar() {
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user!.id).single();
     const role = profile?.role;
-    router.push(role === "admin_central" || role === "analista_arini" ? "/admin" : role === "comprador" ? "/" : "/painel");
+    router.push(role === "admin_central" || role === "analista_arini" ? "/admin" : role === "comprador" ? "/mapa" : "/painel");
     router.refresh();
   }
 
@@ -62,7 +62,7 @@ export default function Entrar() {
   return (
     <div className="min-h-screen flex flex-col bg-areia">
       <div className="bg-verde-escuro text-white px-4 py-3">
-        <Link href="/" className="font-semibold">Arini <span className="text-ouro">Maps</span></Link>
+        <Link href="/" className="font-semibold">Arini <span className="text-ouro">Imóveis Brasil</span></Link>
       </div>
       <main className="flex-1 flex items-center justify-center p-4">
         <form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-white shadow-lg p-6 space-y-3">

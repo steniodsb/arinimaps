@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-// Camadas de cartografia prontas, com URL de tiles no storage público.
+// Camadas de cartografia prontas: raster (pirâmide de tiles) e vetorial
+// (plantas DWG convertidas para GeoJSON), ambas servidas do storage público.
 export async function GET() {
   const { data } = await supabaseAdmin()
     .from("cartography_layers")
-    .select("id, nome, tiles_path, min_zoom, max_zoom, opacidade_padrao")
+    .select("id, nome, tipo, tiles_path, min_zoom, max_zoom, opacidade_padrao")
     .eq("status", "pronto")
     .not("tiles_path", "is", null);
 
@@ -14,7 +15,9 @@ export async function GET() {
     (data ?? []).map((c) => ({
       id: c.id,
       nome: c.nome,
-      tiles: `${base}/${c.tiles_path}/{z}/{x}/{y}.png`,
+      tipo: c.tipo,
+      tiles: c.tipo === "raster" ? `${base}/${c.tiles_path}/{z}/{x}/{y}.png` : undefined,
+      geojson: c.tipo === "vector" ? `${base}/${c.tiles_path}` : undefined,
       min_zoom: c.min_zoom,
       max_zoom: c.max_zoom,
       opacidade: Number(c.opacidade_padrao),

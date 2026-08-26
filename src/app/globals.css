@@ -31,3 +31,79 @@ body {
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(9, 36, 23, 0.25);
 }
+
+/* ---------- botões dourados em gradiente com brilho ---------- */
+.btn-ouro {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  background: linear-gradient(120deg, #a87e1f 0%, #d4af37 45%, #f1d689 60%, #d4af37 75%, #a87e1f 100%);
+  background-size: 200% auto;
+  color: #092417;
+  font-weight: 600;
+  border-radius: 0.9rem;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+  transition: background-position 0.6s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.btn-ouro:hover {
+  background-position: right center;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(212, 175, 55, 0.5);
+}
+.btn-ouro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  transform: translateX(-120%);
+}
+.btn-ouro:hover::after {
+  transition: transform 0.7s ease;
+  transform: translateX(120%);
+}
+
+.btn-contorno {
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-weight: 500;
+  border-radius: 0.9rem;
+  transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+.btn-contorno:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- texto em gradiente dourado ---------- */
+.texto-ouro {
+  background: linear-gradient(100deg, #f1d689 0%, #d4af37 45%, #b8912f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- entrada suave das seções ---------- */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anima-subir { animation: subir 0.7s ease both; }
+.anima-subir-1 { animation: subir 0.7s 0.12s ease both; }
+.anima-subir-2 { animation: subir 0.7s 0.24s ease both; }
+.anima-subir-3 { animation: subir 0.7s 0.36s ease both; }
+
+@keyframes flutuar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.anima-flutuar { animation: flutuar 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anima-subir, .anima-subir-1, .anima-subir-2, .anima-subir-3, .anima-flutuar {
+    animation: none;
+  }
+  .btn-ouro, .btn-contorno { transition: none; }
+  .btn-ouro::after { display: none; }
+}

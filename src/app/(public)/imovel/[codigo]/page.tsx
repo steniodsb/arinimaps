@@ -40,7 +40,7 @@ export async function generateMetadata(
     description: imovel.descricao.slice(0, 160),
     openGraph: {
       title: imovel.titulo,
-      description: `${formatBRL(imovel.valor)} · ${imovel.municipio?.nome ?? ""} — Arini Maps`,
+      description: `${formatBRL(imovel.valor)} · ${imovel.municipio?.nome ?? ""} — Arini Imóveis Brasil`,
       images: capa ? [mediaUrl(capa.path)] : [],
     },
   };
@@ -56,15 +56,21 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   if (!imovel) notFound();
 
   const admin = supabaseAdmin();
-  const [{ data: tourData }, { data: video }] = await Promise.all([
+  const { data: propId } = await admin.from("properties").select("id").eq("codigo", codigo).single();
+  const [{ data: tourData }, { data: video }, { data: unidades }] = await Promise.all([
     admin.rpc("fn_property_tour", { p_codigo: codigo }),
     admin.from("presentations").select("output_path")
       .eq("tipo", "video").eq("status", "pronto").not("output_path", "is", null)
-      .in("property_id", (await admin.from("properties").select("id").eq("codigo", codigo)).data?.map((p) => p.id) ?? [])
-      .maybeSingle(),
+      .eq("property_id", propId?.id ?? "").maybeSingle(),
+    admin.from("properties")
+      .select("codigo, titulo, valor, status, caracteristicas")
+      .eq("parent_property_id", propId?.id ?? "")
+      .in("status", ["publicado", "em_negociacao", "vendido"])
+      .order("titulo"),
   ]);
   const pois = ((tourData as { pois?: { nome: string | null; categoria: string; distancia_m: number }[] } | null)?.pois ?? [])
     .slice(0, 10);
+  const centroid = (tourData as { centroid?: { lng: number; lat: number } } | null)?.centroid;
 
   const fotos = imovel.media.filter((m) => m.tipo === "foto");
   const benfeitorias = (imovel.caracteristicas?.benfeitorias as string[] | undefined) ?? [];
@@ -123,6 +129,24 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             )}
           </section>
 
+          {!!unidades?.length && (
+            <section>
+              <h2 className="font-semibold text-verde-escuro mb-2">Unidades deste empreendimento</h2>
+              <div className="rounded-xl border border-linha bg-white divide-y divide-linha">
+                {unidades.map((u) => (
+                  <Link key={u.codigo} href={`/imovel/${u.codigo}`}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-areia/60">
+                    <span className="font-medium flex-1">{u.titulo}</span>
+                    <span className="text-sm text-verde font-medium">{formatBRL(u.valor)}</span>
+                    <span className={`text-xs rounded-full px-3 py-1 ${u.status === "vendido" ? "bg-gray-200 text-gray-600" : "bg-verde/10 text-verde"}`}>
+                      {STATUS_LABEL[u.status]}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           {pois.length > 0 && (
             <section>
               <h2 className="font-semibold text-verde-escuro mb-2">Pontos de interesse próximos</h2>
@@ -171,6 +195,13 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             </Link>
           )}
           <BotaoCompartilhar codigo={imovel.codigo} titulo={imovel.titulo} />
+          {centroid && (
+            <a href={`https://www.google.com/maps/dir/?api=1&destination=${centroid.lat},${centroid.lng}`}
+              target="_blank" rel="noreferrer"
+              className="block text-center rounded-xl border border-linha bg-white font-medium py-3 hover:bg-areia">
+              📍 Como chegar até o imóvel
+            </a>
+          )}
           {imovel.status === "vendido" ? (
             <div className="rounded-xl border border-linha bg-white p-5 text-center text-foreground/70">
               Este imóvel já foi vendido pela Arini.

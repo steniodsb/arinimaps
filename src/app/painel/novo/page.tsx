@@ -18,7 +18,7 @@ export default function NovoImovel() {
   const [enviando, setEnviando] = useState(false);
   const [form, setForm] = useState({
     tipo: "rural", titulo: "", descricao: "", valor: "", area_declarada: "",
-    municipality_id: "", condicoes_venda: "",
+    municipality_id: "", condicoes_venda: "", parent_codigo: "",
     aceita_permuta: false, aceita_financiamento: false, exclusividade: false,
   });
 
@@ -138,6 +138,18 @@ export default function NovoImovel() {
           onChange={(e) => setFotos(Array.from(e.target.files ?? []).slice(0, 20))} />
         {fotos.length > 0 && <p className="text-xs text-foreground/60 mt-1">{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
       </div>
+
+      {form.tipo === "urbano" && (
+        <div>
+          <label className={label}>Faz parte de um empreendimento? (opcional)</label>
+          <input className={input} placeholder="Código do imóvel principal — ex.: ARINI-MAP-000010"
+            value={form.parent_codigo} onChange={(e) => setForm({ ...form, parent_codigo: e.target.value })} />
+          <p className="text-xs text-foreground/50 mt-0.5">
+            Para apartamentos em bloco ou lotes de um loteamento: cadastre o empreendimento uma vez e
+            aponte cada unidade para ele — a página do empreendimento lista todas as unidades à venda.
+          </p>
+        </div>
+      )}
 
       <div>
         <label className={label}>Condições de venda</label>

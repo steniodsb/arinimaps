@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Arini Maps — imóveis pelo mapa",
-    template: "%s · Arini Maps",
+    default: "Arini Imóveis Brasil — imóveis pelo mapa",
+    template: "%s · Arini Imóveis Brasil",
   },
   description:
     "Marketplace imobiliário regional: fazendas, sítios e imóveis urbanos direto no mapa, com intermediação da Arini Negócios Imobiliários.",

@@ -12,7 +12,7 @@ export async function sendEmail(to: string | null | undefined, subject: string, 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM ?? "Arini Maps <naoresponda@arinimaps.com.br>",
+        from: process.env.RESEND_FROM ?? "Arini Imóveis Brasil <naoresponda@arinimaps.com.br>",
         to: [to],
         subject,
         text,

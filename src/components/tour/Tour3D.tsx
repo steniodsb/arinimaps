@@ -212,7 +212,8 @@ export default function Tour3D(dados: TourData) {
 
   return (
     <div className="relative h-screen w-full bg-black">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* inline: o CSS do maplibre força position:relative na classe e colapsaria a altura */}
+      <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
       {!dados.record && (
         <>

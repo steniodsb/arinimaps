@@ -51,6 +51,27 @@ export async function POST(request: Request) {
     );
   }
 
+  // unidade de empreendimento (bloco/loteamento): o anunciante informa o código do imóvel pai
+  let parent_property_id: string | null = null;
+  if (dados.parent_codigo?.trim()) {
+    const { data: pai } = await admin
+      .from("properties")
+      .select("id, owner_id, partner_id")
+      .eq("codigo", dados.parent_codigo.trim().toUpperCase())
+      .maybeSingle();
+    if (!pai) {
+      return NextResponse.json({ error: "Código do empreendimento não encontrado." }, { status: 400 });
+    }
+    const mesmoDono =
+      ["admin_central", "analista_arini"].includes(profile.role) ||
+      (owner_id && pai.owner_id === owner_id) ||
+      (partner_id && pai.partner_id === partner_id);
+    if (!mesmoDono) {
+      return NextResponse.json({ error: "O empreendimento informado não pertence a você." }, { status: 403 });
+    }
+    parent_property_id = pai.id;
+  }
+
   // Arini cadastrando em nome de alguém (F0: fica sem vínculo, ajusta no admin)
   if (!owner_id && !partner_id) {
     const { data: anyOwner } = await admin.from("owners").select("id").limit(1).single();
@@ -72,6 +93,7 @@ export async function POST(request: Request) {
       aceita_permuta: !!dados.aceita_permuta,
       aceita_financiamento: !!dados.aceita_financiamento,
       exclusividade: !!dados.exclusividade,
+      parent_property_id,
       created_by: user.id,
     })
     .select("id, codigo")

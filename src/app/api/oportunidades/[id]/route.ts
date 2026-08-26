@@ -69,7 +69,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/oportunida
       const { data: pa } = await admin.from("partners").select("profile_id").eq("id", responsavel_partner_id).single();
       if (pa) {
         const { data: u } = await admin.auth.admin.getUserById(pa.profile_id);
-        await sendEmail(u?.user?.email, "Nova oportunidade encaminhada — Arini Maps",
+        await sendEmail(u?.user?.email, "Nova oportunidade encaminhada — Arini Imóveis Brasil",
           `A Arini encaminhou uma oportunidade para você. Acesse o painel: ${process.env.NEXT_PUBLIC_SITE_URL}/painel/oportunidades`);
       }
     }

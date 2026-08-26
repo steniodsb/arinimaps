@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     };
     if (mensagens[acao]) {
       emailDoAnunciante(id).then((to) =>
-        sendEmail(to, `Arini Maps — imóvel ${antes.codigo}`, mensagens[acao])
+        sendEmail(to, `Arini Imóveis Brasil — imóvel ${antes.codigo}`, mensagens[acao])
       ).catch(() => undefined);
     }
 

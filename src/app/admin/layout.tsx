@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <div className="min-h-screen flex">
       <aside className="w-56 shrink-0 bg-verde-escuro text-white flex flex-col">
         <Link href="/" className="px-5 h-14 flex items-center font-semibold border-b border-white/10">
-          Arini <span className="text-ouro ml-1">Maps</span>
+          Arini <span className="text-ouro ml-1">Imóveis Brasil</span>
         </Link>
         <nav className="flex-1 py-4 space-y-1 text-sm">
           {MENU.map((m) => (

@@ -1,49 +1,73 @@
-# Arini Maps — pendências (só o que VOCÊ precisa fazer)
+# Arini Imóveis Brasil — o que falta (26/08/2026)
 
-> Todo o código está pronto e o SQL **já está aplicado** no Supabase (migrations 0001–0008).
-> Nada abaixo bloqueia o uso local: `npm run dev` na pasta `arini-maps/` e entre com
-> `admin@arinimaps.com.br` / senha padrão Arini. Isto aqui é o que depende de você.
+> O sistema está construído e o SQL todo aplicado (migrations 0001–0013).
+> Rode `npm run dev` em `arini-maps/` e entre com `admin@arinimaps.com.br`.
+> Repositório: github.com/steniodsb/arinimaps
 
-## Para colocar no ar (deploy)
+---
 
-1. **Deploy do app no Dokploy** (VPSWAVE01, mesmo fluxo do CRM):
-   - Novo app apontando para o repo/pasta `arini-maps`, porta padrão do Next.
-   - Copiar o `.env.local` para as envs do Dokploy + trocar `NEXT_PUBLIC_SITE_URL` pelo domínio real.
-2. **Decidir o domínio** com o Carlos (`arinimaps.com.br` ou `maps.arininegociosimobiliarios.com.br`) e apontar DNS na Cloudflare.
-3. **Subir o worker** (vídeo, tiles da cartografia, OG, retry de POIs):
-   - `deploy/worker-compose.yml` está pronto; envs necessárias estão comentadas nele
-     (`DATABASE_URL` com a senha do banco, `SUPABASE_SERVICE_ROLE_KEY`, `SITE_URL`).
-   - Sem o worker o sistema funciona 100% — só vídeo automático, tiles de cartografia e
-     imagem OG ficam "pendentes" até ele rodar.
+## 1. Depende só de você (destrava sozinho)
 
-## Chaves de serviços (cada uma destrava um recurso já codado)
+| # | O quê | Onde |
+|---|---|---|
+| 1 | **Redeploy no Dokploy** — o último commit corrige o build e o mapa | painel Dokploy |
+| 2 | **Envs em runtime**: as 6 do Supabase + `NEXT_PUBLIC_SITE_URL` com o domínio real | Dokploy › Environment |
+| 3 | **Domínio**: comprar `arinimaps.com.br` ou apontar subdomínio na Cloudflare | — |
+| 4 | **Planta de Iturama** (a que estava aberta no seu AutoCAD): Salvar como → DXF e subir | Admin › Cartografia |
+| 5 | **Calibrar as plantas** que ficarem tortas (setas do teclado até bater no satélite) | Admin › Cartografia › Calibrar |
+| 6 | **Preencher as configurações** (contatos, textos da home, mensalidade, comissão) | Admin › Configurações |
+| 7 | **Trocar as senhas** das 3 contas de teste e criar a conta real do Carlos | Admin › Usuários |
+| 8 | **Limpar os dados demo** antes de mostrar (Fazenda Boa Vista está "vendida" pelo teste E2E) | Admin › Imóveis |
 
-4. **RESEND_API_KEY** (+ `RESEND_FROM` verificado) → e-mails automáticos: lead novo para a
-   Arini, aprovado/publicado/correção para o anunciante, encaminhamento para parceiro.
-   Configure também o e-mail da central em Admin › Configurações.
-5. **ASAAS_API_KEY** (+ `ASAAS_WEBHOOK_TOKEN`, webhook `https://SEU_DOMINIO/api/asaas/webhook`)
-   → botão "Cobrar via Asaas" nas faturas + baixa automática de pagamento.
-6. **Satélite licenciado para produção** (decisão de ~US$25/mês): criar conta MapTiler ou
-   Mapbox e me pedir para trocar a fonte — a demo usa Esri, que não é licenciado para
-   uso comercial contínuo.
+## 2. Chaves de serviço (cada uma liga um recurso já pronto no código)
 
-## Decisões de negócio (com o Carlos)
+| Serviço | Env | O que liga |
+|---|---|---|
+| Resend | `RESEND_API_KEY`, `RESEND_FROM` | E-mails automáticos: lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro |
+| Asaas | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Botão "Cobrar via Asaas" + baixa automática do pagamento (webhook em `/api/asaas/webhook`) |
+| MapTiler | `NEXT_PUBLIC_MAPTILER_KEY` | Satélite licenciado para uso comercial (hoje usa Esri, que é de demonstração) |
 
-7. **Valor da mensalidade** e dias de tolerância → Admin › Configurações (hoje: R$ 0 e 15 dias).
-8. **Textos jurídicos**: termos de uso, autorização de venda, exclusividade, regra escrita do 1%.
-9. **Enviar o orçamento** (recomendação registrada: R$ 7.000 em 3 parcelas + sustentação mensal).
-10. **Lista final de municípios** do piloto — dá para adicionar sozinho em Admin › Regiões
-    (só o código IBGE; nome e mapa vêm automáticos).
+Sem elas o sistema funciona — só esses recursos ficam inativos. O painel de
+Configurações mostra o estado de cada uma.
 
-## Cartografia (DWG)
+## 3. Worker (vídeo e tiles)
 
-11. Os DWG de Limeira do Oeste e União de Minas (em `cartografia/`) são AutoCAD 2018+.
-    Para virarem camada no mapa, precisam ser exportados como **GeoTIFF/imagem georreferenciada**
-    (quem fez os arquivos consegue exportar; ou instale o ODA File Converter que eu faço a
-    conversão DWG→DXF e sigo daqui). Depois é só subir em Admin › Cartografia — o worker
-    gera os tiles sozinho.
+`deploy/worker-compose.yml` está pronto. Sobe como segundo serviço no Dokploy com
+`DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SITE_URL`.
+Sem ele: vídeo automático, tiles de imagem georreferenciada e imagem de
+compartilhamento ficam pendentes. **Todo o resto funciona sem o worker.**
 
-## Antes de abrir para gente de verdade
+## 4. Decisões com o Carlos
 
-12. Trocar as senhas das 3 contas de teste (todas usam a senha padrão) e criar a conta real do Carlos.
-13. Apagar/ajustar os imóveis demo (Fazenda Boa Vista está "vendida" pelo teste; o Sítio está publicado).
+- Valor da mensalidade do anúncio e dias de tolerância (hoje R$ 0 / 15 dias).
+- Textos jurídicos: termos de uso, autorização de venda, exclusividade, regra do 1%.
+- Lista final de municípios do piloto (você mesmo adiciona em Admin › Regiões, só com o código IBGE).
+- Custo do satélite licenciado (~US$ 25/mês) — único custo recorrente de mapa.
+- Orçamento do projeto (recomendação registrada: R$ 7.000 em 3 parcelas + sustentação mensal).
+
+## 5. Consulta Rural — fontes que exigem importação de arquivo
+
+Sondei as 17 fontes do documento técnico em 26/08/2026.
+
+**Funcionando ao vivo no sistema:** ANM/SIGMINE (processos minerários),
+FUNAI (terras indígenas), INPE/TerraBrasilis (desmatamento PRODES),
+IBGE (municípios) e OpenStreetMap (POIs e acessos).
+
+**Sem consulta pública por polígono** — precisam do arquivo oficial baixado e importado:
+
+| Fonte | Situação |
+|---|---|
+| CAR / SICAR | Publica o WFS mas sem camadas; os dados saem por download de shapefile por município, com CAPTCHA |
+| INCRA / SIGEF | Sem endpoint público estável; baixar a malha certificada |
+| IBAMA — embargos | Serviço geográfico fora do ar na sondagem; usar planilha/shapefile de dados abertos |
+
+Quando você conseguir esses arquivos, eu importo para o PostGIS e eles passam a
+cruzar com a geometria do imóvel como as demais. Enquanto isso, aparecem no
+relatório como "dependem de importação" — nunca como "nada encontrado".
+
+## 6. Validação que só você pode fazer
+
+Abrir e olhar com calma: `/` (landing), `/mapa` (com satélite e plantas),
+`/imovel/ARINI-MAP-000002`, o tour 3D, e o painel admin inteiro.
+Todas as telas foram verificadas por screenshot, mas seu olho no fluxo real
+vale mais que o meu.

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator } from "@/lib/authz";
-import { consultarAnm, consultarFunai, consultarProdes, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
+import { ADAPTADORES, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
 import { buscarEVincularPois } from "@/lib/overpass";
 
 export const maxDuration = 120;
@@ -24,12 +24,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/imoveis/[id
   }
   const bbox = bboxRaw as Bbox;
 
-  // as três fontes ao vivo em paralelo; nenhuma derruba a consulta
-  const resultados: ResultadoFonte[] = await Promise.all([
-    consultarAnm(bbox),
-    consultarFunai(bbox),
-    consultarProdes(bbox),
-  ]);
+  // todas as fontes ao vivo em paralelo; nenhuma derruba a consulta
+  const resultados: ResultadoFonte[] = await Promise.all(ADAPTADORES.map((a) => a.fn(bbox)));
 
   for (const r of resultados) {
     await admin.from("consultas_rurais").upsert({

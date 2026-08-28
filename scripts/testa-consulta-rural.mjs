@@ -10,7 +10,7 @@ for (const line of readFileSync(join(root, ".env.local"), "utf8").split("\n")) {
   const m = line.match(/^([A-Z_]+)=(.*)$/);
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
 }
-const BASE = "http://localhost:3000";
+const BASE = process.env.SCREENSHOT_BASE ?? "http://localhost:3000";
 
 const db = new pg.Client({
   host: `db.${process.env.SUPABASE_PROJECT_REF}.supabase.co`, port: 5432,

@@ -2,9 +2,9 @@ import type { StyleSpecification, RasterSourceSpecification } from "maplibre-gl"
 
 /** Cores por status no mapa (legenda fixa). */
 export const STATUS_CORES: Record<string, string> = {
-  publicado: "#2E9E6B",
-  em_negociacao: "#D9A62E",
-  vendido: "#8E9B93",
+  publicado: "#3FCF7F",
+  em_negociacao: "#E0B341",
+  vendido: "#7E9187",
 };
 
 export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama

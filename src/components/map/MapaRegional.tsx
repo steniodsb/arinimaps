@@ -14,6 +14,8 @@ import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import { deslocarGeoJSON } from "@/lib/geo/deslocar";
 import Link from "next/link";
+import PainelImovel from "@/components/map/PainelImovel";
+import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 
 type ImovelProps = {
   id: string;
@@ -36,7 +38,7 @@ type Camada = {
   offset?: { lng: number; lat: number; leste_m: number; norte_m: number };
 };
 
-const ESTILO_RUAS = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+const ESTILO_RUAS = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
 const CORES_MATCH: unknown[] = [
   "match", ["get", "status"],
@@ -76,6 +78,8 @@ export default function MapaRegional() {
   const [faixaPreco, setFaixaPreco] = useState(0);
   const [busca, setBusca] = useState("");
   const [painelAberto, setPainelAberto] = useState(true);
+  const [raio, setRaio] = useState(5000);
+  const [camadasAbertas, setCamadasAbertas] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [lista, setLista] = useState<ImovelProps[]>([]);
 
@@ -203,7 +207,7 @@ export default function MapaRegional() {
               paint: {
                 // cor trocada conforme a base ativa (ver efeito de `base`):
                 // sobre o satélite a planta precisa ser clara para aparecer
-                "line-color": "#3A4A40",
+                "line-color": "#6D8578",
                 "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 15, 0.9, 18, 1.6] as never,
                 "line-opacity": Math.min(0.9, c.opacidade),
               },
@@ -215,7 +219,7 @@ export default function MapaRegional() {
         map.addSource("municipios", { type: "geojson", data: municipios });
         map.addLayer({
           id: "municipios-linha", type: "line", source: "municipios",
-          paint: { "line-color": "#0E4D36", "line-width": 1.2, "line-opacity": 0.4, "line-dasharray": [3, 2] },
+          paint: { "line-color": "#3FCF7F", "line-width": 1.2, "line-opacity": 0.35, "line-dasharray": [3, 2] },
         });
 
         map.addSource("imoveis", { type: "geojson", data: imoveis, promoteId: "id" });
@@ -242,7 +246,7 @@ export default function MapaRegional() {
             "circle-color": CORES_MATCH as never,
             "circle-radius": ["case", ["boolean", ["feature-state", "hover"], false], 10, 7] as never,
             "circle-stroke-width": 2,
-            "circle-stroke-color": "#ffffff",
+            "circle-stroke-color": "#0A1310",
           },
         });
 
@@ -280,8 +284,8 @@ export default function MapaRegional() {
             .setLngLat(e.lngLat)
             .setHTML(
               `<div style="padding:10px 12px;font-family:inherit">
-                 <p style="font-weight:600;font-size:13px;color:#092417;margin:0">${p.titulo}</p>
-                 <p style="font-size:12px;color:#0E4D36;font-weight:600;margin:2px 0 0">${formatBRL(p.valor)}</p>
+                 <p style="font-weight:600;font-size:13px;color:#E9F1EB;margin:0">${p.titulo}</p>
+                 <p style="font-size:12px;color:#3FCF7F;font-weight:600;margin:2px 0 0">${formatBRL(p.valor)}</p>
                </div>`
             )
             .addTo(map);
@@ -317,7 +321,7 @@ export default function MapaRegional() {
     map.setLayoutProperty("satelite", "visibility", base === "satelite" ? "visible" : "none");
     for (const id of cartoVetorIdsRef.current) {
       if (map.getLayer(id)) {
-        map.setPaintProperty(id, "line-color", base === "satelite" ? "#FFE9A8" : "#3A4A40");
+        map.setPaintProperty(id, "line-color", base === "satelite" ? "#FFE9A8" : "#6D8578");
       }
     }
   }, [base, pronto]);
@@ -357,42 +361,46 @@ export default function MapaRegional() {
 
   const ativos = lista.filter((p) => p.status !== "vendido").length;
 
+  const chipBase = "chip px-4 py-2 text-xs whitespace-nowrap shadow-lg";
+
   return (
-    <div className="relative flex-1 min-h-0 flex">
-      {/* ---------- painel lateral (estilo Google Maps) ---------- */}
-      <aside className={`absolute md:relative z-20 h-full bg-white shadow-xl transition-all duration-300 flex flex-col
-        ${painelAberto ? "w-[340px]" : "w-0 overflow-hidden"}`}>
-        <div className="p-3 space-y-2 border-b border-linha">
+    <div className="relative flex-1 min-h-0 flex bg-fundo">
+      {/* ---------- resultados ---------- */}
+      <aside className={
+        "absolute md:relative z-20 h-full bg-superficie border-r border-linha transition-all duration-300 flex flex-col " +
+        (painelAberto ? "w-[320px]" : "w-0 overflow-hidden")
+      }>
+        <div className="p-3 space-y-2.5 border-b border-linha">
           <div className="relative">
-            <input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar imóvel, cidade ou código…"
-              className="w-full rounded-full border border-linha bg-areia/60 pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde focus:bg-white transition"
-            />
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40">⌕</span>
+            <input value={busca} onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por imóvel, município ou código"
+              className="w-full rounded-xl border border-linha bg-superficie-2 pl-9 pr-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde transition" />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-2 text-sm">⌕</span>
           </div>
+
           {municipioSugerido && (
             <button onClick={irParaMunicipio}
-              className="w-full text-left text-sm rounded-lg bg-areia px-3 py-2 hover:bg-verde hover:text-white transition">
-              📍 Ir para <strong>{municipioSugerido.nome}</strong>
+              className="w-full text-left text-sm rounded-xl bg-verde/12 text-verde px-3 py-2 hover:bg-verde/20 transition">
+              Ir para <strong>{municipioSugerido.nome}</strong>
             </button>
           )}
+
           <div className="flex gap-1.5 flex-wrap">
             {(["todos", "rural", "urbano"] as const).map((t) => (
-              <button key={t} onClick={() => setFiltroTipo(t)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-medium capitalize border transition
-                  ${filtroTipo === t ? "bg-verde text-white border-verde" : "border-linha hover:bg-areia"}`}>
+              <button key={t} onClick={() => setFiltroTipo(t)} data-ativo={filtroTipo === t}
+                className="chip px-3.5 py-1.5 text-xs capitalize">
                 {t}
               </button>
             ))}
-            <select value={faixaPreco} onChange={(e) => setFaixaPreco(Number(e.target.value))}
-              className="rounded-full px-3 py-1.5 text-xs border border-linha bg-white hover:bg-areia transition focus:outline-none">
-              {FAIXAS_PRECO.map((f, i) => <option key={f.label} value={i}>{f.label}</option>)}
-            </select>
           </div>
-          <p className="text-xs text-foreground/50">
-            {ativos} {ativos === 1 ? "imóvel à venda" : "imóveis à venda"}
+
+          <select value={faixaPreco} onChange={(e) => setFaixaPreco(Number(e.target.value))}
+            className="w-full rounded-xl border border-linha bg-superficie-2 px-3 py-2 text-xs text-texto focus:outline-none focus:ring-2 focus:ring-verde">
+            {FAIXAS_PRECO.map((f, i) => <option key={f.label} value={i}>{f.label}</option>)}
+          </select>
+
+          <p className="text-xs text-texto-2">
+            {ativos} {ativos === 1 ? "imóvel disponível" : "imóveis disponíveis"}
           </p>
         </div>
 
@@ -402,36 +410,42 @@ export default function MapaRegional() {
               onClick={() => voarPara(p)}
               onMouseEnter={() => destacar(p.id)}
               onMouseLeave={() => destacar(null)}
-              className={`w-full text-left flex gap-3 p-3 transition hover:bg-areia/70
-                ${selecionado?.id === p.id ? "bg-areia" : ""}`}>
+              className={
+                "w-full text-left flex gap-3 p-3 transition hover:bg-superficie-2 " +
+                (selecionado?.id === p.id ? "bg-superficie-2" : "")
+              }>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={p.capa ? mediaUrl(p.capa) : p.tipo === "rural" ? "/img/aerea-campo.jpg" : "/img/fazenda-gado.jpg"}
-                alt=""
-                className="w-20 h-16 rounded-lg object-cover shrink-0"
-              />
-              <span className="min-w-0">
-                <span className="block font-medium text-sm leading-snug truncate">{p.titulo}</span>
-                <span className="block text-xs text-foreground/55">{p.municipio ?? "—"} · {formatArea(p.area_m2, p.tipo)}</span>
+                alt="" className="w-20 h-16 rounded-lg object-cover shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-sm text-texto truncate">{p.titulo}</span>
+                <span className="block text-xs text-texto-2">
+                  {p.municipio ?? "—"} · {formatArea(p.area_m2, p.tipo)}
+                </span>
                 <span className="block text-sm font-semibold text-verde mt-0.5">
-                  {p.status === "vendido" ? <s className="text-foreground/40">{formatBRL(p.valor)}</s> : formatBRL(p.valor)}
+                  {p.status === "vendido"
+                    ? <s className="text-texto-2">{formatBRL(p.valor)}</s>
+                    : formatBRL(p.valor)}
                 </span>
               </span>
-              <span className="ml-auto self-start mt-1 w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ background: STATUS_CORES[p.status] ?? "#2E9E6B" }} />
+              <span className="mt-1 w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ background: STATUS_CORES[p.status] ?? STATUS_CORES.publicado }} />
             </button>
           ))}
           {!lista.length && pronto && (
-            <p className="p-6 text-sm text-foreground/50 text-center">Nada encontrado com esses filtros.</p>
+            <p className="p-6 text-sm text-texto-2 text-center">Nada encontrado com esses filtros.</p>
           )}
         </div>
       </aside>
 
-      {/* alça do painel */}
       <button
         onClick={() => setPainelAberto(!painelAberto)}
-        className={`absolute z-30 top-1/2 -translate-y-1/2 bg-white shadow-lg rounded-r-lg w-6 h-14 flex items-center justify-center text-foreground/60 hover:text-verde transition-all duration-300 ${painelAberto ? "left-[340px] max-md:left-0 max-md:hidden" : "left-0"}`}
-        title={painelAberto ? "Recolher lista" : "Mostrar lista"}>
+        title={painelAberto ? "Recolher lista" : "Mostrar lista"}
+        className={
+          "absolute z-30 top-1/2 -translate-y-1/2 bg-superficie border border-linha shadow-lg rounded-r-lg w-6 h-14 flex items-center justify-center text-texto-2 hover:text-verde transition-all duration-300 " +
+          (painelAberto ? "left-[320px] max-md:hidden" : "left-0")
+        }>
         {painelAberto ? "‹" : "›"}
       </button>
 
@@ -440,68 +454,32 @@ export default function MapaRegional() {
         {/* inline: o CSS do maplibre força position:relative na classe e colapsaria a altura */}
         <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
-        {/* base ruas/satélite */}
-        <div className="absolute top-3 left-3 flex rounded-full overflow-hidden shadow-lg bg-white text-sm">
+        <div className="absolute top-3 left-3 right-14 flex gap-2 overflow-x-auto pb-1">
+          <button onClick={() => setCamadasAbertas(!camadasAbertas)} data-ativo={camadasAbertas}
+            className={chipBase}>
+            ☰ Camadas e Dados
+          </button>
           {(["ruas", "satelite"] as const).map((b) => (
-            <button key={b} onClick={() => setBase(b)}
-              className={`px-4 py-2 font-medium transition ${base === b ? "bg-verde text-white" : "hover:bg-areia"}`}>
+            <button key={b} onClick={() => setBase(b)} data-ativo={base === b} className={chipBase}>
               {b === "ruas" ? "Mapa" : "Satélite"}
             </button>
           ))}
         </div>
 
-        {/* legenda */}
-        <div className="absolute bottom-8 left-3 rounded-xl bg-white/95 backdrop-blur shadow-lg px-3.5 py-2.5 text-xs space-y-1.5">
-          <p className="font-semibold text-verde-escuro">Legenda</p>
-          {Object.entries(STATUS_CORES).map(([status, cor]) => (
-            <p key={status} className="flex items-center gap-2">
-              <span className="inline-block w-3 h-3 rounded-full" style={{ background: cor }} />
-              {STATUS_LABEL[status]}
-            </p>
-          ))}
-        </div>
-
-        {/* card do selecionado */}
-        {selecionado && (
-          <div className="absolute top-3 right-14 w-80 rounded-2xl bg-white shadow-2xl overflow-hidden anima-subir">
-            <div className="h-36 relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={selecionado.capa ? mediaUrl(selecionado.capa) : selecionado.tipo === "rural" ? "/img/aerea-campo.jpg" : "/img/fazenda-gado.jpg"}
-                alt="" className="w-full h-full object-cover" />
-              <button onClick={() => setSelecionado(null)}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 text-white hover:bg-black/70 transition">✕</button>
-              <span className="absolute bottom-2 left-3 font-mono text-[10px] text-white bg-black/50 rounded px-2 py-0.5">
-                {selecionado.codigo}
-              </span>
-            </div>
-            <div className="p-4 space-y-2">
-              <p className="font-semibold leading-snug">{selecionado.titulo}</p>
-              <div className="flex items-baseline justify-between">
-                <span className="texto-ouro font-bold text-lg">{formatBRL(selecionado.valor)}</span>
-                <span className="text-xs text-foreground/55">
-                  {formatArea(selecionado.area_m2, selecionado.tipo)}
-                </span>
-              </div>
-              <Link href={`/imovel/${selecionado.codigo}`}
-                className="btn-ouro block text-center text-sm py-2.5 !rounded-lg">
-                Ver imóvel completo
-              </Link>
-              <div className="flex gap-2">
-                <Link href={`/imovel/${selecionado.codigo}/tour`}
-                  className="flex-1 text-center rounded-lg border border-linha text-sm py-2 hover:bg-areia transition">
-                  Tour 3D
-                </Link>
-                <a href={`https://www.google.com/maps/dir/?api=1&destination=${selecionado.lat},${selecionado.lng}`}
-                  target="_blank" rel="noreferrer"
-                  className="flex-1 text-center rounded-lg border border-linha text-sm py-2 hover:bg-areia transition">
-                  Como chegar
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
+        {camadasAbertas && <PainelCamadas onFechar={() => setCamadasAbertas(false)} />}
+        <Legenda />
       </div>
+
+      {/* ---------- inteligência territorial do imóvel ---------- */}
+      {selecionado && (
+        <PainelImovel
+          imovel={selecionado}
+          raio={raio}
+          onRaio={setRaio}
+          onFechar={() => setSelecionado(null)}
+        />
+      )}
     </div>
   );
 }
+

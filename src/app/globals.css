@@ -1,109 +1,165 @@
 @import "tailwindcss";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
+/*
+  Arini Imóveis Brasil — tema escuro de inteligência territorial.
+  Fundo verde-carvão para a imagem de satélite ser a coisa mais clara da tela;
+  verde-vivo é o acento de ação e o dourado marca o que é da marca/relatório.
+*/
 :root {
-  --background: #f7f8f5;
-  --foreground: #182a20;
+  --fundo: #0A1310;
+  --superficie: #121C17;
+  --superficie-2: #17231D;
+  --linha: #24352C;
+  --texto: #E9F1EB;
+  --texto-2: #8FA396;
+  --verde: #3FCF7F;
+  --verde-escuro: #0E2C1E;
+  --ouro: #C9A14E;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-verde: #0e4d36;
-  --color-verde-escuro: #092417;
-  --color-verde-vivo: #2e9e6b;
-  --color-ouro: #c9a14e;
-  --color-ouro-escuro: #9a7a26;
-  --color-areia: #eef1ea;
-  --color-linha: #d8e0d8;
+  --color-fundo: #0A1310;
+  --color-superficie: #121C17;
+  --color-superficie-2: #17231D;
+  --color-linha: #24352C;
+  --color-texto: #E9F1EB;
+  --color-texto-2: #8FA396;
+
+  --color-verde: #3FCF7F;
+  --color-verde-2: #2FA866;
+  --color-verde-escuro: #0E2C1E;
+  --color-ouro: #C9A14E;
+  --color-ouro-claro: #E4C77E;
+
+  --color-alerta: #E0B341;
+  --color-critico: #E06C5B;
+
+  /* compatibilidade com as telas já escritas */
+  --color-background: #0A1310;
+  --color-foreground: #E9F1EB;
+  --color-areia: #17231D;
+  --color-ouro-escuro: #C9A14E;
+  --color-verde-vivo: #3FCF7F;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--fundo);
+  color: var(--texto);
 }
+
+::selection { background: rgba(63, 207, 127, 0.25); }
+
+/* barra de rolagem discreta, no tom do tema */
+* { scrollbar-color: #2A3D33 transparent; scrollbar-width: thin; }
 
 .maplibregl-popup-content {
   padding: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(9, 36, 23, 0.25);
+  background: #121C17;
+  color: #E9F1EB;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
+.maplibregl-popup-tip { border-top-color: #121C17 !important; border-bottom-color: #121C17 !important; }
+.maplibregl-ctrl-group {
+  background: rgba(18, 28, 23, 0.92) !important;
+  border: 1px solid #24352C !important;
+}
+.maplibregl-ctrl-group button { filter: invert(1) hue-rotate(180deg) brightness(1.4); }
+.maplibregl-ctrl-attrib { background: rgba(10, 19, 16, 0.75) !important; }
+.maplibregl-ctrl-attrib a { color: #8FA396 !important; }
 
-/* ---------- botões dourados em gradiente com brilho ---------- */
+/* ---------- botões ---------- */
+.btn-verde {
+  display: inline-block;
+  background: linear-gradient(180deg, #45D98A 0%, #2FA866 100%);
+  color: #06140D;
+  font-weight: 600;
+  border-radius: 0.85rem;
+  box-shadow: 0 6px 18px rgba(63, 207, 127, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-verde:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 10px 24px rgba(63, 207, 127, 0.34); }
+
 .btn-ouro {
   position: relative;
   display: inline-block;
   overflow: hidden;
-  background: linear-gradient(120deg, #a87e1f 0%, #d4af37 45%, #f1d689 60%, #d4af37 75%, #a87e1f 100%);
+  background: linear-gradient(120deg, #9A7A26 0%, #C9A14E 45%, #E4C77E 60%, #C9A14E 75%, #9A7A26 100%);
   background-size: 200% auto;
-  color: #092417;
+  color: #10201A;
   font-weight: 600;
-  border-radius: 0.9rem;
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+  border-radius: 0.85rem;
+  box-shadow: 0 6px 18px rgba(201, 161, 78, 0.25);
   transition: background-position 0.6s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
-.btn-ouro:hover {
-  background-position: right center;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(212, 175, 55, 0.5);
-}
+.btn-ouro:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 12px 26px rgba(201, 161, 78, 0.38); }
 .btn-ouro::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.45) 50%, transparent 60%);
   transform: translateX(-120%);
 }
-.btn-ouro:hover::after {
-  transition: transform 0.7s ease;
-  transform: translateX(120%);
-}
+.btn-ouro:hover::after { transition: transform 0.7s ease; transform: translateX(120%); }
 
 .btn-contorno {
   display: inline-block;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #fff;
+  border: 1px solid #2E4438;
+  color: #E9F1EB;
   font-weight: 500;
-  border-radius: 0.9rem;
-  transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+  border-radius: 0.85rem;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
-.btn-contorno:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.6);
+.btn-contorno:hover { transform: translateY(-1px); background: #17231D; border-color: #3FCF7F; }
+
+/* chip de filtro/camada do mapa */
+.chip {
+  border: 1px solid #2E4438;
+  background: rgba(18, 28, 23, 0.9);
+  color: #C7D6CC;
+  border-radius: 999px;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.chip:hover { background: #1D2C24; color: #E9F1EB; }
+.chip[data-ativo="true"] { background: #3FCF7F; color: #06140D; border-color: #3FCF7F; font-weight: 600; }
+
+.cartao {
+  background: #121C17;
+  border: 1px solid #24352C;
+  border-radius: 1rem;
 }
 
-/* ---------- texto em gradiente dourado ---------- */
+/* ---------- texto ---------- */
 .texto-ouro {
-  background: linear-gradient(100deg, #f1d689 0%, #d4af37 45%, #b8912f 100%);
+  background: linear-gradient(100deg, #E4C77E 0%, #C9A14E 55%, #A8842F 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.texto-verde {
+  background: linear-gradient(100deg, #6FE7A6 0%, #3FCF7F 60%, #2FA866 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* ---------- entrada suave das seções ---------- */
-@keyframes subir {
-  from { opacity: 0; transform: translateY(22px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* ---------- animações ---------- */
+@keyframes subir { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
 .anima-subir { animation: subir 0.7s ease both; }
 .anima-subir-1 { animation: subir 0.7s 0.12s ease both; }
 .anima-subir-2 { animation: subir 0.7s 0.24s ease both; }
 .anima-subir-3 { animation: subir 0.7s 0.36s ease both; }
 
-@keyframes flutuar {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
+@keyframes flutuar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 .anima-flutuar { animation: flutuar 6s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .anima-subir, .anima-subir-1, .anima-subir-2, .anima-subir-3, .anima-flutuar {
-    animation: none;
-  }
-  .btn-ouro, .btn-contorno { transition: none; }
+  .anima-subir, .anima-subir-1, .anima-subir-2, .anima-subir-3, .anima-flutuar { animation: none; }
+  .btn-ouro, .btn-verde, .btn-contorno, .chip { transition: none; }
   .btn-ouro::after { display: none; }
 }

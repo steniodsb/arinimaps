@@ -1,6 +1,13 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import SiteHeader from "@/components/SiteHeader";
 import { currentUser } from "@/lib/supabase/server";
+import AppShell from "@/components/shell/AppShell";
+
+const ABAS = [
+  { href: "/painel", rotulo: "Meus imóveis" },
+  { href: "/painel/oportunidades", rotulo: "Minhas oportunidades" },
+  { href: "/painel/novo", rotulo: "Anunciar" },
+];
 
 export default async function PainelLayout({ children }: LayoutProps<"/painel">) {
   const user = await currentUser();
@@ -8,16 +15,15 @@ export default async function PainelLayout({ children }: LayoutProps<"/painel">)
   if (["admin_central", "analista_arini"].includes(user.role)) redirect("/admin");
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
-      <div className="bg-white border-b border-linha">
-        <nav className="mx-auto max-w-5xl px-4 flex gap-6 text-sm">
-          <a href="/painel" className="py-3 font-medium text-verde-escuro hover:text-verde">Meus imóveis</a>
-          <a href="/painel/oportunidades" className="py-3 font-medium text-verde-escuro hover:text-verde">Minhas oportunidades</a>
-          <a href="/painel/novo" className="py-3 font-medium text-verde-escuro hover:text-verde">Anunciar</a>
-        </nav>
-      </div>
-      <main className="mx-auto max-w-5xl w-full px-4 py-8 flex-1">{children}</main>
-    </div>
+    <AppShell usuario={{ nome: user.nome || "Conta", papel: "Anunciante" }} busca={false}>
+      <nav className="flex gap-1.5 mb-5 overflow-x-auto">
+        {ABAS.map((a) => (
+          <Link key={a.href} href={a.href} className="chip px-4 py-2 text-sm whitespace-nowrap">
+            {a.rotulo}
+          </Link>
+        ))}
+      </nav>
+      {children}
+    </AppShell>
   );
 }

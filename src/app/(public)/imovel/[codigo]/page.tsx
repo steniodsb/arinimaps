@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import SiteHeader from "@/components/SiteHeader";
+import AppShell from "@/components/shell/AppShell";
+import { currentUser } from "@/lib/supabase/server";
 import MiniMapa from "@/components/map/MiniMapa";
 import InteresseForm from "@/components/InteresseForm";
 import BotaoCompartilhar from "@/components/BotaoCompartilhar";
@@ -114,23 +115,26 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
       : []),
   ];
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <SiteHeader />
+  const user = await currentUser();
+  const usuario = user
+    ? { nome: user.nome || "Conta", papel: user.role === "admin_central" ? "Administrador" : "Usuário" }
+    : null;
 
+  return (
+    <AppShell usuario={usuario} semPadding>
       {/* trilha de navegação */}
-      <div className="border-b border-linha bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-sm text-foreground/55 flex items-center gap-2 flex-wrap">
+      <div className="border-b border-linha bg-superficie">
+        <div className="mx-auto max-w-6xl px-4 py-3 text-sm text-texto-2 flex items-center gap-2 flex-wrap">
           <Link href="/" className="hover:text-verde">Home</Link>
           <span>/</span>
           <Link href="/mapa" className="hover:text-verde">Imóveis</Link>
           <span>/</span>
-          <span className="text-foreground/80 font-medium">{imovel.titulo}</span>
+          <span className="text-texto font-medium">{imovel.titulo}</span>
         </div>
       </div>
 
       <main className="mx-auto max-w-6xl w-full px-4 py-8">
-        <Link href="/mapa" className="inline-flex items-center gap-2 text-sm text-foreground/60 hover:text-verde mb-5">
+        <Link href="/mapa" className="inline-flex items-center gap-2 text-sm text-texto-2 hover:text-verde mb-5">
           ← Voltar para o mapa
         </Link>
 
@@ -139,18 +143,18 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
           <span className={`text-xs font-semibold rounded-full px-4 py-1.5 text-white ${vendido ? "bg-gray-500" : "bg-verde"}`}>
             {vendido ? "VENDIDO" : "DISPONÍVEL"}
           </span>
-          <span className="text-sm text-foreground/60">
+          <span className="text-sm text-texto-2">
             📍 {imovel.municipio ? `${imovel.municipio.nome} / ${imovel.municipio.uf}` : "Região piloto"}
           </span>
-          <span className="text-sm text-foreground/45 font-mono"># {imovel.codigo}</span>
-          <span className="text-xs rounded-full bg-areia px-3 py-1 capitalize">{imovel.tipo}</span>
+          <span className="text-sm text-texto-2 font-mono"># {imovel.codigo}</span>
+          <span className="text-xs rounded-full bg-superficie-2 px-3 py-1 capitalize">{imovel.tipo}</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-semibold text-verde-escuro leading-tight text-balance">
+        <h1 className="text-3xl sm:text-4xl font-semibold text-texto leading-tight text-balance">
           {imovel.titulo}
         </h1>
         <p className="mt-1 mb-7">
           <span className="texto-ouro text-3xl sm:text-4xl font-bold">{formatBRL(imovel.valor)}</span>
-          <span className="text-foreground/50 ml-2">Venda</span>
+          <span className="text-texto-2 ml-2">Venda</span>
         </p>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] items-start">
@@ -161,17 +165,17 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             {ficha.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {ficha.map((f) => (
-                  <div key={f.rotulo} className="rounded-xl border border-linha bg-white p-4">
+                  <div key={f.rotulo} className="cartao p-4">
                     <p className="text-lg">{f.icone}</p>
-                    <p className="text-lg font-semibold text-verde-escuro leading-tight mt-1">{f.valor}</p>
-                    <p className="text-[11px] uppercase tracking-wide text-foreground/50">{f.rotulo}</p>
+                    <p className="text-lg font-semibold text-texto leading-tight mt-1">{f.valor}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-texto-2">{f.rotulo}</p>
                   </div>
                 ))}
               </div>
             )}
 
             {benfeitorias.length > 0 && (
-              <div className="rounded-2xl border border-linha bg-white p-5">
+              <div className="cartao p-5">
                 <p className="text-xs font-semibold tracking-[0.18em] text-ouro-escuro uppercase mb-3">Diferenciais</p>
                 <ul className="grid sm:grid-cols-2 gap-2.5">
                   {benfeitorias.map((b) => (
@@ -185,18 +189,18 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             )}
 
             <section>
-              <h2 className="text-2xl font-semibold text-verde-escuro mb-3">Sobre o imóvel</h2>
-              <div className="text-foreground/85 whitespace-pre-line leading-relaxed max-w-[68ch]">
+              <h2 className="text-2xl font-semibold text-texto mb-3">Sobre o imóvel</h2>
+              <div className="text-texto whitespace-pre-line leading-relaxed max-w-[68ch]">
                 {imovel.descricao || "Descrição não informada."}
               </div>
             </section>
 
             {imovel.geometry && (
               <section>
-                <h2 className="text-2xl font-semibold text-verde-escuro mb-3">Localização e área</h2>
+                <h2 className="text-2xl font-semibold text-texto mb-3">Localização e área</h2>
                 <MiniMapa geometry={imovel.geometry} status={imovel.status}
                   className="h-96 w-full rounded-2xl overflow-hidden border border-linha" />
-                <p className="mt-2 text-sm text-foreground/70">
+                <p className="mt-2 text-sm text-texto-2">
                   Área medida no mapa: <strong>{formatArea(imovel.area_m2, imovel.tipo)}</strong>
                   {imovel.perimeter_m ? ` · perímetro ${(imovel.perimeter_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : null}
                   {imovel.area_declarada ? ` · área declarada pelo anunciante: ${imovel.area_declarada.toLocaleString("pt-BR")} ${imovel.tipo === "rural" ? "ha" : "m²"}` : null}
@@ -206,11 +210,11 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
 
             {!!unidades?.length && (
               <section>
-                <h2 className="text-2xl font-semibold text-verde-escuro mb-3">Unidades deste empreendimento</h2>
-                <div className="rounded-2xl border border-linha bg-white divide-y divide-linha overflow-hidden">
+                <h2 className="text-2xl font-semibold text-texto mb-3">Unidades deste empreendimento</h2>
+                <div className="cartao divide-y divide-linha overflow-hidden">
                   {unidades.map((u) => (
                     <Link key={u.codigo} href={`/imovel/${u.codigo}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-areia/60 transition">
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-superficie-2 transition">
                       <span className="font-medium flex-1">{u.titulo}</span>
                       <span className="text-sm text-verde font-medium">{formatBRL(u.valor)}</span>
                       <span className={`text-xs rounded-full px-3 py-1 ${u.status === "vendido" ? "bg-gray-200 text-gray-600" : "bg-verde/10 text-verde"}`}>
@@ -224,26 +228,26 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
 
             {pois.length > 0 && (
               <section>
-                <h2 className="text-2xl font-semibold text-verde-escuro mb-3">Pontos de interesse próximos</h2>
+                <h2 className="text-2xl font-semibold text-texto mb-3">Pontos de interesse próximos</h2>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {pois.map((p, i) => (
-                    <div key={i} className="rounded-xl border border-linha bg-white px-4 py-2.5 text-sm flex justify-between gap-2">
+                    <div key={i} className="cartao px-4 py-2.5 text-sm flex justify-between gap-2">
                       <span>{p.nome ?? CATEGORIA_LABEL[p.categoria] ?? p.categoria}</span>
-                      <span className="text-foreground/50 tabular-nums shrink-0">
+                      <span className="text-texto-2 tabular-nums shrink-0">
                         {(p.distancia_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km
                       </span>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-foreground/40 mt-2">Distâncias em linha reta, do centro do imóvel.</p>
+                <p className="text-xs text-texto-2 mt-2">Distâncias em linha reta, do centro do imóvel.</p>
               </section>
             )}
 
             {imovel.condicoes_venda && (
               <section>
-                <h2 className="text-2xl font-semibold text-verde-escuro mb-2">Condições de venda</h2>
-                <p className="text-foreground/85">{imovel.condicoes_venda}</p>
-                <p className="text-sm text-foreground/60 mt-1">
+                <h2 className="text-2xl font-semibold text-texto mb-2">Condições de venda</h2>
+                <p className="text-texto">{imovel.condicoes_venda}</p>
+                <p className="text-sm text-texto-2 mt-1">
                   {imovel.aceita_permuta && "Aceita permuta. "}
                   {imovel.aceita_financiamento && "Aceita financiamento."}
                 </p>
@@ -254,7 +258,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
           {/* ---------- coluna lateral ---------- */}
           <aside className="space-y-4 lg:sticky lg:top-6">
             {vendido ? (
-              <div className="rounded-2xl border border-linha bg-white p-6 text-center text-foreground/70">
+              <div className="cartao p-6 text-center text-texto-2">
                 Este imóvel já foi vendido pela Arini.
                 <Link href="/mapa" className="btn-ouro block mt-4 py-3">Ver outros imóveis</Link>
               </div>
@@ -272,16 +276,16 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             {centroid && (
               <a href={`https://www.google.com/maps/dir/?api=1&destination=${centroid.lat},${centroid.lng}`}
                 target="_blank" rel="noreferrer"
-                className="block text-center rounded-2xl border border-linha bg-white font-medium py-3 hover:bg-areia transition">
+                className="block text-center cartao font-medium py-3 hover:bg-superficie-2 transition">
                 📍 Como chegar até o imóvel
               </a>
             )}
-            <p className="text-xs text-foreground/45 text-center">
+            <p className="text-xs text-texto-2 text-center">
               Intermediação: Arini Negócios Imobiliários
             </p>
           </aside>
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

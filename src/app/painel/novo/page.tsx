@@ -66,14 +66,14 @@ export default function NovoImovel() {
     router.refresh();
   }
 
-  const input = "w-full rounded-lg border border-linha bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde";
-  const label = "block text-sm font-medium text-verde-escuro mb-1";
+  const input = "w-full rounded-lg cartao px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde";
+  const label = "block text-sm font-medium text-texto mb-1";
 
   return (
     <form onSubmit={enviar} className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-semibold text-verde-escuro">Anunciar imóvel</h1>
-        <p className="text-sm text-foreground/60">
+        <h1 className="text-2xl font-semibold text-texto">Anunciar imóvel</h1>
+        <p className="text-sm text-texto-2">
           Preencha os dados e marque a localização. O imóvel vai para a análise da Arini antes de publicar.
         </p>
       </div>
@@ -136,7 +136,7 @@ export default function NovoImovel() {
         <label className={label}>Fotos (até 20)</label>
         <input type="file" accept="image/*" multiple className={input}
           onChange={(e) => setFotos(Array.from(e.target.files ?? []).slice(0, 20))} />
-        {fotos.length > 0 && <p className="text-xs text-foreground/60 mt-1">{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
+        {fotos.length > 0 && <p className="text-xs text-texto-2 mt-1">{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
       </div>
 
       {form.tipo === "urbano" && (
@@ -144,7 +144,7 @@ export default function NovoImovel() {
           <label className={label}>Faz parte de um empreendimento? (opcional)</label>
           <input className={input} placeholder="Código do imóvel principal — ex.: ARINI-MAP-000010"
             value={form.parent_codigo} onChange={(e) => setForm({ ...form, parent_codigo: e.target.value })} />
-          <p className="text-xs text-foreground/50 mt-0.5">
+          <p className="text-xs text-texto-2 mt-0.5">
             Para apartamentos em bloco ou lotes de um loteamento: cadastre o empreendimento uma vez e
             aponte cada unidade para ele — a página do empreendimento lista todas as unidades à venda.
           </p>
@@ -166,7 +166,7 @@ export default function NovoImovel() {
         </div>
       </div>
 
-      {erro && <p className="text-sm text-red-700">{erro}</p>}
+      {erro && <p className="text-sm text-critico">{erro}</p>}
 
       <button disabled={enviando}
         className="rounded-lg bg-verde text-white font-semibold px-6 py-2.5 hover:bg-verde-escuro disabled:opacity-60">

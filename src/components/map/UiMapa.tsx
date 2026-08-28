@@ -81,7 +81,7 @@ export function PainelCamadas({ onFechar }: { onFechar: () => void }) {
 
 export function Legenda() {
   return (
-    <div className="absolute bottom-8 left-3 cartao px-3.5 py-2.5 text-xs space-y-1.5 shadow-xl">
+    <div className="absolute bottom-36 lg:bottom-32 left-3 cartao px-3.5 py-2.5 text-xs space-y-1.5 shadow-xl">
       <p className="font-semibold text-texto">Legenda</p>
       {Object.entries(STATUS_CORES).map(([status, cor]) => (
         <p key={status} className="flex items-center gap-2 text-texto-2">

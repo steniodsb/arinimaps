@@ -54,7 +54,7 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
             <div className="w-full h-full bg-verde-escuro" />
           )}
           <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-verde-escuro/65 text-white">
-            <span className="w-16 h-16 rounded-full bg-ouro text-verde-escuro grid place-items-center text-2xl group-hover/tour:scale-110 transition">▶</span>
+            <span className="w-16 h-16 rounded-full bg-ouro text-[#10201A] grid place-items-center text-2xl group-hover/tour:scale-110 transition">▶</span>
             <span className="font-semibold text-lg">Ver tour 3D da propriedade</span>
             <span className="text-sm text-white/75">sobrevoo com relevo real e pontos de interesse</span>
           </span>
@@ -66,17 +66,17 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
   return (
     <>
       <div className="space-y-2">
-        <div className="relative rounded-2xl overflow-hidden bg-areia aspect-[16/10] group">
+        <div className="relative rounded-2xl overflow-hidden bg-superficie-2 aspect-[16/10] group">
           {conteudo}
 
           {total > 1 && (
             <>
               <button onClick={() => ir(-1)} aria-label="Imagem anterior"
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 shadow-lg grid place-items-center text-verde-escuro hover:bg-white hover:scale-105 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-superficie/90 shadow-lg grid place-items-center text-texto hover:bg-superficie hover:scale-105 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
                 ‹
               </button>
               <button onClick={() => ir(1)} aria-label="Próxima imagem"
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 shadow-lg grid place-items-center text-verde-escuro hover:bg-white hover:scale-105 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-superficie/90 shadow-lg grid place-items-center text-texto hover:bg-superficie hover:scale-105 transition opacity-0 group-hover:opacity-100 focus:opacity-100">
                 ›
               </button>
               <span className="absolute bottom-3 right-3 text-xs font-medium bg-black/60 text-white rounded-full px-3 py-1 tabular-nums">

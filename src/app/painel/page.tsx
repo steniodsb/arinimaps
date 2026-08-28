@@ -3,13 +3,13 @@ import { supabaseServer, currentUser } from "@/lib/supabase/server";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
 
 const STATUS_COR: Record<string, string> = {
-  rascunho: "bg-areia text-foreground/70",
+  rascunho: "bg-superficie-2 text-texto-2",
   pendente: "bg-amber-100 text-amber-900",
   em_analise: "bg-amber-100 text-amber-900",
   correcao: "bg-orange-100 text-orange-900",
   aprovado: "bg-emerald-100 text-emerald-900",
   publicado: "bg-verde text-white",
-  em_negociacao: "bg-ouro text-verde-escuro",
+  em_negociacao: "bg-ouro text-texto",
   vendido: "bg-gray-200 text-gray-700",
   reprovado: "bg-red-100 text-red-900",
 };
@@ -43,8 +43,8 @@ export default async function MeusImoveis() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-verde-escuro">Meus imóveis</h1>
-          <p className="text-foreground/60 text-sm">Olá, {user?.nome}. Acompanhe seus anúncios e o status de análise.</p>
+          <h1 className="text-2xl font-semibold text-texto">Meus imóveis</h1>
+          <p className="text-texto-2 text-sm">Olá, {user?.nome}. Acompanhe seus anúncios e o status de análise.</p>
         </div>
         <Link href="/painel/novo"
           className="rounded-lg bg-verde text-white font-medium px-4 py-2 hover:bg-verde-escuro">
@@ -60,19 +60,19 @@ export default async function MeusImoveis() {
       )}
 
       {meus.length === 0 ? (
-        <div className="rounded-xl border border-linha bg-white p-10 text-center text-foreground/60">
+        <div className="cartao p-10 text-center text-texto-2">
           Nenhum imóvel ainda. Clique em <strong>Anunciar imóvel</strong> para começar.
         </div>
       ) : (
-        <div className="rounded-xl border border-linha bg-white divide-y divide-linha">
+        <div className="cartao divide-y divide-linha">
           {meus.map((p) => (
             <div key={p.id} className="px-4 py-3 flex items-center gap-4 flex-wrap">
-              <span className="font-mono text-xs text-foreground/50">{p.codigo}</span>
+              <span className="font-mono text-xs text-texto-2">{p.codigo}</span>
               <Link href={`/painel/imoveis/${p.id}`} className="font-medium flex-1 min-w-40 hover:text-verde">
                 {p.titulo}
               </Link>
-              <span className="text-sm text-foreground/70">{formatBRL(p.valor)}</span>
-              <span className={`text-xs rounded-full px-3 py-1 ${STATUS_COR[p.status] ?? "bg-areia"}`}>
+              <span className="text-sm text-texto-2">{formatBRL(p.valor)}</span>
+              <span className={`text-xs rounded-full px-3 py-1 ${STATUS_COR[p.status] ?? "bg-superficie-2"}`}>
                 {STATUS_LABEL[p.status] ?? p.status}
               </span>
               {p.motivo_correcao && (

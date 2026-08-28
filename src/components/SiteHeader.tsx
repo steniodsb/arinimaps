@@ -9,7 +9,7 @@ export default async function SiteHeader() {
       : "/painel";
 
   return (
-    <header className="bg-verde-escuro text-white">
+    <header className="bg-superficie text-texto">
       <div className="mx-auto max-w-7xl px-4 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="font-semibold tracking-tight text-lg">
           Arini <span className="text-ouro">Imóveis Brasil</span>

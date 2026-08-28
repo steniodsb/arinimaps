@@ -10,7 +10,7 @@ export default function BotaoCompartilhar({ codigo, titulo }: { codigo: string; 
   return (
     <div className="flex gap-2">
       <button
-        className="flex-1 rounded-lg border border-linha bg-white text-sm font-medium py-2 hover:bg-areia"
+        className="flex-1 rounded-lg cartao text-sm font-medium py-2 hover:bg-superficie-2"
         onClick={async () => {
           const url = montarUrl();
           if (navigator.share) {

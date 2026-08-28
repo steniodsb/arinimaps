@@ -25,11 +25,11 @@ export default function DocumentosImovel({ propertyId }: { propertyId: string })
   return (
     <div className="space-y-3">
       <div className="flex gap-2 flex-wrap items-center">
-        <select className="rounded-lg border border-linha bg-white px-3 py-2 text-sm"
+        <select className="rounded-lg cartao px-3 py-2 text-sm"
           value={tipo} onChange={(e) => setTipo(e.target.value)}>
           {TIPOS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
-        <label className={`rounded-lg px-4 py-2 text-sm font-medium cursor-pointer ${ocupado ? "bg-areia text-foreground/40" : "bg-verde text-white hover:bg-verde-escuro"}`}>
+        <label className={`rounded-lg px-4 py-2 text-sm font-medium cursor-pointer ${ocupado ? "bg-superficie-2 text-texto-2" : "bg-verde text-white hover:bg-verde-escuro"}`}>
           {ocupado ? "Enviando…" : "Anexar arquivo"}
           <input type="file" className="hidden" disabled={ocupado} onChange={async (e) => {
             const f = e.target.files?.[0];
@@ -51,12 +51,12 @@ export default function DocumentosImovel({ propertyId }: { propertyId: string })
         {docs.map((d) => (
           <li key={d.id} className="py-2 flex items-center gap-3">
             <span className="capitalize flex-1">{TIPOS.find(([v]) => v === d.tipo)?.[1] ?? d.tipo}</span>
-            <span className="text-xs text-foreground/50">{new Date(d.created_at).toLocaleDateString("pt-BR")}</span>
+            <span className="text-xs text-texto-2">{new Date(d.created_at).toLocaleDateString("pt-BR")}</span>
             {d.verificado && <span className="text-xs text-verde">verificado ✓</span>}
             {d.url && <a href={d.url} target="_blank" className="text-xs text-verde hover:underline">abrir</a>}
           </li>
         ))}
-        {!docs.length && <li className="py-2 text-xs text-foreground/50">Nenhum documento ainda.</li>}
+        {!docs.length && <li className="py-2 text-xs text-texto-2">Nenhum documento ainda.</li>}
       </ul>
     </div>
   );

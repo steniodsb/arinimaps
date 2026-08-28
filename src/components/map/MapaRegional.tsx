@@ -16,6 +16,7 @@ import { deslocarGeoJSON } from "@/lib/geo/deslocar";
 import Link from "next/link";
 import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
+import Ferramentas from "@/components/map/Ferramentas";
 
 type ImovelProps = {
   id: string;
@@ -77,11 +78,16 @@ export default function MapaRegional() {
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "urbano" | "rural">("todos");
   const [faixaPreco, setFaixaPreco] = useState(0);
   const [busca, setBusca] = useState("");
+  // no celular o mapa é o protagonista: a lista começa fechada e vira gaveta
   const [painelAberto, setPainelAberto] = useState(true);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setPainelAberto(false);
+  }, []);
   const [raio, setRaio] = useState(5000);
   const [camadasAbertas, setCamadasAbertas] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [lista, setLista] = useState<ImovelProps[]>([]);
+  const [mapaPronto, setMapaPronto] = useState<MLMap | null>(null);
 
   // ---------- filtro compartilhado (lista + mapa) ----------
   const filtrar = useCallback((tipo: string, faixaIdx: number, q: string) => {
@@ -154,10 +160,13 @@ export default function MapaRegional() {
         zoom: 9,
         hash: "pos", // posição na URL → link compartilhável, estilo Google Maps
         fadeDuration: 150,
+        // v5 moveu as opções de WebGL para cá; sem isto "Capturar Imagem" sai em branco
+        canvasContextAttributes: { preserveDrawingBuffer: true },
         attributionControl: { compact: true },
       });
       mapa = map;
       mapRef.current = map;
+      setMapaPronto(map);
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
       map.addControl(new maplibregl.FullscreenControl(), "top-right");
       map.addControl(new maplibregl.GeolocateControl({
@@ -367,8 +376,8 @@ export default function MapaRegional() {
     <div className="relative flex-1 min-h-0 flex bg-fundo">
       {/* ---------- resultados ---------- */}
       <aside className={
-        "absolute md:relative z-20 h-full bg-superficie border-r border-linha transition-all duration-300 flex flex-col " +
-        (painelAberto ? "w-[320px]" : "w-0 overflow-hidden")
+        "absolute lg:relative z-20 h-full bg-superficie border-r border-linha transition-all duration-300 flex flex-col " +
+        (painelAberto ? "w-[85%] sm:w-[320px]" : "w-0 overflow-hidden")
       }>
         <div className="p-3 space-y-2.5 border-b border-linha">
           <div className="relative">
@@ -444,7 +453,7 @@ export default function MapaRegional() {
         title={painelAberto ? "Recolher lista" : "Mostrar lista"}
         className={
           "absolute z-30 top-1/2 -translate-y-1/2 bg-superficie border border-linha shadow-lg rounded-r-lg w-6 h-14 flex items-center justify-center text-texto-2 hover:text-verde transition-all duration-300 " +
-          (painelAberto ? "left-[320px] max-md:hidden" : "left-0")
+          (painelAberto ? "left-[85%] sm:left-[320px]" : "left-0")
         }>
         {painelAberto ? "‹" : "›"}
       </button>
@@ -468,6 +477,74 @@ export default function MapaRegional() {
 
         {camadasAbertas && <PainelCamadas onFechar={() => setCamadasAbertas(false)} />}
         <Legenda />
+
+        <Ferramentas
+          mapa={mapaPronto}
+          onImportarKml={async (arquivo) => {
+            const map = mapRef.current;
+            if (!map) return;
+            try {
+              let kmlTexto: string;
+              if (arquivo.name.toLowerCase().endsWith(".kmz")) {
+                const JSZip = (await import("jszip")).default;
+                const zip = await JSZip.loadAsync(await arquivo.arrayBuffer());
+                const entrada = Object.values(zip.files).find((f) => f.name.toLowerCase().endsWith(".kml"));
+                if (!entrada) throw new Error("KMZ sem KML dentro");
+                kmlTexto = await entrada.async("string");
+              } else {
+                kmlTexto = await arquivo.text();
+              }
+              const { kml } = await import("@tmcw/togeojson");
+              const doc = new DOMParser().parseFromString(kmlTexto, "text/xml");
+              const dados = kml(doc) as GeoJSON.FeatureCollection;
+
+              if (map.getSource("kml-importado")) {
+                (map.getSource("kml-importado") as GeoJSONSource).setData(dados);
+              } else {
+                map.addSource("kml-importado", { type: "geojson", data: dados });
+                map.addLayer({
+                  id: "kml-fill", type: "fill", source: "kml-importado",
+                  filter: ["==", ["geometry-type"], "Polygon"],
+                  paint: { "fill-color": "#C9A14E", "fill-opacity": 0.2 },
+                });
+                map.addLayer({
+                  id: "kml-linha", type: "line", source: "kml-importado",
+                  paint: { "line-color": "#E4C77E", "line-width": 2.5 },
+                });
+              }
+
+              const coords: [number, number][] = [];
+              const walk = (c: unknown): void => {
+                if (Array.isArray(c) && typeof c[0] === "number") coords.push(c as [number, number]);
+                else if (Array.isArray(c)) c.forEach(walk);
+              };
+              for (const f of dados.features) walk((f.geometry as { coordinates?: unknown })?.coordinates);
+              if (coords.length) {
+                const lngs = coords.map((c) => c[0]);
+                const lats = coords.map((c) => c[1]);
+                map.fitBounds(
+                  [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+                  { padding: 80, duration: 1000 }
+                );
+              }
+            } catch (e) {
+              console.error("falha ao importar KML:", e);
+            }
+          }}
+          onCapturar={() => {
+            const map = mapRef.current;
+            if (!map) return;
+            // redesenha antes de ler o canvas: sem isso o buffer volta em branco
+            map.once("render", () => {
+              const url = map.getCanvas().toDataURL("image/png");
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `arini-mapa-${new Date().toISOString().slice(0, 10)}.png`;
+              a.click();
+            });
+            map.triggerRepaint();
+          }}
+        />
       </div>
 
       {/* ---------- inteligência territorial do imóvel ---------- */}

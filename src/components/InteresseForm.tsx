@@ -26,8 +26,8 @@ export default function InteresseForm({
     }
   }
 
-  const rotulo = "block text-sm font-medium text-verde-escuro mb-1";
-  const input = "w-full rounded-lg border border-linha bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
+  const rotulo = "block text-sm font-medium text-texto mb-1";
+  const input = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
 
   const linkWhats = whatsapp
     ? `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
@@ -44,10 +44,10 @@ export default function InteresseForm({
           <p className="text-sm text-white/85">A equipe da Arini vai falar com você em breve.</p>
         </div>
       ) : (
-        <form onSubmit={enviar} className="rounded-2xl border border-linha bg-white p-5 space-y-3 shadow-sm">
+        <form onSubmit={enviar} className="cartao p-5 space-y-3 shadow-sm">
           <div>
-            <p className="text-lg font-semibold text-verde-escuro">Receba todos os detalhes</p>
-            <p className="text-sm text-foreground/60">
+            <p className="text-lg font-semibold text-texto">Receba todos os detalhes</p>
+            <p className="text-sm text-texto-2">
               Preencha seus dados e falaremos com você pelo WhatsApp.
             </p>
           </div>
@@ -73,13 +73,13 @@ export default function InteresseForm({
               value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} />
           </div>
 
-          <label className="flex items-start gap-2 text-xs text-foreground/70">
+          <label className="flex items-start gap-2 text-xs text-texto-2">
             <input type="checkbox" required checked={form.consentimento}
               onChange={(e) => setForm({ ...form, consentimento: e.target.checked })} className="mt-0.5" />
             Autorizo a Arini a entrar em contato sobre este imóvel (LGPD).
           </label>
 
-          {erro && <p className="text-sm text-red-700">{erro}</p>}
+          {erro && <p className="text-sm text-critico">{erro}</p>}
 
           <button disabled={estado === "enviando"} className="btn-ouro w-full py-3 disabled:opacity-60">
             {estado === "enviando" ? "Enviando…" : "Quero saber mais"}

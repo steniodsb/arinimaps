@@ -12,10 +12,10 @@ export default function CartografiaUpload({ municipios }: { municipios: { id: st
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState("");
 
-  const input = "rounded-lg border border-linha bg-white px-3 py-2 text-sm";
+  const input = "rounded-lg cartao px-3 py-2 text-sm";
 
   return (
-    <div className="rounded-2xl border border-linha bg-white p-5 space-y-3">
+    <div className="cartao p-5 space-y-3">
       <div className="grid gap-2 sm:grid-cols-2">
         <input className={input} placeholder="Nome da camada (ex.: Planta urbana — Iturama)"
           value={nome} onChange={(e) => setNome(e.target.value)} />
@@ -26,12 +26,12 @@ export default function CartografiaUpload({ municipios }: { municipios: { id: st
       </div>
       <input type="file" accept=".dxf,.tif,.tiff,.png,.jpg,.jpeg" className={input + " w-full"}
         onChange={(e) => { setArquivo(e.target.files?.[0] ?? null); setErro(""); setMsg(""); }} />
-      <p className="text-xs text-foreground/50">
+      <p className="text-xs text-texto-2">
         DXF (planta CAD) publica na hora · GeoTIFF/PNG/JPG georreferenciado vira tiles pelo worker.
       </p>
 
       {msg && <p className="text-sm text-verde">{msg}</p>}
-      {erro && <p className="text-sm text-red-700">{erro}</p>}
+      {erro && <p className="text-sm text-critico">{erro}</p>}
 
       <button disabled={ocupado || !nome || !municipio || !arquivo}
         className="btn-ouro px-6 py-2.5 disabled:opacity-50"

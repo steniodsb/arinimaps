@@ -24,19 +24,19 @@ export default function ListaCamadas() {
   useEffect(() => { carregar(); }, []);
 
   if (!camadas.length) {
-    return <p className="rounded-2xl border border-linha bg-white px-4 py-8 text-center text-sm text-foreground/50">
+    return <p className="cartao px-4 py-8 text-center text-sm text-texto-2">
       Nenhuma camada publicada ainda.
     </p>;
   }
 
   return (
     <>
-      <div className="rounded-2xl border border-linha bg-white divide-y divide-linha">
+      <div className="cartao divide-y divide-linha">
         {camadas.map((c) => (
           <div key={c.id} className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm">
             <div className="flex-1 min-w-48">
               <p className="font-medium">{c.nome}</p>
-              <p className="text-xs text-foreground/50">
+              <p className="text-xs text-texto-2">
                 {c.municipio} · {c.tipo === "vector" ? "planta vetorial" : "imagem em tiles"}
                 {c.datum && ` · ${DATUM_LABEL[c.datum] ?? c.datum}`}
                 {(c.offset.leste_m || c.offset.norte_m)
@@ -47,7 +47,7 @@ export default function ListaCamadas() {
             <span className="text-xs rounded-full bg-verde/10 text-verde px-3 py-1">no ar</span>
             {c.tipo === "vector" && (
               <button onClick={() => setCalibrando(c)}
-                className="rounded-lg border border-linha px-3 py-1.5 text-xs font-medium hover:bg-areia transition">
+                className="rounded-lg border border-linha px-3 py-1.5 text-xs font-medium hover:bg-superficie-2 transition">
                 Calibrar sobre o satélite
               </button>
             )}
@@ -57,7 +57,7 @@ export default function ListaCamadas() {
                 const r = await fetch(`/api/admin/cartografia/${c.id}`, { method: "DELETE" });
                 if (r.ok) carregar(); else alert((await r.json()).error ?? "Falha.");
               }}
-              className="rounded-lg border border-linha px-3 py-1.5 text-xs text-red-700 hover:bg-red-50 transition">
+              className="rounded-lg border border-linha px-3 py-1.5 text-xs text-critico hover:bg-critico/10 transition">
               Remover
             </button>
           </div>

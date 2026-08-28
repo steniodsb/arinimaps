@@ -39,21 +39,21 @@ export default async function OportunidadeAdmin({ params }: PageProps<"/admin/op
     <div className="space-y-6 max-w-5xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-xs text-foreground/50">{opp.codigo}</p>
-          <h1 className="text-2xl font-semibold text-verde-escuro">{lead?.nome ?? "Oportunidade"}</h1>
-          <p className="text-sm text-foreground/70">
+          <p className="font-mono text-xs text-texto-2">{opp.codigo}</p>
+          <h1 className="text-2xl font-semibold text-texto">{lead?.nome ?? "Oportunidade"}</h1>
+          <p className="text-sm text-texto-2">
             {lead?.telefone && <span className="mr-3">📞 {lead.telefone}</span>}
             {lead?.email && <span className="mr-3">✉️ {lead.email}</span>}
-            <span className="text-foreground/50">origem: {lead?.origem}</span>
+            <span className="text-texto-2">origem: {lead?.origem}</span>
           </p>
-          {lead?.mensagem && <p className="text-sm text-foreground/60 mt-1">“{lead.mensagem}”</p>}
+          {lead?.mensagem && <p className="text-sm text-texto-2 mt-1">“{lead.mensagem}”</p>}
         </div>
         <div className="text-right space-y-1">
           <span className="inline-block rounded-full bg-ouro/20 text-ouro-escuro text-sm font-medium px-4 py-1.5">
             {ETAPA_LABEL[opp.etapa] ?? opp.etapa}
           </span>
           {prop && (
-            <p className="text-xs text-foreground/60">
+            <p className="text-xs text-texto-2">
               <Link className="text-verde hover:underline" href={`/admin/imoveis/${prop.id}`}>
                 {prop.codigo} — {prop.titulo}
               </Link>

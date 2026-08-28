@@ -140,7 +140,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
 
         {/* cabeçalho */}
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <span className={`text-xs font-semibold rounded-full px-4 py-1.5 text-white ${vendido ? "bg-gray-500" : "bg-verde"}`}>
+          <span className={`text-xs font-semibold rounded-full px-4 py-1.5 text-white ${vendido ? "bg-superficie-2 text-texto-2" : "bg-verde"}`}>
             {vendido ? "VENDIDO" : "DISPONÍVEL"}
           </span>
           <span className="text-sm text-texto-2">
@@ -217,7 +217,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                       className="flex items-center gap-3 px-4 py-3 hover:bg-superficie-2 transition">
                       <span className="font-medium flex-1">{u.titulo}</span>
                       <span className="text-sm text-verde font-medium">{formatBRL(u.valor)}</span>
-                      <span className={`text-xs rounded-full px-3 py-1 ${u.status === "vendido" ? "bg-gray-200 text-gray-600" : "bg-verde/10 text-verde"}`}>
+                      <span className={`text-xs rounded-full px-3 py-1 ${u.status === "vendido" ? "bg-superficie-2 text-texto-2" : "bg-verde/10 text-verde"}`}>
                         {STATUS_LABEL[u.status]}
                       </span>
                     </Link>
@@ -268,8 +268,14 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
 
             {imovel.geometry && (
               <Link href={`/imovel/${imovel.codigo}/tour`}
-                className="block text-center rounded-2xl bg-verde-escuro text-white font-semibold py-3.5 hover:bg-verde transition">
+                className="block text-center rounded-2xl bg-verde/12 text-verde border border-verde/30 font-semibold py-3.5 hover:bg-verde/20 transition">
                 ▶ Ver tour 3D da propriedade
+              </Link>
+            )}
+            {imovel.tipo === "rural" && (
+              <Link href={`/imovel/${imovel.codigo}/relatorio`}
+                className="block text-center rounded-2xl border border-linha bg-superficie font-medium py-3 hover:border-ouro transition">
+                ▤ Relatório territorial
               </Link>
             )}
             <BotaoCompartilhar codigo={imovel.codigo} titulo={imovel.titulo} />

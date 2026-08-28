@@ -95,7 +95,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
           const c = f.consulta;
           const estado = !c ? "sem consulta" : c.erro ? "indisponível" : c.quantidade > 0 ? `${c.quantidade} registro(s)` : "nada encontrado";
           const cor = !c ? "bg-areia text-foreground/60"
-            : c.erro ? "bg-amber-100 text-amber-900"
+            : c.erro ? "bg-alerta/15 text-alerta"
             : c.quantidade > 0 ? "bg-ouro/20 text-ouro-escuro" : "bg-verde/10 text-verde";
           const itens = c?.resultado?.itens ?? [];
           return (
@@ -117,7 +117,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
               {aberta === f.id && (
                 <div className="px-4 pb-3 space-y-1.5 border-t border-linha pt-3">
                   {c?.erro && (
-                    <p className="text-sm text-amber-800">
+                    <p className="text-sm text-alerta">
                       Fonte indisponível: {c.erro}. Nada aqui significa ausência de registro — só que o serviço não respondeu.
                     </p>
                   )}

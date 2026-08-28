@@ -27,7 +27,7 @@ export default function MensalidadeAcoes() {
         onClick={() => wrap({ acao: "gerar_faturas" }, (d) => `${d.geradas} fatura(s) gerada(s) para o mês atual.`)}>
         Gerar faturas do mês
       </button>
-      <button disabled={ocupado} className="rounded-lg bg-amber-500 text-white text-sm font-medium px-4 py-2 hover:bg-amber-600 disabled:opacity-50"
+      <button disabled={ocupado} className="rounded-lg bg-alerta text-white text-sm font-medium px-4 py-2 hover:bg-alerta/80 disabled:opacity-50"
         onClick={() => wrap({ acao: "marcar_inadimplentes" }, (d) => `${d.vencidas} fatura(s) marcadas como vencidas.`)}>
         Processar inadimplência
       </button>
@@ -44,7 +44,7 @@ export function FaturaAcoes({ id }: { id: string }) {
         onClick={async () => { setOcupado(true); if (await acao({ acao: "marcar_paga", invoice_id: id })) router.refresh(); setOcupado(false); }}>
         Marcar paga
       </button>
-      <button disabled={ocupado} className="text-xs rounded bg-areia border border-linha px-2 py-1 disabled:opacity-50"
+      <button disabled={ocupado} className="text-xs rounded bg-superficie-2 border border-linha px-2 py-1 disabled:opacity-50"
         onClick={async () => {
           setOcupado(true);
           const d = await acao({ acao: "cobrar_asaas", invoice_id: id });
@@ -63,7 +63,7 @@ export function ValorMensal({ id, valor }: { id: string; valor: number }) {
   const [ocupado, setOcupado] = useState(false);
   return (
     <span className="flex items-center gap-1">
-      <span className="text-foreground/50">R$</span>
+      <span className="text-texto-2">R$</span>
       <input className="w-24 rounded border border-linha px-2 py-1 text-sm tabular-nums" value={v}
         onChange={(e) => setV(e.target.value)} inputMode="decimal" />
       {Number(v.replace(",", ".")) !== valor && (

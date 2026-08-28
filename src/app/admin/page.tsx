@@ -28,17 +28,17 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-verde-escuro">Central Arini</h1>
+      <h1 className="text-2xl font-semibold text-texto">Central Arini</h1>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <Link key={c.label} href={c.href}
-            className={`rounded-xl border p-5 hover:shadow transition ${c.destaque ? "border-ouro bg-ouro/10" : "border-linha bg-white"}`}>
-            <p className="text-3xl font-semibold text-verde-escuro tabular-nums">{c.valor}</p>
-            <p className="text-sm text-foreground/70 mt-1">{c.label}</p>
+            className={`rounded-xl border p-5 hover:shadow transition ${c.destaque ? "border-ouro bg-ouro/10" : "border-linha bg-superficie"}`}>
+            <p className="text-3xl font-semibold text-texto tabular-nums">{c.valor}</p>
+            <p className="text-sm text-texto-2 mt-1">{c.label}</p>
           </Link>
         ))}
       </div>
-      <p className="text-sm text-foreground/50">
+      <p className="text-sm text-texto-2">
         Fluxo: cadastro → análise → publicação no mapa → lead → intermediação Arini → venda → comissão.
       </p>
     </div>

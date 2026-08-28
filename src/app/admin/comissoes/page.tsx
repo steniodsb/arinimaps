@@ -20,31 +20,31 @@ export default async function AdminComissoes() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold text-verde-escuro">Comissões</h1>
+      <h1 className="text-2xl font-semibold text-texto">Comissões</h1>
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-linha bg-white p-4">
-          <p className="text-xs text-foreground/60">A receber (registrada + cobrada)</p>
+        <div className="cartao p-4">
+          <p className="text-xs text-texto-2">A receber (registrada + cobrada)</p>
           <p className="text-xl font-semibold tabular-nums">{formatBRL(total(["registrada", "cobrada"]))}</p>
         </div>
-        <div className="rounded-xl border border-linha bg-white p-4">
-          <p className="text-xs text-foreground/60">Recebido</p>
+        <div className="cartao p-4">
+          <p className="text-xs text-texto-2">Recebido</p>
           <p className="text-xl font-semibold tabular-nums text-verde">{formatBRL(total(["paga", "conciliada"]))}</p>
         </div>
-        <div className="rounded-xl border border-linha bg-white p-4">
-          <p className="text-xs text-foreground/60">Vendas com comissão</p>
+        <div className="cartao p-4">
+          <p className="text-xs text-texto-2">Vendas com comissão</p>
           <p className="text-xl font-semibold tabular-nums">{comissoes?.length ?? 0}</p>
         </div>
       </div>
 
       {!comissoes?.length ? (
-        <div className="rounded-xl border border-linha bg-white p-10 text-center text-foreground/60">
+        <div className="cartao p-10 text-center text-texto-2">
           Nenhuma comissão ainda — elas nascem automaticamente ao registrar uma venda.
         </div>
       ) : (
-        <div className="rounded-xl border border-linha bg-white overflow-x-auto">
+        <div className="cartao overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-foreground/50 border-b border-linha">
+              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
                 <th className="px-4 py-3">Venda</th>
                 <th className="px-4 py-3">Imóvel</th>
                 <th className="px-4 py-3">Base</th>
@@ -60,7 +60,7 @@ export default async function AdminComissoes() {
                 return (
                   <tr key={c.id}>
                     <td className="px-4 py-3 font-mono text-xs">{sale?.opportunity?.codigo}<br />{sale ? new Date(sale.data_venda + "T12:00:00").toLocaleDateString("pt-BR") : ""}</td>
-                    <td className="px-4 py-3">{sale?.property?.titulo}<br /><span className="font-mono text-xs text-foreground/50">{sale?.property?.codigo}</span></td>
+                    <td className="px-4 py-3">{sale?.property?.titulo}<br /><span className="font-mono text-xs text-texto-2">{sale?.property?.codigo}</span></td>
                     <td className="px-4 py-3 tabular-nums">{formatBRL(c.base_calculo)}</td>
                     <td className="px-4 py-3 tabular-nums">{Number(c.percentual).toLocaleString("pt-BR")}%</td>
                     <td className="px-4 py-3 tabular-nums font-semibold">{formatBRL(c.valor)}</td>

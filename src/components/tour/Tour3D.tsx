@@ -218,14 +218,14 @@ export default function Tour3D(dados: TourData) {
           <div className="absolute top-4 left-4 rounded-xl bg-black/60 text-white px-4 py-3 backdrop-blur">
             <p className="font-mono text-[10px] text-white/60">{dados.codigo}</p>
             <p className="font-semibold">{dados.titulo}</p>
-            <p className="text-sm text-amber-300">{brl} · {dados.areaLabel}</p>
+            <p className="text-sm text-ouro-claro">{brl} · {dados.areaLabel}</p>
             {dados.municipio && <p className="text-xs text-white/60">{dados.municipio.nome}</p>}
           </div>
 
           {(fase === "pausado" || fase === "fim") && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               <button
-                className="rounded-full bg-white text-verde-escuro font-medium px-5 py-2.5 shadow-lg hover:bg-amber-100"
+                className="rounded-full bg-ouro text-fundo font-medium px-5 py-2.5 shadow-lg hover:bg-ouro-claro"
                 onClick={() => window.location.reload()}>
                 ↻ Repetir tour
               </button>

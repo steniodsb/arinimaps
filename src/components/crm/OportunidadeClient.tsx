@@ -73,7 +73,7 @@ export default function OportunidadeClient(props: Props) {
             onChange={(e) => chamar("PATCH", { acao: "etapa", etapa: e.target.value })} disabled={ocupado}>
             {[...ETAPAS, "perdido"].map((e) => <option key={e} value={e}>{ETAPA_LABEL[e]}</option>)}
           </select>
-          <button disabled={ocupado} className={`${btn} bg-critico/10 text-critico border border-red-200 hover:bg-red-100`}
+          <button disabled={ocupado} className={`${btn} bg-critico/10 text-critico border border-critico/30 hover:bg-critico/20`}
             onClick={() => {
               const motivo = prompt("Motivo da perda:");
               if (motivo !== null) chamar("PATCH", { acao: "etapa", etapa: "perdido", motivo });
@@ -177,12 +177,12 @@ export default function OportunidadeClient(props: Props) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs">R{p.numero_rodada}</span>
                 <span className="flex-1">{p.autor_lado === "comprador" ? "Comprador" : "Vendedor"}: <strong>{brl(p.valor)}</strong>{p.entrada ? ` (entrada ${brl(p.entrada)})` : ""}{p.prazo ? ` · ${p.prazo}` : ""}</span>
-                <span className={`text-xs rounded-full px-2 py-0.5 ${p.status === "aceita" ? "bg-verde text-white" : p.status === "recusada" ? "bg-red-100 text-red-800" : "bg-superficie border border-linha"}`}>{p.status}</span>
+                <span className={`text-xs rounded-full px-2 py-0.5 ${p.status === "aceita" ? "bg-verde text-white" : p.status === "recusada" ? "bg-critico/15 text-critico" : "bg-superficie border border-linha"}`}>{p.status}</span>
                 {p.status === "enviada" && (
                   <span className="flex gap-1">
                     <button disabled={ocupado} className="text-xs rounded bg-verde text-white px-2 py-1"
                       onClick={() => chamar("POST", { tipo: "proposta_status", proposta_id: p.id, status: "aceita" })}>aceitar</button>
-                    <button disabled={ocupado} className="text-xs rounded bg-red-600 text-white px-2 py-1"
+                    <button disabled={ocupado} className="text-xs rounded bg-critico text-white px-2 py-1"
                       onClick={() => chamar("POST", { tipo: "proposta_status", proposta_id: p.id, status: "recusada" })}>recusar</button>
                   </span>
                 )}

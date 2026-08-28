@@ -115,19 +115,19 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
     else setMsg((await res.json()).error ?? "Falha ao salvar.");
   }
 
-  const btn = "w-11 h-11 rounded-lg bg-white border border-linha hover:bg-verde hover:text-white transition text-lg font-semibold";
+  const btn = "w-11 h-11 rounded-lg bg-superficie border border-linha hover:bg-verde hover:text-white transition text-lg font-semibold";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onFechar}>
-      <div className="bg-white rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-superficie rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="px-5 py-3 border-b border-linha flex items-center justify-between">
           <div>
-            <p className="font-semibold text-verde-escuro">Calibrar: {camada.nome}</p>
-            <p className="text-xs text-foreground/55">
+            <p className="font-semibold text-texto">Calibrar: {camada.nome}</p>
+            <p className="text-xs text-texto-2">
               Mova a planta até as quadras baterem com o satélite. Use as setas do teclado.
             </p>
           </div>
-          <button onClick={onFechar} className="w-9 h-9 rounded-full hover:bg-areia text-lg">✕</button>
+          <button onClick={onFechar} className="w-9 h-9 rounded-full hover:bg-superficie-2 text-lg">✕</button>
         </div>
 
         <div ref={containerRef} style={{ height: 460, position: "relative" }} />
@@ -146,11 +146,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           </div>
 
           <div className="space-y-1.5">
-            <p className="text-xs text-foreground/60">Passo do ajuste</p>
+            <p className="text-xs text-texto-2">Passo do ajuste</p>
             <div className="flex gap-1.5">
               {[1, 5, 10, 50].map((p) => (
                 <button key={p} onClick={() => setPasso(p)}
-                  className={`rounded-lg px-3 py-1.5 text-sm border transition ${passo === p ? "bg-verde text-white border-verde" : "border-linha hover:bg-areia"}`}>
+                  className={`rounded-lg px-3 py-1.5 text-sm border transition ${passo === p ? "bg-verde text-white border-verde" : "border-linha hover:bg-superficie-2"}`}>
                   {p} m
                 </button>
               ))}
@@ -158,7 +158,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           </div>
 
           <div className="text-sm tabular-nums">
-            <p className="text-xs text-foreground/60">Deslocamento aplicado</p>
+            <p className="text-xs text-texto-2">Deslocamento aplicado</p>
             <p className="font-medium">
               leste {leste.toFixed(0)} m · norte {norte.toFixed(0)} m
             </p>

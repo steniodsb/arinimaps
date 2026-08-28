@@ -23,8 +23,8 @@ export default async function AdminConfiguracoes() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-semibold text-verde-escuro">Configurações do sistema</h1>
-        <p className="text-sm text-foreground/60">
+        <h1 className="text-2xl font-semibold text-texto">Configurações do sistema</h1>
+        <p className="text-sm text-texto-2">
           O que você mudar aqui vale imediatamente no site, no mapa e nas regras comerciais.
         </p>
       </div>
@@ -34,10 +34,10 @@ export default async function AdminConfiguracoes() {
         ehDiretoria={user?.role === "admin_central"}
       />
 
-      <section className="rounded-2xl border border-linha bg-white p-6 space-y-3">
+      <section className="cartao p-6 space-y-3">
         <div>
-          <h2 className="font-semibold text-verde-escuro text-lg">🔌 Integrações</h2>
-          <p className="text-sm text-foreground/60">
+          <h2 className="font-semibold text-texto text-lg">🔌 Integrações</h2>
+          <p className="text-sm text-texto-2">
             Configuradas no servidor por segurança (as chaves nunca chegam ao navegador).
             Peça ao desenvolvedor para ligar as que faltam.
           </p>
@@ -47,9 +47,9 @@ export default async function AdminConfiguracoes() {
             <div key={i.nome} className="py-3 flex items-center gap-3 flex-wrap">
               <div className="flex-1 min-w-56">
                 <p className="font-medium text-sm">{i.nome}</p>
-                <p className="text-xs text-foreground/55">{i.dica}</p>
+                <p className="text-xs text-texto-2">{i.dica}</p>
               </div>
-              <span className={`text-xs rounded-full px-3 py-1 font-medium ${i.ligado ? "bg-verde/10 text-verde" : "bg-areia text-foreground/55"}`}>
+              <span className={`text-xs rounded-full px-3 py-1 font-medium ${i.ligado ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2"}`}>
                 {i.ligado ? "ligada" : "não configurada"}
               </span>
             </div>

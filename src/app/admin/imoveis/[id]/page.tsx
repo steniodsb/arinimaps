@@ -52,16 +52,16 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <p className="font-mono text-xs text-foreground/50">{p.codigo}</p>
-        <h1 className="text-2xl font-semibold text-verde-escuro">{p.titulo}</h1>
-        <p className="text-sm text-foreground/60">
+        <p className="font-mono text-xs text-texto-2">{p.codigo}</p>
+        <h1 className="text-2xl font-semibold text-texto">{p.titulo}</h1>
+        <p className="text-sm text-texto-2">
           {municipio ? `${municipio.nome} · ${municipio.uf}` : "Sem município"} · {p.tipo} ·{" "}
           <strong>{STATUS_LABEL[p.status]}</strong>
         </p>
       </div>
 
-      <section className="rounded-xl border border-linha bg-white p-5 space-y-2">
-        <h2 className="font-semibold text-verde-escuro">Checklist de análise</h2>
+      <section className="cartao p-5 space-y-2">
+        <h2 className="font-semibold text-texto">Checklist de análise</h2>
         <ul className="text-sm space-y-1.5">
           <li>{p.descricao ? "✅" : "⚠️"} Descrição {p.descricao ? "preenchida" : "vazia"}</li>
           <li>{p.valor ? "✅" : "⚠️"} Valor: {formatBRL(p.valor)}</li>
@@ -85,7 +85,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
           </li>
         </ul>
         {p.motivo_correcao && (
-          <p className="text-sm bg-orange-50 text-orange-800 rounded px-3 py-2">
+          <p className="text-sm bg-alerta/10 text-alerta rounded px-3 py-2">
             Última observação enviada: {p.motivo_correcao}
           </p>
         )}
@@ -109,10 +109,10 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       )}
 
       {p.tipo === "rural" && (
-        <section className="rounded-xl border border-linha bg-white p-5 space-y-3">
+        <section className="cartao p-5 space-y-3">
           <div>
-            <h2 className="font-semibold text-verde-escuro">Consulta territorial</h2>
-            <p className="text-sm text-foreground/60">
+            <h2 className="font-semibold text-texto">Consulta territorial</h2>
+            <p className="text-sm text-texto-2">
               Cruza a área do imóvel com mineração (ANM), terras indígenas (FUNAI), desmatamento (INPE)
               e pontos de interesse. Cada resultado guarda a origem e a data.
             </p>
@@ -121,13 +121,13 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
         </section>
       )}
 
-      <section className="rounded-xl border border-linha bg-white p-5 space-y-3">
-        <h2 className="font-semibold text-verde-escuro">Documentos</h2>
+      <section className="cartao p-5 space-y-3">
+        <h2 className="font-semibold text-texto">Documentos</h2>
         <DocumentosImovel propertyId={p.id} />
       </section>
 
-      <section className="rounded-xl border border-linha bg-white p-5 space-y-3">
-        <h2 className="font-semibold text-verde-escuro">Decisão</h2>
+      <section className="cartao p-5 space-y-3">
+        <h2 className="font-semibold text-texto">Decisão</h2>
         <DecisaoBotoes propertyId={p.id} />
       </section>
     </div>

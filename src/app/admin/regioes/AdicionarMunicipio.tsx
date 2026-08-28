@@ -12,7 +12,7 @@ export default function AdicionarMunicipio() {
   return (
     <div className="space-y-1">
       <div className="flex gap-2">
-        <input className="rounded-lg border border-linha bg-white px-3 py-2 text-sm w-56"
+        <input className="rounded-lg cartao px-3 py-2 text-sm w-56"
           placeholder="Código IBGE (7 dígitos)" value={codigo} inputMode="numeric"
           onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 7))} />
         <button disabled={ocupado || codigo.length !== 7}
@@ -32,7 +32,7 @@ export default function AdicionarMunicipio() {
           {ocupado ? "Importando…" : "Adicionar município"}
         </button>
       </div>
-      <p className="text-xs text-foreground/50">
+      <p className="text-xs text-texto-2">
         {msg || "Busca nome e limites direto no IBGE. Consulte o código em cidades.ibge.gov.br."}
       </p>
     </div>

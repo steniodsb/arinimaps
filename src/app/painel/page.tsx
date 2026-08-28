@@ -4,14 +4,14 @@ import { formatBRL, STATUS_LABEL } from "@/lib/format";
 
 const STATUS_COR: Record<string, string> = {
   rascunho: "bg-superficie-2 text-texto-2",
-  pendente: "bg-amber-100 text-amber-900",
-  em_analise: "bg-amber-100 text-amber-900",
+  pendente: "bg-alerta/15 text-alerta",
+  em_analise: "bg-alerta/15 text-alerta",
   correcao: "bg-orange-100 text-orange-900",
-  aprovado: "bg-emerald-100 text-emerald-900",
+  aprovado: "bg-verde/15 text-verde",
   publicado: "bg-verde text-white",
   em_negociacao: "bg-ouro text-texto",
-  vendido: "bg-gray-200 text-gray-700",
-  reprovado: "bg-red-100 text-red-900",
+  vendido: "bg-superficie-2 text-texto-2",
+  reprovado: "bg-critico/15 text-critico",
 };
 
 export default async function MeusImoveis() {
@@ -53,7 +53,7 @@ export default async function MeusImoveis() {
       </div>
 
       {aguardando && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-alerta/40 bg-alerta/10 text-alerta px-4 py-3 text-sm">
           Seu cadastro está <strong>{STATUS_LABEL[statusCadastro!] ?? statusCadastro}</strong> na análise da Arini.
           Você poderá anunciar assim que for aprovado.
         </div>

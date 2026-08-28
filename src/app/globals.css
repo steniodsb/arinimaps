@@ -163,3 +163,13 @@ body {
   .btn-ouro, .btn-verde, .btn-contorno, .chip { transition: none; }
   .btn-ouro::after { display: none; }
 }
+
+/* ---------- impressão (relatório em PDF pelo navegador) ---------- */
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  html, body { background: #fff !important; color: #111 !important; }
+  .cartao { background: #fff !important; border-color: #d4d4d4 !important; box-shadow: none !important; }
+  .texto-ouro, .texto-verde { -webkit-text-fill-color: #111; color: #111 !important; background: none !important; }
+  a[href]::after { content: ""; }
+  .break-inside-avoid { break-inside: avoid; }
+}

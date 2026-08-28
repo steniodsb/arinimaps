@@ -40,18 +40,18 @@ export default function CadastroBotoes({
             Aprovar
           </button>
           <button disabled={ocupado} onClick={() => decidir("pendente", true)}
-            className="rounded-lg bg-amber-500 text-white text-xs font-medium px-3 py-1.5 hover:bg-amber-600 disabled:opacity-50">
+            className="rounded-lg bg-alerta text-white text-xs font-medium px-3 py-1.5 hover:bg-alerta/80 disabled:opacity-50">
             Pedir complemento
           </button>
           <button disabled={ocupado} onClick={() => decidir("reprovado")}
-            className="rounded-lg bg-red-600 text-white text-xs font-medium px-3 py-1.5 hover:bg-red-700 disabled:opacity-50">
+            className="rounded-lg bg-critico text-white text-xs font-medium px-3 py-1.5 hover:bg-critico/80 disabled:opacity-50">
             Reprovar
           </button>
         </>
       )}
       {aprovado && (
         <button disabled={ocupado} onClick={() => decidir("suspenso")}
-          className="rounded-lg bg-gray-500 text-white text-xs font-medium px-3 py-1.5 hover:bg-gray-600 disabled:opacity-50">
+          className="rounded-lg bg-superficie-2 text-texto border border-linha text-xs font-medium px-3 py-1.5 hover:bg-linha disabled:opacity-50">
           Suspender
         </button>
       )}

@@ -20,25 +20,25 @@ export default async function AdminAuditoria({ searchParams }: PageProps<"/admin
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold text-verde-escuro">Auditoria</h1>
-        <p className="text-sm text-foreground/60">Registro imutável de todas as ações: quem fez, o quê, quando e sobre qual imóvel/oportunidade.</p>
+        <h1 className="text-2xl font-semibold text-texto">Auditoria</h1>
+        <p className="text-sm text-texto-2">Registro imutável de todas as ações: quem fez, o quê, quando e sobre qual imóvel/oportunidade.</p>
       </div>
 
       <form className="flex gap-2 flex-wrap text-sm" method="get">
-        <select name="entidade" defaultValue={entidade ?? ""} className="rounded-lg border border-linha bg-white px-3 py-2">
+        <select name="entidade" defaultValue={entidade ?? ""} className="rounded-lg cartao px-3 py-2">
           <option value="">Todas as entidades</option>
           {ENTIDADES.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
         <input name="acao" defaultValue={acao ?? ""} placeholder="Filtrar por ação (ex.: publicado)"
-          className="rounded-lg border border-linha bg-white px-3 py-2" />
+          className="rounded-lg cartao px-3 py-2" />
         <button className="rounded-lg bg-verde text-white px-4 py-2 font-medium hover:bg-verde-escuro">Filtrar</button>
         {(entidade || acao) && <Link href="/admin/auditoria" className="px-3 py-2 text-verde hover:underline">limpar</Link>}
       </form>
 
-      <div className="rounded-xl border border-linha bg-white overflow-x-auto">
+      <div className="cartao overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase text-foreground/50 border-b border-linha">
+            <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
               <th className="px-4 py-3">Quando</th>
               <th className="px-4 py-3">Quem</th>
               <th className="px-4 py-3">Ação</th>
@@ -49,7 +49,7 @@ export default async function AdminAuditoria({ searchParams }: PageProps<"/admin
           <tbody className="divide-y divide-linha">
             {(logs ?? []).map((l) => (
               <tr key={l.id}>
-                <td className="px-4 py-2.5 text-xs tabular-nums text-foreground/60 whitespace-nowrap">
+                <td className="px-4 py-2.5 text-xs tabular-nums text-texto-2 whitespace-nowrap">
                   {new Date(l.created_at).toLocaleString("pt-BR")}
                 </td>
                 <td className="px-4 py-2.5">{(l.usuario as unknown as { nome: string } | null)?.nome ?? "sistema"}</td>
@@ -61,7 +61,7 @@ export default async function AdminAuditoria({ searchParams }: PageProps<"/admin
                 </td>
               </tr>
             ))}
-            {!logs?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-foreground/50">Nada encontrado com esse filtro.</td></tr>}
+            {!logs?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-texto-2">Nada encontrado com esse filtro.</td></tr>}
           </tbody>
         </table>
       </div>

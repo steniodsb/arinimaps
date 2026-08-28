@@ -20,16 +20,16 @@ export default async function AdminMensalidades() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-verde-escuro">Mensalidades</h1>
+        <h1 className="text-2xl font-semibold text-texto">Mensalidades</h1>
         <MensalidadeAcoes />
       </div>
 
       <section className="space-y-2">
-        <h2 className="font-semibold text-verde-escuro">Assinaturas por imóvel publicado</h2>
-        <div className="rounded-xl border border-linha bg-white overflow-x-auto">
+        <h2 className="font-semibold text-texto">Assinaturas por imóvel publicado</h2>
+        <div className="cartao overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-foreground/50 border-b border-linha">
+              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
                 <th className="px-4 py-3">Imóvel</th>
                 <th className="px-4 py-3">Valor mensal</th>
                 <th className="px-4 py-3">Vencimento</th>
@@ -41,29 +41,29 @@ export default async function AdminMensalidades() {
                 const prop = s.property as unknown as { codigo: string; titulo: string; status: string } | null;
                 return (
                   <tr key={s.id}>
-                    <td className="px-4 py-3">{prop?.titulo}<br /><span className="font-mono text-xs text-foreground/50">{prop?.codigo}</span></td>
+                    <td className="px-4 py-3">{prop?.titulo}<br /><span className="font-mono text-xs text-texto-2">{prop?.codigo}</span></td>
                     <td className="px-4 py-3"><ValorMensal id={s.id} valor={Number(s.valor_mensal)} /></td>
                     <td className="px-4 py-3">dia {s.dia_vencimento}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs rounded-full px-3 py-1 ${s.status === "inadimplente" ? "bg-red-100 text-red-800" : s.status === "ativa" ? "bg-verde/10 text-verde" : "bg-areia"}`}>
+                      <span className={`text-xs rounded-full px-3 py-1 ${s.status === "inadimplente" ? "bg-critico/15 text-critico" : s.status === "ativa" ? "bg-verde/10 text-verde" : "bg-superficie-2"}`}>
                         {SUB_LABEL[s.status]}
                       </span>
                     </td>
                   </tr>
                 );
               })}
-              {!subs?.length && <tr><td colSpan={4} className="px-4 py-8 text-center text-foreground/50">Nenhuma assinatura — nascem ao publicar um imóvel.</td></tr>}
+              {!subs?.length && <tr><td colSpan={4} className="px-4 py-8 text-center text-texto-2">Nenhuma assinatura — nascem ao publicar um imóvel.</td></tr>}
             </tbody>
           </table>
         </div>
       </section>
 
       <section className="space-y-2">
-        <h2 className="font-semibold text-verde-escuro">Faturas</h2>
-        <div className="rounded-xl border border-linha bg-white overflow-x-auto">
+        <h2 className="font-semibold text-texto">Faturas</h2>
+        <div className="cartao overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-foreground/50 border-b border-linha">
+              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
                 <th className="px-4 py-3">Imóvel</th>
                 <th className="px-4 py-3">Competência</th>
                 <th className="px-4 py-3">Valor</th>
@@ -81,13 +81,13 @@ export default async function AdminMensalidades() {
                     <td className="px-4 py-3 tabular-nums">{formatBRL(i.valor)}</td>
                     <td className="px-4 py-3">
                       {i.status}{i.pago_em ? ` em ${new Date(i.pago_em + "T12:00:00").toLocaleDateString("pt-BR")}` : ""}
-                      {i.gateway_id && <span className="text-xs text-foreground/50"> · Asaas</span>}
+                      {i.gateway_id && <span className="text-xs text-texto-2"> · Asaas</span>}
                     </td>
                     <td className="px-4 py-3">{i.status !== "paga" && <FaturaAcoes id={i.id} />}</td>
                   </tr>
                 );
               })}
-              {!invoices?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-foreground/50">Nenhuma fatura — use “Gerar faturas do mês”.</td></tr>}
+              {!invoices?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-texto-2">Nenhuma fatura — use “Gerar faturas do mês”.</td></tr>}
             </tbody>
           </table>
         </div>

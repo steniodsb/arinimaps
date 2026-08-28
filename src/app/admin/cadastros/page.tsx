@@ -21,18 +21,18 @@ export default async function AdminCadastros() {
     itens: { id: string; status: string; extra?: string; nome: string; telefone: string | null }[];
   }) => (
     <section className="space-y-3">
-      <h2 className="font-semibold text-verde-escuro">{titulo}</h2>
+      <h2 className="font-semibold text-texto">{titulo}</h2>
       {!itens.length ? (
-        <p className="text-sm text-foreground/50">Nenhum cadastro.</p>
+        <p className="text-sm text-texto-2">Nenhum cadastro.</p>
       ) : (
-        <div className="rounded-xl border border-linha bg-white divide-y divide-linha">
+        <div className="cartao divide-y divide-linha">
           {itens.map((i) => (
             <div key={i.id} className="px-4 py-3 flex items-center gap-4 flex-wrap">
               <div className="flex-1 min-w-48">
                 <p className="font-medium">{i.nome}</p>
-                <p className="text-xs text-foreground/60">{i.extra} {i.telefone && `· 📞 ${i.telefone}`}</p>
+                <p className="text-xs text-texto-2">{i.extra} {i.telefone && `· 📞 ${i.telefone}`}</p>
               </div>
-              <span className="text-xs rounded-full bg-areia px-3 py-1">{STATUS_LABEL[i.status] ?? i.status}</span>
+              <span className="text-xs rounded-full bg-superficie-2 px-3 py-1">{STATUS_LABEL[i.status] ?? i.status}</span>
               <CadastroBotoes alvo={alvo} id={i.id} status={i.status} />
             </div>
           ))}
@@ -43,7 +43,7 @@ export default async function AdminCadastros() {
 
   return (
     <div className="space-y-8 max-w-4xl">
-      <h1 className="text-2xl font-semibold text-verde-escuro">Cadastros</h1>
+      <h1 className="text-2xl font-semibold text-texto">Cadastros</h1>
       <Bloco
         titulo="Parceiros (imobiliárias, corretores, engenheiros)"
         alvo="partner"

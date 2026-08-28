@@ -30,7 +30,7 @@ export default async function AdminRelatorios() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <h1 className="text-2xl font-semibold text-verde-escuro">Relatórios</h1>
+      <h1 className="text-2xl font-semibold text-texto">Relatórios</h1>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -43,22 +43,22 @@ export default async function AdminRelatorios() {
           { l: "Mensalidades em aberto", v: formatBRL(somaFaturas(["aberta", "vencida"])) },
           { l: "Oportunidades perdidas", v: String(perdidas) },
         ].map((c) => (
-          <div key={c.l} className="rounded-xl border border-linha bg-white p-4">
-            <p className="text-xs text-foreground/60">{c.l}</p>
+          <div key={c.l} className="cartao p-4">
+            <p className="text-xs text-texto-2">{c.l}</p>
             <p className="text-lg font-semibold tabular-nums">{c.v}</p>
           </div>
         ))}
       </div>
 
-      <section className="rounded-xl border border-linha bg-white p-5 space-y-2">
-        <h2 className="font-semibold text-verde-escuro">Funil por etapa</h2>
+      <section className="cartao p-5 space-y-2">
+        <h2 className="font-semibold text-texto">Funil por etapa</h2>
         {[...ETAPAS, "perdido"].map((e) => {
           const n = porEtapa.get(e) ?? 0;
           return (
             <div key={e} className="flex items-center gap-3 text-sm">
-              <span className="w-40 shrink-0 text-foreground/70">{ETAPA_LABEL[e]}</span>
-              <div className="flex-1 h-5 bg-areia rounded overflow-hidden">
-                <div className={`h-full ${e === "perdido" ? "bg-red-300" : "bg-verde"}`}
+              <span className="w-40 shrink-0 text-texto-2">{ETAPA_LABEL[e]}</span>
+              <div className="flex-1 h-5 bg-superficie-2 rounded overflow-hidden">
+                <div className={`h-full ${e === "perdido" ? "bg-critico/60" : "bg-verde"}`}
                   style={{ width: `${(n / maxEtapa) * 100}%` }} />
               </div>
               <span className="w-8 text-right tabular-nums">{n}</span>
@@ -67,12 +67,12 @@ export default async function AdminRelatorios() {
         })}
       </section>
 
-      <section className="rounded-xl border border-linha bg-white p-5 space-y-1">
-        <h2 className="font-semibold text-verde-escuro mb-2">Leads por origem</h2>
+      <section className="cartao p-5 space-y-1">
+        <h2 className="font-semibold text-texto mb-2">Leads por origem</h2>
         {[...porOrigem.entries()].map(([origem, n]) => (
           <p key={origem} className="text-sm flex justify-between"><span className="capitalize">{origem}</span><span className="tabular-nums">{n}</span></p>
         ))}
-        {!porOrigem.size && <p className="text-sm text-foreground/50">Sem leads ainda.</p>}
+        {!porOrigem.size && <p className="text-sm text-texto-2">Sem leads ainda.</p>}
       </section>
     </div>
   );

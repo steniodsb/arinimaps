@@ -41,14 +41,14 @@ export default function ConfiguracoesForm({
     } else setErro(data.error ?? "Falha ao salvar.");
   }
 
-  const inputBase = "w-full rounded-lg border border-linha bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition disabled:bg-areia disabled:text-foreground/50";
+  const inputBase = "w-full rounded-lg cartao px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition disabled:bg-superficie-2 disabled:text-texto-2";
 
   function renderCampo(c: Campo) {
     const bloqueado = c.somenteDiretoria && !ehDiretoria;
     const v = valores[c.chave] ?? "";
     return (
       <div key={c.chave} className={c.tipo === "textarea" || c.tipo === "lista" ? "sm:col-span-2" : ""}>
-        <label className="block text-sm font-medium text-verde-escuro mb-1" htmlFor={c.chave}>
+        <label className="block text-sm font-medium text-texto mb-1" htmlFor={c.chave}>
           {c.rotulo}
           {c.somenteDiretoria && (
             <span className="ml-2 text-[10px] uppercase tracking-wide text-ouro-escuro">diretoria</span>
@@ -64,10 +64,10 @@ export default function ConfiguracoesForm({
               value={v} disabled={bloqueado} onChange={(e) => alterar(c.chave, e.target.value)} />
           )}
           {c.sufixo && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-foreground/45">{c.sufixo}</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-texto-2">{c.sufixo}</span>
           )}
         </div>
-        {c.ajuda && <p className="text-xs text-foreground/50 mt-1">{c.ajuda}</p>}
+        {c.ajuda && <p className="text-xs text-texto-2 mt-1">{c.ajuda}</p>}
       </div>
     );
   }
@@ -78,16 +78,16 @@ export default function ConfiguracoesForm({
         {GRUPOS.map((g) => (
           <button key={g.id} onClick={() => setAba(g.id)}
             className={`rounded-xl px-4 py-2.5 text-sm font-medium border transition flex items-center gap-2
-              ${aba === g.id ? "bg-verde text-white border-verde shadow-sm" : "border-linha bg-white hover:bg-areia"}`}>
+              ${aba === g.id ? "bg-verde text-white border-verde shadow-sm" : "border-linha bg-superficie hover:bg-superficie-2"}`}>
             <span>{g.icone}</span> {g.titulo}
           </button>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-linha bg-white p-6 space-y-5">
+      <div className="cartao p-6 space-y-5">
         <div>
-          <h2 className="font-semibold text-verde-escuro text-lg">{grupo.titulo}</h2>
-          <p className="text-sm text-foreground/60">{grupo.descricao}</p>
+          <h2 className="font-semibold text-texto text-lg">{grupo.titulo}</h2>
+          <p className="text-sm text-texto-2">{grupo.descricao}</p>
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
           {grupo.campos.map(renderCampo)}
@@ -100,7 +100,7 @@ export default function ConfiguracoesForm({
           {salvando ? "Salvando…" : sujo.size ? `Salvar ${sujo.size} alteração(ões)` : "Nada alterado"}
         </button>
         {msg && <span className="text-sm text-verde font-medium">{msg}</span>}
-        {erro && <span className="text-sm text-red-700">{erro}</span>}
+        {erro && <span className="text-sm text-critico">{erro}</span>}
       </div>
     </div>
   );

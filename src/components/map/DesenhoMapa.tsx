@@ -189,21 +189,21 @@ export default function DesenhoMapa({ onChange }: Props) {
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {(["poligono", "ponto"] as const).map((m) => (
           <button key={m} type="button" onClick={() => { setModo(m); limpar(); }}
-            className={`rounded-lg px-3 py-1.5 border ${modo === m ? "bg-verde text-white border-verde" : "border-linha hover:bg-areia"}`}>
+            className={`rounded-lg px-3 py-1.5 border ${modo === m ? "bg-verde text-white border-verde" : "border-linha hover:bg-superficie-2"}`}>
             {m === "poligono" ? "Desenhar área" : "Marcar ponto"}
           </button>
         ))}
-        <label className="rounded-lg px-3 py-1.5 border border-linha hover:bg-areia cursor-pointer">
+        <label className="rounded-lg px-3 py-1.5 border border-linha hover:bg-superficie-2 cursor-pointer">
           Subir KML/KMZ
           <input type="file" accept=".kml,.kmz" className="hidden"
             onChange={(e) => e.target.files?.[0] && importarArquivo(e.target.files[0])} />
         </label>
-        <button type="button" onClick={limpar} className="rounded-lg px-3 py-1.5 border border-linha hover:bg-areia">
+        <button type="button" onClick={limpar} className="rounded-lg px-3 py-1.5 border border-linha hover:bg-superficie-2">
           Limpar
         </button>
       </div>
       <div ref={containerRef} className="h-96 w-full rounded-xl overflow-hidden border border-linha" />
-      <p className="text-xs text-foreground/60 min-h-4">
+      <p className="text-xs text-texto-2 min-h-4">
         {msg || (pronto ? "Clique no mapa para desenhar a divisa do imóvel, ou suba o KML/KMZ da propriedade." : "Carregando mapa…")}
       </p>
     </div>

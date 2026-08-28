@@ -60,9 +60,9 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-foreground/60 mb-1">Raio de análise no entorno</label>
+          <label className="block text-xs text-texto-2 mb-1">Raio de análise no entorno</label>
           <select value={raio} onChange={(e) => setRaio(Number(e.target.value))}
-            className="rounded-lg border border-linha bg-white px-3 py-2 text-sm">
+            className="rounded-lg border border-linha bg-superficie-2 text-texto px-3 py-2 text-sm">
             {RAIOS.map((r) => (
               <option key={r} value={r}>{r === 0 ? "Só o imóvel" : `${r / 1000} km ao redor`}</option>
             ))}
@@ -71,7 +71,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
         <button onClick={consultar} disabled={rodando} className="btn-ouro px-6 py-2.5 disabled:opacity-60">
           {rodando ? "Consultando…" : "Executar consulta territorial"}
         </button>
-        {msg && <span className="text-sm text-foreground/70">{msg}</span>}
+        {msg && <span className="text-sm text-texto-2">{msg}</span>}
       </div>
 
       {dados?.imovel && (
@@ -82,9 +82,9 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
             ["Município", dados.imovel.municipio ?? "—"],
             ["Tipo", dados.imovel.tipo],
           ].map(([r, v]) => (
-            <div key={r} className="rounded-xl border border-linha bg-white p-3">
-              <p className="text-[11px] uppercase tracking-wide text-foreground/50">{r}</p>
-              <p className="font-semibold text-verde-escuro">{v}</p>
+            <div key={r} className="cartao p-3">
+              <p className="text-[11px] uppercase tracking-wide text-texto-2">{r}</p>
+              <p className="font-semibold text-texto">{v}</p>
             </div>
           ))}
         </div>
@@ -94,24 +94,24 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
         {ativas.map((f) => {
           const c = f.consulta;
           const estado = !c ? "sem consulta" : c.erro ? "indisponível" : c.quantidade > 0 ? `${c.quantidade} registro(s)` : "nada encontrado";
-          const cor = !c ? "bg-areia text-foreground/60"
+          const cor = !c ? "bg-superficie-2 text-texto-2"
             : c.erro ? "bg-alerta/15 text-alerta"
             : c.quantidade > 0 ? "bg-ouro/20 text-ouro-escuro" : "bg-verde/10 text-verde";
           const itens = c?.resultado?.itens ?? [];
           return (
-            <div key={f.id} className="rounded-xl border border-linha bg-white overflow-hidden">
+            <div key={f.id} className="cartao overflow-hidden">
               <button onClick={() => setAberta(aberta === f.id ? null : f.id)}
-                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-areia/50 transition">
+                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-superficie-2 transition">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{f.nome}</p>
-                  <p className="text-xs text-foreground/50">
+                  <p className="text-xs text-texto-2">
                     {f.orgao}
                     {c && !c.erro && ` · consultado em ${new Date(c.consultado_em).toLocaleString("pt-BR")}`}
                     {c?.raio_m ? ` · raio ${c.raio_m / 1000} km` : null}
                   </p>
                 </div>
                 <span className={`text-xs rounded-full px-3 py-1 font-medium shrink-0 ${cor}`}>{estado}</span>
-                {!!itens.length && <span className="text-foreground/40 text-xs">{aberta === f.id ? "▲" : "▼"}</span>}
+                {!!itens.length && <span className="text-texto-2 text-xs">{aberta === f.id ? "▲" : "▼"}</span>}
               </button>
 
               {aberta === f.id && (
@@ -124,9 +124,9 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                   {itens.map((i, n) => (
                     <div key={n} className="text-sm border-b border-linha/60 last:border-0 pb-1.5">
                       <p className="font-medium">{i.titulo}</p>
-                      {i.detalhe && <p className="text-foreground/70 text-xs">{i.detalhe}</p>}
+                      {i.detalhe && <p className="text-texto-2 text-xs">{i.detalhe}</p>}
                       {i.extra && (
-                        <p className="text-[11px] text-foreground/45">
+                        <p className="text-[11px] text-texto-2">
                           {Object.entries(i.extra).filter(([, v]) => v !== "" && v != null)
                             .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(" · ")}
                         </p>
@@ -134,7 +134,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                     </div>
                   ))}
                   {!itens.length && !c?.erro && (
-                    <p className="text-sm text-foreground/55">Nenhuma incidência encontrada nesta fonte para o raio consultado.</p>
+                    <p className="text-sm text-texto-2">Nenhuma incidência encontrada nesta fonte para o raio consultado.</p>
                   )}
                 </div>
               )}
@@ -144,16 +144,16 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
       </div>
 
       {!!pendentes.length && (
-        <div className="rounded-xl border border-linha bg-areia/50 p-4 space-y-2">
-          <p className="text-sm font-semibold text-verde-escuro">Fontes que dependem de importação de arquivo</p>
-          <p className="text-xs text-foreground/60">
+        <div className="rounded-xl border border-linha bg-superficie-2 p-4 space-y-2">
+          <p className="text-sm font-semibold text-texto">Fontes que dependem de importação de arquivo</p>
+          <p className="text-xs text-texto-2">
             Não têm consulta pública por polígono. Os dados precisam ser baixados do órgão e importados —
             enquanto isso, não entram no relatório.
           </p>
           <ul className="text-sm space-y-1">
             {pendentes.map((f) => (
               <li key={f.id} className="flex gap-2">
-                <span className="text-foreground/40">•</span>
+                <span className="text-texto-2">•</span>
                 <span><strong>{f.nome}</strong> ({f.orgao}) — {f.observacao}</span>
               </li>
             ))}
@@ -161,7 +161,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
         </div>
       )}
 
-      <p className="text-xs text-foreground/45">
+      <p className="text-xs text-texto-2">
         Dados oficiais dos órgãos citados, consultados na data indicada. Distâncias e interseções são
         cálculos do Arini Imóveis Brasil sobre a geometria do imóvel — não substituem certidão oficial.
       </p>

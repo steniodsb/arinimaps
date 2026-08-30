@@ -14,14 +14,21 @@ export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama
  *
  * 1. MapTiler (env NEXT_PUBLIC_MAPTILER_KEY) — licença própria para uso
  *    comercial, alta resolução até z20. Free tier cobre bem a região piloto.
- * 2. Esri World Imagery — alta resolução, mas os termos exigem uso via
- *    tecnologia Esri; serve para desenvolvimento e demonstração.
+ * 2. Esri World Imagery **Clarity** — alta resolução, mas os termos exigem
+ *    uso via tecnologia Esri; serve para desenvolvimento e demonstração.
  *
- * MAXZOOM 17 NÃO É CHUTE: medido em 26/08/2026, o Esri tem imagem até z17
- * em Iturama, Limeira do Oeste e União de Minas, e devolve placeholder
- * ("Map data not yet available") em z18. Declarar 19 fazia o mapa pedir
- * tiles inexistentes e a tela ficava cinza justamente no zoom do lote;
- * com 17, o MapLibre amplia o último tile real (overzoom).
+ * POR QUE CLARITY E NÃO O World_Imagery PADRÃO (server.arcgisonline.com):
+ * a cena que o mosaico padrão serve sobre Iturama / Limeira do Oeste /
+ * União de Minas foi capturada com nuvens — manchas brancas cobrindo lote
+ * e divisa, medido em 30/08/2026. O Clarity serve outra passagem, limpa,
+ * na mesma resolução. Acima de z13 ele responde 301 para o release do
+ * Wayback (23001 nesta região); é redirect permanente, o browser cacheia.
+ *
+ * MAXZOOM 17 NÃO É CHUTE: medido em 26/08/2026 e reconfirmado no Clarity
+ * em 30/08/2026 — há imagem até z17 nos três municípios e z18 devolve 404.
+ * Declarar 19 fazia o mapa pedir tiles inexistentes e a tela ficava cinza
+ * justamente no zoom do lote; com 17, o MapLibre amplia o último tile real
+ * (overzoom).
  */
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
@@ -35,7 +42,7 @@ export const SATELITE: RasterSourceSpecification = MAPTILER_KEY
     }
   : {
       type: "raster",
-      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      tiles: ["https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
       maxzoom: 17,
       attribution: "Imagery © Esri",

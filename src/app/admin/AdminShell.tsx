@@ -12,6 +12,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/shell/AppShell";
+import BotaoTema from "@/components/shell/BotaoTema";
 
 const GRUPOS: { titulo: string; itens: { href: string; rotulo: string; icone: string }[] }[] = [
   {
@@ -122,6 +123,7 @@ export default function AdminShell({
             <p className="text-sm font-medium text-texto truncate">{titulo}</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <BotaoTema />
             <Link href="/mapa" className="hidden sm:inline-block rounded-lg border border-linha px-3 py-1.5 text-xs text-texto-2 hover:text-texto hover:bg-superficie-2 transition">
               Ver mapa público
             </Link>

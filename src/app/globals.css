@@ -2,45 +2,90 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 /*
-  Arini Imóveis Brasil — tema escuro de inteligência territorial.
-  Fundo verde-carvão para a imagem de satélite ser a coisa mais clara da tela;
-  verde-vivo é o acento de ação e o dourado marca o que é da marca/relatório.
+  Arini Imóveis Brasil — dois temas na mesma marca.
+
+  Escuro (padrão): fundo verde-carvão para a imagem de satélite ser a coisa
+  mais clara da tela. Claro: papel esverdeado, para apresentação, projetor e
+  impressão do relatório.
+
+  Toda cor mora numa variável no :root e o @theme aponta para a variável (não
+  para o hex), então trocar o tema é trocar o atributo data-tema no <html> —
+  nenhuma classe do Tailwind precisa mudar.
 */
 :root {
   --fundo: #0A1310;
   --superficie: #121C17;
   --superficie-2: #17231D;
   --linha: #24352C;
+  --linha-forte: #2E4438;
   --texto: #E9F1EB;
   --texto-2: #8FA396;
+  --texto-3: #C7D6CC;
+
   --verde: #3FCF7F;
+  --verde-2: #2FA866;
   --verde-escuro: #0E2C1E;
   --ouro: #C9A14E;
+  --ouro-claro: #E4C77E;
+  --alerta: #E0B341;
+  --critico: #E06C5B;
+
+  --sombra-popup: rgba(0, 0, 0, 0.55);
+  --trilho: #2A3D33;
+  color-scheme: dark;
+}
+
+/*
+  Tema claro. O verde e o dourado ESCURECEM: #3FCF7F sobre branco não passa em
+  contraste de texto. Como `--fundo` clareia na mesma troca, um par como
+  `bg-verde text-fundo` continua legível — vira verde escuro com texto claro.
+*/
+:root[data-tema="claro"] {
+  --fundo: #F2F6F3;
+  --superficie: #FFFFFF;
+  --superficie-2: #E9F0EB;
+  --linha: #D3DFD7;
+  --linha-forte: #B9CBBF;
+  --texto: #0F1F18;
+  --texto-2: #5A6E62;
+  --texto-3: #33463C;
+
+  --verde: #17853F;
+  --verde-2: #0F6B31;
+  --verde-escuro: #E3F2E8;
+  --ouro: #8A6A1F;
+  --ouro-claro: #A8842F;
+  --alerta: #8A6A15;
+  --critico: #B23A2B;
+
+  --sombra-popup: rgba(15, 31, 24, 0.18);
+  --trilho: #C3D3C8;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-fundo: #0A1310;
-  --color-superficie: #121C17;
-  --color-superficie-2: #17231D;
-  --color-linha: #24352C;
-  --color-texto: #E9F1EB;
-  --color-texto-2: #8FA396;
+  --color-fundo: var(--fundo);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-linha: var(--linha);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
 
-  --color-verde: #3FCF7F;
-  --color-verde-2: #2FA866;
-  --color-verde-escuro: #0E2C1E;
-  --color-ouro: #C9A14E;
-  --color-ouro-claro: #E4C77E;
+  --color-verde: var(--verde);
+  --color-verde-2: var(--verde-2);
+  --color-verde-escuro: var(--verde-escuro);
+  --color-ouro: var(--ouro);
+  --color-ouro-claro: var(--ouro-claro);
 
-  --color-alerta: #E0B341;
-  --color-critico: #E06C5B;
+  --color-alerta: var(--alerta);
+  --color-critico: var(--critico);
 
   /* compatibilidade com as telas já escritas */
-  --color-background: #0A1310;
-  --color-foreground: #E9F1EB;
-  --color-areia: #17231D;
-  --color-ouro-escuro: #C9A14E;
-  --color-verde-vivo: #3FCF7F;
+  --color-background: var(--fundo);
+  --color-foreground: var(--texto);
+  --color-areia: var(--superficie-2);
+  --color-ouro-escuro: var(--ouro);
+  --color-verde-vivo: var(--verde);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -51,29 +96,37 @@ body {
   color: var(--texto);
 }
 
-::selection { background: rgba(63, 207, 127, 0.25); }
+::selection { background: color-mix(in srgb, var(--verde) 25%, transparent); }
 
 /* barra de rolagem discreta, no tom do tema */
-* { scrollbar-color: #2A3D33 transparent; scrollbar-width: thin; }
+* { scrollbar-color: var(--trilho) transparent; scrollbar-width: thin; }
 
 .maplibregl-popup-content {
   padding: 0;
   border-radius: 12px;
   overflow: hidden;
-  background: #121C17;
-  color: #E9F1EB;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: 0 12px 32px var(--sombra-popup);
 }
-.maplibregl-popup-tip { border-top-color: #121C17 !important; border-bottom-color: #121C17 !important; }
+.maplibregl-popup-tip {
+  border-top-color: var(--superficie) !important;
+  border-bottom-color: var(--superficie) !important;
+}
 .maplibregl-ctrl-group {
-  background: rgba(18, 28, 23, 0.92) !important;
-  border: 1px solid #24352C !important;
+  background: color-mix(in srgb, var(--superficie) 92%, transparent) !important;
+  border: 1px solid var(--linha) !important;
 }
-.maplibregl-ctrl-group button { filter: invert(1) hue-rotate(180deg) brightness(1.4); }
-.maplibregl-ctrl-attrib { background: rgba(10, 19, 16, 0.75) !important; }
-.maplibregl-ctrl-attrib a { color: #8FA396 !important; }
+/* os ícones da MapLibre são pretos: inverte só no escuro */
+:root:not([data-tema="claro"]) .maplibregl-ctrl-group button {
+  filter: invert(1) hue-rotate(180deg) brightness(1.4);
+}
+.maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--fundo) 75%, transparent) !important; }
+.maplibregl-ctrl-attrib a { color: var(--texto-2) !important; }
 
 /* ---------- botões ---------- */
+/* o verde e o dourado dos botões não seguem o tema: são a marca, e funcionam
+   sobre os dois fundos com o texto escuro que já têm */
 .btn-verde {
   display: inline-block;
   background: linear-gradient(180deg, #45D98A 0%, #2FA866 100%);
@@ -109,43 +162,48 @@ body {
 
 .btn-contorno {
   display: inline-block;
-  border: 1px solid #2E4438;
-  color: #E9F1EB;
+  border: 1px solid var(--linha-forte);
+  color: var(--texto);
   font-weight: 500;
   border-radius: 0.85rem;
   transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
-.btn-contorno:hover { transform: translateY(-1px); background: #17231D; border-color: #3FCF7F; }
+.btn-contorno:hover { transform: translateY(-1px); background: var(--superficie-2); border-color: var(--verde); }
 
 /* chip de filtro/camada do mapa */
 .chip {
-  border: 1px solid #2E4438;
-  background: rgba(18, 28, 23, 0.9);
-  color: #C7D6CC;
+  border: 1px solid var(--linha-forte);
+  background: color-mix(in srgb, var(--superficie) 90%, transparent);
+  color: var(--texto-3);
   border-radius: 999px;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-.chip:hover { background: #1D2C24; color: #E9F1EB; }
-.chip[data-ativo="true"] { background: #3FCF7F; color: #06140D; border-color: #3FCF7F; font-weight: 600; }
+.chip:hover { background: var(--superficie-2); color: var(--texto); }
+.chip[data-ativo="true"] { background: var(--verde); color: var(--fundo); border-color: var(--verde); font-weight: 600; }
 
 .cartao {
-  background: #121C17;
-  border: 1px solid #24352C;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
   border-radius: 1rem;
 }
 
 /* ---------- texto ---------- */
 .texto-ouro {
-  background: linear-gradient(100deg, #E4C77E 0%, #C9A14E 55%, #A8842F 100%);
+  background: linear-gradient(100deg, var(--ouro-claro) 0%, var(--ouro) 55%, color-mix(in srgb, var(--ouro) 80%, #000) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .texto-verde {
-  background: linear-gradient(100deg, #6FE7A6 0%, #3FCF7F 60%, #2FA866 100%);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--verde) 75%, #fff) 0%, var(--verde) 60%, var(--verde-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+:root[data-tema="claro"] .texto-verde {
+  background: linear-gradient(100deg, var(--verde) 0%, var(--verde-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* ---------- animações ---------- */

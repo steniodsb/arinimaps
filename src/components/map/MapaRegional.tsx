@@ -17,6 +17,7 @@ import Link from "next/link";
 import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 import Ferramentas from "@/components/map/Ferramentas";
+import { useTema } from "@/components/shell/BotaoTema";
 
 type ImovelProps = {
   id: string;
@@ -39,7 +40,11 @@ type Camada = {
   offset?: { lng: number; lat: number; leste_m: number; norte_m: number };
 };
 
-const ESTILO_RUAS = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+// a base vetorial acompanha o tema: dark-matter no escuro, positron no claro
+const ESTILO_RUAS = {
+  escuro: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  claro: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+} as const;
 
 const CORES_MATCH: unknown[] = [
   "match", ["get", "status"],
@@ -65,6 +70,7 @@ const norm = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export default function MapaRegional() {
+  const tema = useTema();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const dadosRef = useRef<GeoJSON.FeatureCollection | null>(null);
@@ -155,7 +161,7 @@ export default function MapaRegional() {
       if (cancelado || !containerRef.current) return;
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: ESTILO_RUAS,
+        style: ESTILO_RUAS[tema],
         center: CENTRO_REGIAO,
         zoom: 9,
         hash: "pos", // posição na URL → link compartilhável, estilo Google Maps
@@ -321,7 +327,7 @@ export default function MapaRegional() {
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tema]);
 
   // base ruas/satélite (a planta da cidade muda de cor para continuar legível)
   useEffect(() => {

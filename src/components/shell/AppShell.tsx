@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import BotaoTema from "./BotaoTema";
 
 export type Usuario = { nome: string; papel: string } | null;
 
@@ -142,6 +143,7 @@ export default function AppShell({
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <BotaoTema />
             <button className="w-9 h-9 rounded-lg text-texto-2 hover:text-texto hover:bg-superficie-2 transition relative"
               aria-label="Notificações">
               ◔<span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-ouro" />

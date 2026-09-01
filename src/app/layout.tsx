@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { TEMA_SCRIPT } from "@/components/shell/BotaoTema";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +27,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // o script do tema escreve data-tema aqui antes da hidratação; sem isto
+      // o React reclama de atributo divergente em toda navegação
+      suppressHydrationWarning
     >
+      <head>
+        {/* aplica o tema salvo antes da pintura, senão a tela pisca escura
+            antes de virar clara a cada navegação */}
+        <script dangerouslySetInnerHTML={{ __html: TEMA_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );

@@ -13,8 +13,8 @@
 | 1 | **Redeploy no Dokploy** — o último commit corrige o build e o mapa | painel Dokploy |
 | 2 | **Envs em runtime**: as 6 do Supabase + `NEXT_PUBLIC_SITE_URL` com o domínio real | Dokploy › Environment |
 | 3 | **Domínio**: comprar `arinimaps.com.br` ou apontar subdomínio na Cloudflare | — |
-| 4 | **Planta de Iturama** (a que estava aberta no seu AutoCAD): Salvar como → DXF e subir | Admin › Cartografia |
-| 5 | **Calibrar as plantas** que ficarem tortas (setas do teclado até bater no satélite) | Admin › Cartografia › Calibrar |
+| 4 | ~~**Planta de Iturama**: Salvar como → DXF e subir~~ **Feito em 09/09/2026** — DXF convertido com `scripts/converte-dxf.mjs` (84 mil linhas, com o conteúdo dos blocos de loteamento) e já no mapa, alinhada ao satélite sem calibração | — |
+| 5 | **Calibrar as plantas** que ficarem tortas (setas do teclado até bater no satélite) — Iturama conferida, não precisou | Admin › Cartografia › Calibrar |
 | 6 | **Preencher as configurações** (contatos, textos da home, mensalidade, comissão) | Admin › Configurações |
 | 7 | **Trocar as senhas** das 3 contas de teste e criar a conta real do Carlos | Admin › Usuários |
 | 8 | **Limpar os dados demo** antes de mostrar (Fazenda Boa Vista está "vendida" pelo teste E2E) | Admin › Imóveis |

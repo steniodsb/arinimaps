@@ -71,9 +71,25 @@ PostGIS habilitado; RLS em todas as tabelas; `audit_log` append-only (só servic
 
 ## Cartografia do cliente
 
-`../cartografia/` tem os DWG georreferenciados de Limeira do Oeste (4,5 MB) e
-União de Minas (0,7 MB), formato AC1032 (AutoCAD 2018+). Conversão na F2/F3:
-ODA File Converter → DXF → ogr2ogr → GeoJSON/raster tiles.
+`../cartografia/` tem os DWG georreferenciados de Limeira do Oeste (4,5 MB),
+União de Minas (0,7 MB) e Iturama (18 MB + DXF de 108 MB), formato AC1032
+(AutoCAD 2018+). Os três já estão no mapa como camada vetorial
+(`cartography_layers`, tipo `vector`, GeoJSON no bucket `media`).
+
+Conversão: DWG → DXF (LibreDWG `dwg2dxf` ou "Salvar como" no AutoCAD) e então
+
+```bash
+node --max-old-space-size=8192 scripts/converte-dxf.mjs "../cartografia/ITURAMA GEORREFERENCIADO.dxf" "Iturama" "Planta urbana — Iturama" sirgas 22
+```
+
+O script lê o model space **e o conteúdo dos blocos inseridos** (INSERT, com
+aninhamento, posição/escala/rotação), discretiza arcos, círculos e bulges de
+polilinha, e descarta o que não interessa ao mapa imobiliário: paper space,
+textos, hachuras, layers de paisagismo (regex `LAYERS_IGNORAR`) e blocos-símbolo
+(pequenos e repetidos — árvores, mesas, etiquetas de lote; ajuste por
+`SIMBOLO_MAX_M`/`SIMBOLO_MIN_INSERTS`/`IGNORAR`). `DRY=1` grava o GeoJSON ao lado
+do DXF sem subir nada. Datum: Iturama e União de Minas são SIRGAS 2000; Limeira
+do Oeste é SAD 69 (65 m de deslocamento). Calibração fina em Admin › Cartografia.
 
 ## Próximas fases
 

@@ -63,6 +63,13 @@ export const GRUPOS: Grupo[] = [
         ajuda: "Segunda parte, exibida em dourado." },
       { chave: "hero_subtitulo", rotulo: "Texto de apoio", tipo: "textarea",
         padrao: "Fazendas, sítios, lotes e casas com a divisa real da propriedade sobre o satélite, área medida, tour 3D e pontos de interesse ao redor. Toda negociação intermediada pela Arini Negócios Imobiliários." },
+      { chave: "sobre_titulo", rotulo: "Sobre a empresa — título", tipo: "texto", padrao: "Quem está por trás do mapa",
+        ajuda: "Título da seção institucional da página inicial." },
+      { chave: "sobre_texto", rotulo: "Sobre a empresa — texto", tipo: "textarea",
+        padrao: "A Arini Negócios Imobiliários atua no Pontal do Triângulo Mineiro com compra, venda e locação de imóveis rurais e urbanos. O Arini Imóveis Brasil nasceu da rotina da imobiliária: reunir num só lugar a divisa da propriedade, a cartografia oficial e as consultas aos órgãos públicos que hoje se fazem em dezenas de sites diferentes. Cada anúncio é verificado pela nossa equipe antes de ir ao ar, e toda negociação passa pela central da Arini.",
+        ajuda: "Parágrafo institucional. Quebra de linha vira parágrafo novo." },
+      { chave: "sobre_site", rotulo: "Site institucional", tipo: "texto", padrao: "https://arininegociosimobiliarios.com.br",
+        ajuda: "Link exibido na seção institucional e no rodapé. Deixe vazio para ocultar." },
     ],
   },
   {

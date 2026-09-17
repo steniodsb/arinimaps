@@ -12,7 +12,7 @@ import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup } from "map
 import { STATUS_CORES, CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
-import { deslocarGeoJSON } from "@/lib/geo/deslocar";
+import { transformarGeoJSON, centroDe, TRANSFORM_ZERO, type Transform } from "@/lib/geo/deslocar";
 import Link from "next/link";
 import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
@@ -37,8 +37,28 @@ type Camada = {
   id: string; nome: string; tipo: "raster" | "vector";
   tiles?: string; geojson?: string;
   min_zoom: number; max_zoom: number; opacidade: number;
-  offset?: { lng: number; lat: number; leste_m: number; norte_m: number };
+  /** retângulo da planta em graus [oeste, sul, leste, norte]; null em planta antiga */
+  bbox?: [number, number, number, number] | null;
+  layers_ocultos?: string[];
+  transform?: Transform;
 };
+
+/**
+ * Cores da planta urbana sobre cada base.
+ *
+ * O traço é desenhado DUAS vezes: um contorno escuro embaixo e a linha clara em
+ * cima. Com uma linha só, a divisa de lote sumia — sobre telhado de cerâmica
+ * claro o amarelo some, e sobre asfalto o traço escuro some. O contorno garante
+ * contraste contra os dois, que é como carta cadastral é impressa há décadas.
+ */
+const CARTO_CORES = {
+  satelite: { linha: "#FFE9A8", contorno: "#1A1204" },
+  ruas: { linha: "#8FB3A1", contorno: "#05100C" },
+} as const;
+
+/** espessura por zoom: fina na visão da cidade, cheia no zoom do lote */
+const CARTO_LARGURA = ["interpolate", ["linear"], ["zoom"], 12, 0.5, 15, 1.1, 17, 1.8, 19, 2.6];
+const CARTO_CONTORNO = ["interpolate", ["linear"], ["zoom"], 12, 1.4, 15, 2.4, 17, 3.4, 19, 4.6];
 
 // a base vetorial acompanha o tema: dark-matter no escuro, positron no claro
 const ESTILO_RUAS = {
@@ -78,6 +98,10 @@ export default function MapaRegional() {
   const popupRef = useRef<Popup | null>(null);
   const hoverIdRef = useRef<string | null>(null);
   const cartoVetorIdsRef = useRef<string[]>([]);
+  // plantas urbanas conhecidas mas ainda não baixadas, e as que já entraram
+  const plantasRef = useRef<Camada[]>([]);
+  const plantasCarregadasRef = useRef<Set<string>>(new Set());
+  const baseRef = useRef<"ruas" | "satelite">("ruas");
 
   const [base, setBase] = useState<"ruas" | "satelite">("ruas");
   const [selecionado, setSelecionado] = useState<ImovelProps | null>(null);
@@ -94,6 +118,77 @@ export default function MapaRegional() {
   const [pronto, setPronto] = useState(false);
   const [lista, setLista] = useState<ImovelProps[]>([]);
   const [mapaPronto, setMapaPronto] = useState<MLMap | null>(null);
+
+  /**
+   * Baixa e desenha as plantas urbanas que a tela está pedindo — e só essas.
+   *
+   * POR QUE ISSO EXISTE. Antes, abrir /mapa baixava as três plantas do piloto
+   * (22 MB, sendo 19 MB só de Iturama) dentro do `load`, em série, antes de
+   * desenhar imóvel nenhum. Na visão regional, em z9, nenhuma delas chega a ser
+   * desenhada: a planta só entra a partir do zoom da cidade. Eram 22 MB para
+   * mostrar zero linha — invisível na fibra daqui, meio minuto num 4G do
+   * Pontal, que é onde o corretor de fato abre o mapa.
+   *
+   * Agora a planta é buscada quando as DUAS coisas valem: o zoom passou do
+   * mínimo da camada e o retângulo dela encosta na tela. Cada uma entra uma vez
+   * só (`plantasCarregadasRef`); planta antiga sem `bbox` entra pelo zoom, como
+   * antes, em vez de ser descartada por um retângulo que não existe.
+   */
+  const garantirPlantas = useCallback(async () => {
+    const map = mapRef.current;
+    if (!map || !plantasRef.current.length) return;
+
+    const z = map.getZoom();
+    const tela = map.getBounds();
+    const pendentes = plantasRef.current.filter((c) => {
+      if (plantasCarregadasRef.current.has(c.id)) return false;
+      if (z < c.min_zoom) return false;
+      if (!c.bbox) return true;
+      const [x0, y0, x1, y1] = c.bbox;
+      return !(x1 < tela.getWest() || x0 > tela.getEast() || y1 < tela.getSouth() || y0 > tela.getNorth());
+    });
+    if (!pendentes.length) return;
+
+    // marca antes de buscar: `moveend` dispara de novo enquanto o arquivo vem
+    for (const c of pendentes) plantasCarregadasRef.current.add(c.id);
+
+    await Promise.all(pendentes.map(async (c) => {
+      const bruto = await fetch(c.geojson!).then((r) => r.json()).catch(() => null);
+      if (!bruto || !mapRef.current || mapRef.current.getSource(`carto-${c.id}`)) {
+        if (!bruto) plantasCarregadasRef.current.delete(c.id); // deixa tentar de novo
+        return;
+      }
+      // calibração: giro, escala e deslocamento em torno do centro da planta,
+      // mais as camadas de CAD que o operador escondeu
+      const dados = transformarGeoJSON(
+        bruto, centroDe(bruto), c.transform ?? TRANSFORM_ZERO, c.layers_ocultos ?? []
+      );
+      const m = mapRef.current;
+      const cores = CARTO_CORES[baseRef.current];
+      // abaixo das divisas de município e dos imóveis: a planta é fundo, não dado
+      const antesDe = m.getLayer("municipios-linha") ? "municipios-linha" : undefined;
+      m.addSource(`carto-${c.id}`, { type: "geojson", data: dados });
+      m.addLayer({
+        id: `carto-${c.id}-contorno`, type: "line", source: `carto-${c.id}`,
+        minzoom: c.min_zoom,
+        paint: {
+          "line-color": cores.contorno,
+          "line-width": CARTO_CONTORNO as never,
+          "line-opacity": 0.45,
+        },
+      }, antesDe);
+      m.addLayer({
+        id: `carto-${c.id}`, type: "line", source: `carto-${c.id}`,
+        minzoom: c.min_zoom,
+        paint: {
+          "line-color": cores.linha,
+          "line-width": CARTO_LARGURA as never,
+          "line-opacity": Math.min(0.95, c.opacidade),
+        },
+      }, antesDe);
+      cartoVetorIdsRef.current.push(`carto-${c.id}`, `carto-${c.id}-contorno`);
+    }));
+  }, []);
 
   // ---------- filtro compartilhado (lista + mapa) ----------
   const filtrar = useCallback((tipo: string, faixaIdx: number, q: string) => {
@@ -199,7 +294,12 @@ export default function MapaRegional() {
         map.addSource("satelite", SATELITE);
         map.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: "none" } });
 
-        // cartografia urbana: raster (tiles) e vetorial (plantas DWG convertidas)
+        // Cartografia urbana. O raster entra agora — tile só é baixado quando
+        // aparece na tela, o MapLibre cuida disso. A planta VETORIAL é um
+        // arquivo único e grande (Iturama tem 19 MB), então ela fica guardada
+        // aqui e só é buscada quando a cidade entra na tela no zoom de lote —
+        // ver `garantirPlantas`, chamada no fim da carga e a cada movimento.
+        plantasRef.current = (cartografia as Camada[]).filter((c) => c.tipo === "vector" && c.geojson);
         for (const c of cartografia as Camada[]) {
           if (c.tipo === "raster" && c.tiles) {
             map.addSource(`carto-${c.id}`, {
@@ -210,24 +310,6 @@ export default function MapaRegional() {
               id: `carto-${c.id}`, type: "raster", source: `carto-${c.id}`,
               paint: { "raster-opacity": c.opacidade },
             });
-          } else if (c.tipo === "vector" && c.geojson) {
-            // carrega e aplica o ajuste fino da calibração antes de desenhar
-            const bruto = await fetch(c.geojson).then((r) => r.json()).catch(() => null);
-            if (!bruto) continue;
-            const dados = deslocarGeoJSON(bruto, c.offset?.lng ?? 0, c.offset?.lat ?? 0);
-            map.addSource(`carto-${c.id}`, { type: "geojson", data: dados });
-            map.addLayer({
-              id: `carto-${c.id}`, type: "line", source: `carto-${c.id}`,
-              minzoom: 12,
-              paint: {
-                // cor trocada conforme a base ativa (ver efeito de `base`):
-                // sobre o satélite a planta precisa ser clara para aparecer
-                "line-color": "#6D8578",
-                "line-width": ["interpolate", ["linear"], ["zoom"], 12, 0.4, 15, 0.9, 18, 1.6] as never,
-                "line-opacity": Math.min(0.9, c.opacidade),
-              },
-            });
-            cartoVetorIdsRef.current.push(`carto-${c.id}`);
           }
         }
 
@@ -318,6 +400,11 @@ export default function MapaRegional() {
 
         setLista((imoveis.features ?? []).map((f: GeoJSON.Feature) => f.properties as ImovelProps));
         setPronto(true);
+
+        // planta urbana entra sob demanda: uma vez agora (o link pode já vir no
+        // zoom da cidade, pelo hash da URL) e depois a cada parada do mapa
+        map.on("moveend", () => void garantirPlantas());
+        void garantirPlantas();
       });
     })();
 
@@ -331,12 +418,14 @@ export default function MapaRegional() {
 
   // base ruas/satélite (a planta da cidade muda de cor para continuar legível)
   useEffect(() => {
+    baseRef.current = base; // planta que chegar depois já nasce na cor certa
     const map = mapRef.current;
     if (!map || !pronto || !map.getLayer("satelite")) return;
     map.setLayoutProperty("satelite", "visibility", base === "satelite" ? "visible" : "none");
+    const cores = CARTO_CORES[base];
     for (const id of cartoVetorIdsRef.current) {
       if (map.getLayer(id)) {
-        map.setPaintProperty(id, "line-color", base === "satelite" ? "#FFE9A8" : "#6D8578");
+        map.setPaintProperty(id, "line-color", id.endsWith("-contorno") ? cores.contorno : cores.linha);
       }
     }
   }, [base, pronto]);

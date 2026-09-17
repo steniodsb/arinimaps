@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import AdicionarMunicipio from "./AdicionarMunicipio";
+import ConfereSatelite from "./ConfereSatelite";
 
 export default async function AdminRegioes() {
   const admin = supabaseAdmin();
@@ -39,6 +40,8 @@ export default async function AdminRegioes() {
           ))}
         </div>
       </section>
+
+      <ConfereSatelite />
     </div>
   );
 }

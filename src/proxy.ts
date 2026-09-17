@@ -29,5 +29,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp)).*)"],
+  // `api/admin/cartografia` fica de fora de propósito: o proxy precisa segurar o
+  // corpo inteiro da requisição para renovar a sessão, e planta de cidade passa
+  // de 100 MB. A rota confere a sessão por conta própria (ator()) e lê o arquivo
+  // em fluxo, sem nunca carregá-lo inteiro na memória.
+  matcher: [
+    "/((?!api/admin/cartografia|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp)).*)",
+  ],
 };

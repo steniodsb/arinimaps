@@ -1,13 +1,32 @@
 import "server-only";
-import DxfParser from "dxf-parser";
 import proj4 from "proj4";
 
 /**
- * Converte planta CAD (DXF) georreferenciada em GeoJSON WGS84.
+ * Leitor de planta CAD (DXF) → GeoJSON WGS84.
  *
- * As plantas da região vêm em UTM SIRGAS 2000 (zona 22S para o Pontal do
- * Triângulo). A zona é detectada pela faixa de coordenadas — se o arquivo
- * já vier em graus, passa direto.
+ * POR QUE NÃO USA MAIS A BIBLIOTECA dxf-parser
+ * -------------------------------------------
+ * O DXF de Iturama tem 103 MB e 13,5 milhões de linhas. O caminho antigo era
+ * `arquivo.text()` (103 MB viram ~206 MB de string UTF-16) e depois
+ * `parseSync`, que monta a árvore inteira do arquivo em memória. No servidor
+ * isso estoura a RAM do contêiner: o processo morre, o browser recebe resposta
+ * sem corpo e a tela mostrava "Falha no envio." sem nenhum motivo.
+ *
+ * Medido nesse arquivo em 10/09/2026: das 107 mil entidades, 55.489 são MTEXT,
+ * 10.278 TEXT e 7.665 DIMENSION — a maior parte do peso é anotação que não vai
+ * para o mapa. A geometria útil são ~28 mil LINE/LWPOLYLINE mais arcos e
+ * círculos.
+ *
+ * Este leitor consome o arquivo em fluxo, par de códigos por par de códigos, e
+ * só retém coordenada. O texto passa e é descartado sem nunca virar objeto.
+ *
+ * DETECÇÃO DO SISTEMA DE COORDENADAS POR MEDIANA
+ * ----------------------------------------------
+ * O mesmo arquivo tem entidades com coordenada corrompida (X indo de
+ * -7.242.087 a 8.289.478 — 15 milhões de metros de extensão, impossível numa
+ * planta urbana). A média das primeiras 500 coordenadas, que era o critério
+ * antigo, é arrastada por esses pontos e faz o arquivo inteiro ser recusado
+ * como "não georreferenciado". A mediana ignora o extremo por construção.
  */
 
 const ZONAS: Record<number, string> = {
@@ -22,97 +41,357 @@ export type ResultadoDxf = {
   linhas: number;
   layersCad: number;
   bbox: [number, number, number, number];
+  centro: [number, number];
   zona: number | "graus";
+  diagnostico: {
+    entidadesLidas: number;
+    porTipo: Record<string, number>;
+    geometriasPorTipo: Record<string, number>;
+    ignoradasSemGeometria: number;
+    blocosExpandidos: number;
+    blocosNaoResolvidos: number;
+    pontosDescartados: number;
+    layers: { nome: string; linhas: number }[];
+    segundos: number;
+  };
 };
+
+/** Erro de leitura já no formato que a tela mostra (mensagem + motivo + saída). */
+export class ErroDxf extends Error {
+  motivo: string;
+  solucao: string;
+  detalhes: Record<string, unknown>;
+  constructor(mensagem: string, motivo: string, solucao: string, detalhes: Record<string, unknown> = {}) {
+    super(mensagem);
+    this.name = "ErroDxf";
+    this.motivo = motivo;
+    this.solucao = solucao;
+    this.detalhes = detalhes;
+  }
+}
+
+type Poli = { layer: string; pts: [number, number][] };
 
 const arred = (n: number) => Math.round(n * 1e6) / 1e6;
 const ehUtmPlausivel = (x: number, y: number) =>
   x > 100_000 && x < 900_000 && y > 6_000_000 && y < 10_000_000;
-const ehGrausBrasil = (x: number, y: number) =>
-  x > -75 && x < -33 && y > -34 && y < 6;
+const ehGrausBrasil = (x: number, y: number) => x > -75 && x < -33 && y > -34 && y < 6;
 
-export function converterDxf(conteudo: string, zonaForcada?: number): ResultadoDxf {
-  const dxf = new DxfParser().parseSync(conteudo) as {
-    entities?: { type: string; layer?: string; vertices?: { x: number; y: number }[]; closed?: boolean; shape?: boolean }[];
-  };
-  const entidades = dxf?.entities ?? [];
-  if (!entidades.length) throw new Error("DXF sem entidades — confira a exportação do CAD.");
+/** Tipos que carregam geometria de linha. O resto é anotação e não vai ao mapa. */
+const TIPOS_GEOMETRICOS = new Set([
+  "LINE", "LWPOLYLINE", "POLYLINE", "VERTEX", "SEQEND", "ARC", "CIRCLE", "SPLINE", "SOLID", "INSERT",
+]);
 
-  // amostra para descobrir o sistema de coordenadas
-  const amostra: [number, number][] = [];
-  for (const e of entidades) {
-    for (const v of e.vertices ?? []) {
-      if (Number.isFinite(v.x) && Number.isFinite(v.y)) amostra.push([v.x, v.y]);
-      if (amostra.length > 500) break;
-    }
-    if (amostra.length > 500) break;
+function mediana(v: number[]): number {
+  if (!v.length) return NaN;
+  const s = [...v].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+/** Lê o fluxo e devolve linha a linha, sem carregar o arquivo inteiro. */
+async function* linhasDo(stream: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  const dec = new TextDecoder("utf-8", { fatal: false });
+  const leitor = stream.getReader();
+  let resto = "";
+  for (;;) {
+    const { done, value } = await leitor.read();
+    if (done) break;
+    const texto = resto + dec.decode(value, { stream: true });
+    const partes = texto.split("\n");
+    resto = partes.pop() ?? "";
+    for (const p of partes) yield p;
   }
-  if (!amostra.length) throw new Error("DXF sem coordenadas utilizáveis.");
+  if (resto) yield resto;
+}
 
-  const mediaX = amostra.reduce((s, p) => s + p[0], 0) / amostra.length;
-  const mediaY = amostra.reduce((s, p) => s + p[1], 0) / amostra.length;
+type Entidade = {
+  tipo: string;
+  layer: string;
+  xs: number[];
+  ys: number[];
+  x2: number | null;
+  y2: number | null;
+  raio: number;
+  ang0: number;
+  ang1: number;
+  flags: number;
+  escalaX: number;
+  escalaY: number;
+  rotacao: number;
+  nomeBloco: string | null;
+};
+
+const novaEntidade = (tipo: string): Entidade => ({
+  tipo, layer: "0", xs: [], ys: [], x2: null, y2: null,
+  raio: 0, ang0: 0, ang1: 360, flags: 0, escalaX: 1, escalaY: 1, rotacao: 0, nomeBloco: null,
+});
+
+function tesselarArco(cx: number, cy: number, r: number, a0: number, a1: number): [number, number][] {
+  const varre = ((a1 - a0 + 360) % 360) || 360;
+  const passo = Math.max(6, Math.min(72, Math.ceil(varre / 6)));
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= passo; i++) {
+    const a = ((a0 + (varre * i) / passo) * Math.PI) / 180;
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  return pts;
+}
+
+export async function converterDxf(
+  stream: ReadableStream<Uint8Array>,
+  zonaForcada?: number
+): Promise<ResultadoDxf> {
+  const inicio = Date.now();
+
+  const saida: Poli[] = [];
+  const blocos = new Map<string, { base: [number, number]; polis: Poli[] }>();
+  const insercoes: Entidade[] = [];
+
+  const porTipo: Record<string, number> = {};
+  const geometriasPorTipo: Record<string, number> = {};
+  let entidadesLidas = 0, ignoradasSemGeometria = 0, blocosNaoResolvidos = 0;
+
+  let secao: string | null = null;
+  let esperandoNomeSecao = false;
+  let blocoAtual: { nome: string; base: [number, number]; polis: Poli[] } | null = null;
+  let esperandoNomeBloco = false;
+  let ent: Entidade | null = null;
+  let polylineAberta: Poli | null = null;
+  let polylineFechada = false;
+  let codigo: string | null = null;
+
+  const destino = () => (blocoAtual ? blocoAtual.polis : saida);
+  const empurrar = (layer: string, pts: [number, number][], tipo: string) => {
+    if (pts.length < 2) return;
+    destino().push({ layer, pts });
+    geometriasPorTipo[tipo] = (geometriasPorTipo[tipo] ?? 0) + 1;
+  };
+
+  const fecharEntidade = () => {
+    if (!ent) return;
+    const e = ent;
+    ent = null;
+    if (!TIPOS_GEOMETRICOS.has(e.tipo)) { ignoradasSemGeometria++; return; }
+
+    const pares = (): [number, number][] => {
+      const n = Math.min(e.xs.length, e.ys.length);
+      const p: [number, number][] = [];
+      for (let i = 0; i < n; i++) p.push([e.xs[i], e.ys[i]]);
+      return p;
+    };
+
+    switch (e.tipo) {
+      case "LINE": {
+        if (e.xs.length && e.ys.length && e.x2 !== null && e.y2 !== null) {
+          empurrar(e.layer, [[e.xs[0], e.ys[0]], [e.x2, e.y2]], "LINE");
+        }
+        break;
+      }
+      case "LWPOLYLINE": {
+        const p = pares();
+        if (e.flags & 1 && p.length > 2) p.push(p[0]);
+        empurrar(e.layer, p, "LWPOLYLINE");
+        break;
+      }
+      case "SPLINE": {
+        // aproximação pelos pontos de controle: melhor que descartar a feição
+        empurrar(e.layer, pares(), "SPLINE");
+        break;
+      }
+      case "SOLID": {
+        const p = pares();
+        if (p.length >= 3) { p.push(p[0]); empurrar(e.layer, p, "SOLID"); }
+        break;
+      }
+      case "CIRCLE": {
+        if (e.raio > 0 && e.xs.length && e.ys.length) {
+          empurrar(e.layer, tesselarArco(e.xs[0], e.ys[0], e.raio, 0, 360), "CIRCLE");
+        }
+        break;
+      }
+      case "ARC": {
+        if (e.raio > 0 && e.xs.length && e.ys.length) {
+          empurrar(e.layer, tesselarArco(e.xs[0], e.ys[0], e.raio, e.ang0, e.ang1), "ARC");
+        }
+        break;
+      }
+      case "POLYLINE": {
+        polylineAberta = { layer: e.layer, pts: [] };
+        polylineFechada = Boolean(e.flags & 1);
+        break;
+      }
+      case "VERTEX": {
+        if (polylineAberta && e.xs.length && e.ys.length) polylineAberta.pts.push([e.xs[0], e.ys[0]]);
+        break;
+      }
+      case "SEQEND": {
+        if (polylineAberta) {
+          const p = polylineAberta.pts;
+          if (polylineFechada && p.length > 2) p.push(p[0]);
+          empurrar(polylineAberta.layer, p, "POLYLINE");
+          polylineAberta = null;
+        }
+        break;
+      }
+      case "INSERT": {
+        if (e.nomeBloco && e.xs.length && e.ys.length) insercoes.push(e);
+        break;
+      }
+    }
+  };
+
+  for await (const bruta of linhasDo(stream)) {
+    const l = bruta.trim();
+    if (codigo === null) { codigo = l; continue; }
+    const cod = codigo; const val = l; codigo = null;
+
+    if (cod === "0") {
+      fecharEntidade();
+      if (val === "SECTION") { esperandoNomeSecao = true; continue; }
+      if (val === "ENDSEC") { secao = null; blocoAtual = null; continue; }
+      if (secao === "BLOCKS") {
+        if (val === "BLOCK") { esperandoNomeBloco = true; blocoAtual = { nome: "", base: [0, 0], polis: [] }; continue; }
+        if (val === "ENDBLK") {
+          if (blocoAtual?.nome) blocos.set(blocoAtual.nome, { base: blocoAtual.base, polis: blocoAtual.polis });
+          blocoAtual = null;
+          continue;
+        }
+      }
+      if (secao === "ENTITIES" || (secao === "BLOCKS" && blocoAtual)) {
+        entidadesLidas++;
+        porTipo[val] = (porTipo[val] ?? 0) + 1;
+        ent = novaEntidade(val);
+      }
+      continue;
+    }
+
+    if (esperandoNomeSecao && cod === "2") { secao = val; esperandoNomeSecao = false; continue; }
+    if (esperandoNomeBloco && cod === "2" && blocoAtual) { blocoAtual.nome = val; esperandoNomeBloco = false; continue; }
+    if (!ent) {
+      // ponto-base do BLOCK vem antes da primeira entidade dele
+      if (blocoAtual && cod === "10") blocoAtual.base[0] = Number(val) || 0;
+      if (blocoAtual && cod === "20") blocoAtual.base[1] = Number(val) || 0;
+      continue;
+    }
+
+    switch (cod) {
+      case "8": ent.layer = val || "0"; break;
+      case "2": if (ent.tipo === "INSERT") ent.nomeBloco = val; break;
+      case "10": { const v = Number(val); if (Number.isFinite(v)) ent.xs.push(v); break; }
+      case "20": { const v = Number(val); if (Number.isFinite(v)) ent.ys.push(v); break; }
+      case "11": { const v = Number(val); if (Number.isFinite(v)) ent.x2 = v; break; }
+      case "21": { const v = Number(val); if (Number.isFinite(v)) ent.y2 = v; break; }
+      case "40": { const v = Number(val); if (Number.isFinite(v)) ent.raio = v; break; }
+      case "41": { const v = Number(val); if (Number.isFinite(v) && v !== 0) ent.escalaX = v; break; }
+      case "42": { const v = Number(val); if (Number.isFinite(v) && v !== 0) ent.escalaY = v; break; }
+      case "50": { const v = Number(val); if (Number.isFinite(v)) { if (ent.tipo === "INSERT") ent.rotacao = v; else ent.ang0 = v; } break; }
+      case "51": { const v = Number(val); if (Number.isFinite(v)) ent.ang1 = v; break; }
+      case "70": { const v = Number(val); if (Number.isFinite(v)) ent.flags = v; break; }
+    }
+  }
+  fecharEntidade();
+
+  // ---- blocos posicionados (INSERT): desenho do bloco levado ao lugar dele ----
+  let blocosExpandidos = 0;
+  for (const ins of insercoes) {
+    const b = blocos.get(ins.nomeBloco as string);
+    if (!b) { blocosNaoResolvidos++; continue; }
+    const cos = Math.cos((ins.rotacao * Math.PI) / 180);
+    const sen = Math.sin((ins.rotacao * Math.PI) / 180);
+    const ix = ins.xs[0], iy = ins.ys[0];
+    for (const p of b.polis) {
+      const pts = p.pts.map(([x, y]): [number, number] => {
+        const dx = (x - b.base[0]) * ins.escalaX;
+        const dy = (y - b.base[1]) * ins.escalaY;
+        return [ix + dx * cos - dy * sen, iy + dx * sen + dy * cos];
+      });
+      saida.push({ layer: p.layer, pts });
+    }
+    if (b.polis.length) blocosExpandidos++;
+  }
+
+  if (!saida.length) {
+    const dominantes = Object.entries(porTipo).sort((a, b) => b[1] - a[1]).slice(0, 3)
+      .map(([t, n]) => `${t}: ${n.toLocaleString("pt-BR")}`).join(", ");
+    throw new ErroDxf(
+      "O DXF não tem nenhuma linha, polilinha, arco ou círculo aproveitável.",
+      `Foram lidas ${entidadesLidas.toLocaleString("pt-BR")} entidades e todas são de anotação (${dominantes}).`,
+      "No CAD, confirme que as quadras e lotes estão desenhados como linhas ou polilinhas — e não só como texto, cota ou hachura — e exporte de novo.",
+      { porTipo, entidadesLidas }
+    );
+  }
+
+  // ---- sistema de coordenadas pela MEDIANA (imune a coordenada corrompida) ----
+  const amostraX: number[] = [], amostraY: number[] = [];
+  const salto = Math.max(1, Math.floor(saida.length / 4000));
+  for (let i = 0; i < saida.length; i += salto) {
+    const p = saida[i].pts[0];
+    if (p) { amostraX.push(p[0]); amostraY.push(p[1]); }
+  }
+  const medX = mediana(amostraX), medY = mediana(amostraY);
 
   let zona: number | "graus";
   let transformar: (p: [number, number]) => [number, number];
-  let valido: (p: [number, number]) => boolean;
+  let plausivel: (p: [number, number]) => boolean;
 
-  if (ehGrausBrasil(mediaX, mediaY)) {
+  if (ehGrausBrasil(medX, medY)) {
     zona = "graus";
     transformar = (p) => p;
-    valido = (p) => ehGrausBrasil(p[0], p[1]);
-  } else if (ehUtmPlausivel(mediaX, mediaY)) {
-    // zona informada, ou deduzida testando qual devolve longitude no Brasil
+    plausivel = (p) => ehGrausBrasil(p[0], p[1]) && Math.abs(p[0] - medX) < 3 && Math.abs(p[1] - medY) < 3;
+  } else if (ehUtmPlausivel(medX, medY)) {
     zona = zonaForcada ?? 22;
     if (!zonaForcada) {
       for (const z of [22, 23, 21, 24]) {
-        const [lng, lat] = proj4(ZONAS[z], "EPSG:4326", [mediaX, mediaY]);
+        const [lng, lat] = proj4(ZONAS[z], "EPSG:4326", [medX, medY]) as [number, number];
         if (ehGrausBrasil(lng, lat)) { zona = z; break; }
       }
     }
     const def = ZONAS[zona as number];
     transformar = (p) => proj4(def, "EPSG:4326", p) as [number, number];
-    valido = (p) => ehUtmPlausivel(p[0], p[1]);
+    // 150 km da mediana: uma planta urbana não passa disso; o que passa é lixo
+    plausivel = (p) =>
+      ehUtmPlausivel(p[0], p[1]) && Math.abs(p[0] - medX) < 150_000 && Math.abs(p[1] - medY) < 150_000;
   } else {
-    throw new Error(
-      "O DXF não parece georreferenciado (coordenadas fora de UTM e de graus). " +
-      "No CAD, verifique se o desenho está em coordenadas do terreno."
+    throw new ErroDxf(
+      "O desenho não está em coordenadas de terreno.",
+      `A mediana das coordenadas é X ${medX.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} / Y ${medY.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} — fora de UTM (100.000 a 900.000 / 6 a 10 milhões) e fora de graus.`,
+      "O arquivo provavelmente está em coordenadas locais do CAD. Georreferencie o desenho (ou use a planta original georreferenciada) e exporte o DXF de novo.",
+      { medianaX: medX, medianaY: medY, geometrias: saida.length }
     );
   }
 
+  // ---- projeção, bbox e agrupamento por layer ----
   const porLayer = new Map<string, [number, number][][]>();
-  let linhas = 0;
   const bbox: [number, number, number, number] = [180, 90, -180, -90];
+  let linhas = 0, pontosDescartados = 0;
 
-  const adicionar = (layer: string, pontos: [number, number][]) => {
-    const validos = pontos.filter(valido);
-    if (validos.length < 2) return;
-    const linha = validos.map((p) => {
+  for (const poli of saida) {
+    const validos: [number, number][] = [];
+    for (const p of poli.pts) {
+      if (!plausivel(p)) { pontosDescartados++; continue; }
       const [lng, lat] = transformar(p);
       const c: [number, number] = [arred(lng), arred(lat)];
       if (c[0] < bbox[0]) bbox[0] = c[0];
       if (c[1] < bbox[1]) bbox[1] = c[1];
       if (c[0] > bbox[2]) bbox[2] = c[0];
       if (c[1] > bbox[3]) bbox[3] = c[1];
-      return c;
-    });
-    if (!porLayer.has(layer)) porLayer.set(layer, []);
-    porLayer.get(layer)!.push(linha);
-    linhas++;
-  };
-
-  for (const e of entidades) {
-    const layer = e.layer ?? "0";
-    const pts = (e.vertices ?? [])
-      .filter((v) => Number.isFinite(v.x) && Number.isFinite(v.y))
-      .map((v) => [v.x, v.y] as [number, number]);
-    if (e.type === "LINE" && pts.length >= 2) adicionar(layer, pts);
-    else if ((e.type === "LWPOLYLINE" || e.type === "POLYLINE") && pts.length >= 2) {
-      if ((e.closed || e.shape) && pts.length > 2) pts.push(pts[0]);
-      adicionar(layer, pts);
+      validos.push(c);
     }
+    if (validos.length < 2) continue;
+    if (!porLayer.has(poli.layer)) porLayer.set(poli.layer, []);
+    porLayer.get(poli.layer)!.push(validos);
+    linhas++;
   }
 
-  if (!linhas) throw new Error("Nenhuma linha aproveitável no DXF (só blocos, textos ou hachuras?).");
+  if (!linhas) {
+    throw new ErroDxf(
+      "Todas as coordenadas do DXF ficaram fora da região.",
+      `${pontosDescartados.toLocaleString("pt-BR")} pontos foram descartados por estarem a mais de 150 km do centro do desenho.`,
+      "Confira no CAD se sobraram entidades soltas muito distantes — é comum ficar lixo no canto do arquivo.",
+      { pontosDescartados, medianaX: medX, medianaY: medY }
+    );
+  }
 
   return {
     geojson: {
@@ -126,6 +405,20 @@ export function converterDxf(conteudo: string, zonaForcada?: number): ResultadoD
     linhas,
     layersCad: porLayer.size,
     bbox,
+    centro: [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
     zona,
+    diagnostico: {
+      entidadesLidas,
+      porTipo,
+      geometriasPorTipo,
+      ignoradasSemGeometria,
+      blocosExpandidos,
+      blocosNaoResolvidos,
+      pontosDescartados,
+      layers: [...porLayer.entries()]
+        .map(([nome, l]) => ({ nome, linhas: l.length }))
+        .sort((a, b) => b.linhas - a.linhas),
+      segundos: Math.round((Date.now() - inicio) / 100) / 10,
+    },
   };
 }

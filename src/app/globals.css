@@ -31,6 +31,9 @@
   --critico: #E06C5B;
 
   --sombra-popup: rgba(0, 0, 0, 0.55);
+  /* relevo raso dos botoes secundarios — no escuro a sombra precisa ser densa
+     para separar o botao da superficie logo atras dele */
+  --sombra-botao: rgba(0, 0, 0, 0.45);
   --trilho: #2A3D33;
   color-scheme: dark;
 }
@@ -59,6 +62,7 @@
   --critico: #B23A2B;
 
   --sombra-popup: rgba(15, 31, 24, 0.18);
+  --sombra-botao: rgba(15, 31, 24, 0.12);
   --trilho: #C3D3C8;
   color-scheme: light;
 }
@@ -97,6 +101,35 @@ body {
 }
 
 ::selection { background: color-mix(in srgb, var(--verde) 25%, transparent); }
+
+/*
+  MÃOZINHA NO BOTÃO.
+
+  O preflight do Tailwind v4 passou a dar `cursor: default` em <button> — é
+  mudança deliberada deles, alinhada ao botão nativo do sistema, e vale para o
+  app inteiro. Medido em 17/09/2026 na tela de Cartografia: 29 dos 31 botões da
+  página não trocavam o cursor. Num tema escuro, onde o botão secundário já é
+  discreto, o ponteiro era a última pista de que aquilo clica — e ela não
+  existia. Daí a impressão de "botão que não parece botão".
+
+  Desabilitado fica com `not-allowed`, que informa em vez de só não responder.
+*/
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label[for],
+summary {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] { cursor: not-allowed; }
+
+/* foco visível por teclado em tudo que é interativo — o anel do navegador some
+   sobre fundo escuro */
+:where(button, a, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
 
 /* barra de rolagem discreta, no tom do tema */
 * { scrollbar-color: var(--trilho) transparent; scrollbar-width: thin; }
@@ -160,15 +193,54 @@ body {
 }
 .btn-ouro:hover::after { transition: transform 0.7s ease; transform: translateX(120%); }
 
+/*
+  BOTÃO SECUNDÁRIO.
+
+  Era transparente, com a borda mais fraca do tema (--linha, #24352C) sobre um
+  cartão quase da mesma cor (#121C17): ficava um texto com um fio em volta.
+  Ganhou superfície própria, borda forte e uma sombra rasa — a mesma gramática
+  de relevo que o olho já usa para reconhecer botão. O :active afunda, porque
+  resposta ao clique também é sinal de que aquilo clica.
+*/
 .btn-contorno {
-  display: inline-block;
+  /* sem `display`: regra sem layer vence utilitario do Tailwind, e fixar
+     inline-block aqui quebraria os botoes que sao `flex` (sidebar do mapa).
+     <button> ja e inline-block por padrao do navegador. */
+  background: var(--superficie-2);
   border: 1px solid var(--linha-forte);
   color: var(--texto);
   font-weight: 500;
   border-radius: 0.85rem;
-  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 2px var(--sombra-botao);
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.btn-contorno:hover { transform: translateY(-1px); background: var(--superficie-2); border-color: var(--verde); }
+.btn-contorno:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--verde) 12%, var(--superficie-2));
+  border-color: var(--verde);
+  box-shadow: 0 4px 12px var(--sombra-botao);
+}
+.btn-contorno:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
+.btn-contorno:disabled { opacity: 0.45; box-shadow: none; }
+
+/* ação destrutiva: mesma forma do secundário, cor de alerta só no texto e na
+   borda — vermelho cheio num botão de lista puxa mais atenção do que merece */
+.btn-perigo {
+  background: var(--superficie-2);
+  border: 1px solid color-mix(in srgb, var(--critico) 45%, var(--linha-forte));
+  color: var(--critico);
+  font-weight: 500;
+  border-radius: 0.85rem;
+  box-shadow: 0 1px 2px var(--sombra-botao);
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-perigo:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--critico) 14%, var(--superficie-2));
+  border-color: var(--critico);
+  box-shadow: 0 4px 12px var(--sombra-botao);
+}
+.btn-perigo:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
 
 /* chip de filtro/camada do mapa */
 .chip {

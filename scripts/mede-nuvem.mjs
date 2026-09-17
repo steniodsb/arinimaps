@@ -13,10 +13,13 @@
 // numa cidade — o que importa é a COMPARAÇÃO entre fontes no mesmo tile.
 import puppeteer from "puppeteer-core";
 
+// Conferidas em 17/09/2026 contra o centro das plantas publicadas (bbox no
+// diagnóstico da camada). União de Minas estava em -19.7669: ~26 km ao sul da
+// cidade, em área rural — a medição de nuvem dela não olhava a mancha urbana.
 const CIDADES = {
-  "Iturama": [-19.7275, -50.1958],
-  "Limeira do Oeste": [-19.5541, -50.5782],
-  "União de Minas": [-19.7669, -50.3167],
+  "Iturama": [-19.7243, -50.2035],
+  "Limeira do Oeste": [-19.5545, -50.5787],
+  "União de Minas": [-19.5298, -50.3320],
 };
 const Z = 15;
 const CONFIG_WAYBACK = "https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json";

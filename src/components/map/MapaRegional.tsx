@@ -547,7 +547,7 @@ export default function MapaRegional() {
         onClick={() => setPainelAberto(!painelAberto)}
         title={painelAberto ? "Recolher lista" : "Mostrar lista"}
         className={
-          "absolute z-30 top-1/2 -translate-y-1/2 bg-superficie border border-linha shadow-lg rounded-r-lg w-6 h-14 flex items-center justify-center text-texto-2 hover:text-verde transition-all duration-300 " +
+          "absolute z-30 top-1/2 -translate-y-1/2 bg-superficie btn-contorno shadow-lg rounded-r-lg w-6 h-14 flex items-center justify-center text-texto-2 hover:text-verde transition-all duration-300 " +
           (painelAberto ? "left-[85%] sm:left-[320px]" : "left-0")
         }>
         {painelAberto ? "‹" : "›"}

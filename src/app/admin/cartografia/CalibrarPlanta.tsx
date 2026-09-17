@@ -506,13 +506,13 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
             <span className="w-px self-stretch bg-linha mx-1" aria-hidden />
 
             <button onClick={desfazer} disabled={!historico.length}
-              className="rounded-lg border border-linha px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
+              className="rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
               title="Volta o último movimento (Ctrl+Z)">
               ↩ Desfazer
             </button>
             <button onClick={() => aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 })}
               disabled={ehIgualAoSalvo(TRANSFORM_ZERO, t)}
-              className="rounded-lg border border-linha px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
+              className="rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
               title="Zera deslocamento, giro e escala">
               Zerar posição
             </button>
@@ -576,7 +576,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(DESLOCAMENTO_DATUM).map(([k, d]) => (
                       <button key={k} onClick={() => aplicarDatum(k)}
-                        className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
+                        className="rounded-lg btn-contorno px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
                         {d.rotulo}
                       </button>
                     ))}
@@ -625,7 +625,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                 {(pares.length > 0 || pendente) && (
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => { setPares([]); setPendente(null); setResiduo(null); desenharPares([], null); }}
-                      className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
+                      className="rounded-lg btn-contorno px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
                       Limpar pontos
                     </button>
                   </div>
@@ -673,11 +673,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <button className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2"
+                    <button className="rounded-lg btn-contorno px-3 py-1.5 text-xs hover:bg-superficie-2"
                       onClick={() => { const v = new Set<string>(); setOcultos(v); redesenhar(t, v); }}>
                       Mostrar todas
                     </button>
-                    <button className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2"
+                    <button className="rounded-lg btn-contorno px-3 py-1.5 text-xs hover:bg-superficie-2"
                       onClick={() => {
                         const v = new Set(layersCad.filter((l) => l.linhas < 200).map((l) => l.nome));
                         setOcultos(v); redesenhar(t, v);

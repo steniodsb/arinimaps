@@ -198,7 +198,7 @@ export default function DesenhoMapa({ onChange }: Props) {
           <input type="file" accept=".kml,.kmz" className="hidden"
             onChange={(e) => e.target.files?.[0] && importarArquivo(e.target.files[0])} />
         </label>
-        <button type="button" onClick={limpar} className="rounded-lg px-3 py-1.5 border border-linha hover:bg-superficie-2">
+        <button type="button" onClick={limpar} className="rounded-lg px-3 py-1.5 btn-contorno hover:bg-superficie-2">
           Limpar
         </button>
       </div>

@@ -111,15 +111,15 @@ export default function ListaCamadas() {
                   </p>
                 )}
               </div>
-              <span className="text-xs rounded-full bg-verde/10 text-verde px-3 py-1">no ar</span>
+              {/* selo de estado, não botão: sem borda e sem relevo, para não
+                  disputar com as duas ações que estão ao lado */}
+              <span className="text-xs rounded-full bg-verde/10 text-verde px-3 py-1 select-none">no ar</span>
               {c.tipo === "vector" && (
-                <button onClick={() => setCalibrando(c)}
-                  className="rounded-lg border border-linha px-3 py-1.5 text-xs font-medium hover:bg-superficie-2 transition">
+                <button onClick={() => setCalibrando(c)} className="btn-contorno px-3 py-1.5 text-xs">
                   Calibrar sobre o satélite
                 </button>
               )}
-              <button onClick={() => remover(c)}
-                className="rounded-lg border border-linha px-3 py-1.5 text-xs text-critico hover:bg-critico/10 transition">
+              <button onClick={() => remover(c)} className="btn-perigo px-3 py-1.5 text-xs">
                 Remover
               </button>
             </div>

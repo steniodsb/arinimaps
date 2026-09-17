@@ -44,7 +44,7 @@ export function FaturaAcoes({ id }: { id: string }) {
         onClick={async () => { setOcupado(true); if (await acao({ acao: "marcar_paga", invoice_id: id })) router.refresh(); setOcupado(false); }}>
         Marcar paga
       </button>
-      <button disabled={ocupado} className="text-xs rounded bg-superficie-2 border border-linha px-2 py-1 disabled:opacity-50"
+      <button disabled={ocupado} className="text-xs rounded bg-superficie-2 btn-contorno px-2 py-1 disabled:opacity-50"
         onClick={async () => {
           setOcupado(true);
           const d = await acao({ acao: "cobrar_asaas", invoice_id: id });

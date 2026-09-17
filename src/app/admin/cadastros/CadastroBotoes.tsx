@@ -47,7 +47,7 @@ export default function CadastroBotoes({
         )}
         {aprovado && (
           <button disabled={ocupado} onClick={() => decidir("suspenso")}
-            className="rounded-lg bg-superficie-2 text-texto border border-linha text-xs font-medium px-3 py-1.5 hover:bg-linha disabled:opacity-50">
+            className="rounded-lg bg-superficie-2 text-texto btn-contorno text-xs font-medium px-3 py-1.5 hover:bg-linha disabled:opacity-50">
             Suspender
           </button>
         )}

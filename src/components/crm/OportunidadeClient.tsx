@@ -126,7 +126,7 @@ export default function OportunidadeClient(props: Props) {
                 <span className="flex gap-1">
                   {(["realizada", "remarcada", "nao_compareceu"] as const).map((s) => (
                     <button key={s} disabled={ocupado}
-                      className="text-xs rounded bg-superficie border border-linha px-2 py-1 hover:bg-verde hover:text-white"
+                      className="text-xs rounded bg-superficie btn-contorno px-2 py-1 hover:bg-verde hover:text-white"
                       onClick={() => {
                         const feedback = s === "realizada" ? prompt("Como foi a visita? (opcional)") ?? "" : "";
                         chamar("POST", { tipo: "visita_status", visita_id: v.id, status: s, feedback });
@@ -203,7 +203,7 @@ export default function OportunidadeClient(props: Props) {
               <span>Status: <strong>{props.contrato?.status ?? "sem contrato"}</strong></span>
               {(["em_elaboracao", "assinado", "registrado"] as const).map((s) => (
                 <button key={s} disabled={ocupado}
-                  className="text-xs rounded bg-superficie-2 border border-linha px-2 py-1 hover:bg-verde hover:text-white"
+                  className="text-xs rounded bg-superficie-2 btn-contorno px-2 py-1 hover:bg-verde hover:text-white"
                   onClick={() => chamar("POST", { tipo: "contrato_status", status: s })}>
                   {s.replace("_", " ")}
                 </button>

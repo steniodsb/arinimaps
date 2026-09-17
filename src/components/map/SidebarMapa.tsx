@@ -50,7 +50,7 @@ export default function SidebarMapa({ onAtalho }: { onAtalho?: (chave: string) =
         <div className="space-y-1">
           {ATALHOS.map((a) => (
             <button key={a.chave} onClick={() => onAtalho?.(a.chave)}
-              className="w-full flex items-center justify-between rounded-xl border border-linha bg-superficie-2 px-3 py-2.5 text-xs text-texto-2 hover:text-texto hover:border-verde/40 transition">
+              className="w-full flex items-center justify-between rounded-xl btn-contorno bg-superficie-2 px-3 py-2.5 text-xs text-texto-2 hover:text-texto hover:border-verde/40 transition">
               {a.rotulo} <span>›</span>
             </button>
           ))}

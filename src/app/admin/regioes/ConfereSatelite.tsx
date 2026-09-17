@@ -85,7 +85,7 @@ export default function ConfereSatelite() {
           </p>
         </div>
         <button onClick={conferir} disabled={!!medindo}
-          className="rounded-lg border border-linha px-4 py-2 text-sm font-medium hover:bg-superficie-2 transition disabled:opacity-50 shrink-0">
+          className="rounded-lg btn-contorno px-4 py-2 text-sm font-medium hover:bg-superficie-2 transition disabled:opacity-50 shrink-0">
           {medindo ? "Medindo…" : "Conferir os municípios"}
         </button>
       </div>

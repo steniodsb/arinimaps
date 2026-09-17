@@ -35,7 +35,7 @@ export default function GestaoUsuarios({
         <h2 className="font-semibold text-texto">Equipe Arini ({equipe.length})</h2>
         {ehDiretoria && (
           <button onClick={() => setCriando(!criando)}
-            className="rounded-lg border border-linha px-4 py-2 text-sm font-medium hover:bg-superficie-2 transition">
+            className="rounded-lg btn-contorno px-4 py-2 text-sm font-medium hover:bg-superficie-2 transition">
             {criando ? "Cancelar" : "+ Novo acesso"}
           </button>
         )}
@@ -99,7 +99,7 @@ export default function GestaoUsuarios({
             {ehDiretoria && m.user_id !== souEu && (
               <button disabled={ocupado}
                 onClick={() => chamar("PATCH", { user_id: m.user_id, ativo: !m.ativo })}
-                className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
+                className="rounded-lg btn-contorno px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
                 {m.ativo ? "Desativar" : "Reativar"}
               </button>
             )}

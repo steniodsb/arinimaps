@@ -21,7 +21,7 @@ import type { Map as MLMap, GeoJSONSource, MapMouseEvent } from "maplibre-gl";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { SATELITE } from "@/lib/map/config";
 import {
-  transformarGeoJSON, centroDe, ajustarPorPontos, DESLOCAMENTO_DATUM,
+  transformarGeoJSON, centroDe, ajustarPorPontos, DESLOCAMENTO_DATUM, TRANSFORM_ZERO,
   type Transform, type ParDeControle,
 } from "@/lib/geo/deslocar";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
@@ -41,6 +41,13 @@ type Camada = {
 type Modo = "navegar" | "mover" | "pontos";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
+
+/** Duas transformações são a mesma coisa dentro da precisão que o banco guarda. */
+const ehIgualAoSalvo = (a: Transform, b: Transform) =>
+  Math.abs(a.offsetLesteM - b.offsetLesteM) < 0.01 &&
+  Math.abs(a.offsetNorteM - b.offsetNorteM) < 0.01 &&
+  Math.abs(a.rotacaoGraus - b.rotacaoGraus) < 1e-4 &&
+  Math.abs(a.escala - b.escala) < 1e-6;
 
 export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; onFechar: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -421,6 +428,9 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
     setSalvando(false);
     if (!r.ok) { setErro(r.erro); return; }
 
+    // o que acabou de ser gravado passa a ser a referência de "sem pendência"
+    setSalvo({ t: tRef.current, ocultos: [...ocultos].sort(), opacidade });
+
     const g = r.dados.aplicado ?? {};
     const n = (v: unknown, casas: number) => (typeof v === "number" ? v.toFixed(casas) : "—");
     setMsg(
@@ -429,6 +439,29 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       `${ocultos.size} camada${ocultos.size === 1 ? "" : "s"} do CAD oculta${ocultos.size === 1 ? "" : "s"}. Já vale no mapa público.`
     );
   }
+
+  /**
+   * "Já salvei isso?" — a tela não respondia, e a queixa de que a calibração
+   * não salvava vinha em parte daí. `salvo` guarda o último estado GRAVADO (o
+   * que veio do banco ao abrir, depois o que o PATCH confirmou), e a barra do
+   * rodapé compara com o que está na tela.
+   *
+   * A tolerância de 1 cm em metros e de 1e-6 em escala existe porque o valor
+   * volta arredondado do banco (`salvar` manda 2 casas em metros): comparar por
+   * igualdade exata acusaria pendência logo depois de salvar com sucesso.
+   */
+  const [salvo, setSalvo] = useState<{ t: Transform; ocultos: string[]; opacidade: number }>({
+    t: inicial,
+    ocultos: [...(camada.layers_ocultos ?? [])].sort(),
+    opacidade: camada.opacidade ?? 0.85,
+  });
+
+  const haMudancaNaoSalva = useMemo(() => {
+    if (!ehIgualAoSalvo(salvo.t, t)) return true;
+    if (Math.abs(salvo.opacidade - opacidade) > 1e-6) return true;
+    const atuais = [...ocultos].sort();
+    return atuais.length !== salvo.ocultos.length || atuais.some((n, i) => n !== salvo.ocultos[i]);
+  }, [salvo, t, ocultos, opacidade]);
 
   const btn = "w-11 h-11 rounded-lg bg-superficie border border-linha hover:bg-verde hover:text-white transition text-lg font-semibold";
   const chip = (ativo: boolean) =>
@@ -452,13 +485,56 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           <button onClick={onFechar} className="w-9 h-9 rounded-full hover:bg-superficie-2 text-lg shrink-0">✕</button>
         </div>
 
-        <div className="flex flex-wrap gap-2 px-5 py-2.5 border-b border-linha">
-          <button className={chip(modo === "mover")} onClick={() => setModo("mover")}>✥ Mover planta</button>
-          <button className={chip(modo === "navegar")} onClick={() => setModo("navegar")}>🖐 Navegar</button>
-          <button className={chip(modo === "pontos")} onClick={() => setModo("pontos")}>◎ Pontos de controle</button>
-          <span className="ml-auto text-xs text-texto-2 self-center">
-            {carregando ? "carregando a planta…" : `${fmt(linhasVisiveis)} de ${fmt(totalLinhas)} linhas no mapa`}
-          </span>
+        {/*
+          BARRA DE EDIÇÃO — modo, desfazer e salvar no mesmo lugar.
+
+          Antes, "Salvar calibração" e "Desfazer" ficavam no fim do modal.
+          Medido em 17/09/2026 numa janela de 778 px: o modal pede 1.180 px de
+          rolagem e o salvar caía em y=1135 — 357 px abaixo da dobra. Dava para
+          calibrar a planta inteira sem nunca ver como gravar.
+
+          Ficam aqui, colados nos botões de modo, porque é a mesma tarefa:
+          escolher a ferramenta, mexer, desfazer se errou, gravar quando bateu.
+          `sticky top-0` mantém a barra à vista durante a rolagem do modal.
+        */}
+        <div className="sticky top-0 z-10 bg-superficie/95 backdrop-blur border-b border-linha px-5 py-2.5 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button className={chip(modo === "mover")} onClick={() => setModo("mover")}>✥ Mover planta</button>
+            <button className={chip(modo === "navegar")} onClick={() => setModo("navegar")}>🖐 Navegar</button>
+            <button className={chip(modo === "pontos")} onClick={() => setModo("pontos")}>◎ Pontos de controle</button>
+
+            <span className="w-px self-stretch bg-linha mx-1" aria-hidden />
+
+            <button onClick={desfazer} disabled={!historico.length}
+              className="rounded-lg border border-linha px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
+              title="Volta o último movimento (Ctrl+Z)">
+              ↩ Desfazer
+            </button>
+            <button onClick={() => aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 })}
+              disabled={ehIgualAoSalvo(TRANSFORM_ZERO, t)}
+              className="rounded-lg border border-linha px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
+              title="Zera deslocamento, giro e escala">
+              Zerar posição
+            </button>
+
+            <button onClick={salvar} disabled={salvando || !haMudancaNaoSalva}
+              className="btn-ouro px-5 py-1.5 text-sm disabled:opacity-60 ml-auto">
+              {salvando ? "Salvando…" : "Salvar calibração"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            {/* a pendência vem antes do "salvo com sucesso": mexer na planta
+                depois de salvar não pode continuar mostrando confirmação */}
+            {haMudancaNaoSalva
+              ? <span className="text-ouro">● Alterações não salvas</span>
+              : msg
+                ? <span className="text-verde">{msg}</span>
+                : <span className="text-texto-2">Nada para salvar — a planta está como está gravada.</span>}
+            <span className="ml-auto text-texto-2">
+              {carregando ? "carregando a planta…" : `${fmt(linhasVisiveis)} de ${fmt(totalLinhas)} linhas no mapa`}
+            </span>
+          </div>
         </div>
 
         <div ref={containerRef} style={{ height: "50vh", minHeight: 340, position: "relative" }} />
@@ -545,18 +621,15 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                     {residuo != null && <> · erro médio <strong className="text-texto">{residuo.toFixed(2)} m</strong></>}
                   </p>
                 )}
-                <div className="flex gap-2 pt-1">
-                  <button onClick={desfazer} disabled={!historico.length}
-                    className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2 transition disabled:opacity-40">
-                    ↩ Desfazer
-                  </button>
-                  {(pares.length > 0 || pendente) && (
+                {/* Desfazer e Salvar ficam na barra fixa do rodapé — ver lá embaixo */}
+                {(pares.length > 0 || pendente) && (
+                  <div className="flex gap-2 pt-1">
                     <button onClick={() => { setPares([]); setPendente(null); setResiduo(null); desenharPares([], null); }}
                       className="rounded-lg border border-linha px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
                       Limpar pontos
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {modo === "pontos" && (
@@ -618,15 +691,8 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           )}
         </div>
 
-        <div className="px-5 pb-5 space-y-3">
-          {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
-          <div className="flex items-center gap-3">
-            {msg && <span className="text-sm text-verde">{msg}</span>}
-            <button onClick={salvar} disabled={salvando} className="btn-ouro px-6 py-2.5 disabled:opacity-60 ml-auto">
-              {salvando ? "Salvando…" : "Salvar calibração"}
-            </button>
-          </div>
-        </div>
+        {erro && <div className="px-5 pb-3"><AvisoErro erro={erro} aoFechar={() => setErro(null)} /></div>}
+
       </div>
     </div>
   );

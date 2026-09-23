@@ -54,7 +54,7 @@ Pauta pronta em `PAUTA-REUNIAO-CARLOS.md` (na pasta do projeto). Resumo:
 - **Validar os termos com o advogado dele.** A especificação exige (itens 8 e 24.2). Os pontos que são decisão comercial, não redação, estão listados na pauta.
 - **Mensalidade** do anúncio e dias de tolerância (hoje R$ 0 / 15 dias). O texto dos termos se ajusta sozinho ao valor configurado.
 - **Lista final de municípios** do piloto (você adiciona só com o código IBGE).
-- **Satélite licenciado** MapTiler (~US$ 25/mês) — o Esri atual é de demonstração.
+- **Satélite licenciado**: resolvido sem custo — conta gratuita do Esri ArcGIS Location Platform (Etapa 4).
 - **MapBiomas**: token com aceite de termos, ou raster importado?
 - **Pedir**: arquivos oficiais de CAR, SIGEF, IBAMA embargos, quilombolas e IPHAN; 1 KML real; o fluxograma resumido.
 
@@ -64,7 +64,7 @@ Pauta pronta em `PAUTA-REUNIAO-CARLOS.md` (na pasta do projeto). Resumo:
 |---|---|---|---|
 | Resend | `RESEND_API_KEY`, `RESEND_FROM` | E-mails: lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro | você cria a conta, eu verifico |
 | Asaas | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Botão "Cobrar via Asaas" + baixa automática (`/api/asaas/webhook`) | você |
-| MapTiler | `NEXT_PUBLIC_MAPTILER_KEY` | Satélite licenciado para uso comercial | você (rebuild) |
+| Esri ArcGIS Location Platform | `NEXT_PUBLIC_ARCGIS_KEY` | Satélite licenciado, **grátis até 2 milhões de tiles/mês** (~7–10 mil visitas ao mapa). Decidido em 23/09 no lugar do MapTiler, cujo plano grátis não permite uso comercial. Depois de ligar: Admin › Regiões › Conferir os municípios — o mosaico licenciado é o atual, que em 23/09 tinha um tile com 52,9% de nuvem em Iturama | você cria a conta e a chave (privilégio Basemaps, restrita ao domínio), rebuild |
 | Arquivos oficiais | — | CAR, SIGEF, IBAMA, quilombolas, IPHAN passam a cruzar no relatório | **eu importo** no PostGIS |
 | MapBiomas | token ou raster | Uso do solo no relatório | **eu**, conforme a decisão |
 | Termos revisados | subir `VERSOES` em `src/lib/juridico.ts` | Aceites antigos seguem apontando para a versão lida | **eu** |

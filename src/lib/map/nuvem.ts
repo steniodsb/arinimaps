@@ -1,6 +1,6 @@
 "use client";
 
-import { SATELITE_RELEASE, urlTileSatelite } from "./config";
+import { urlTileAtivo, urlTileSatelite } from "./config";
 
 /**
  * Medidor de nuvem na imagem de satélite, rodando no navegador.
@@ -86,7 +86,9 @@ export async function medirNuvem(
   bbox: [number, number, number, number],
   opcoes: { z?: number; lado?: number; release?: string } = {}
 ): Promise<MedidaNuvem> {
-  const { z = 16, lado = 6, release = SATELITE_RELEASE } = opcoes;
+  // sem release explícito, mede a fonte que o mapa está usando de fato
+  const { z = 16, lado = 6, release } = opcoes;
+  const url = (x: number, y: number) => (release ? urlTileSatelite(z, x, y, release) : urlTileAtivo(z, x, y));
   const [lng0, lat0, lng1, lat1] = bbox;
   const valores: number[] = [];
 
@@ -96,7 +98,7 @@ export async function medirNuvem(
       const lng = lng0 + ((lng1 - lng0) * (j + 0.5)) / lado;
       const { x, y } = paraTile(lat, lng, z);
       try {
-        valores.push(porcentagemDeNuvem(await carregar(urlTileSatelite(z, x, y, release))));
+        valores.push(porcentagemDeNuvem(await carregar(url(x, y))));
       } catch {
         // tile fora da cobertura do release: não é nuvem, é ausência — ignora
       }

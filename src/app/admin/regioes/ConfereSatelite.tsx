@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { medirNuvem, LIMITE_NUVEM, type MedidaNuvem } from "@/lib/map/nuvem";
-import { SATELITE_RELEASE } from "@/lib/map/config";
+import { SATELITE_RELEASE, PROVEDOR_SATELITE } from "@/lib/map/config";
 import { AvisoErro } from "@/components/ui/Aviso";
 import type { ErroApi } from "@/lib/api/enviar";
 
@@ -79,9 +79,11 @@ export default function ConfereSatelite() {
         <div>
           <h2 className="font-semibold text-texto">Nuvem na imagem de satélite</h2>
           <p className="text-sm text-texto-2">
-            A imagem é um release congelado da Esri ({SATELITE_RELEASE}), escolhido por ser o mais limpo
-            sobre a região. Rode isto ao incluir um município novo: nada garante que o release esteja
-            limpo sobre uma cidade que não existia no mapa quando ele foi escolhido.
+            {PROVEDOR_SATELITE === "esri"
+              ? "A imagem é o mosaico licenciado da Esri, que a Esri atualiza sem aviso — uma atualização pode trazer nuvem. Rode isto depois de ligar a chave, ao incluir um município novo e de tempos em tempos."
+              : PROVEDOR_SATELITE === "maptiler"
+                ? "A imagem vem do MapTiler. Rode isto ao incluir um município novo."
+                : `A imagem é um release congelado da Esri (${SATELITE_RELEASE}), escolhido por ser o mais limpo sobre a região. Rode isto ao incluir um município novo: nada garante que o release esteja limpo sobre uma cidade que não existia no mapa quando ele foi escolhido.`}
           </p>
         </div>
         <button onClick={conferir} disabled={!!medindo}
@@ -92,7 +94,7 @@ export default function ConfereSatelite() {
 
       {medindo && (
         <p className="text-sm text-texto-2">
-          Medindo <strong className="text-texto">{medindo}</strong> — 36 tiles no zoom do lote, direto do servidor da Esri.
+          Medindo <strong className="text-texto">{medindo}</strong> — 36 tiles no zoom do lote, direto da fonte de satélite em uso.
         </p>
       )}
 
@@ -131,6 +133,13 @@ export default function ConfereSatelite() {
             <p className="font-semibold text-alerta">
               {comProblema.map((l) => l.nome).join(", ")} {comProblema.length > 1 ? "estão" : "está"} com nuvem.
             </p>
+            {PROVEDOR_SATELITE !== "wayback" ? (
+            <p className="text-texto-2">
+              A fonte licenciada em uso tem nuvem sobre {comProblema.length > 1 ? "esses municípios" : "esse município"}.
+              Ela é atualizada pelo fornecedor e costuma limpar na próxima passagem; se o cliente precisar da imagem
+              limpa antes disso, fale com o desenvolvedor.
+            </p>
+            ) : (
             <p className="text-texto-2">
               O release {SATELITE_RELEASE} não serve para {comProblema.length > 1 ? "esses municípios" : "esse município"}.
               Rode <code className="font-mono text-xs">node scripts/mede-nuvem.mjs --releases 20</code> para achar um
@@ -138,6 +147,7 @@ export default function ConfereSatelite() {
               <code className="font-mono text-xs">src/lib/map/config.ts</code>. Se nenhum release servir para todos,
               dá para usar um release por município — o MapLibre aceita limites por fonte.
             </p>
+            )}
           </div>
         )
       )}

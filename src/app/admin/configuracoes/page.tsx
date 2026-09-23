@@ -16,8 +16,8 @@ export default async function AdminConfiguracoes() {
       dica: "Sem isso, leads e avisos ficam só no painel." },
     { nome: "Asaas (cobrança)", ligado: !!process.env.ASAAS_API_KEY,
       dica: "Habilita “Cobrar via Asaas” nas faturas." },
-    { nome: "MapTiler (satélite licenciado)", ligado: !!process.env.NEXT_PUBLIC_MAPTILER_KEY,
-      dica: "Sem isso, o satélite usa a fonte de demonstração." },
+    { nome: "Esri ArcGIS (satélite licenciado)", ligado: !!process.env.NEXT_PUBLIC_ARCGIS_KEY,
+      dica: "Sem isso, o satélite usa a fonte de demonstração, sem licença comercial." },
   ];
 
   return (

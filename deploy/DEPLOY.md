@@ -52,7 +52,7 @@ Node 18: o Next 16.3.2 exige `>=20.9.0` e o build morre antes de começar.
 | `RESEND_API_KEY`, `RESEND_FROM` | e-mails automáticos (lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro) | o app funciona, não envia e-mail |
 | `ARINI_NOTIFY_EMAIL` | destino das notificações internas da Arini | cai no padrão do código |
 | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `ASAAS_BASE_URL` | botão "Cobrar via Asaas" + baixa automática em `/api/asaas/webhook` | cobrança só manual |
-| `NEXT_PUBLIC_MAPTILER_KEY` | satélite licenciado para uso comercial | usa Esri (Wayback 20512), que é de demonstração |
+| `NEXT_PUBLIC_ARCGIS_KEY` | satélite Esri **licenciado** (ArcGIS Location Platform, 2 milhões de tiles/mês grátis). Crie a chave com o privilégio *Basemaps* e restrinja aos domínios do site | usa Esri Wayback 20512, sem licença comercial |
 | `NEXT_PUBLIC_WHATSAPP_ARINI` | número do botão de WhatsApp | botão sem número |
 
 O painel de **Admin › Configurações** mostra o estado de cada uma depois que o

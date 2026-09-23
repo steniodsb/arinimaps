@@ -12,11 +12,19 @@ export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama
 /**
  * Fonte de satélite, em ordem de preferência:
  *
- * 1. MapTiler (env NEXT_PUBLIC_MAPTILER_KEY) — licença própria para uso
- *    comercial, alta resolução até z20. Free tier cobre bem a região piloto.
- * 2. Esri World Imagery via **Wayback**, com o release fixado — alta resolução,
- *    mas os termos exigem uso via tecnologia Esri; serve para desenvolvimento e
- *    demonstração (a licença comercial segue pendente, ver PENDENCIAS.md).
+ * 1. Esri World Imagery LICENCIADO (env NEXT_PUBLIC_ARCGIS_KEY) — conta do
+ *    ArcGIS Location Platform, com licença de uso comercial. Free tier de 2
+ *    milhões de tiles/mês (~7 a 10 mil visitas ao mapa), depois US$ 0,15 por
+ *    mil. Decidido em 23/09/2026. É a mesma imagem da Esri, mas o endpoint
+ *    licenciado serve o MOSAICO ATUAL, não um release congelado — medido em
+ *    23/09: Limeira 0,1% e União 0,0% de nuvem, Iturama média 8,5% com um tile
+ *    de 52,9%. Confira em Admin › Regiões depois de ligar a chave.
+ *    Restrinja a chave aos domínios do site no painel da Esri: ela vai no
+ *    JavaScript do navegador, como qualquer chave de mapa.
+ * 2. MapTiler (env NEXT_PUBLIC_MAPTILER_KEY) — o plano gratuito é só para uso
+ *    não comercial; mantido para quem tiver plano pago.
+ * 3. Esri World Imagery via **Wayback**, com o release fixado — sem chave, só
+ *    para desenvolvimento e demonstração (sem licença comercial).
  *
  * POR QUE UM RELEASE FIXO DO WAYBACK, E NÃO O MOSAICO "ATUAL"
  * -----------------------------------------------------------
@@ -50,7 +58,20 @@ export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama
  * https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json
  * (196 releases). Meça antes de trocar — `scripts/mede-nuvem.mjs`.
  */
+const ARCGIS_KEY = process.env.NEXT_PUBLIC_ARCGIS_KEY;
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+
+export type ProvedorSatelite = "esri" | "maptiler" | "wayback";
+export const PROVEDOR_SATELITE: ProvedorSatelite =
+  ARCGIS_KEY ? "esri" : MAPTILER_KEY ? "maptiler" : "wayback";
+
+/** Tile do satélite que o mapa está usando AGORA — o medidor de nuvem confere este. */
+export const urlTileAtivo = (z: number | string, x: number | string, y: number | string) =>
+  PROVEDOR_SATELITE === "esri"
+    ? `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}?token=${ARCGIS_KEY}`
+    : PROVEDOR_SATELITE === "maptiler"
+      ? `https://api.maptiler.com/tiles/satellite-v2/${z}/${x}/${y}.jpg?key=${MAPTILER_KEY}`
+      : urlTileSatelite(z, x, y);
 
 /**
  * Release do Wayback em uso. Trocar aqui troca em todo lugar — inclusive no
@@ -64,7 +85,16 @@ export const urlTileSatelite = (
 ) =>
   `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/${release}/${z}/${y}/${x}`;
 
-export const SATELITE: RasterSourceSpecification = MAPTILER_KEY
+export const SATELITE: RasterSourceSpecification = PROVEDOR_SATELITE === "esri"
+  ? {
+      type: "raster",
+      tiles: [urlTileAtivo("{z}", "{x}", "{y}")],
+      tileSize: 256,
+      // z18 na região devolve o placeholder "sem dados" (medido em 23/09/2026)
+      maxzoom: 17,
+      attribution: "Powered by Esri · Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+    }
+  : PROVEDOR_SATELITE === "maptiler"
   ? {
       type: "raster",
       tiles: [`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`],

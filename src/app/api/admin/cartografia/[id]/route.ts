@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator } from "@/lib/authz";
 import { falha, falhaBanco } from "@/lib/erros";
+import { gerarPlantaPublica } from "@/lib/geo/plantaPublica";
 
 /**
  * Calibração da planta: deslocamento em metros, giro, escala, camadas do CAD
@@ -89,7 +90,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cart
 
   const admin = supabaseAdmin();
   const { data: antes } = await admin.from("cartography_layers")
-    .select("nome, offset_leste_m, offset_norte_m, rotacao_graus, escala, layers_ocultos")
+    .select("nome, tipo, tiles_path, publico_path, offset_leste_m, offset_norte_m, rotacao_graus, escala, layers_ocultos")
     .eq("id", id).single();
   if (!antes) {
     return falha(404, "camada_sumiu", "Essa camada não existe mais.", {
@@ -101,12 +102,34 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cart
   const { error } = await admin.from("cartography_layers").update(patch).eq("id", id);
   if (error) return falhaBanco("calibracao_nao_gravou", error);
 
+  // seleção de camadas mudou → regrava o arquivo que o mapa público baixa.
+  // A calibração já está salva; se isto falhar, o mapa segue filtrando no
+  // navegador como antes, só mais pesado — por isso vira aviso, não erro.
+  let publico: Awaited<ReturnType<typeof gerarPlantaPublica>> | null = null;
+  let avisoPublico: string | null = null;
+  const mudouCamadas = Array.isArray(patch.layers_ocultos) &&
+    [...(patch.layers_ocultos as string[])].sort().join("|") !== [...((antes.layers_ocultos as string[] | null) ?? [])].sort().join("|");
+  if (mudouCamadas && antes.tipo === "vector" && antes.tiles_path) {
+    try {
+      publico = await gerarPlantaPublica(
+        admin, { id, tiles_path: antes.tiles_path, publico_path: antes.publico_path },
+        patch.layers_ocultos as string[]
+      );
+    } catch (e) {
+      avisoPublico = e instanceof Error ? e.message : String(e);
+    }
+  }
+
   await logAudit({
     user_id: a.userId, acao: "cartografia_calibrada",
     entidade: "cartography_layers", entidade_id: id,
-    dados_antes: antes, dados_depois: patch,
+    dados_antes: antes, dados_depois: { ...patch, publico_bytes: publico?.bytes ?? undefined },
   });
-  return NextResponse.json({ ok: true, aplicado: patch });
+  return NextResponse.json({
+    ok: true, aplicado: patch,
+    publico: publico && { bytes: publico.bytes, linhas: publico.linhas, linhas_total: publico.linhasTotal },
+    aviso_publico: avisoPublico,
+  });
 }
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/admin/cartografia/[id]">) {

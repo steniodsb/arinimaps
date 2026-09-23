@@ -76,7 +76,10 @@ export default function InteresseForm({
           <label className="flex items-start gap-2 text-xs text-texto-2">
             <input type="checkbox" required checked={form.consentimento}
               onChange={(e) => setForm({ ...form, consentimento: e.target.checked })} className="mt-0.5" />
-            Autorizo a Arini a entrar em contato sobre este imóvel (LGPD).
+            <span>
+              Autorizo a Arini a entrar em contato sobre este imóvel, conforme a{" "}
+              <a href="/termos/privacidade" target="_blank" className="text-verde underline">Política de Privacidade</a>.
+            </span>
           </label>
 
           {erro && <p className="text-sm text-critico">{erro}</p>}

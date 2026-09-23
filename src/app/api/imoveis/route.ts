@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
+import { lerConfiguracoes, numero } from "@/lib/settings";
+import { assinatura, ipDe } from "@/lib/juridico";
 
 // Cria imóvel (multipart): dados + geometria GeoJSON + fotos.
 // Proprietário/parceiro precisa estar aprovado/ativo; Arini também pode cadastrar.
@@ -51,6 +53,20 @@ export async function POST(request: Request) {
     );
   }
 
+  // condição de comercialização (spec item 8): parceiro é sempre "parceiro";
+  // proprietário escolhe autorização simples ou exclusividade e aceita o termo.
+  // A equipe Arini cadastra sem aceite eletrônico (contrato assinado vai em Documentos).
+  const equipe = !owner_id && !partner_id;
+  const condicao: "autorizacao" | "exclusividade" | "parceiro" = partner_id
+    ? "parceiro"
+    : dados.condicao === "exclusividade" ? "exclusividade" : "autorizacao";
+  if (!equipe && dados.aceite_termos !== true) {
+    return NextResponse.json(
+      { error: "Para anunciar é preciso aceitar o termo da condição de comercialização e a Regra de Remuneração." },
+      { status: 400 }
+    );
+  }
+
   // unidade de empreendimento (bloco/loteamento): o anunciante informa o código do imóvel pai
   let parent_property_id: string | null = null;
   if (dados.parent_codigo?.trim()) {
@@ -92,13 +108,31 @@ export async function POST(request: Request) {
       condicoes_venda: dados.condicoes_venda?.trim() || null,
       aceita_permuta: !!dados.aceita_permuta,
       aceita_financiamento: !!dados.aceita_financiamento,
-      exclusividade: !!dados.exclusividade,
+      exclusividade: condicao === "exclusividade",
       parent_property_id,
       created_by: user.id,
     })
     .select("id, codigo")
     .single();
   if (propError) return NextResponse.json({ error: propError.message }, { status: 500 });
+
+  // aceite versionado: versão do termo, data/hora, usuário e IP
+  const cfg = await lerConfiguracoes();
+  const validade = new Date(Date.now() + numero(cfg, "juridico_prazo_autorizacao_dias", 180) * 86_400_000);
+  const versao = condicao === "parceiro"
+    ? assinatura("parceiros", "remuneracao")
+    : condicao === "exclusividade"
+      ? assinatura("autorizacao", "exclusividade", "remuneracao")
+      : assinatura("autorizacao", "remuneracao");
+  await admin.from("property_authorizations").insert({
+    property_id: property.id,
+    tipo: condicao,
+    validade: validade.toISOString().slice(0, 10),
+    aceite_at: equipe ? null : new Date().toISOString(),
+    versao: equipe ? null : versao,
+    aceite_por: equipe ? null : user.id,
+    aceite_ip: equipe ? null : ipDe(request),
+  });
 
   // geometria (fonte: desenho | kml | kmz | ponto)
   const { error: geoError } = await admin.rpc("fn_upsert_geometry", {
@@ -147,7 +181,7 @@ export async function POST(request: Request) {
     entidade: "properties",
     entidade_id: property.id,
     property_id: property.id,
-    dados_depois: { codigo: property.codigo, titulo: dados.titulo },
+    dados_depois: { codigo: property.codigo, titulo: dados.titulo, condicao, aceite: equipe ? null : versao },
   });
 
   return NextResponse.json({ ok: true, codigo: property.codigo });

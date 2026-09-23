@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabaseAdmin()
     .from("cartography_layers")
-    .select("id, nome, tipo, tiles_path, min_zoom, max_zoom, opacidade_padrao, datum, offset_leste_m, offset_norte_m, rotacao_graus, escala, layers_ocultos, bytes, diagnostico, municipality:municipalities(nome)")
+    .select("id, nome, tipo, tiles_path, min_zoom, max_zoom, opacidade_padrao, datum, offset_leste_m, offset_norte_m, rotacao_graus, escala, layers_ocultos, bytes, diagnostico, publico_path, publico_bytes, publico_centro, municipality:municipalities(nome)")
     .eq("status", "pronto")
     .not("tiles_path", "is", null);
 
@@ -50,12 +50,17 @@ export async function GET(request: Request) {
       municipio: mun?.nome ?? null,
       tipo: c.tipo,
       tiles: c.tipo === "raster" ? `${base}/${c.tiles_path}/{z}/{x}/{y}.png` : undefined,
+      // original completo: a calibração lê daqui para poder reexibir camada escondida
       geojson: c.tipo === "vector" ? `${base}/${c.tiles_path}` : undefined,
+      // o que o mapa público baixa: já sem as camadas escondidas (0019)
+      geojson_publico: c.tipo === "vector" && c.publico_path ? `${base}/${c.publico_path}` : undefined,
+      centro: Array.isArray(c.publico_centro) && c.publico_centro.length === 2 ? (c.publico_centro as [number, number]) : null,
       min_zoom: c.min_zoom,
       max_zoom: c.max_zoom,
       opacidade: Number(c.opacidade_padrao),
       datum: c.datum,
       bytes: c.bytes ? Number(c.bytes) : null,
+      bytes_publico: c.publico_bytes ? Number(c.publico_bytes) : null,
       bbox,
       layers_ocultos: (c.layers_ocultos ?? []) as string[],
       layers_cad: diag?.layers ?? [],

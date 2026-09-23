@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
+import { assinatura } from "@/lib/juridico";
 
 // Formulário público "Tenho interesse" → lead + oportunidade + auditoria + e-mail à Arini.
 export async function POST(request: Request) {
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
       mensagem: mensagem?.trim() || null,
       origem: "pagina",
       consentimento_lgpd: true,
+      consentimento_versao: assinatura("privacidade"),
       status: "em_oportunidade",
     })
     .select("id")

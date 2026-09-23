@@ -27,14 +27,25 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     .single();
   if (!p) notFound();
 
-  const [{ data: geo }, { data: media }, { data: geoJson }] = await Promise.all([
+  const [{ data: geo }, { data: media }, { data: geoJson }, { data: autorizacao }] = await Promise.all([
     admin.from("property_geometries").select("area_m2, perimeter_m, fonte").eq("property_id", id).maybeSingle(),
     admin.from("property_media").select("tipo, storage_path").eq("property_id", id).order("ordem"),
     admin.rpc("fn_property_admin_geometry", { p_property_id: id }).then(
       (r) => r,
       () => ({ data: null })
     ),
+    admin.from("property_authorizations")
+      .select("tipo, validade, aceite_at, versao, aceite_ip")
+      .eq("property_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+  const CONDICAO: Record<string, string> = {
+    autorizacao: "Autorização de venda (sem exclusividade)",
+    exclusividade: "Exclusividade Arini",
+    parceiro: "Imóvel de parceiro",
+  };
 
   const owner = p.owner as unknown as { profile: { nome: string; telefone: string | null } } | null;
   const partner = p.partner as unknown as { razao_social: string; tipo: string; profile: { nome: string; telefone: string | null } } | null;
@@ -74,7 +85,19 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
             </li>
           )}
           <li>{media?.length ? "✅" : "⚠️"} {media?.length ?? 0} foto(s)</li>
-          <li>{p.exclusividade ? "✅ Exclusividade autorizada" : "◻️ Sem exclusividade"}</li>
+          <li>
+            {autorizacao?.aceite_at ? "✅" : "⚠️"}{" "}
+            {autorizacao
+              ? <>
+                  {CONDICAO[autorizacao.tipo] ?? autorizacao.tipo}
+                  {autorizacao.aceite_at
+                    ? <> — aceite eletrônico em {new Date(autorizacao.aceite_at).toLocaleString("pt-BR")}
+                        {autorizacao.aceite_ip && ` (IP ${autorizacao.aceite_ip})`}, versão {autorizacao.versao}
+                        {autorizacao.validade && `, válida até ${new Date(autorizacao.validade + "T12:00:00").toLocaleDateString("pt-BR")}`}</>
+                    : " — sem aceite eletrônico: confira a autorização assinada nos documentos"}
+                </>
+              : p.exclusividade ? "Exclusividade (cadastro anterior aos termos, sem aceite registrado)" : "Sem autorização registrada (cadastro anterior aos termos)"}
+          </li>
           <li>
             👤 Responsável:{" "}
             {partner

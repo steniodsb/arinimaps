@@ -40,6 +40,8 @@ type Camada = {
   /** retângulo da planta em graus [oeste, sul, leste, norte]; null em planta antiga */
   bbox?: [number, number, number, number] | null;
   layers_ocultos?: string[];
+  geojson_publico?: string;
+  centro?: [number, number] | null;
   transform?: Transform;
 };
 
@@ -153,7 +155,9 @@ export default function MapaRegional() {
     for (const c of pendentes) plantasCarregadasRef.current.add(c.id);
 
     await Promise.all(pendentes.map(async (c) => {
-      const bruto = await fetch(c.geojson!).then((r) => r.json()).catch(() => null);
+      // versão já filtrada no servidor quando existe; o centro gravado é o do
+      // arquivo completo, o mesmo que a calibração usou para girar e escalar
+      const bruto = await fetch(c.geojson_publico ?? c.geojson!).then((r) => r.json()).catch(() => null);
       if (!bruto || !mapRef.current || mapRef.current.getSource(`carto-${c.id}`)) {
         if (!bruto) plantasCarregadasRef.current.delete(c.id); // deixa tentar de novo
         return;
@@ -161,7 +165,7 @@ export default function MapaRegional() {
       // calibração: giro, escala e deslocamento em torno do centro da planta,
       // mais as camadas de CAD que o operador escondeu
       const dados = transformarGeoJSON(
-        bruto, centroDe(bruto), c.transform ?? TRANSFORM_ZERO, c.layers_ocultos ?? []
+        bruto, c.centro ?? centroDe(bruto), c.transform ?? TRANSFORM_ZERO, c.layers_ocultos ?? []
       );
       const m = mapRef.current;
       const cores = CARTO_CORES[baseRef.current];

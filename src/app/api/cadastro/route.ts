@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { validarDocumento } from "@/lib/br/documentos";
+import { assinatura, ipDe } from "@/lib/juridico";
 
 const ROLES_PERMITIDOS = ["comprador", "proprietario", "corretor", "imobiliaria", "engenheiro"];
 
@@ -12,7 +13,7 @@ const ROLES_PERMITIDOS = ["comprador", "proprietario", "corretor", "imobiliaria"
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const { email, senha, nome, telefone, role, cpf, razao_social, registro_profissional } = body ?? {};
+  const { email, senha, nome, telefone, role, cpf, razao_social, registro_profissional, aceite_termos } = body ?? {};
 
   if (!email?.trim() || !senha || senha.length < 8 || !nome?.trim()) {
     return NextResponse.json(
@@ -23,6 +24,19 @@ export async function POST(request: Request) {
   if (!ROLES_PERMITIDOS.includes(role)) {
     return NextResponse.json({ error: "Perfil inválido." }, { status: 400 });
   }
+
+  if (aceite_termos !== true) {
+    return NextResponse.json(
+      { error: "Para criar a conta é preciso aceitar os Termos de Uso e a Política de Privacidade." },
+      { status: 400 }
+    );
+  }
+  const ehParceiro = ["corretor", "imobiliaria", "engenheiro"].includes(role);
+  const versao = ehParceiro
+    ? assinatura("termos-de-uso", "privacidade", "parceiros")
+    : assinatura("termos-de-uso", "privacidade");
+  const agora = new Date().toISOString();
+  const ip = ipDe(request);
 
   const doc = validarDocumento(cpf ?? "");
   if (!doc.ok) return NextResponse.json({ error: doc.erro }, { status: 400 });
@@ -60,6 +74,9 @@ export async function POST(request: Request) {
   const { error: perfilErro } = await admin.from("profiles").update({
     telefone: telefone?.trim() || null,
     cpf_cnpj: doc.valor,
+    aceite_termos_at: agora,
+    aceite_termos_versao: versao,
+    aceite_termos_ip: ip,
   }).eq("user_id", userId);
   if (perfilErro) {
     // corrida no índice único: desfaz o usuário para não deixar conta órfã
@@ -71,14 +88,15 @@ export async function POST(request: Request) {
   }
 
   if (role === "proprietario") {
-    await admin.from("owners").insert({ profile_id: userId, aceite_termos_at: new Date().toISOString() });
-  } else if (["corretor", "imobiliaria", "engenheiro"].includes(role)) {
+    await admin.from("owners").insert({ profile_id: userId, aceite_termos_at: agora, aceite_termos_versao: versao });
+  } else if (ehParceiro) {
     await admin.from("partners").insert({
       profile_id: userId,
       tipo: role,
       razao_social: razao_social?.trim() || nome.trim(),
       registro_profissional: registro_profissional?.trim() || null,
-      aceite_termos_at: new Date().toISOString(),
+      aceite_termos_at: agora,
+      aceite_termos_versao: versao,
     });
   }
 
@@ -87,7 +105,7 @@ export async function POST(request: Request) {
     acao: "cadastro_criado",
     entidade: "profiles",
     entidade_id: userId,
-    dados_depois: { role, email, documento: doc.tipo },
+    dados_depois: { role, email, documento: doc.tipo, aceite: versao, ip },
   });
 
   return NextResponse.json({ ok: true });

@@ -347,11 +347,12 @@ export default async function Home() {
             {texto(cfg, "telefone_contato") && <> · {texto(cfg, "telefone_contato")}</>}
             {texto(cfg, "email_contato") && <> · {texto(cfg, "email_contato")}</>}
           </p>
-          <nav className="flex gap-5">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2">
             <Link href="/mapa" className="hover:text-verde">Consultas</Link>
             <Link href="/imoveis" className="hover:text-verde">Imóveis</Link>
             <Link href="/entrar" className="hover:text-verde">Anunciar</Link>
             <Link href="/entrar" className="hover:text-verde">Entrar</Link>
+            <Link href="/termos" className="hover:text-verde">Termos e privacidade</Link>
           </nav>
         </div>
       </footer>

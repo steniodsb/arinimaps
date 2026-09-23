@@ -415,7 +415,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
    */
   async function salvar() {
     setSalvando(true); setMsg(""); setErro(null);
-    const r = await enviarJson<{ aplicado?: Record<string, number | string[]> }>(
+    const r = await enviarJson<{
+      aplicado?: Record<string, number | string[]>;
+      publico?: { bytes: number; linhas: number; linhas_total: number } | null;
+      aviso_publico?: string | null;
+    }>(
       `/api/admin/cartografia/${camada.id}`, "PATCH", {
         offset_leste_m: Math.round(t.offsetLesteM * 100) / 100,
         offset_norte_m: Math.round(t.offsetNorteM * 100) / 100,
@@ -436,7 +440,12 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
     setMsg(
       `Gravado: leste ${n(g.offset_leste_m, 1)} m · norte ${n(g.offset_norte_m, 1)} m · ` +
       `giro ${n(g.rotacao_graus, 3)}° · escala ${typeof g.escala === "number" ? (g.escala * 100).toFixed(2) + "%" : "—"} · ` +
-      `${ocultos.size} camada${ocultos.size === 1 ? "" : "s"} do CAD oculta${ocultos.size === 1 ? "" : "s"}. Já vale no mapa público.`
+      `${ocultos.size} camada${ocultos.size === 1 ? "" : "s"} do CAD oculta${ocultos.size === 1 ? "" : "s"}. Já vale no mapa público.` +
+      (r.dados.publico?.bytes
+        ? ` O mapa público passa a baixar ${(r.dados.publico.bytes / 1048576).toFixed(1)} MB ` +
+          `(${r.dados.publico.linhas.toLocaleString("pt-BR")} de ${r.dados.publico.linhas_total.toLocaleString("pt-BR")} linhas).`
+        : "") +
+      (r.dados.aviso_publico ? ` Atenção: o arquivo filtrado não foi gerado (${r.dados.aviso_publico}); o mapa filtra no navegador.` : "")
     );
   }
 

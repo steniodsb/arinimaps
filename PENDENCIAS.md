@@ -1,127 +1,110 @@
-# Arini Imóveis Brasil — o que falta (17/09/2026)
+# Arini Imóveis Brasil — o que falta (23/09/2026)
 
-> O sistema está construído e o SQL todo aplicado (migrations 0001–0017).
-> Todas as telas — site, mapa, painel do cliente e Central Arini — já estão no
-> design escuro dos mockups, no desktop e no celular. Conta nova é criada por
-> **CPF** (com e-mail para rastreio).
+> O sistema está construído: F0 a F3 entregues, migrations 0001–0019 aplicadas,
+> todas as telas no design escuro/claro, desktop e celular.
 > Rode `npm run dev` em `arini-maps/` e entre com `admin@arinimaps.com.br`.
 > Repositório: github.com/steniodsb/arinimaps
+>
+> **O que falta para 100% cabe em quatro etapas, nesta ordem.** De código, não
+> sobrou nada que dependa só de mim — o resto é deploy, conteúdo e decisão.
 
 ---
 
-## 0. Mapa urbano — o que foi medido e corrigido em 17/09/2026
+## Feito em 23/09/2026
 
-Cinco queixas, cada uma virou número antes de virar conserto.
-
-| Queixa | O que estava acontecendo | Como está agora |
-|---|---|---|
-| **Calibração não salva** | `/api/geo/cartografia` servia `max-age=60`, e a tela de calibração lia dessa mesma rota. Salvar → fechar → reabrir dentro de 1 min trazia os valores **antigos** do cache; o ajuste seguinte gravava o valor velho por cima. | A lista do admin lê com `?fresco=1` + `no-store`. O aviso de sucesso agora **ecoa o que o banco respondeu** (leste, norte, giro, escala, nº de camadas ocultas) em vez de uma frase genérica. |
-| **Mapa pesado para abrir** | Abrir `/mapa` baixava as três plantas (22 MB, sendo 19 MB de Iturama) dentro do `load`, em série, antes de desenhar imóvel nenhum — e na visão regional (z9) nenhuma delas chega a ser desenhada. | A planta só é buscada quando a cidade entra na tela **e** o zoom passa do mínimo. Medido: abrir em z9 baixa **0 MB** (era 22 MB); em Iturama z16 baixa só Iturama. |
-| **Arrastar a planta trava** | Cada movimento do mouse refazia o GeoJSON inteiro e reenviava ao MapLibre. Medido em Iturama: **863 ms por movimento** (23 ms de cálculo + 840 ms de reprocessamento de 604.637 pontos). A planta andava quase um segundo atrás do cursor. | O arraste empurra a camada em pixels (`line-translate`, uniforme de GPU) e só recalcula a geometria **ao soltar**. Medido: **16,7 ms por quadro — 60 fps**. Shift durante o arraste anda a 15% para encostar no meio-fio. Teclado e Ctrl+Z coalescem num redesenho por quadro. |
-| **Linha do lote não aparece** | Traço único, `#FFE9A8` com 1,1 px em z16: some sobre telhado de cerâmica claro e some sobre asfalto. | Contorno escuro embaixo + linha clara em cima, nas duas telas, com espessura que cresce até z19. Régua de escala na tela de calibração. |
-| **Nuvem no satélite** | O mosaico "atual" da Esri muda sem aviso e a nuvem entrou numa atualização. | **Já resolvido no código, falta publicar.** Release fixo do Wayback (20512, 2025‑10‑23). Medido em 17/09 com `scripts/mede-nuvem.mjs` — é o melhor nas três cidades: Iturama 0,4% (mosaico atual: 15,6%, pior tile 52,9%), Limeira 0,0%, União 0,0%. |
-
-**Ainda em aberto neste bloco:**
-
-- **Plantas de Limeira do Oeste e União de Minas estão pobres.** São do conversor
-  antigo: 47.786 e 7.773 linhas, contra 207.603 de Iturama — sem o conteúdo dos
-  blocos de loteamento. Só existem em `.dwg`, e DWG é formato fechado.
-  **Depende de você: abrir no AutoCAD → Salvar como → DXF** e subir em
-  Admin › Cartografia. A conversão e a publicação são automáticas.
-- **Iturama ainda baixa 19,3 MB no zoom da cidade**, e 41% disso é descartado no
-  navegador (as 10 camadas de paisagismo: 122.027 de 207.603 linhas vão ao mapa).
-  O conserto é gerar o arquivo já filtrado no servidor quando o operador salva a
-  seleção de camadas — 19,3 MB cairiam para ~11 MB. Não feito ainda.
+| Item | Como ficou |
+|---|---|
+| **Textos jurídicos** | 6 documentos em `/termos`: Termos de Uso, Política de Privacidade (LGPD), Autorização de Venda, Exclusividade, Regra de Remuneração (1% + mensalidade + proteção contra venda por fora) e Termo de Parceria. Texto em `src/lib/juridico.ts`, versionado. |
+| **Aceite registrado** | Cadastro exige aceite (Termos + Privacidade; parceiro também o Termo de Parceria). Anúncio exige escolher a **condição de comercialização** — autorização simples, exclusividade Arini ou imóvel de parceiro — e aceitar o termo dela. Grava versão, data, hora, usuário e IP (migration 0018), como a especificação pede no item 8. A análise do imóvel no admin mostra o aceite. |
+| **Dados jurídicos no painel** | Aba nova em Admin › Configurações: razão social, CNPJ, CRECI-J, endereço, foro, e-mail do encarregado LGPD, prazo da autorização (180 dias) e proteção pós-contrato (12 meses). Os termos leem daí; campo vazio aparece marcado no texto. |
+| **Planta de Iturama mais leve** | Ao salvar a seleção de camadas na calibração, o servidor grava o arquivo já sem as camadas ocultas (migration 0019). Medido: **19,3 MB → 13,9 MB** baixados no zoom da cidade, 60 → 50 camadas. O centro do arquivo completo vai gravado junto, para giro/escala não moverem a planta calibrada. |
+| **Páginas de teste removidas** | `public/teste-mapa.html` e `public/teste-satelite.html` (diagnóstico de agosto) saíram. |
+| **Limpeza dos dados demo pronta** | `scripts/limpa-demo.mjs` — ver Etapa 2. Ensaiado, não executado. |
 
 ---
 
-## 1. Depende só de você (destrava sozinho)
+## Etapa 1 — Colocar no ar (você, ~1h)
+
+Trava todo o resto: sem ela, o satélite sem nuvem, as correções do mapa e os
+termos não chegam ao público. Roteiro completo em `deploy/DEPLOY.md`.
 
 | # | O quê | Onde |
 |---|---|---|
-| 1 | **Redeploy no Dokploy** — é o que tira a nuvem do satélite e leva as correções do mapa urbano ao ar | painel Dokploy |
-| 2 | **Envs em runtime**: as 6 do Supabase + `NEXT_PUBLIC_SITE_URL` com o domínio real | Dokploy › Environment |
-| 3 | **Domínio**: comprar `arinimaps.com.br` ou apontar subdomínio na Cloudflare | — |
-| 4 | ~~**Planta de Iturama**~~ **Feito em 09/09/2026** — DXF convertido, 207.603 linhas, alinhada ao satélite sem calibração | — |
-| 5 | **DXF de Limeira do Oeste e União de Minas** (ver §0) | AutoCAD → Salvar como → DXF |
-| 6 | **Preencher as configurações** (contatos, textos da home, mensalidade, comissão) | Admin › Configurações |
-| 7 | **Trocar as senhas** das 3 contas de teste e criar a conta real do Carlos | Admin › Usuários |
-| 8 | **Limpar os dados demo** antes de mostrar (Fazenda Boa Vista está "vendida" pelo teste E2E) | Admin › Imóveis |
+| 1 | **Envs antes do primeiro build**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`. As `NEXT_PUBLIC_*` entram no build — adicionadas depois, o navegador quebra sem erro claro. Mudou `NEXT_PUBLIC_*`? **Rebuild**, não restart. | Dokploy › Environment |
+| 2 | **Deploy** da `main` | Dokploy |
+| 3 | **Domínio**: comprar `arinimaps.com.br` ou apontar subdomínio na Cloudflare; ajustar `NEXT_PUBLIC_SITE_URL` e rebuild | Registro.br / Cloudflare |
+| 4 | **Worker** (vídeo automático, tiles de imagem, imagem de compartilhamento) — `deploy/worker-compose.yml` como 2º serviço. Todo o resto funciona sem ele. | Dokploy |
 
-## 2. Chaves de serviço (cada uma liga um recurso já pronto no código)
+## Etapa 2 — Deixar apresentável (você, meio dia)
 
-| Serviço | Env | O que liga |
+| # | O quê | Onde |
 |---|---|---|
-| Resend | `RESEND_API_KEY`, `RESEND_FROM` | E-mails automáticos: lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro |
-| Asaas | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Botão "Cobrar via Asaas" + baixa automática do pagamento (webhook em `/api/asaas/webhook`) |
-| MapTiler | `NEXT_PUBLIC_MAPTILER_KEY` | Satélite licenciado para uso comercial (hoje usa Esri, que é de demonstração) |
+| 5 | **Exportar DXF de Limeira do Oeste e União de Minas** no AutoCAD e subir. Hoje as plantas estão pobres (47.786 e 7.773 linhas contra 207.603 de Iturama — sem o conteúdo dos blocos de loteamento). DWG é formato fechado e não há conversor nesta máquina. Conversão e publicação são automáticas. | AutoCAD → Salvar como → DXF → Admin › Cartografia |
+| 6 | **Preencher Dados jurídicos** (CNPJ, CRECI-J, endereço, foro, e-mail LGPD) — enquanto vazios, os termos publicados mostram `〔… preencher em Admin › Configurações〕` | Admin › Configurações › Dados jurídicos |
+| 7 | **Preencher contatos e textos** (e-mail que recebe leads, telefone, e-mail público) | Admin › Configurações |
+| 8 | **Desfazer a venda de teste** antes de mostrar: `node scripts/limpa-demo.mjs --vitrine --executar`. Apaga lead, oportunidade, visita, 3 propostas, contrato, venda e comissão do teste E2E e devolve a Fazenda Boa Vista a "publicado". Os 3 imóveis demo continuam para a apresentação. Sem `--executar` é só ensaio. | terminal, em `arini-maps/` |
+| 9 | **Trocar a senha do admin** e criar a conta real do Carlos | Admin › Usuários |
+| 10 | **Olhar com calma**: `/`, `/mapa` (satélite + plantas), `/imoveis`, `/relatorios`, `/imovel/ARINI-MAP-000002` e o relatório, o tour 3D, `/termos`, o cadastro com aceite, anunciar um imóvel de teste, e Admin › Cartografia › Calibrar. | navegador |
 
-Sem elas o sistema funciona — só esses recursos ficam inativos. O painel de
-Configurações mostra o estado de cada uma.
+## Etapa 3 — Reunião com o Carlos (demo + decisões)
 
-## 3. Worker (vídeo e tiles)
+Pauta pronta em `PAUTA-REUNIAO-CARLOS.md` (na pasta do projeto). Resumo:
 
-`deploy/worker-compose.yml` está pronto. Sobe como segundo serviço no Dokploy com
-`DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SITE_URL`.
-Sem ele: vídeo automático, tiles de imagem georreferenciada e imagem de
-compartilhamento ficam pendentes. **Todo o resto funciona sem o worker.**
+- **Orçamento** — ainda não enviado (recomendação registrada: R$ 7.000 em 3 parcelas + sustentação R$ 400–500/mês).
+- **Validar os termos com o advogado dele.** A especificação exige (itens 8 e 24.2). Os pontos que são decisão comercial, não redação, estão listados na pauta.
+- **Mensalidade** do anúncio e dias de tolerância (hoje R$ 0 / 15 dias). O texto dos termos se ajusta sozinho ao valor configurado.
+- **Lista final de municípios** do piloto (você adiciona só com o código IBGE).
+- **Satélite licenciado** MapTiler (~US$ 25/mês) — o Esri atual é de demonstração.
+- **MapBiomas**: token com aceite de termos, ou raster importado?
+- **Pedir**: arquivos oficiais de CAR, SIGEF, IBAMA embargos, quilombolas e IPHAN; 1 KML real; o fluxograma resumido.
 
-## 4. Decisões com o Carlos
+## Etapa 4 — Ligar o que depende da reunião
 
-- Valor da mensalidade do anúncio e dias de tolerância (hoje R$ 0 / 15 dias).
-- Textos jurídicos: termos de uso, autorização de venda, exclusividade, regra do 1%.
-- Lista final de municípios do piloto (você mesmo adiciona em Admin › Regiões, só com o código IBGE).
-- Custo do satélite licenciado (~US$ 25/mês) — único custo recorrente de mapa.
-- Orçamento do projeto (recomendação registrada: R$ 7.000 em 3 parcelas + sustentação mensal).
+| Serviço / item | Env ou ação | O que liga | Quem |
+|---|---|---|---|
+| Resend | `RESEND_API_KEY`, `RESEND_FROM` | E-mails: lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro | você cria a conta, eu verifico |
+| Asaas | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Botão "Cobrar via Asaas" + baixa automática (`/api/asaas/webhook`) | você |
+| MapTiler | `NEXT_PUBLIC_MAPTILER_KEY` | Satélite licenciado para uso comercial | você (rebuild) |
+| Arquivos oficiais | — | CAR, SIGEF, IBAMA, quilombolas, IPHAN passam a cruzar no relatório | **eu importo** no PostGIS |
+| MapBiomas | token ou raster | Uso do solo no relatório | **eu**, conforme a decisão |
+| Termos revisados | subir `VERSOES` em `src/lib/juridico.ts` | Aceites antigos seguem apontando para a versão lida | **eu** |
+| Abertura ao público | `node scripts/limpa-demo.mjs --tudo --executar` | Remove os 3 imóveis demo e as contas de teste | você, no dia |
 
-## 5. Consulta Rural — o que consulta sozinho e o que depende de arquivo
+Sem as chaves o sistema funciona — só esses recursos ficam inativos. Admin ›
+Configurações mostra o estado de cada integração.
 
-Sondei de novo todas as fontes do documento técnico em 28/08/2026 com os
-scripts `sonda-fontes.mjs`, `sonda-fontes2.mjs` e `sonda-fontes3.mjs`.
+---
 
-**Consultam ao vivo, sem nenhuma chave (9 fontes):**
+## Referência — Consulta Rural
 
-| Fonte | Órgão | Como |
-|---|---|---|
-| Processos minerários | ANM / SIGMINE | ArcGIS REST |
-| Terras indígenas | FUNAI | WFS |
-| Desmatamento PRODES | INPE / TerraBrasilis | WFS |
-| Alertas DETER | INPE / TerraBrasilis | WFS |
-| Focos de calor | INPE / Programa Queimadas | WFS |
-| Unidades de conservação | CNUC/MMA compilado pelo INPE | WFS |
-| Corpos d'água e represas | INPE / TerraBrasilis | WFS |
-| Cursos d'água | ANA / SNIRH | ArcGIS REST |
-| Empreendimentos de energia | ANEEL / SIGEL | ArcGIS REST |
+**Consultam ao vivo, sem chave (9 fontes):** ANM/SIGMINE, FUNAI, INPE PRODES,
+DETER, Queimadas, unidades de conservação, corpos d'água (TerraBrasilis),
+ANA/SNIRH e ANEEL/SIGEL — mais IBGE e OpenStreetMap.
 
-Mais IBGE (municípios) e OpenStreetMap (POIs e acessos), que já alimentavam a página do imóvel.
+**Sem consulta pública por polígono (medido em 28/08/2026) — dependem de arquivo:**
 
-**Não têm consulta pública por polígono — preciso do arquivo oficial para importar:**
-
-| Fonte | O que medi em 28/08/2026 |
+| Fonte | O que medi |
 |---|---|
-| CAR / SICAR | O WFS responde mas publica **zero camadas**. O shapefile por município sai com CAPTCHA. |
-| INCRA / SIGEF | O acervo fundiário deu timeout; o portal de certificação exige login. |
-| IBAMA — embargos | Nenhum host respondeu (404/403/DNS). Usar a planilha de dados abertos. |
-| Territórios quilombolas | Mesmo acervo do INCRA que não respondeu. |
-| IPHAN | O geoserver devolve a página do portal, não capabilities. Sai pelo SICG. |
-| MapBiomas | A API de estatísticas exige token e aceite de termos. **Decisão sua: token ou raster importado?** |
-| DNIT | Nenhum endpoint público respondeu; as rodovias hoje vêm do OpenStreetMap. |
+| CAR / SICAR | WFS responde e publica zero camadas; shapefile por município sai com CAPTCHA |
+| INCRA / SIGEF | acervo fundiário deu timeout; certificação exige login |
+| IBAMA — embargos | nenhum host respondeu; usar a planilha de dados abertos |
+| Territórios quilombolas | mesmo acervo do INCRA |
+| IPHAN | geoserver devolve a página do portal; sai pelo SICG |
+| MapBiomas | API exige token e aceite de termos — **decisão** |
+| DNIT | nenhum endpoint público; rodovias vêm do OpenStreetMap |
 
-Duas limitações que valem dizer ao Carlos, porque não são falha nossa:
-- O SIGEL da ANEEL **não expõe linhas de transmissão nem subestações** — só empreendimentos de geração.
-- O geoserver do Programa Queimadas é um cluster instável: 3 de 8 chamadas idênticas voltam 404. O sistema repete a chamada automaticamente.
+Duas limitações que são dos órgãos, não nossas: o SIGEL da ANEEL não expõe
+linhas de transmissão nem subestações, e o geoserver do Programa Queimadas é
+instável (3 de 8 chamadas idênticas voltam 404; o sistema repete sozinho).
 
-## 6. Validação que só você pode fazer
+## Referência — Mapa urbano (medições de 17/09/2026)
 
-Abrir e olhar com calma: `/` (landing), `/mapa` (com satélite e plantas),
-`/imovel/ARINI-MAP-000002`, o tour 3D, e o painel admin inteiro.
-Todas as telas foram verificadas por screenshot, mas seu olho no fluxo real
-vale mais que o meu.
-
-Telas novas desta rodada, que valem uma olhada:
-`/imoveis` (busca com filtros), `/relatorios` (lista dos relatórios territoriais)
-e `/imovel/ARINI-MAP-000001/relatorio` — o relatório sai em PDF pelo botão
-"Baixar relatório", que usa a impressão do navegador (Salvar como PDF).
-
-E, desta rodada: **Admin › Cartografia › Calibrar sobre o satélite** — arraste a
-planta e veja se ficou suave. É a tela que mais mudou.
+| Queixa | Estado |
+|---|---|
+| Calibração não salvava (cache de 60 s regravava valor velho) | corrigido — lê sem cache e ecoa o que o banco gravou |
+| Mapa pesado para abrir (22 MB em z9) | corrigido — 0 MB em z9; planta só quando a cidade está na tela |
+| Arraste travado (863 ms por movimento) | corrigido — 16,7 ms/quadro, 60 fps |
+| Linha do lote invisível | corrigido — contorno escuro + linha clara |
+| Nuvem no satélite | corrigido no código (Wayback 20512) — **vai ao ar no deploy** |
+| Iturama pesada (19,3 MB) | corrigido em 23/09 — 13,9 MB |
+| Limeira e União pobres | **depende do DXF** (Etapa 2, item 5) |

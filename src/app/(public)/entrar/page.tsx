@@ -26,6 +26,7 @@ export default function Entrar() {
     nome: "", email: "", senha: "", telefone: "", cpf: "", role: "comprador",
     razao_social: "", registro_profissional: "",
   });
+  const [aceite, setAceite] = useState(false);
 
   const ehParceiro = ["imobiliaria", "corretor", "engenheiro"].includes(form.role);
   const docInvalido = form.cpf.length > 0 && !validarDocumento(form.cpf).ok;
@@ -54,7 +55,7 @@ export default function Entrar() {
         const res = await fetch("/api/cadastro", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify({ ...form, aceite_termos: aceite }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Falha no cadastro.");
@@ -161,10 +162,26 @@ export default function Entrar() {
           </div>
 
           {modo === "cadastro" && (
-            <p className="text-xs text-texto-2">
-              Ao criar a conta você aceita os termos de uso.
-              {form.role !== "comprador" && " Cadastros de proprietário e parceiro passam pela análise da Arini antes de anunciar."}
-            </p>
+            <div className="space-y-2">
+              <label className="flex items-start gap-2 text-xs text-texto-2">
+                <input type="checkbox" required checked={aceite}
+                  onChange={(e) => setAceite(e.target.checked)} className="mt-0.5" />
+                <span>
+                  Li e aceito os{" "}
+                  <Link href="/termos/termos-de-uso" target="_blank" className="text-verde underline">Termos de Uso</Link>
+                  {ehParceiro && <>, o{" "}
+                    <Link href="/termos/parceiros" target="_blank" className="text-verde underline">Termo de Parceria</Link>
+                  </>}
+                  {" "}e a{" "}
+                  <Link href="/termos/privacidade" target="_blank" className="text-verde underline">Política de Privacidade</Link>.
+                </span>
+              </label>
+              {form.role !== "comprador" && (
+                <p className="text-xs text-texto-2">
+                  Cadastros de proprietário e parceiro passam pela análise da Arini antes de anunciar.
+                </p>
+              )}
+            </div>
           )}
           {erro && <p className="text-sm text-critico">{erro}</p>}
 

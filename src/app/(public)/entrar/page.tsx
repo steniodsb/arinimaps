@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { formatarCPF, validarDocumento } from "@/lib/br/documentos";
+import { lerCarPendente } from "@/lib/map/carPendente";
 
 const PERFIS = [
   { value: "comprador", label: "Quero comprar / procurar imóvel" },
@@ -27,6 +28,10 @@ export default function Entrar() {
     razao_social: "", registro_profissional: "",
   });
   const [aceite, setAceite] = useState(false);
+  // veio de "Esta área é minha": quem cria conta nesse caminho é proprietário
+  useEffect(() => {
+    if (lerCarPendente()) setForm((f) => ({ ...f, role: "proprietario" }));
+  }, []);
 
   const ehParceiro = ["imobiliaria", "corretor", "engenheiro"].includes(form.role);
   const docInvalido = form.cpf.length > 0 && !validarDocumento(form.cpf).ok;
@@ -38,8 +43,12 @@ export default function Entrar() {
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user!.id).single();
     const role = profile?.role;
+    // clicou numa área do CAR antes de entrar: volta direto para anunciá-la
+    const carPendente = lerCarPendente();
+    const anuncia = role === "proprietario" || ["corretor", "imobiliaria", "engenheiro"].includes(role ?? "");
     router.push(
       role === "admin_central" || role === "analista_arini" ? "/admin"
+        : carPendente && anuncia ? `/painel/novo?car=${encodeURIComponent(carPendente)}`
         : role === "comprador" ? "/mapa"
         : "/painel"
     );

@@ -32,7 +32,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/imoveis/[id
   if (upError) return NextResponse.json({ error: upError.message }, { status: 500 });
 
   const { data: doc, error } = await admin.from("property_documents")
-    .insert({ property_id: id, tipo, storage_path: path }).select("id").single();
+    .insert({ property_id: id, tipo, storage_path: path, nome_arquivo: arquivo.name }).select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await logAudit({ user_id: a.userId, acao: "documento_anexado", entidade: "property_documents", entidade_id: doc.id, property_id: id, dados_depois: { tipo, nome: arquivo.name } });
@@ -48,11 +48,42 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/imoveis/[id
 
   const admin = supabaseAdmin();
   const { data: docs } = await admin.from("property_documents")
-    .select("id, tipo, storage_path, verificado, created_at").eq("property_id", id).order("created_at");
+    .select("id, tipo, storage_path, nome_arquivo, verificado, verificado_em, created_at").eq("property_id", id).order("created_at");
   const out = [];
   for (const d of docs ?? []) {
     const { data: signed } = await admin.storage.from("docs").createSignedUrl(d.storage_path, 3600);
     out.push({ ...d, url: signed?.signedUrl ?? null });
   }
   return NextResponse.json({ documentos: out });
+}
+
+/**
+ * Conferência da Arini: marca (ou desmarca) um documento como conferido.
+ * Aprovar e publicar o imóvel dependem disso — ver /api/admin/decisao.
+ */
+export async function PATCH(request: Request, ctx: RouteContext<"/api/imoveis/[id]/documentos">) {
+  const { id } = await ctx.params;
+  const a = await ator();
+  if (!a?.ehArini) return NextResponse.json({ error: "Só a equipe da Arini confere documentos." }, { status: 403 });
+
+  const { documento_id, verificado } = await request.json().catch(() => ({}));
+  if (!documento_id || typeof verificado !== "boolean") {
+    return NextResponse.json({ error: "Informe documento_id e verificado." }, { status: 400 });
+  }
+  const admin = supabaseAdmin();
+  const { data: doc, error } = await admin.from("property_documents")
+    .update({
+      verificado,
+      verificado_por: verificado ? a.userId : null,
+      verificado_em: verificado ? new Date().toISOString() : null,
+    })
+    .eq("id", documento_id).eq("property_id", id)
+    .select("id, tipo").single();
+  if (error || !doc) return NextResponse.json({ error: "Documento não encontrado neste imóvel." }, { status: 404 });
+
+  await logAudit({
+    user_id: a.userId, acao: verificado ? "documento_conferido" : "documento_desconferido",
+    entidade: "property_documents", entidade_id: doc.id, property_id: id, dados_depois: { tipo: doc.tipo },
+  });
+  return NextResponse.json({ ok: true });
 }

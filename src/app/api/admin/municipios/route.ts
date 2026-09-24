@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator } from "@/lib/authz";
 import { falha, falhaBanco } from "@/lib/erros";
+import { importarCarMunicipio } from "@/lib/geo/car";
 
 // Adiciona município à região buscando nome + malha no IBGE.
 export async function POST(request: Request) {
@@ -43,6 +44,12 @@ export async function POST(request: Request) {
   });
   if (error) return falhaBanco("municipio_nao_gravou", error);
 
-  await logAudit({ user_id: a.userId, acao: "municipio_adicionado", entidade: "municipalities", dados_depois: { codigo_ibge, nome: meta.nome } });
-  return NextResponse.json({ ok: true, nome: meta.nome });
+  // a malha do CAR do município entra junto: o proprietário já pode clicar na
+  // área dele. Falha do SICAR não desfaz o município — dá para repetir em Regiões.
+  const car = await importarCarMunicipio(admin, { nome: meta.nome, uf, codigo_ibge })
+    .then((r) => ({ imoveis: r.gravados, erro: null as string | null }))
+    .catch((e) => ({ imoveis: 0, erro: e instanceof Error ? e.message : String(e) }));
+
+  await logAudit({ user_id: a.userId, acao: "municipio_adicionado", entidade: "municipalities", dados_depois: { codigo_ibge, nome: meta.nome, car } });
+  return NextResponse.json({ ok: true, nome: meta.nome, car });
 }

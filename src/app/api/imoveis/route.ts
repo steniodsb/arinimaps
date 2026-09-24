@@ -20,10 +20,14 @@ export async function POST(request: Request) {
   let owner_id: string | null = null;
   let partner_id: string | null = null;
   if (profile.role === "proprietario") {
+    // Proprietário pode enviar o imóvel com a conta ainda em análise (fluxo do
+    // Carlos, 24/09/2026: clica na área, cadastra, manda os documentos). O
+    // imóvel só publica depois que a Arini confere a matrícula — é ali que a
+    // propriedade é comprovada. Conta recusada ou suspensa não anuncia.
     const { data } = await admin.from("owners").select("id, status").eq("profile_id", user.id).single();
-    if (!data || !["aprovado", "ativo"].includes(data.status)) {
+    if (!data || !["solicitado", "em_analise", "pendente", "aprovado", "ativo"].includes(data.status)) {
       return NextResponse.json(
-        { error: "Seu cadastro de proprietário ainda está em análise pela Arini." },
+        { error: "Seu cadastro de proprietário não está liberado para anunciar. Fale com a Arini." },
         { status: 403 }
       );
     }
@@ -45,6 +49,10 @@ export async function POST(request: Request) {
   const dados = JSON.parse(String(form.get("dados") ?? "{}"));
   const geometria = JSON.parse(String(form.get("geometria") ?? "null"));
   const fotos = form.getAll("fotos").filter((f): f is File => f instanceof File);
+  const TIPOS_DOC = ["matricula", "ccir_itr", "autorizacao", "outro"] as const;
+  const docs = TIPOS_DOC.flatMap((tipo) =>
+    form.getAll(`doc_${tipo}`).filter((f): f is File => f instanceof File && f.size > 0).map((arquivo) => ({ tipo, arquivo }))
+  );
 
   if (!dados.titulo?.trim() || !dados.tipo || !geometria) {
     return NextResponse.json(
@@ -60,6 +68,40 @@ export async function POST(request: Request) {
   const condicao: "autorizacao" | "exclusividade" | "parceiro" = partner_id
     ? "parceiro"
     : dados.condicao === "exclusividade" ? "exclusividade" : "autorizacao";
+  // comprovação de propriedade: sem matrícula não entra (a equipe Arini anexa depois)
+  if (!equipe && !docs.some((d) => d.tipo === "matricula")) {
+    return NextResponse.json(
+      { error: "Envie a matrícula do imóvel (ou escritura/contrato registrado) para comprovar a propriedade." },
+      { status: 400 }
+    );
+  }
+  if (partner_id && !docs.some((d) => d.tipo === "autorizacao")) {
+    return NextResponse.json(
+      { error: "Imóvel de parceiro: envie a autorização de venda assinada pelo proprietário." },
+      { status: 400 }
+    );
+  }
+  const docGrande = docs.find((d) => d.arquivo.size > 25 * 1024 * 1024);
+  if (docGrande) {
+    return NextResponse.json({ error: `O arquivo ${docGrande.arquivo.name} passa de 25 MB.` }, { status: 400 });
+  }
+
+  // área do CAR: a divisa vem do NOSSO banco, não do navegador — quem manda o
+  // código não consegue trocar a geometria no caminho
+  let carCodigo: string | null = null;
+  let geometriaFinal = geometria;
+  if (geometria?.fonte === "car" && dados.car_codigo) {
+    const { data: car } = await admin.rpc("fn_car_imovel", { p_cod: String(dados.car_codigo) });
+    if (!car?.geometry) {
+      return NextResponse.json({ error: "Área do CAR não encontrada. Clique de novo na área no mapa." }, { status: 400 });
+    }
+    carCodigo = String(dados.car_codigo);
+    geometriaFinal = { geometry: car.geometry, fonte: "car" };
+  } else if (geometria?.fonte === "car") {
+    // "car" sem código não tem como ser conferido: vale como desenho comum
+    geometriaFinal = { ...geometria, fonte: "desenho" };
+  }
+
   if (!equipe && dados.aceite_termos !== true) {
     return NextResponse.json(
       { error: "Para anunciar é preciso aceitar o termo da condição de comercialização e a Regra de Remuneração." },
@@ -110,6 +152,7 @@ export async function POST(request: Request) {
       aceita_financiamento: !!dados.aceita_financiamento,
       exclusividade: condicao === "exclusividade",
       parent_property_id,
+      car_codigo: carCodigo,
       created_by: user.id,
     })
     .select("id, codigo")
@@ -137,8 +180,8 @@ export async function POST(request: Request) {
   // geometria (fonte: desenho | kml | kmz | ponto)
   const { error: geoError } = await admin.rpc("fn_upsert_geometry", {
     p_property_id: property.id,
-    p_geojson: geometria.geometry ?? geometria,
-    p_fonte: geometria.fonte ?? "desenho",
+    p_geojson: geometriaFinal.geometry ?? geometriaFinal,
+    p_fonte: geometriaFinal.fonte ?? "desenho",
   });
   if (geoError) {
     await admin.from("properties").delete().eq("id", property.id);
@@ -172,6 +215,27 @@ export async function POST(request: Request) {
     }
   }
 
+  // documentos de comprovação → bucket PRIVADO (docs), conferidos pela Arini
+  const docsFalharam: string[] = [];
+  for (const { tipo, arquivo } of docs.slice(0, 30)) {
+    const ext = (arquivo.name.split(".").pop() || "pdf").toLowerCase();
+    const path = `imoveis/${property.id}/${tipo}-${crypto.randomUUID()}.${ext}`;
+    const { error: upErro } = await admin.storage.from("docs")
+      .upload(path, await arquivo.arrayBuffer(), { contentType: arquivo.type || "application/octet-stream" });
+    if (upErro) { docsFalharam.push(arquivo.name); continue; }
+    await admin.from("property_documents").insert({
+      property_id: property.id, tipo, storage_path: path, nome_arquivo: arquivo.name,
+    });
+  }
+  if (!equipe && docsFalharam.length === docs.length) {
+    // nenhum documento subiu: sem comprovação o imóvel não pode ir para análise
+    await admin.from("properties").delete().eq("id", property.id);
+    return NextResponse.json(
+      { error: "Os documentos não puderam ser salvos. Tente de novo em instantes." },
+      { status: 502 }
+    );
+  }
+
   // envia direto para análise
   await admin.from("properties").update({ status: "pendente" }).eq("id", property.id);
 
@@ -181,8 +245,11 @@ export async function POST(request: Request) {
     entidade: "properties",
     entidade_id: property.id,
     property_id: property.id,
-    dados_depois: { codigo: property.codigo, titulo: dados.titulo, condicao, aceite: equipe ? null : versao },
+    dados_depois: {
+      codigo: property.codigo, titulo: dados.titulo, condicao, aceite: equipe ? null : versao,
+      car: carCodigo, documentos: docs.length - docsFalharam.length, documentos_falharam: docsFalharam,
+    },
   });
 
-  return NextResponse.json({ ok: true, codigo: property.codigo });
+  return NextResponse.json({ ok: true, codigo: property.codigo, documentos_falharam: docsFalharam });
 }

@@ -41,8 +41,27 @@ export async function POST(request: Request) {
     if (!ACOES_IMOVEL.includes(acao)) {
       return NextResponse.json({ error: "Ação inválida." }, { status: 400 });
     }
-    const { data: antes } = await admin.from("properties").select("id, codigo, status").eq("id", id).single();
+    const { data: antes } = await admin.from("properties").select("id, codigo, status, partner_id").eq("id", id).single();
     if (!antes) return NextResponse.json({ error: "Imóvel não encontrado." }, { status: 404 });
+
+    // Comprovação de propriedade: nada é aprovado nem publicado sem a Arini
+    // ter conferido a matrícula (e, em imóvel de parceiro, a autorização do
+    // proprietário). Regra do Carlos: o site não publica imóvel sem prova.
+    if (["aprovado", "publicado"].includes(acao)) {
+      const { data: conferidos } = await admin.from("property_documents")
+        .select("tipo").eq("property_id", id).eq("verificado", true);
+      const tipos = new Set((conferidos ?? []).map((d) => d.tipo));
+      const faltam = [
+        !tipos.has("matricula") && "a matrícula (ou escritura) conferida",
+        antes.partner_id && !tipos.has("autorizacao") && "a autorização do proprietário conferida",
+      ].filter(Boolean);
+      if (faltam.length) {
+        return NextResponse.json({
+          error: `Não dá para ${acao === "aprovado" ? "aprovar" : "publicar"} ainda: falta ${faltam.join(" e ")}. ` +
+            "Abra o documento em Documentos, confira e clique em \"marcar como conferido\".",
+        }, { status: 400 });
+      }
+    }
 
     const { error } = await admin
       .from("properties")

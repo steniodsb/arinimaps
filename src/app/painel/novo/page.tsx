@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { lerCarPendente, limparCarPendente } from "@/lib/map/carPendente";
 import type { GeometriaEscolhida } from "@/components/map/DesenhoMapa";
 
 const DesenhoMapa = dynamic(() => import("@/components/map/DesenhoMapa"), { ssr: false });
@@ -13,6 +14,10 @@ type Municipio = { id: string; nome: string };
 type Condicao = "autorizacao" | "exclusividade" | "parceiro";
 
 const EQUIPE_ARINI = ["admin_central", "analista_arini"];
+const ACEITA_DOC = ".pdf,.jpg,.jpeg,.png,.webp,.heic";
+const MAX_DOC = 25 * 1024 * 1024;
+
+type Docs = { matricula: File[]; ccir_itr: File[]; autorizacao: File[]; outro: File[] };
 const PARCEIROS = ["corretor", "imobiliaria", "engenheiro"];
 
 export default function NovoImovel() {
@@ -29,6 +34,32 @@ export default function NovoImovel() {
   });
   const [papel, setPapel] = useState<string | null>(null);
   const [condicao, setCondicao] = useState<Condicao>("autorizacao");
+  const [docs, setDocs] = useState<Docs>({ matricula: [], ccir_itr: [], autorizacao: [], outro: [] });
+  const [car, setCar] = useState<{ cod: string; area_ha: number | null; municipio: string | null } | null>(null);
+  const [inicial, setInicial] = useState<GeometriaEscolhida | null>(null);
+
+  // veio de "Esta área é minha" no mapa: a divisa do CAR já entra pronta
+  useEffect(() => {
+    const cod = new URLSearchParams(window.location.search).get("car") || lerCarPendente();
+    limparCarPendente();
+    if (!cod) return;
+    fetch(`/api/geo/car/${encodeURIComponent(cod)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((f) => {
+        if (!f?.geometry) return;
+        const g: GeometriaEscolhida = { geometry: f.geometry, fonte: "car" };
+        const p = f.properties ?? {};
+        setCar({ cod: p.cod, area_ha: p.area_ha ?? null, municipio: p.municipio ?? null });
+        setInicial(g);
+        setGeometria(g);
+        setForm((atual) => ({
+          ...atual,
+          tipo: "rural",
+          area_declarada: atual.area_declarada || (p.area_ha ? String(Math.round(Number(p.area_ha) * 100) / 100).replace(".", ",") : ""),
+        }));
+      })
+      .catch(() => undefined);
+  }, []);
   const [aceite, setAceite] = useState(false);
   const ehParceiro = !!papel && PARCEIROS.includes(papel);
   const ehEquipe = !!papel && EQUIPE_ARINI.includes(papel);
@@ -63,6 +94,19 @@ export default function NovoImovel() {
       setErro("Marque a localização do imóvel no mapa (desenho, ponto ou KML).");
       return;
     }
+    if (!ehEquipe && !docs.matricula.length) {
+      setErro("Envie a matrícula do imóvel (ou escritura/contrato registrado) — é o que comprova a propriedade.");
+      return;
+    }
+    if (ehParceiro && !docs.autorizacao.length) {
+      setErro("Envie a autorização de venda assinada pelo proprietário.");
+      return;
+    }
+    const grande = Object.values(docs).flat().find((f) => f.size > MAX_DOC);
+    if (grande) {
+      setErro(`O arquivo ${grande.name} passa de 25 MB. Envie uma versão menor (PDF comprimido ou foto).`);
+      return;
+    }
     setEnviando(true);
 
     const fd = new FormData();
@@ -74,9 +118,13 @@ export default function NovoImovel() {
       caracteristicas: { unidade_area: form.tipo === "rural" ? "ha" : "m2" },
       condicao,
       aceite_termos: aceite,
+      car_codigo: geometria.fonte === "car" ? car?.cod ?? null : null,
     }));
     fd.set("geometria", JSON.stringify(geometria));
     for (const f of fotos) fd.append("fotos", f);
+    for (const [tipo, arquivos] of Object.entries(docs)) {
+      for (const f of arquivos as File[]) fd.append(`doc_${tipo}`, f);
+    }
 
     const res = await fetch("/api/imoveis", { method: "POST", body: fd });
     const data = await res.json();
@@ -147,10 +195,17 @@ export default function NovoImovel() {
 
       <div>
         <label className={label}>Localização no mapa</label>
-        <DesenhoMapa onChange={setGeometria} />
+        {car && (
+          <p className="text-xs rounded-lg bg-ouro/10 border border-ouro/30 px-3 py-2 mb-2 text-texto">
+            Área do CAR <span className="font-mono">{car.cod}</span>
+            {car.municipio && <> · {car.municipio}</>}
+            {car.area_ha != null && <> · {Number(car.area_ha).toLocaleString("pt-BR")} ha declarados no CAR</>}
+          </p>
+        )}
+        <DesenhoMapa onChange={setGeometria} inicial={inicial} />
         {geometria && (
           <p className="text-xs text-verde font-medium mt-1">
-            Geometria definida ({geometria.fonte === "ponto" ? "ponto" : geometria.fonte === "desenho" ? "desenho" : "arquivo " + geometria.fonte.toUpperCase()}).
+            Geometria definida ({geometria.fonte === "ponto" ? "ponto" : geometria.fonte === "desenho" ? "desenho" : geometria.fonte === "car" ? "área do CAR" : "arquivo " + geometria.fonte.toUpperCase()}).
           </p>
         )}
       </div>
@@ -188,6 +243,29 @@ export default function NovoImovel() {
           ))}
         </div>
       </div>
+
+      <fieldset className="cartao p-4 space-y-3">
+        <legend className="text-sm font-medium text-texto px-1">Comprovação de propriedade {ehEquipe ? "" : "*"}</legend>
+        <p className="text-xs text-texto-2">
+          Nenhum imóvel é publicado sem a Arini conferir estes documentos. Eles ficam em área privada:
+          só você e a equipe da Arini veem. PDF ou foto, até 25 MB cada.
+        </p>
+        {([
+          ["matricula", "Matrícula atualizada do imóvel", "Ou escritura, contrato de compra e venda registrado, formal de partilha.", !ehEquipe],
+          ...(ehParceiro ? [["autorizacao", "Autorização de venda assinada pelo proprietário", "Com prazo, preço e condições compatíveis com o anúncio.", true] as const] : []),
+          ...(form.tipo === "rural" ? [["ccir_itr", "CCIR e/ou ITR", "Recomendado para imóvel rural — agiliza a análise.", false] as const] : []),
+          ["outro", "Outros documentos", "Procuração, certidões, documento do cônjuge…", false],
+        ] as const).map(([tipo, titulo, ajuda, obrigatorio]) => (
+          <div key={tipo} className="space-y-1">
+            <label className="block text-sm text-texto">{titulo}{obrigatorio && " *"}</label>
+            <input type="file" multiple accept={ACEITA_DOC} className={input}
+              onChange={(e) => setDocs({ ...docs, [tipo]: Array.from(e.target.files ?? []).slice(0, 10) })} />
+            <p className="text-xs text-texto-2">
+              {docs[tipo].length ? `${docs[tipo].length} arquivo(s): ${docs[tipo].map((f) => f.name).join(", ")}` : ajuda}
+            </p>
+          </div>
+        ))}
+      </fieldset>
 
       <fieldset className="cartao p-4 space-y-3">
         <legend className="text-sm font-medium text-texto px-1">Condição de comercialização *</legend>

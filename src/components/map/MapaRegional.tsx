@@ -17,6 +17,7 @@ import Link from "next/link";
 import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 import Ferramentas from "@/components/map/Ferramentas";
+import { guardarCarPendente } from "@/lib/map/carPendente";
 import { useTema } from "@/components/shell/BotaoTema";
 
 type ImovelProps = {
@@ -53,6 +54,58 @@ type Camada = {
  * claro o amarelo some, e sobre asfalto o traço escuro some. O contorno garante
  * contraste contra os dois, que é como carta cadastral é impressa há décadas.
  */
+/** A partir deste zoom a malha do CAR aparece (visão de município). */
+const CAR_ZOOM_MIN = 12;
+/** Maior lado do retângulo que /api/geo/car aceita, em graus. */
+const CAR_LADO_MAX = 0.6;
+
+type CarProps = {
+  cod: string;
+  area_ha: number | null;
+  condicao: string | null;
+  status: string | null;
+  tipo: string | null;
+  municipio: string | null;
+};
+
+const CAR_TIPO: Record<string, string> = {
+  IRU: "Imóvel rural", AST: "Assentamento", PCT: "Povos e comunidades tradicionais",
+};
+
+/** Cartão do imóvel do CAR clicado: o atalho para o proprietário anunciar a área dele. */
+function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
+  const area = Number(car.area_ha);
+  return (
+    <div className="absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] cartao p-4 space-y-3 shadow-2xl">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs text-texto-2">{CAR_TIPO[car.tipo ?? ""] ?? "Imóvel rural"} · CAR</p>
+          <p className="font-semibold text-texto">
+            {Number.isFinite(area) && area > 0 ? formatArea(area * 10_000, "rural") : "Área não informada"}
+          </p>
+        </div>
+        <button onClick={onFechar} aria-label="Fechar" className="text-texto-2 hover:text-texto text-lg leading-none">×</button>
+      </div>
+      <dl className="text-xs space-y-1">
+        <div className="flex justify-between gap-2"><dt className="text-texto-2">Município</dt><dd className="text-texto">{car.municipio ?? "—"}</dd></div>
+        <div className="flex justify-between gap-2"><dt className="text-texto-2">Situação no CAR</dt><dd className="text-texto text-right">{car.condicao ?? "—"}</dd></div>
+        <div>
+          <dt className="text-texto-2">Código do CAR</dt>
+          <dd className="font-mono text-[11px] text-texto break-all">{car.cod}</dd>
+        </div>
+      </dl>
+      <Link href={`/painel/novo?car=${encodeURIComponent(car.cod)}`} onClick={() => guardarCarPendente(car.cod)}
+        className="btn-ouro flex w-full items-center justify-center py-2.5 text-sm">
+        Esta área é minha — anunciar
+      </Link>
+      <p className="text-[11px] text-texto-2 leading-snug">
+        A divisa vem pronta do CAR. Para publicar, a Arini confere a matrícula do imóvel — o CAR é
+        autodeclarado e não comprova propriedade.
+      </p>
+    </div>
+  );
+}
+
 const CARTO_CORES = {
   satelite: { linha: "#FFE9A8", contorno: "#1A1204" },
   ruas: { linha: "#8FB3A1", contorno: "#05100C" },
@@ -104,6 +157,10 @@ export default function MapaRegional() {
   const plantasRef = useRef<Camada[]>([]);
   const plantasCarregadasRef = useRef<Set<string>>(new Set());
   const baseRef = useRef<"ruas" | "satelite">("ruas");
+  // malha do CAR: retângulo já carregado (com folga) e se a camada está ligada
+  const carBboxRef = useRef<[number, number, number, number] | null>(null);
+  const carAtivoRef = useRef(true);
+  const carHoverRef = useRef<string | null>(null);
 
   const [base, setBase] = useState<"ruas" | "satelite">("ruas");
   const [selecionado, setSelecionado] = useState<ImovelProps | null>(null);
@@ -120,6 +177,47 @@ export default function MapaRegional() {
   const [pronto, setPronto] = useState(false);
   const [lista, setLista] = useState<ImovelProps[]>([]);
   const [mapaPronto, setMapaPronto] = useState<MLMap | null>(null);
+  const [carAtivo, setCarAtivo] = useState(true);
+  const [carSel, setCarSel] = useState<CarProps | null>(null);
+  const [carAviso, setCarAviso] = useState("");
+
+  /**
+   * Malha do CAR sob demanda, como as plantas: só a partir do zoom de município
+   * (abaixo disso seriam milhares de polígonos sem ninguém conseguir clicar em
+   * um) e só o retângulo da tela com 40% de folga — mover um pouco o mapa não
+   * dispara outra busca.
+   */
+  const garantirCar = useCallback(async () => {
+    const map = mapRef.current;
+    const fonte = map?.getSource("car") as GeoJSONSource | undefined;
+    if (!map || !fonte || !carAtivoRef.current) return;
+    if (map.getZoom() < CAR_ZOOM_MIN) {
+      setCarAviso("Aproxime o mapa para ver os imóveis rurais do CAR.");
+      return;
+    }
+    const t = map.getBounds();
+    const [w, s, e, n] = [t.getWest(), t.getSouth(), t.getEast(), t.getNorth()];
+    const cache = carBboxRef.current;
+    if (cache && w >= cache[0] && s >= cache[1] && e <= cache[2] && n <= cache[3]) {
+      setCarAviso("");
+      return;
+    }
+    if (e - w > CAR_LADO_MAX || n - s > CAR_LADO_MAX) {
+      setCarAviso("Aproxime o mapa para ver os imóveis rurais do CAR.");
+      return;
+    }
+    // folga de até 40% por lado, sem passar do retângulo máximo da API
+    const fx = Math.min((e - w) * 0.4, (CAR_LADO_MAX - (e - w)) / 2);
+    const fy = Math.min((n - s) * 0.4, (CAR_LADO_MAX - (n - s)) / 2);
+    const pedido: [number, number, number, number] = [w - fx, s - fy, e + fx, n + fy];
+    const fc = await fetch(`/api/geo/car?bbox=${pedido.map((v) => v.toFixed(5)).join(",")}`)
+      .then((r) => r.json()).catch(() => null);
+    if (!fc || !mapRef.current) return;
+    if (fc.aproxime) { setCarAviso("Aproxime o mapa para ver os imóveis rurais do CAR."); return; }
+    fonte.setData(fc);
+    carBboxRef.current = fc.truncado ? null : pedido;
+    setCarAviso(fc.truncado ? "Muitos imóveis nesta área — aproxime para ver todos." : "");
+  }, []);
 
   /**
    * Baixa e desenha as plantas urbanas que a tela está pedindo — e só essas.
@@ -323,6 +421,24 @@ export default function MapaRegional() {
           paint: { "line-color": "#3FCF7F", "line-width": 1.2, "line-opacity": 0.35, "line-dasharray": [3, 2] },
         });
 
+        // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima)
+        map.addSource("car", { type: "geojson", data: { type: "FeatureCollection", features: [] }, promoteId: "cod" });
+        map.addLayer({
+          id: "car-fill", type: "fill", source: "car", minzoom: CAR_ZOOM_MIN,
+          paint: {
+            "fill-color": "#E4C77E",
+            "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.22, 0.04] as never,
+          },
+        });
+        map.addLayer({
+          id: "car-linha", type: "line", source: "car", minzoom: CAR_ZOOM_MIN,
+          paint: {
+            "line-color": "#E4C77E",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 15, 1.6] as never,
+            "line-opacity": 0.8,
+          },
+        });
+
         map.addSource("imoveis", { type: "geojson", data: imoveis, promoteId: "id" });
         map.addLayer({
           id: "imoveis-fill", type: "fill", source: "imoveis",
@@ -402,6 +518,30 @@ export default function MapaRegional() {
           map.on("mouseleave", layer, aoSair);
         }
 
+        // CAR: clique abre o cartão "anunciar esta área" — mas anúncio por
+        // cima tem prioridade (o clique nele já abre o imóvel)
+        map.on("click", "car-fill", (e: MapLayerMouseEvent) => {
+          const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"] });
+          if (emAnuncio.length) return;
+          const f = e.features?.[0];
+          if (f) setCarSel(f.properties as unknown as CarProps);
+        });
+        map.on("mousemove", "car-fill", (e: MapLayerMouseEvent) => {
+          const cod = String(e.features?.[0]?.properties?.cod ?? "");
+          if (!cod || cod === carHoverRef.current) return;
+          if (carHoverRef.current) map.setFeatureState({ source: "car", id: carHoverRef.current }, { hover: false });
+          carHoverRef.current = cod;
+          map.setFeatureState({ source: "car", id: cod }, { hover: true });
+          if (!map.getCanvas().style.cursor) map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "car-fill", () => {
+          if (carHoverRef.current) map.setFeatureState({ source: "car", id: carHoverRef.current }, { hover: false });
+          carHoverRef.current = null;
+          map.getCanvas().style.cursor = "";
+        });
+        map.on("moveend", () => void garantirCar());
+        void garantirCar();
+
         setLista((imoveis.features ?? []).map((f: GeoJSON.Feature) => f.properties as ImovelProps));
         setPronto(true);
 
@@ -433,6 +573,16 @@ export default function MapaRegional() {
       }
     }
   }, [base, pronto]);
+
+  // liga/desliga a malha do CAR
+  useEffect(() => {
+    carAtivoRef.current = carAtivo;
+    const map = mapRef.current;
+    if (!map || !pronto || !map.getLayer("car-fill")) return;
+    for (const id of ["car-fill", "car-linha"]) map.setLayoutProperty(id, "visibility", carAtivo ? "visible" : "none");
+    if (carAtivo) void garantirCar();
+    else { setCarSel(null); setCarAviso(""); }
+  }, [carAtivo, pronto, garantirCar]);
 
   // filtros e busca
   useEffect(() => {
@@ -572,7 +722,19 @@ export default function MapaRegional() {
               {b === "ruas" ? "Mapa" : "Satélite"}
             </button>
           ))}
+          <button onClick={() => setCarAtivo(!carAtivo)} data-ativo={carAtivo} className={chipBase}
+            title="Imóveis rurais do Cadastro Ambiental Rural (SICAR)">
+            Imóveis rurais (CAR)
+          </button>
         </div>
+
+        {carAtivo && carAviso && !carSel && (
+          <p className="absolute top-14 left-3 rounded-lg bg-superficie/90 border border-linha px-3 py-1.5 text-xs text-texto-2 shadow-lg">
+            {carAviso}
+          </p>
+        )}
+
+        {carSel && <CartaoCar car={carSel} onFechar={() => setCarSel(null)} />}
 
         {camadasAbertas && <PainelCamadas onFechar={() => setCamadasAbertas(false)} />}
         <Legenda />

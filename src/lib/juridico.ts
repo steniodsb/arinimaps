@@ -108,7 +108,8 @@ export function documentos(cfg: Record<string, unknown>): Documento[] {
       {
         titulo: "Anúncios e aprovação",
         itens: [
-          "Nenhum imóvel é publicado sem aprovação manual da Arini. A Arini pode pedir correções, documentos e comprovação de titularidade ou de autorização, e pode recusar, suspender ou retirar anúncios, inclusive já publicados.",
+          "Nenhum imóvel é publicado sem aprovação manual da Arini. Para anunciar, é obrigatório enviar, no cadastro do imóvel, documento que comprove a propriedade (matrícula atualizada, escritura ou contrato registrado) e, no caso de parceiro, a autorização de venda assinada pelo proprietário. A Arini confere esses documentos antes de aprovar, pode pedir correções e outros documentos, e pode recusar, suspender ou retirar anúncios, inclusive já publicados.",
+          "A plataforma exibe a malha pública do Cadastro Ambiental Rural (CAR/SICAR) para facilitar a localização da área. O CAR é autodeclarado e não comprova propriedade: a divisa trazida dele é um ponto de partida, e a prova de propriedade é sempre o documento conferido pela Arini.",
           "Quem anuncia declara ser proprietário do imóvel ou estar autorizado por escrito pelo proprietário, e aceita o Termo de Autorização de Venda (ou o Termo de Exclusividade, ou o Termo de Parceria, conforme o caso) e a Regra de Remuneração.",
           "A aprovação da Arini é uma verificação de consistência do anúncio, não uma auditoria jurídica do imóvel. Ela não substitui certidões, análise de matrícula, due diligence nem a assessoria de advogado ou profissional habilitado na compra.",
           "É proibido anunciar imóvel sem autorização, com preço, área ou localização falsos, com fotos de outro imóvel, ou usar a plataforma para qualquer finalidade ilícita.",
@@ -178,7 +179,7 @@ export function documentos(cfg: Record<string, unknown>): Documento[] {
         titulo: "Dados que coletamos",
         itens: [
           "Cadastro: nome, CPF ou CNPJ, e-mail, telefone, perfil de uso e, para parceiros, razão social e registro profissional (CRECI/CREA).",
-          "Imóvel: dados do anúncio, geometria, fotos, vídeos e documentos enviados para análise (como matrícula, CCIR, ITR, CAR, IPTU e autorizações).",
+          "Imóvel: dados do anúncio, geometria (desenhada, importada ou trazida do CAR público), fotos, vídeos e os documentos de comprovação enviados para análise (como matrícula, CCIR, ITR, IPTU e autorizações), guardados em área privada, acessível só ao anunciante e à equipe da Arini.",
           "Interesse em imóvel: nome, telefone, e-mail e mensagem informados no formulário, e o imóvel de interesse.",
           "Negociação: visitas, propostas, contratos e valores registrados pela Arini e pelos parceiros no curso da intermediação.",
           "Navegação: endereço IP, data e hora de acesso, navegador e páginas acessadas, e cookies estritamente necessários para manter a sessão. A preferência de tema claro ou escuro fica guardada só no seu navegador.",
@@ -254,7 +255,7 @@ export function documentos(cfg: Record<string, unknown>): Documento[] {
         itens: [
           "O Proprietário declara que é titular do imóvel ou que tem poderes para vendê-lo (procuração, inventário, cônjuge anuente quando exigido etc.), e que as informações do anúncio são verdadeiras.",
           "Declara também que informou à Arini todo ônus, gravame, ação judicial, posse de terceiro, pendência ambiental ou fiscal que conheça sobre o imóvel.",
-          "Compromete-se a entregar, quando pedido, os documentos necessários à análise e à venda (como matrícula atualizada, CCIR, ITR e CAR para imóvel rural; IPTU e certidões para imóvel urbano) e a permitir visitas agendadas.",
+          "Entrega, no cadastro do anúncio, a matrícula atualizada do imóvel (ou escritura/contrato registrado), sem a qual o anúncio não é publicado, e se compromete a entregar os demais documentos que a Arini pedir para a análise e a venda (como CCIR, ITR e CAR para imóvel rural; IPTU e certidões para imóvel urbano), além de permitir visitas agendadas.",
         ],
       },
       {

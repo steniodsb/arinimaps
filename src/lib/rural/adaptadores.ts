@@ -148,6 +148,39 @@ export function consultarAnm(bbox: Bbox) {
   });
 }
 
+/**
+ * CAR / SICAR — imóveis rurais declarados no raio da consulta.
+ *
+ * Em 28/08/2026 o WFS publicava zero camadas; em 24/09 passou a publicar
+ * `sicar_imoveis_<uf>`. O Pontal faz divisa com SP, GO e MS pelos rios, e o
+ * raio de uma fazenda na beira do Paranaíba atravessa — por isso consulta as
+ * quatro UFs. O total vem de `hits`: teto de amostra não vira número.
+ */
+const CAR_UFS = ["mg", "sp", "go", "ms"];
+export function consultarCar(bbox: Bbox) {
+  return adaptador("car", async () => {
+    const base = "https://geoserver.car.gov.br/geoserver/sicar/ows";
+    const porUf = await Promise.all(CAR_UFS.map(async (uf) => {
+      const camada = `sicar:sicar_imoveis_${uf}`;
+      const [total, linhas] = await Promise.all([wfsTotal(base, camada, bbox), wfs(base, camada, bbox, 40)]);
+      return { total, linhas };
+    }));
+    const linhas = porUf.flatMap((u) => u.linhas);
+    return {
+      quantidade: porUf.reduce((s, u) => s + u.total, 0),
+      itens: linhas.slice(0, 40).map((p) => ({
+        titulo: `${texto(p.municipio, "Município não informado")} — ${numero(p.area).toLocaleString("pt-BR")} ha`,
+        detalhe: texto(p.condicao, "situação não informada"),
+        extra: {
+          codigo: texto(p.cod_imovel),
+          tipo: texto(p.tipo_imovel),
+          modulos_fiscais: numero(p.m_fiscal),
+        },
+      })),
+    };
+  });
+}
+
 /** FUNAI — terras indígenas (poligonais). */
 export function consultarFunai(bbox: Bbox) {
   return adaptador("funai", async () => {
@@ -384,6 +417,7 @@ export function consultarAneel(bbox: Bbox) {
 
 /** Todas as fontes que consultam ao vivo, na ordem do relatório. */
 export const ADAPTADORES: { id: string; fn: (b: Bbox) => Promise<ResultadoFonte> }[] = [
+  { id: "car", fn: consultarCar },
   { id: "anm", fn: consultarAnm },
   { id: "funai", fn: consultarFunai },
   { id: "prodes_cerrado", fn: consultarProdes },

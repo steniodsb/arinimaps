@@ -18,7 +18,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     .from("properties")
     .select(`
       id, codigo, titulo, descricao, tipo, status, valor, area_declarada,
-      caracteristicas, condicoes_venda, exclusividade, motivo_correcao, created_at,
+      caracteristicas, condicoes_venda, exclusividade, motivo_correcao, created_at, car_codigo,
       municipality:municipalities(nome, uf),
       owner:owners(id, profile:profiles(nome, telefone)),
       partner:partners(id, razao_social, tipo, profile:profiles(nome, telefone))
@@ -27,7 +27,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     .single();
   if (!p) notFound();
 
-  const [{ data: geo }, { data: media }, { data: geoJson }, { data: autorizacao }] = await Promise.all([
+  const [{ data: geo }, { data: media }, { data: geoJson }, { data: autorizacao }, { data: documentos }] = await Promise.all([
     admin.from("property_geometries").select("area_m2, perimeter_m, fonte").eq("property_id", id).maybeSingle(),
     admin.from("property_media").select("tipo, storage_path").eq("property_id", id).order("ordem"),
     admin.rpc("fn_property_admin_geometry", { p_property_id: id }).then(
@@ -40,7 +40,14 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    admin.from("property_documents").select("tipo, verificado").eq("property_id", id),
   ]);
+  const docs = documentos ?? [];
+  const matriculaConferida = docs.some((d) => d.tipo === "matricula" && d.verificado);
+  const temMatricula = docs.some((d) => d.tipo === "matricula");
+  const car = p.car_codigo
+    ? ((await admin.rpc("fn_car_imovel", { p_cod: p.car_codigo })).data as { properties?: { area_ha?: number; condicao?: string } } | null)
+    : null;
   const CONDICAO: Record<string, string> = {
     autorizacao: "Autorização de venda (sem exclusividade)",
     exclusividade: "Exclusividade Arini",
@@ -85,6 +92,23 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
             </li>
           )}
           <li>{media?.length ? "✅" : "⚠️"} {media?.length ?? 0} foto(s)</li>
+          <li>
+            {matriculaConferida ? "✅" : temMatricula ? "⏳" : "❌"} Comprovação de propriedade:{" "}
+            {matriculaConferida
+              ? "matrícula conferida"
+              : temMatricula
+                ? "matrícula enviada, falta conferir (aprovar e publicar ficam bloqueados)"
+                : "nenhuma matrícula enviada — peça correção"}
+            {" "}· {docs.length} documento(s), {docs.filter((d) => d.verificado).length} conferido(s)
+          </li>
+          {p.car_codigo && (
+            <li>
+              🗺️ Divisa trazida do CAR <span className="font-mono text-xs">{p.car_codigo}</span>
+              {car?.properties?.area_ha != null && <> — {Number(car.properties.area_ha).toLocaleString("pt-BR")} ha no CAR</>}
+              {car?.properties?.condicao && <> ({car.properties.condicao})</>}
+              {". Confira se a matrícula descreve a mesma área."}
+            </li>
+          )}
           <li>
             {autorizacao?.aceite_at ? "✅" : "⚠️"}{" "}
             {autorizacao
@@ -146,7 +170,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
 
       <section className="cartao p-5 space-y-3">
         <h2 className="font-semibold text-texto">Documentos</h2>
-        <DocumentosImovel propertyId={p.id} />
+        <DocumentosImovel propertyId={p.id} podeConferir />
       </section>
 
       <section className="cartao p-5 space-y-3">

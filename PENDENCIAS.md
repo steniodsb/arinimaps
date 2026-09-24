@@ -1,6 +1,6 @@
-# Arini Imóveis Brasil — o que falta (23/09/2026)
+# Arini Imóveis Brasil — o que falta (24/09/2026)
 
-> O sistema está construído: F0 a F3 entregues, migrations 0001–0019 aplicadas,
+> O sistema está construído: F0 a F3 entregues, migrations 0001–0022 aplicadas,
 > todas as telas no design escuro/claro, desktop e celular.
 > Rode `npm run dev` em `arini-maps/` e entre com `admin@arinimaps.com.br`.
 > Repositório: github.com/steniodsb/arinimaps
@@ -9,6 +9,27 @@
 > sobrou nada que dependa só de mim — o resto é deploy, conteúdo e decisão.
 
 ---
+
+## Feito em 24/09/2026 — CAR no mapa e comprovação de propriedade
+
+Pedido do Carlos (áudio de 24/09): o proprietário clica na área dele no mapa,
+cadastra para venda, manda os documentos, a Arini confere e libera.
+
+| Item | Como ficou |
+|---|---|
+| **CAR tem API agora** | Em 28/08 o WFS do SICAR publicava zero camadas; em 24/09 publica `sicar_imoveis_<uf>` com divisa, código, área e situação. **O CAR saiu da lista de arquivos que o Carlos precisa mandar, e o KML de teste também deixou de ser necessário.** |
+| **Malha no banco** | 10.196 imóveis dos 6 municípios importados para `car_imoveis` (migrations 0020–0022). Iturama: 1.540 em 1,5 s. Atualização: botão em Admin › Regiões ou `node scripts/importa-car.mjs`. Município novo já entra com o CAR. |
+| **Camada no mapa** | Botão "Imóveis rurais (CAR)", ligado por padrão, a partir do zoom de município. Clique numa área → cartão com área, situação e código → **"Esta área é minha — anunciar"**. Se a pessoa precisar entrar ou criar conta no meio, a área escolhida é guardada. |
+| **Anúncio pela área do CAR** | Divisa e área vêm prontas; a geometria é lida do nosso banco pelo código (o navegador não consegue trocá-la). |
+| **Comprovação obrigatória** | O anúncio exige a matrícula (ou escritura/contrato registrado); parceiro exige também a autorização assinada do proprietário. Arquivos em bucket privado. |
+| **Conferência e bloqueio** | A Arini marca cada documento como conferido. **Aprovar e publicar são recusados pelo servidor** sem a matrícula conferida (e a autorização, em imóvel de parceiro). A análise mostra o CAR de origem para comparar com a matrícula. |
+| **Proprietário novo anuncia sem esperar** | A conta do proprietário não precisa mais estar aprovada para enviar o imóvel — a prova é o documento do imóvel. Parceiros seguem exigindo aprovação (CRECI). |
+| **Relatório territorial** | CAR entra como fonte ao vivo (MG + SP, GO e MS, porque o raio cruza os rios de divisa). |
+| **Termos** | Termos de Uso, Autorização e Privacidade atualizados: documento obrigatório e CAR ≠ prova de propriedade. |
+
+Testado de ponta a ponta com a conta de teste: anúncio pela área do CAR sem
+matrícula recusado; com matrícula criado; aprovar sem conferir recusado;
+conferido → aprovado. O imóvel de teste foi apagado.
 
 ## Feito em 23/09/2026
 
@@ -56,7 +77,7 @@ Pauta pronta em `PAUTA-REUNIAO-CARLOS.md` (na pasta do projeto). Resumo:
 - **Lista final de municípios** do piloto (você adiciona só com o código IBGE).
 - **Satélite licenciado**: resolvido sem custo — conta gratuita do Esri ArcGIS Location Platform (Etapa 4).
 - **MapBiomas**: token com aceite de termos, ou raster importado?
-- **Pedir**: arquivos oficiais de CAR, SIGEF, IBAMA embargos, quilombolas e IPHAN; 1 KML real; o fluxograma resumido.
+- **Pedir**: arquivos oficiais de SIGEF, IBAMA embargos, quilombolas e IPHAN; o fluxograma resumido. (CAR e KML não são mais necessários — 24/09.)
 
 ## Etapa 4 — Ligar o que depende da reunião
 
@@ -65,7 +86,7 @@ Pauta pronta em `PAUTA-REUNIAO-CARLOS.md` (na pasta do projeto). Resumo:
 | Resend | `RESEND_API_KEY`, `RESEND_FROM` | E-mails: lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro | você cria a conta, eu verifico |
 | Asaas | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Botão "Cobrar via Asaas" + baixa automática (`/api/asaas/webhook`) | você |
 | Esri ArcGIS Location Platform | `NEXT_PUBLIC_ARCGIS_KEY` | Satélite licenciado, **grátis até 2 milhões de tiles/mês** (~7–10 mil visitas ao mapa). Decidido em 23/09 no lugar do MapTiler, cujo plano grátis não permite uso comercial. Depois de ligar: Admin › Regiões › Conferir os municípios — o mosaico licenciado é o atual, que em 23/09 tinha um tile com 52,9% de nuvem em Iturama | você cria a conta e a chave (privilégio Basemaps, restrita ao domínio), rebuild |
-| Arquivos oficiais | — | CAR, SIGEF, IBAMA, quilombolas, IPHAN passam a cruzar no relatório | **eu importo** no PostGIS |
+| Arquivos oficiais | — | SIGEF, IBAMA, quilombolas, IPHAN passam a cruzar no relatório (o CAR já está ligado) | **eu importo** no PostGIS |
 | MapBiomas | token ou raster | Uso do solo no relatório | **eu**, conforme a decisão |
 | Termos revisados | subir `VERSOES` em `src/lib/juridico.ts` | Aceites antigos seguem apontando para a versão lida | **eu** |
 | Abertura ao público | `node scripts/limpa-demo.mjs --tudo --executar` | Remove os 3 imóveis demo e as contas de teste | você, no dia |
@@ -77,7 +98,7 @@ Configurações mostra o estado de cada integração.
 
 ## Referência — Consulta Rural
 
-**Consultam ao vivo, sem chave (9 fontes):** ANM/SIGMINE, FUNAI, INPE PRODES,
+**Consultam ao vivo, sem chave (10 fontes):** **CAR/SICAR (desde 24/09)**, ANM/SIGMINE, FUNAI, INPE PRODES,
 DETER, Queimadas, unidades de conservação, corpos d'água (TerraBrasilis),
 ANA/SNIRH e ANEEL/SIGEL — mais IBGE e OpenStreetMap.
 
@@ -85,7 +106,6 @@ ANA/SNIRH e ANEEL/SIGEL — mais IBGE e OpenStreetMap.
 
 | Fonte | O que medi |
 |---|---|
-| CAR / SICAR | WFS responde e publica zero camadas; shapefile por município sai com CAPTCHA |
 | INCRA / SIGEF | acervo fundiário deu timeout; certificação exige login |
 | IBAMA — embargos | nenhum host respondeu; usar a planilha de dados abertos |
 | Territórios quilombolas | mesmo acervo do INCRA |

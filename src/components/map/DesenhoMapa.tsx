@@ -7,16 +7,34 @@ import { carregarMaplibre } from "@/lib/map/maplibre";
 
 export type GeometriaEscolhida = {
   geometry: GeoJSON.Geometry;
-  fonte: "desenho" | "ponto" | "kml" | "kmz";
+  fonte: "desenho" | "ponto" | "kml" | "kmz" | "car";
 };
 
-type Props = { onChange: (g: GeometriaEscolhida | null) => void };
+type Props = {
+  onChange: (g: GeometriaEscolhida | null) => void;
+  /** Geometria que já chega pronta (ex.: a área clicada no CAR). */
+  inicial?: GeometriaEscolhida | null;
+};
+
+/** Enquadra o mapa numa geometria qualquer. */
+function enquadrar(map: MLMap, geom: GeoJSON.Geometry) {
+  const coords: [number, number][] = [];
+  const walk = (c: unknown): void => {
+    if (Array.isArray(c) && typeof c[0] === "number") coords.push(c as [number, number]);
+    else if (Array.isArray(c)) c.forEach(walk);
+  };
+  walk((geom as { coordinates?: unknown }).coordinates);
+  if (!coords.length) return;
+  const lngs = coords.map((c) => c[0]);
+  const lats = coords.map((c) => c[1]);
+  map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 60, duration: 0 });
+}
 
 /**
  * Define a localização do imóvel: desenhar polígono (clique nos vértices,
  * duplo clique fecha), marcar um ponto, ou subir KML/KMZ (processado no navegador).
  */
-export default function DesenhoMapa({ onChange }: Props) {
+export default function DesenhoMapa({ onChange, inicial }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const [modo, setModo] = useState<"poligono" | "ponto">("poligono");
@@ -177,6 +195,14 @@ export default function DesenhoMapa({ onChange }: Props) {
     }
   }
 
+  // área que já chegou pronta (CAR): desenha e enquadra assim que o mapa carrega
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!pronto || !map || !inicial) return;
+    render(inicial.geometry, []);
+    enquadrar(map, inicial.geometry);
+  }, [pronto, inicial, render]);
+
   function limpar() {
     setVertices([]);
     render(null, []);
@@ -204,7 +230,7 @@ export default function DesenhoMapa({ onChange }: Props) {
       </div>
       <div ref={containerRef} className="h-96 w-full rounded-xl overflow-hidden border border-linha" />
       <p className="text-xs text-texto-2 min-h-4">
-        {msg || (pronto ? "Clique no mapa para desenhar a divisa do imóvel, ou suba o KML/KMZ da propriedade." : "Carregando mapa…")}
+        {msg || (pronto && inicial?.fonte === "car" ? "Divisa trazida do CAR. Se ela não estiver certa, use Limpar e desenhe a área." : pronto ? "Clique no mapa para desenhar a divisa do imóvel, ou suba o KML/KMZ da propriedade." : "Carregando mapa…")}
       </p>
     </div>
   );

@@ -95,7 +95,7 @@ export function Legenda() {
       </p>
       <p className="flex items-center gap-2 text-texto-2">
         <span className="inline-block w-3.5 h-0.5" style={{ background: "#FFE9A8" }} />
-        Planta urbana
+        Lote urbano
       </p>
     </div>
   );

@@ -18,6 +18,7 @@ import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
+import { CartaoLote, medidasDe, LOTE_LADO_MAX, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
 import { useTema } from "@/components/shell/BotaoTema";
 
 type ImovelProps = {
@@ -103,11 +104,11 @@ function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
         </div>
       </dl>
       <Link href={`/painel/novo?car=${encodeURIComponent(car.cod)}`} onClick={() => guardarCarPendente(car.cod)}
-        className="btn-ouro flex w-full items-center justify-center py-2.5 text-sm">
+        className="btn-ouro w-full text-center py-2.5 text-sm">
         Esta área é minha — anunciar
       </Link>
       <Link href={`/consulta/car/${encodeURIComponent(car.cod)}`}
-        className="btn-contorno flex w-full items-center justify-center py-2.5 text-sm">
+        className="btn-contorno block w-full text-center py-2.5 text-sm">
         Consultar informações
       </Link>
       <p className="text-[11px] text-texto-2 leading-snug">
@@ -212,6 +213,50 @@ export default function MapaRegional() {
   const [carAtivo, setCarAtivo] = useState(true);
   const [carSel, setCarSel] = useState<CarProps | null>(null);
   const [carAviso, setCarAviso] = useState("");
+  // lotes urbanos: retângulo já carregado, a coleção em mãos e o lote clicado
+  const lotesBboxRef = useRef<[number, number, number, number] | null>(null);
+  const lotesRef = useRef<GeoJSON.FeatureCollection>({ type: "FeatureCollection", features: [] });
+  const loteHoverRef = useRef<string | null>(null);
+  const [loteSel, setLoteSel] = useState<LoteInfo | null>(null);
+  // Planta completa do CAD: desligada por padrão. Pedido do Carlos em 01/10/2026
+  // ("lapidar o mapa: tirar círculos, setas, nomes de rua, deixar só o essencial").
+  // O essencial — a divisa de cada lote e as metragens — vem da camada de lotes,
+  // que é limpa por construção e pesa ~1 MB na tela, contra 14 MB da planta.
+  const [plantaAtiva, setPlantaAtiva] = useState(false);
+  const plantaAtivaRef = useRef(false);
+
+  /**
+   * Lotes urbanos sob demanda, a partir do zoom de quadra. As metragens dos
+   * lados só entram no zoom de lote e só para o que está na tela: são milhares
+   * de etiquetas na cidade inteira, e ninguém as lê de longe.
+   */
+  const garantirLotes = useCallback(async () => {
+    const map = mapRef.current;
+    const fonte = map?.getSource("lotes") as GeoJSONSource | undefined;
+    const medidas = map?.getSource("lotes-medidas") as GeoJSONSource | undefined;
+    if (!map || !fonte || !medidas) return;
+    const z = map.getZoom();
+    if (z < LOTE_ZOOM_MIN) return;
+    const t = map.getBounds();
+    const [w, s, e, n] = [t.getWest(), t.getSouth(), t.getEast(), t.getNorth()];
+    if (e - w > LOTE_LADO_MAX || n - s > LOTE_LADO_MAX) return;
+
+    const cache = lotesBboxRef.current;
+    if (!cache || w < cache[0] || s < cache[1] || e > cache[2] || n > cache[3]) {
+      const fx = Math.min((e - w) * 0.4, (LOTE_LADO_MAX - (e - w)) / 2);
+      const fy = Math.min((n - s) * 0.4, (LOTE_LADO_MAX - (n - s)) / 2);
+      const pedido: [number, number, number, number] = [w - fx, s - fy, e + fx, n + fy];
+      const fc = await fetch(`/api/geo/lotes?bbox=${pedido.map((v) => v.toFixed(6)).join(",")}`)
+        .then((r) => r.json()).catch(() => null);
+      if (!fc?.features || !mapRef.current) return;
+      lotesRef.current = fc;
+      fonte.setData(fc);
+      lotesBboxRef.current = fc.truncado ? null : pedido;
+    }
+    medidas.setData(
+      z >= MEDIDA_ZOOM_MIN ? medidasDe(lotesRef.current, { w, s, e, n }) : { type: "FeatureCollection", features: [] }
+    );
+  }, []);
 
   /**
    * Malha do CAR sob demanda, como as plantas: só a partir do zoom de município
@@ -268,7 +313,7 @@ export default function MapaRegional() {
    */
   const garantirPlantas = useCallback(async () => {
     const map = mapRef.current;
-    if (!map || !plantasRef.current.length) return;
+    if (!map || !plantasRef.current.length || !plantaAtivaRef.current) return;
 
     const z = map.getZoom();
     const tela = map.getBounds();
@@ -455,6 +500,55 @@ export default function MapaRegional() {
           paint: { "line-color": "#3FCF7F", "line-width": 1.2, "line-opacity": 0.35, "line-dasharray": [3, 2] },
         });
 
+        // Lotes urbanos clicáveis (pedido do Carlos, 01/10/2026). O preenchimento
+        // é invisível: quem desenha a divisa é a planta; o lote só "acende" sob
+        // o cursor e quando é clicado.
+        const vazio: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+        map.addSource("lotes", { type: "geojson", data: vazio, promoteId: "id" });
+        map.addSource("lotes-medidas", { type: "geojson", data: vazio });
+        map.addLayer({
+          id: "lotes-fill", type: "fill", source: "lotes", minzoom: LOTE_ZOOM_MIN,
+          paint: {
+            "fill-color": "#FFE9A8",
+            "fill-opacity": ["case", ["boolean", ["feature-state", "sel"], false], 0.42,
+              ["boolean", ["feature-state", "hover"], false], 0.25, 0] as never,
+          },
+        });
+        map.addLayer({
+          id: "lotes-borda", type: "line", source: "lotes", minzoom: LOTE_ZOOM_MIN,
+          paint: {
+            "line-color": ["case", ["boolean", ["feature-state", "sel"], false], "#FFD45E", CARTO_CORES[baseRef.current].linha] as never,
+            // o zoom só pode ser a entrada do interpolate mais externo; o estado
+            // (clicado / sob o cursor) entra dentro de cada parada
+            "line-width": ["interpolate", ["linear"], ["zoom"],
+              15, ["case", ["boolean", ["feature-state", "sel"], false], 3, ["boolean", ["feature-state", "hover"], false], 2.4, 0.5],
+              17, ["case", ["boolean", ["feature-state", "sel"], false], 3, ["boolean", ["feature-state", "hover"], false], 2.4, 1.1],
+              19, ["case", ["boolean", ["feature-state", "sel"], false], 3.5, ["boolean", ["feature-state", "hover"], false], 3, 2]] as never,
+            "line-opacity": 0.95,
+          },
+        });
+        // contorno escuro por baixo: a divisa clara some sobre telhado claro
+        map.addLayer({
+          id: "lotes-contorno", type: "line", source: "lotes", minzoom: LOTE_ZOOM_MIN,
+          paint: {
+            "line-color": CARTO_CORES[baseRef.current].contorno,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 15, 1.3, 17, 2.6, 19, 4] as never,
+            "line-opacity": 0.45,
+          },
+        }, "lotes-borda");
+        map.addLayer({
+          id: "lotes-medidas", type: "symbol", source: "lotes-medidas", minzoom: MEDIDA_ZOOM_MIN,
+          layout: {
+            "text-field": ["get", "m"],
+            "text-font": ["Open Sans Regular"],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 18, 9.5, 20, 13],
+            "text-rotate": ["get", "ang"],
+            "text-rotation-alignment": "map",
+            "text-padding": 1,
+          },
+          paint: { "text-color": "#FFFFFF", "text-halo-color": "rgba(10,19,16,0.9)", "text-halo-width": 1.4 },
+        });
+
         // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima)
         map.addSource("car", { type: "geojson", data: { type: "FeatureCollection", features: [] }, promoteId: "cod" });
         map.addLayer({
@@ -591,6 +685,33 @@ export default function MapaRegional() {
         map.on("moveend", () => void garantirCar());
         void garantirCar();
 
+        // lote urbano: clique abre o cartão com as medidas
+        map.on("click", "lotes-fill", async (e: MapLayerMouseEvent) => {
+          const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"].filter((l) => map.getLayer(l)) });
+          const id = String(e.features?.[0]?.properties?.id ?? "");
+          if (emAnuncio.length || !id) return;
+          const f = await fetch(`/api/geo/lotes/${id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+          if (!f?.properties) return;
+          map.removeFeatureState({ source: "lotes" });
+          map.setFeatureState({ source: "lotes", id }, { sel: true });
+          setLoteSel(f.properties as LoteInfo);
+        });
+        map.on("mousemove", "lotes-fill", (e: MapLayerMouseEvent) => {
+          const id = String(e.features?.[0]?.properties?.id ?? "");
+          if (!id || id === loteHoverRef.current) return;
+          if (loteHoverRef.current) map.setFeatureState({ source: "lotes", id: loteHoverRef.current }, { hover: false });
+          loteHoverRef.current = id;
+          map.setFeatureState({ source: "lotes", id }, { hover: true });
+          if (!map.getCanvas().style.cursor) map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "lotes-fill", () => {
+          if (loteHoverRef.current) map.setFeatureState({ source: "lotes", id: loteHoverRef.current }, { hover: false });
+          loteHoverRef.current = null;
+          map.getCanvas().style.cursor = "";
+        });
+        map.on("moveend", () => void garantirLotes());
+        void garantirLotes();
+
         setLista((imoveis.features ?? []).map((f: GeoJSON.Feature) => f.properties as ImovelProps));
         setPronto(true);
 
@@ -616,12 +737,29 @@ export default function MapaRegional() {
     if (!map || !pronto || !map.getLayer("satelite")) return;
     map.setLayoutProperty("satelite", "visibility", base === "satelite" ? "visible" : "none");
     const cores = CARTO_CORES[base];
+    if (map.getLayer("lotes-borda")) {
+      map.setPaintProperty("lotes-borda", "line-color",
+        ["case", ["boolean", ["feature-state", "sel"], false], "#FFD45E", cores.linha]);
+      map.setPaintProperty("lotes-contorno", "line-color", cores.contorno);
+      map.setPaintProperty("lotes-medidas", "text-color", base === "satelite" ? "#FFFFFF" : cores.linha);
+    }
     for (const id of cartoVetorIdsRef.current) {
       if (map.getLayer(id)) {
         map.setPaintProperty(id, "line-color", id.endsWith("-contorno") ? cores.contorno : cores.linha);
       }
     }
   }, [base, pronto]);
+
+  // liga/desliga a planta completa do CAD
+  useEffect(() => {
+    plantaAtivaRef.current = plantaAtiva;
+    const map = mapRef.current;
+    if (!map || !pronto) return;
+    for (const id of cartoVetorIdsRef.current) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", plantaAtiva ? "visible" : "none");
+    }
+    if (plantaAtiva) void garantirPlantas();
+  }, [plantaAtiva, pronto, garantirPlantas]);
 
   // liga/desliga a malha do CAR
   useEffect(() => {
@@ -775,6 +913,10 @@ export default function MapaRegional() {
             title="Imóveis rurais do Cadastro Ambiental Rural (SICAR)">
             Imóveis rurais (CAR)
           </button>
+          <button onClick={() => setPlantaAtiva(!plantaAtiva)} data-ativo={plantaAtiva} className={chipBase}
+            title="Desenho completo da planta da cidade, como veio do CAD: ruas, calçadas, textos e detalhes">
+            Planta completa
+          </button>
         </div>
 
         {carAtivo && carAviso && !carSel && (
@@ -784,6 +926,12 @@ export default function MapaRegional() {
         )}
 
         {carSel && <CartaoCar car={carSel} onFechar={() => setCarSel(null)} />}
+        {loteSel && !carSel && (
+          <CartaoLote lote={loteSel} onFechar={() => {
+            setLoteSel(null);
+            mapRef.current?.removeFeatureState({ source: "lotes" });
+          }} />
+        )}
 
         {camadasAbertas && <PainelCamadas onFechar={() => setCamadasAbertas(false)} />}
         <Legenda />

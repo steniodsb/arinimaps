@@ -171,6 +171,10 @@ export async function POST(request: Request) {
     }).select("id").single();
     if (error) return falhaBanco("camada_nao_gravou", error);
 
+    // planta nova → lotes clicáveis novos. A geração leva de segundos a mais de
+    // um minuto, então vai para a fila do worker (ou `node scripts/gera-lotes.mjs`).
+    await admin.from("jobs").insert({ tipo: "gerar_lotes", payload: { layer_id: camada.id } });
+
     await logAudit({
       user_id: a.userId, acao: "cartografia_dxf_publicada",
       entidade: "cartography_layers", entidade_id: camada.id,

@@ -120,6 +120,15 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cart
     }
   }
 
+  // mexeu na posição ou nas camadas: os lotes clicáveis precisam ser refeitos
+  // para continuar em cima das linhas que o usuário vê
+  const mexeuNaGeometria = ["offset_leste_m", "offset_norte_m", "rotacao_graus", "escala", "layers_ocultos"].some((k) => k in patch);
+  if (mexeuNaGeometria && antes.tipo === "vector") {
+    const { count } = await admin.from("jobs").select("id", { count: "exact", head: true })
+      .eq("tipo", "gerar_lotes").eq("status", "pendente").contains("payload", { layer_id: id });
+    if (!count) await admin.from("jobs").insert({ tipo: "gerar_lotes", payload: { layer_id: id } });
+  }
+
   await logAudit({
     user_id: a.userId, acao: "cartografia_calibrada",
     entidade: "cartography_layers", entidade_id: id,

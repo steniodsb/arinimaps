@@ -7,7 +7,7 @@ import { carregarMaplibre } from "@/lib/map/maplibre";
 
 export type GeometriaEscolhida = {
   geometry: GeoJSON.Geometry;
-  fonte: "desenho" | "ponto" | "kml" | "kmz" | "car";
+  fonte: "desenho" | "ponto" | "kml" | "kmz" | "car" | "lote";
 };
 
 type Props = {
@@ -230,7 +230,9 @@ export default function DesenhoMapa({ onChange, inicial }: Props) {
       </div>
       <div ref={containerRef} className="h-96 w-full rounded-xl overflow-hidden border border-linha" />
       <p className="text-xs text-texto-2 min-h-4">
-        {msg || (pronto && inicial?.fonte === "car" ? "Divisa trazida do CAR. Se ela não estiver certa, use Limpar e desenhe a área." : pronto ? "Clique no mapa para desenhar a divisa do imóvel, ou suba o KML/KMZ da propriedade." : "Carregando mapa…")}
+        {msg || (pronto && inicial?.fonte === "car" ? "Divisa trazida do CAR. Se ela não estiver certa, use Limpar e desenhe a área."
+          : pronto && inicial?.fonte === "lote" ? "Divisa trazida da planta da cidade. Se ela não estiver certa, use Limpar e desenhe o lote."
+          : pronto ? "Clique no mapa para desenhar a divisa do imóvel, ou suba o KML/KMZ da propriedade." : "Carregando mapa…")}
       </p>
     </div>
   );

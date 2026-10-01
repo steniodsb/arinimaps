@@ -47,6 +47,30 @@ export default function NovoImovel() {
   const [progresso, setProgresso] = useState("");
   const [car, setCar] = useState<{ cod: string; area_ha: number | null; municipio: string | null } | null>(null);
   const [inicial, setInicial] = useState<GeometriaEscolhida | null>(null);
+  const [lote, setLote] = useState<{ id: string; area_m2: number; municipio: string | null } | null>(null);
+
+  // veio de "Este lote é meu" no mapa: a divisa do lote urbano já entra pronta
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("lote");
+    if (!id) return;
+    fetch(`/api/geo/lotes/${encodeURIComponent(id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((f) => {
+        if (!f?.geometry) return;
+        const g: GeometriaEscolhida = { geometry: f.geometry, fonte: "lote" };
+        const p = f.properties ?? {};
+        setLote({ id: p.id, area_m2: Number(p.area_m2), municipio: p.municipio ?? null });
+        setInicial(g);
+        setGeometria(g);
+        setForm((atual) => ({
+          ...atual,
+          tipo: "urbano",
+          municipality_id: atual.municipality_id || p.municipality_id || "",
+          area_declarada: atual.area_declarada || String(Math.round(Number(p.area_m2))),
+        }));
+      })
+      .catch(() => undefined);
+  }, []);
 
   // veio de "Esta área é minha" no mapa: a divisa do CAR já entra pronta
   useEffect(() => {
@@ -151,6 +175,7 @@ export default function NovoImovel() {
       condicao,
       aceite_termos: aceite,
       car_codigo: geometria.fonte === "car" ? car?.cod ?? null : null,
+      lote_id: geometria.fonte === "lote" ? lote?.id ?? null : null,
       modalidade,
       leilao: emLeilao ? leilao : null,
     }));
@@ -300,10 +325,15 @@ export default function NovoImovel() {
             {car.area_ha != null && <> · {Number(car.area_ha).toLocaleString("pt-BR")} ha declarados no CAR</>}
           </p>
         )}
+        {lote && (
+          <p className="text-xs rounded-lg bg-ouro/10 border border-ouro/30 px-3 py-2 mb-2 text-texto">
+            Lote da planta urbana{lote.municipio && <> de {lote.municipio}</>} · {lote.area_m2.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} m² medidos na planta
+          </p>
+        )}
         <DesenhoMapa onChange={setGeometria} inicial={inicial} />
         {geometria && (
           <p className="text-xs text-verde font-medium mt-1">
-            Geometria definida ({geometria.fonte === "ponto" ? "ponto" : geometria.fonte === "desenho" ? "desenho" : geometria.fonte === "car" ? "área do CAR" : "arquivo " + geometria.fonte.toUpperCase()}).
+            Geometria definida ({geometria.fonte === "ponto" ? "ponto" : geometria.fonte === "desenho" ? "desenho" : geometria.fonte === "car" ? "área do CAR" : geometria.fonte === "lote" ? "lote da planta urbana" : "arquivo " + geometria.fonte.toUpperCase()}).
           </p>
         )}
       </div>

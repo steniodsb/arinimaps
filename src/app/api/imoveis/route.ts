@@ -123,7 +123,14 @@ export async function POST(request: Request) {
     }
     carCodigo = String(dados.car_codigo);
     geometriaFinal = { geometry: car.geometry, fonte: "car" };
-  } else if (geometria?.fonte === "car") {
+  } else if (geometria?.fonte === "lote" && /^[0-9a-f-]{36}$/i.test(String(dados.lote_id ?? ""))) {
+    // lote urbano: mesma regra do CAR — a divisa é a do nosso banco
+    const { data: lote } = await admin.rpc("fn_lote", { p_id: String(dados.lote_id) });
+    if (!lote?.geometry) {
+      return NextResponse.json({ error: "Lote não encontrado. Clique de novo no lote no mapa." }, { status: 400 });
+    }
+    geometriaFinal = { geometry: lote.geometry, fonte: "lote" };
+  } else if (geometria?.fonte === "car" || geometria?.fonte === "lote") {
     // "car" sem código não tem como ser conferido: vale como desenho comum
     geometriaFinal = { ...geometria, fonte: "desenho" };
   }

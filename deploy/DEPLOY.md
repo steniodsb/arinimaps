@@ -66,6 +66,10 @@ Segundo serviço, a partir de `deploy/worker-compose.yml`. Envs: `DATABASE_URL`,
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SITE_URL` e, se precisar,
 `CHROMIUM_PATH` e `WORKER_INTERVALO_MS`.
 
+O worker também gera os **lotes urbanos clicáveis** (job `gerar_lotes`) quando uma
+planta é enviada ou recalibrada. Sem ele, rode `node scripts/gera-lotes.mjs` na
+sua máquina depois de enviar ou calibrar uma planta.
+
 Sem o worker ficam pendentes: vídeo automático, tiles de imagem georreferenciada
 e imagem de compartilhamento. **Todo o resto funciona sem ele** — inclusive a
 planta urbana em DXF, que é convertida pela própria aplicação.

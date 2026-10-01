@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabaseAdmin()
     .from("cartography_layers")
-    .select("id, nome, tipo, tiles_path, min_zoom, max_zoom, opacidade_padrao, datum, offset_leste_m, offset_norte_m, rotacao_graus, escala, layers_ocultos, bytes, diagnostico, publico_path, publico_bytes, publico_centro, municipality:municipalities(nome)")
+    .select("id, nome, tipo, tiles_path, min_zoom, max_zoom, opacidade_padrao, datum, offset_leste_m, offset_norte_m, rotacao_graus, escala, layers_ocultos, bytes, diagnostico, publico_path, publico_bytes, publico_centro, lotes_total, lotes_gerados_em, lotes_assinatura, municipality:municipalities(nome)")
     .eq("status", "pronto")
     .not("tiles_path", "is", null);
 
@@ -64,6 +64,15 @@ export async function GET(request: Request) {
       bbox,
       layers_ocultos: (c.layers_ocultos ?? []) as string[],
       layers_cad: diag?.layers ?? [],
+      // lotes clicáveis: quantos há e se foram gerados com a calibração de agora
+      lotes: c.tipo === "vector" ? {
+        total: c.lotes_total as number | null,
+        gerados_em: c.lotes_gerados_em as string | null,
+        defasados: c.lotes_total != null && c.lotes_assinatura !== [
+          c.offset_leste_m ?? 0, c.offset_norte_m ?? 0, c.rotacao_graus ?? 0, c.escala ?? 1,
+          [...((c.layers_ocultos ?? []) as string[])].sort().join("|"),
+        ].join(";"),
+      } : null,
       zona: diag?.zona ?? null,
       transform: {
         offsetLesteM: Number(c.offset_leste_m ?? 0),

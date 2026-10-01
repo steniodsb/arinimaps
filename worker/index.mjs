@@ -1,11 +1,12 @@
 // Worker do Arini Maps — polling da tabela jobs (Postgres/Supabase).
-// Processa: render_video · screenshot_og · tile_raster · fetch_pois
+// Processa: render_video · screenshot_og · tile_raster · fetch_pois · gerar_lotes
 // 1 job por vez, teto de memória no container (ver docker-compose).
 import pg from "pg";
 import { renderVideo } from "./jobs/renderVideo.mjs";
 import { screenshotOg } from "./jobs/screenshotOg.mjs";
 import { tileRaster } from "./jobs/tileRaster.mjs";
 import { fetchPois } from "./jobs/fetchPois.mjs";
+import { gerarLotes } from "./jobs/gerarLotes.mjs";
 
 const INTERVALO_MS = Number(process.env.WORKER_INTERVALO_MS ?? 15000);
 const MAX_TENTATIVAS = 3;
@@ -21,6 +22,7 @@ const HANDLERS = {
   screenshot_og: screenshotOg,
   tile_raster: tileRaster,
   fetch_pois: fetchPois,
+  gerar_lotes: gerarLotes,
 };
 
 async function proximoJob() {

@@ -14,6 +14,7 @@ type Camada = {
   layers_ocultos?: string[];
   layers_cad?: { nome: string; linhas: number }[];
   transform?: Transform;
+  lotes?: { total: number | null; gerados_em: string | null; defasados: boolean } | null;
   offset: { leste_m: number; norte_m: number };
 };
 
@@ -108,6 +109,15 @@ export default function ListaCamadas() {
                     {totalLinhas > 0 && `${fmt(totalLinhas)} linhas em ${c.layers_cad!.length} camadas do CAD`}
                     {ocultas > 0 && ` · ${ocultas} ocultas no mapa`}
                     {c.bytes ? ` · ${(c.bytes / 1048576).toFixed(1)} MB` : ""}
+                  </p>
+                )}
+                {c.tipo === "vector" && (
+                  <p className={"text-xs " + (c.lotes?.defasados || c.lotes?.total == null ? "text-alerta" : "text-texto-2")}>
+                    {c.lotes?.total == null
+                      ? "Lotes clicáveis ainda não gerados — entram na fila do serviço do servidor."
+                      : c.lotes.defasados
+                        ? `${fmt(c.lotes.total)} lotes clicáveis, gerados antes do último ajuste — serão refeitos pela fila.`
+                        : `${fmt(c.lotes.total)} lotes clicáveis, gerados em ${new Date(c.lotes.gerados_em!).toLocaleDateString("pt-BR")}`}
                   </p>
                 )}
               </div>

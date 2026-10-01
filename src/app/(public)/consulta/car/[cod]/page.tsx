@@ -88,11 +88,11 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
               ))}
             </dl>
             {anuncio ? (
-              <Link href={`/imovel/${anuncio.codigo}`} className="btn-verde block text-center py-2.5 text-sm">
+              <Link href={`/imovel/${anuncio.codigo}`} className="btn-verde w-full text-center py-2.5 text-sm">
                 Esta área está à venda — ver o anúncio
               </Link>
             ) : (
-              <Link href={`/painel/novo?car=${encodeURIComponent(p.cod)}`} className="btn-ouro block text-center py-2.5 text-sm">
+              <Link href={`/painel/novo?car=${encodeURIComponent(p.cod)}`} className="btn-ouro w-full text-center py-2.5 text-sm">
                 Esta área é minha — anunciar
               </Link>
             )}

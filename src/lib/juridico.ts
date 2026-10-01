@@ -33,11 +33,11 @@ export type DocId = "termos-de-uso" | "privacidade" | "autorizacao" | "exclusivi
 /** Versão vigente de cada documento. É isso que vai para o banco no aceite. */
 export const VERSOES: Record<DocId, string> = {
   "termos-de-uso": "1.0",
-  privacidade: "1.0",
+  privacidade: "1.1",
   autorizacao: "1.0",
-  exclusividade: "1.0",
+  exclusividade: "1.1",
   remuneracao: "1.0",
-  parceiros: "1.0",
+  parceiros: "1.1",
 };
 const VIGENCIA = "23/09/2026";
 
@@ -182,6 +182,9 @@ export function documentos(cfg: Record<string, unknown>): Documento[] {
           "Imóvel: dados do anúncio, geometria (desenhada, importada ou trazida do CAR público), fotos, vídeos e os documentos de comprovação enviados para análise (como matrícula, CCIR, ITR, IPTU e autorizações), guardados em área privada, acessível só ao anunciante e à equipe da Arini.",
           "Interesse em imóvel: nome, telefone, e-mail e mensagem informados no formulário, e o imóvel de interesse.",
           "Negociação: visitas, propostas, contratos e valores registrados pela Arini e pelos parceiros no curso da intermediação.",
+          "Aceite da exclusividade: uma foto do rosto (selfie) de quem aceita o termo, usada só para conferência visual de identidade pela equipe da Arini. Não fazemos reconhecimento facial nem extraímos dado biométrico da imagem.",
+          "Segurança da conta: registros de entrada, tentativas de acesso, troca de senha e uso do segundo fator, com data, hora, endereço IP e navegador.",
+          "Suporte e pedidos de titulares: o que você escreve nos chamados e nos pedidos sobre seus dados pessoais.",
           "Navegação: endereço IP, data e hora de acesso, navegador e páginas acessadas, e cookies estritamente necessários para manter a sessão. A preferência de tema claro ou escuro fica guardada só no seu navegador.",
         ],
       },
@@ -319,6 +322,7 @@ export function documentos(cfg: Record<string, unknown>): Documento[] {
         titulo: "Obrigações do Proprietário e remuneração",
         itens: [
           "Durante o prazo, o Proprietário não anuncia o imóvel com outra imobiliária ou corretor e encaminha à Arini qualquer interessado que o procure diretamente.",
+          "No aceite eletrônico deste termo, o Proprietário envia uma foto do próprio rosto (selfie). A foto serve apenas para a equipe da Arini conferir, visualmente, que quem aceitou é a pessoa do documento apresentado; fica guardada em área privada junto do registro do aceite, pelo prazo de guarda dos registros de negociação, e não é usada para reconhecimento facial nem para qualquer tratamento automatizado.",
           `Se o imóvel for vendido durante o prazo, a remuneração de ${d.pct} sobre o valor total da operação é devida à Arini ainda que a venda tenha ocorrido sem a sua mediação, salvo se comprovada a sua inércia ou ociosidade (art. 726 do Código Civil).`,
           "Considera-se inércia, entre outros casos, o descumprimento reiterado das obrigações do item anterior, desde que o Proprietário tenha avisado por escrito.",
         ],
@@ -395,14 +399,16 @@ export function documentos(cfg: Record<string, unknown>): Documento[] {
         titulo: "Objeto e habilitação",
         itens: [
           `Este termo regula a atuação de imobiliárias, corretores autônomos, engenheiros e outros profissionais ("Parceiro") na plataforma ${d.sistema}, operada por ${d.qualificacao} ("Arini").`,
-          "O Parceiro que intermedia imóveis declara ter inscrição regular no CRECI (Lei nº 6.530/1978), e o profissional técnico declara registro regular no conselho da sua profissão. A inscrição deve ser mantida válida durante toda a parceria, e a Arini pode pedir comprovação a qualquer tempo.",
+          "O Parceiro que intermedia imóveis declara ter inscrição regular no CRECI (Lei nº 6.530/1978); o leiloeiro, matrícula regular na Junta Comercial (Decreto nº 21.981/1932); e o profissional técnico, registro regular no conselho da sua profissão. A inscrição deve ser mantida válida durante toda a parceria, e a Arini pode pedir comprovação a qualquer tempo.",
           "O cadastro do Parceiro só é ativado após aprovação da Arini.",
         ],
       },
       {
         titulo: "Anúncios de Parceiro",
         itens: [
-          "O Parceiro só anuncia imóvel para o qual tenha autorização escrita do proprietário, válida e compatível com o anúncio (preço, prazo e condições), e se compromete a apresentá-la à Arini quando pedida. É vedado anunciar imóvel sem essa autorização.",
+          "O Parceiro só anuncia imóvel para o qual tenha autorização escrita do proprietário, válida e compatível com o anúncio (preço, prazo e condições), e a envia à Arini no cadastro do anúncio, junto com a matrícula do imóvel. É vedado anunciar imóvel sem essa autorização.",
+          "O leiloeiro oficial anuncia imóveis de leilão com base no edital publicado, que envia no cadastro do anúncio e que substitui a autorização do proprietário. Os lances são recebidos pelo leiloeiro, nas condições do edital; a plataforma apenas divulga o leilão e encaminha interessados.",
+          "O franqueado representa a Arini numa região definida pela Matriz e atua como parceiro nessa região. A análise, a aprovação e a publicação dos anúncios permanecem com a Matriz.",
           "O Parceiro responde pela veracidade do anúncio perante a Arini, os compradores e o proprietário.",
           "Terminada ou revogada a autorização do proprietário, o Parceiro deve retirar o anúncio da plataforma imediatamente.",
         ],

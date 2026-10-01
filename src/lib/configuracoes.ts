@@ -106,6 +106,8 @@ export const GRUPOS: Grupo[] = [
         ajuda: "Ex.: Iturama/MG. Em geral, a comarca da sede." },
       { chave: "juridico_encarregado_email", rotulo: "E-mail do encarregado de dados (LGPD)", tipo: "email", padrao: "",
         ajuda: "Canal para pedidos de acesso, correção e exclusão de dados. Vazio = usa o e-mail público de contato." },
+      { chave: "juridico_selfie_exclusividade", rotulo: "Selfie no aceite da exclusividade", tipo: "sim_nao", padrao: true, somenteDiretoria: true,
+        ajuda: "Com “Sim”, o proprietário tira uma selfie ao aceitar a exclusividade. A foto fica no cofre de documentos, só para conferência — não há reconhecimento facial." },
       { chave: "juridico_prazo_autorizacao_dias", rotulo: "Prazo da autorização de venda", tipo: "numero", padrao: 180, min: 30, max: 730, sufixo: "dias",
         ajuda: "Vale para a autorização e para a exclusividade. Renova automaticamente enquanto o anúncio estiver ativo.", somenteDiretoria: true },
       { chave: "juridico_protecao_meses", rotulo: "Proteção contra venda por fora", tipo: "numero", padrao: 12, min: 0, max: 36, sufixo: "meses",

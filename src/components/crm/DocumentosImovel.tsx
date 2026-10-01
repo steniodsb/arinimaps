@@ -8,7 +8,7 @@ type Doc = {
 };
 
 const TIPOS = [
-  ["matricula", "Matrícula / escritura"], ["ccir_itr", "CCIR / ITR"], ["car", "CAR"], ["itr", "ITR"],
+  ["matricula", "Matrícula / escritura"], ["edital", "Edital do leilão"], ["ccir_itr", "CCIR / ITR"], ["car", "CAR"], ["itr", "ITR"],
   ["dwg", "Planta / DWG"], ["autorizacao", "Autorização de venda"], ["outro", "Outro"],
 ] as const;
 

@@ -5,6 +5,8 @@ export const STATUS_CORES: Record<string, string> = {
   publicado: "#3FCF7F",
   em_negociacao: "#E0B341",
   vendido: "#7E9187",
+  // imóvel de leilão disponível: cor própria no mapa, na legenda e no filtro
+  leilao: "#B18CFF",
 };
 
 export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama

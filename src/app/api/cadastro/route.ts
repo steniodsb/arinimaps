@@ -4,9 +4,10 @@ import { logAudit } from "@/lib/audit";
 import { validarDocumento } from "@/lib/br/documentos";
 import { assinatura, ipDe } from "@/lib/juridico";
 import { validarSenha } from "@/lib/seguranca/senha";
+import { PAPEIS_CADASTRO, ehParceiro as papelEhParceiro } from "@/lib/perfis";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 
-const ROLES_PERMITIDOS = ["comprador", "proprietario", "corretor", "imobiliaria", "engenheiro"];
+const ROLES_PERMITIDOS: readonly string[] = PAPEIS_CADASTRO;
 
 /**
  * Cria a conta. CPF (ou CNPJ, para imobiliária) é obrigatório e único:
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  const ehParceiro = ["corretor", "imobiliaria", "engenheiro"].includes(role);
+  const ehParceiro = papelEhParceiro(role);
   const versao = ehParceiro
     ? assinatura("termos-de-uso", "privacidade", "parceiros")
     : assinatura("termos-de-uso", "privacidade");

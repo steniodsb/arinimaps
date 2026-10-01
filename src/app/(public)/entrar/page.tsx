@@ -7,13 +7,16 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { formatarCPF, validarDocumento } from "@/lib/br/documentos";
 import { lerCarPendente } from "@/lib/map/carPendente";
 import { SENHA_MIN, validarSenha } from "@/lib/seguranca/senha";
+import { REGISTRO_LABEL, ehParceiro as papelEhParceiro, podeAnunciar } from "@/lib/perfis";
 
 const PERFIS = [
   { value: "comprador", label: "Quero comprar / procurar imóvel" },
+  { value: "consulta", label: "Quero apenas consultar áreas e dados" },
   { value: "proprietario", label: "Sou proprietário" },
   { value: "imobiliaria", label: "Sou imobiliária" },
   { value: "corretor", label: "Sou corretor autônomo" },
   { value: "engenheiro", label: "Sou engenheiro / profissional" },
+  { value: "leiloeiro", label: "Sou leiloeiro" },
 ];
 
 const INPUT = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
@@ -45,13 +48,13 @@ export default function Entrar() {
     }
   }, []);
 
-  const ehParceiro = ["imobiliaria", "corretor", "engenheiro"].includes(form.role);
+  const ehParceiro = papelEhParceiro(form.role);
   const docInvalido = form.cpf.length > 0 && !validarDocumento(form.cpf).ok;
 
   function destinoDe(role: string) {
     // clicou numa área do CAR antes de entrar: volta direto para anunciá-la
     const carPendente = lerCarPendente();
-    const anuncia = role === "proprietario" || ["corretor", "imobiliaria", "engenheiro", "leiloeiro"].includes(role);
+    const anuncia = podeAnunciar(role);
     return role === "admin_central" || role === "analista_arini" ? "/admin"
       : carPendente && anuncia ? `/painel/novo?car=${encodeURIComponent(carPendente)}`
       : ["comprador", "consulta"].includes(role) ? "/mapa"
@@ -215,7 +218,7 @@ export default function Entrar() {
                   </div>
                   <div>
                     <label className={ROTULO} htmlFor="registro">
-                      {form.role === "engenheiro" ? "CREA" : "CRECI"}
+                      {REGISTRO_LABEL[form.role] ?? "Registro profissional"}
                     </label>
                     <input id="registro" className={INPUT}
                       value={form.registro_profissional}
@@ -272,7 +275,7 @@ export default function Entrar() {
                   <Link href="/termos/privacidade" target="_blank" className="text-verde underline">Política de Privacidade</Link>.
                 </span>
               </label>
-              {form.role !== "comprador" && (
+              {!["comprador", "consulta"].includes(form.role) && (
                 <p className="text-xs text-texto-2">
                   Cadastros de proprietário e parceiro passam pela análise da Arini antes de anunciar.
                 </p>

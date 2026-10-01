@@ -21,6 +21,13 @@ function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
 }
 
+type Leilao = {
+  praca1_data?: string | null; praca1_lance?: number | null; praca2_data?: string | null; praca2_lance?: number | null;
+  processo?: string | null; comitente?: string | null; site?: string | null; condicoes?: string | null;
+};
+const quandoPraca = (d?: string | null) =>
+  d ? new Date(d).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" }) : null;
+
 async function getImovel(codigo: string) {
   const { data } = await supabaseAdmin().rpc("fn_property_public", { p_codigo: codigo });
   return data as {
@@ -80,7 +87,8 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   if (!imovel) notFound();
 
   const admin = supabaseAdmin();
-  const { data: propId } = await admin.from("properties").select("id").eq("codigo", codigo).single();
+  const { data: propId } = await admin.from("properties").select("id, modalidade, leilao").eq("codigo", codigo).single();
+  const leilao = propId?.modalidade === "leilao" ? (propId.leilao ?? {}) as Leilao : null;
   const [{ data: tourData }, { data: video }, { data: unidades }, { data: whats }] = await Promise.all([
     admin.rpc("fn_property_tour", { p_codigo: codigo }),
     admin.from("presentations").select("output_path")
@@ -109,6 +117,8 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   // slides: fotos → vídeo (se pronto) → tour 3D (se houver geometria)
   const slides: Slide[] = [
     ...fotos.map((f) => ({ tipo: "foto" as const, url: mediaUrl(f.path) })),
+    // vídeos enviados pelo anunciante, depois o vídeo automático do sobrevoo
+    ...imovel.media.filter((m) => m.tipo === "video").map((v) => ({ tipo: "video" as const, url: mediaUrl(v.path) })),
     ...(video?.output_path ? [{ tipo: "video" as const, url: mediaUrl(video.output_path) }] : []),
     ...(imovel.geometry
       ? [{ tipo: "tour" as const, href: `/imovel/${imovel.codigo}/tour`, poster: fotos[0] ? mediaUrl(fotos[0].path) : null }]
@@ -140,8 +150,8 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
 
         {/* cabeçalho */}
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <span className={`text-xs font-semibold rounded-full px-4 py-1.5 text-white ${vendido ? "bg-superficie-2 text-texto-2" : "bg-verde"}`}>
-            {vendido ? "VENDIDO" : "DISPONÍVEL"}
+          <span className={`text-xs font-semibold rounded-full px-4 py-1.5 text-white ${vendido ? "bg-superficie-2 text-texto-2" : leilao ? "bg-[#B18CFF] !text-[#1b1033]" : "bg-verde"}`}>
+            {vendido ? "VENDIDO" : leilao ? "LEILÃO" : "DISPONÍVEL"}
           </span>
           <span className="text-sm text-texto-2">
             📍 {imovel.municipio ? `${imovel.municipio.nome} / ${imovel.municipio.uf}` : "Região piloto"}
@@ -154,7 +164,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
         </h1>
         <p className="mt-1 mb-7">
           <span className="texto-ouro text-3xl sm:text-4xl font-bold">{formatBRL(imovel.valor)}</span>
-          <span className="text-texto-2 ml-2">Venda</span>
+          <span className="text-texto-2 ml-2">{leilao ? "Lance inicial" : "Venda"}</span>
         </p>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px] items-start">
@@ -240,6 +250,39 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                   ))}
                 </div>
                 <p className="text-xs text-texto-2 mt-2">Distâncias em linha reta, do centro do imóvel.</p>
+              </section>
+            )}
+
+            {leilao && (
+              <section className="cartao p-5 space-y-3 border-[#B18CFF]/40">
+                <h2 className="text-2xl font-semibold text-texto">Leilão</h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[1, 2].map((n) => {
+                    const data = quandoPraca(n === 1 ? leilao.praca1_data : leilao.praca2_data);
+                    const lance = n === 1 ? leilao.praca1_lance : leilao.praca2_lance;
+                    if (!data && lance == null) return null;
+                    return (
+                      <div key={n} className="rounded-xl bg-superficie-2 p-4">
+                        <p className="text-xs uppercase tracking-wide text-texto-2">{n}ª praça</p>
+                        <p className="font-semibold text-texto mt-0.5">{data ?? "Data a definir"}</p>
+                        {lance != null && <p className="text-sm text-ouro">Lance mínimo {formatBRL(Number(lance))}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <dl className="text-sm space-y-1">
+                  {leilao.comitente && <div className="flex gap-2"><dt className="text-texto-2">Comitente:</dt><dd className="text-texto">{leilao.comitente}</dd></div>}
+                  {leilao.processo && <div className="flex gap-2"><dt className="text-texto-2">Processo:</dt><dd className="text-texto">{leilao.processo}</dd></div>}
+                </dl>
+                {leilao.condicoes && <p className="text-sm text-texto-2 whitespace-pre-line">{leilao.condicoes}</p>}
+                {leilao.site && (
+                  <a href={leilao.site} target="_blank" rel="noreferrer" className="btn-contorno inline-block px-5 py-2.5 text-sm">
+                    Ir para a página do leilão
+                  </a>
+                )}
+                <p className="text-xs text-texto-2">
+                  Os lances são dados na página do leiloeiro, nas condições do edital. Leia o edital antes de participar.
+                </p>
               </section>
             )}
 

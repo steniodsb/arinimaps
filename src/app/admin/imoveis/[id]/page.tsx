@@ -20,7 +20,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     .from("properties")
     .select(`
       id, codigo, titulo, descricao, tipo, status, valor, area_declarada,
-      caracteristicas, condicoes_venda, exclusividade, motivo_correcao, created_at, car_codigo,
+      caracteristicas, condicoes_venda, exclusividade, motivo_correcao, created_at, car_codigo, modalidade, leilao,
       municipality:municipalities(nome, uf),
       owner:owners(id, profile:profiles(nome, telefone)),
       partner:partners(id, razao_social, tipo, profile:profiles(nome, telefone))
@@ -37,7 +37,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       () => ({ data: null })
     ),
     admin.from("property_authorizations")
-      .select("tipo, validade, aceite_at, versao, aceite_ip")
+      .select("tipo, validade, aceite_at, versao, aceite_ip, selfie_path")
       .eq("property_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -45,8 +45,16 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     admin.from("property_documents").select("tipo, verificado").eq("property_id", id),
   ]);
   const docs = documentos ?? [];
-  const matriculaConferida = docs.some((d) => d.tipo === "matricula" && d.verificado);
-  const temMatricula = docs.some((d) => d.tipo === "matricula");
+  // leilão é conferido pelo edital; venda comum, pela matrícula
+  const ehLeilao = p.modalidade === "leilao";
+  const docChave = ehLeilao ? "edital" : "matricula";
+  const nomeDoc = ehLeilao ? "edital" : "matrícula";
+  const matriculaConferida = docs.some((d) => d.tipo === docChave && d.verificado);
+  const temMatricula = docs.some((d) => d.tipo === docChave);
+  const lei = (p.leilao ?? {}) as Record<string, string | number | null>;
+  const selfieUrl = autorizacao?.selfie_path
+    ? (await admin.storage.from("docs").createSignedUrl(autorizacao.selfie_path, 3600)).data?.signedUrl ?? null
+    : null;
   const car = p.car_codigo
     ? ((await admin.rpc("fn_car_imovel", { p_cod: p.car_codigo })).data as { properties?: { area_ha?: number; condicao?: string } } | null)
     : null;
@@ -95,14 +103,31 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
           )}
           <li>{media?.length ? "✅" : "⚠️"} {media?.length ?? 0} foto(s)</li>
           <li>
-            {matriculaConferida ? "✅" : temMatricula ? "⏳" : "❌"} Comprovação de propriedade:{" "}
+            {matriculaConferida ? "✅" : temMatricula ? "⏳" : "❌"} {ehLeilao ? "Documento do leilão" : "Comprovação de propriedade"}:{" "}
             {matriculaConferida
-              ? "matrícula conferida"
+              ? `${nomeDoc} conferid${ehLeilao ? "o" : "a"}`
               : temMatricula
-                ? "matrícula enviada, falta conferir (aprovar e publicar ficam bloqueados)"
-                : "nenhuma matrícula enviada — peça correção"}
+                ? `${nomeDoc} enviad${ehLeilao ? "o" : "a"}, falta conferir (aprovar e publicar ficam bloqueados)`
+                : `${nomeDoc} não enviad${ehLeilao ? "o" : "a"} — peça correção`}
             {" "}· {docs.length} documento(s), {docs.filter((d) => d.verificado).length} conferido(s)
           </li>
+          {selfieUrl && (
+            <li>
+              🤳 Selfie do aceite da exclusividade:{" "}
+              <a href={selfieUrl} target="_blank" className="text-verde hover:underline">abrir</a>
+              {" — confira com o documento do proprietário."}
+            </li>
+          )}
+          {ehLeilao && (
+            <li>
+              🔨 Leilão{lei.comitente ? ` de ${lei.comitente}` : ""}
+              {lei.praca1_data && ` — 1ª praça em ${new Date(String(lei.praca1_data)).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`}
+              {lei.praca1_lance != null && ` (lance mínimo ${formatBRL(Number(lei.praca1_lance))})`}
+              {lei.praca2_data && `; 2ª praça em ${new Date(String(lei.praca2_data)).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`}
+              {lei.praca2_lance != null && ` (${formatBRL(Number(lei.praca2_lance))})`}
+              {lei.processo && ` · ${lei.processo}`}
+            </li>
+          )}
           {p.car_codigo && (
             <li>
               🗺️ Divisa trazida do CAR <span className="font-mono text-xs">{p.car_codigo}</span>

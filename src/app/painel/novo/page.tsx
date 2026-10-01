@@ -7,18 +7,23 @@ import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { lerCarPendente, limparCarPendente } from "@/lib/map/carPendente";
 import type { GeometriaEscolhida } from "@/components/map/DesenhoMapa";
+import { ehEquipe as papelEhEquipe, ehParceiro as papelEhParceiro } from "@/lib/perfis";
+import { enviarVideo, VIDEO_ACEITA, VIDEO_MAX_MB } from "@/lib/midia/enviarVideo";
 
 const DesenhoMapa = dynamic(() => import("@/components/map/DesenhoMapa"), { ssr: false });
 
 type Municipio = { id: string; nome: string };
 type Condicao = "autorizacao" | "exclusividade" | "parceiro";
 
-const EQUIPE_ARINI = ["admin_central", "analista_arini"];
 const ACEITA_DOC = ".pdf,.jpg,.jpeg,.png,.webp,.heic";
 const MAX_DOC = 25 * 1024 * 1024;
 
-type Docs = { matricula: File[]; ccir_itr: File[]; autorizacao: File[]; outro: File[] };
-const PARCEIROS = ["corretor", "imobiliaria", "engenheiro"];
+type Docs = { matricula: File[]; edital: File[]; ccir_itr: File[]; autorizacao: File[]; outro: File[] };
+
+const LEILAO_VAZIO = {
+  praca1_data: "", praca1_lance: "", praca2_data: "", praca2_lance: "",
+  processo: "", comitente: "", site: "", condicoes: "",
+};
 
 export default function NovoImovel() {
   const router = useRouter();
@@ -34,7 +39,12 @@ export default function NovoImovel() {
   });
   const [papel, setPapel] = useState<string | null>(null);
   const [condicao, setCondicao] = useState<Condicao>("autorizacao");
-  const [docs, setDocs] = useState<Docs>({ matricula: [], ccir_itr: [], autorizacao: [], outro: [] });
+  const [docs, setDocs] = useState<Docs>({ matricula: [], edital: [], ccir_itr: [], autorizacao: [], outro: [] });
+  const [videos, setVideos] = useState<File[]>([]);
+  const [selfie, setSelfie] = useState<File | null>(null);
+  const [leilao, setLeilao] = useState(LEILAO_VAZIO);
+  const [modalidade, setModalidade] = useState<"venda" | "leilao">("venda");
+  const [progresso, setProgresso] = useState("");
   const [car, setCar] = useState<{ cod: string; area_ha: number | null; municipio: string | null } | null>(null);
   const [inicial, setInicial] = useState<GeometriaEscolhida | null>(null);
 
@@ -61,8 +71,12 @@ export default function NovoImovel() {
       .catch(() => undefined);
   }, []);
   const [aceite, setAceite] = useState(false);
-  const ehParceiro = !!papel && PARCEIROS.includes(papel);
-  const ehEquipe = !!papel && EQUIPE_ARINI.includes(papel);
+  const ehParceiro = papelEhParceiro(papel);
+  const ehEquipe = papelEhEquipe(papel);
+  const ehLeiloeiro = papel === "leiloeiro";
+  const emLeilao = modalidade === "leilao";
+  // selfie só no aceite eletrônico de exclusividade (a equipe anexa contrato assinado)
+  const pedeSelfie = condicao === "exclusividade" && !ehEquipe;
 
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -70,7 +84,8 @@ export default function NovoImovel() {
       if (!user) return;
       const { data } = await supabase.from("profiles").select("role").eq("user_id", user.id).single();
       setPapel(data?.role ?? null);
-      if (data?.role && PARCEIROS.includes(data.role)) setCondicao("parceiro");
+      if (papelEhParceiro(data?.role)) setCondicao("parceiro");
+      if (data?.role === "leiloeiro") setModalidade("leilao");
     });
   }, []);
 
@@ -94,12 +109,29 @@ export default function NovoImovel() {
       setErro("Marque a localização do imóvel no mapa (desenho, ponto ou KML).");
       return;
     }
-    if (!ehEquipe && !docs.matricula.length) {
+    if (!ehEquipe && emLeilao && !docs.edital.length) {
+      setErro("Envie o edital do leilão — é o documento que a Arini confere para publicar.");
+      return;
+    }
+    if (!ehEquipe && !emLeilao && !docs.matricula.length) {
       setErro("Envie a matrícula do imóvel (ou escritura/contrato registrado) — é o que comprova a propriedade.");
       return;
     }
-    if (ehParceiro && !docs.autorizacao.length) {
+    if (ehParceiro && !emLeilao && !docs.autorizacao.length) {
       setErro("Envie a autorização de venda assinada pelo proprietário.");
+      return;
+    }
+    if (emLeilao && !leilao.praca1_data) {
+      setErro("Informe a data da 1ª praça do leilão.");
+      return;
+    }
+    if (pedeSelfie && !selfie) {
+      setErro("Para a exclusividade, tire uma selfie: ela identifica quem está aceitando o termo.");
+      return;
+    }
+    const videoGrande = videos.find((v) => v.size > VIDEO_MAX_MB * 1024 * 1024);
+    if (videoGrande) {
+      setErro(`O vídeo ${videoGrande.name} passa de ${VIDEO_MAX_MB} MB. Corte ou grave em 1080p.`);
       return;
     }
     const grande = Object.values(docs).flat().find((f) => f.size > MAX_DOC);
@@ -119,7 +151,10 @@ export default function NovoImovel() {
       condicao,
       aceite_termos: aceite,
       car_codigo: geometria.fonte === "car" ? car?.cod ?? null : null,
+      modalidade,
+      leilao: emLeilao ? leilao : null,
     }));
+    if (pedeSelfie && selfie) fd.set("selfie", selfie);
     fd.set("geometria", JSON.stringify(geometria));
     for (const f of fotos) fd.append("fotos", f);
     for (const [tipo, arquivos] of Object.entries(docs)) {
@@ -133,7 +168,14 @@ export default function NovoImovel() {
       setEnviando(false);
       return;
     }
-    router.push("/painel?enviado=" + data.codigo);
+    // vídeos vão depois de o imóvel existir, direto para o armazenamento
+    const falhas: string[] = [];
+    for (const [i, v] of videos.entries()) {
+      setProgresso(`Enviando vídeo ${i + 1} de ${videos.length}…`);
+      const problema = await enviarVideo(data.id, v);
+      if (problema) falhas.push(problema);
+    }
+    router.push("/painel?enviado=" + data.codigo + (falhas.length ? "&videos_falharam=" + falhas.length : ""));
     router.refresh();
   }
 
@@ -148,6 +190,62 @@ export default function NovoImovel() {
           Preencha os dados e marque a localização. O imóvel vai para a análise da Arini antes de publicar.
         </p>
       </div>
+
+      {(ehLeiloeiro || ehEquipe) && (
+        <fieldset className="cartao p-4 space-y-3">
+          <legend className="text-sm font-medium text-texto px-1">Leilão</legend>
+          {ehEquipe && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={emLeilao} onChange={(e) => setModalidade(e.target.checked ? "leilao" : "venda")} />
+              Este imóvel será vendido em leilão
+            </label>
+          )}
+          {emLeilao && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={label}>1ª praça — data e hora *</label>
+                <input type="datetime-local" className={input} value={leilao.praca1_data}
+                  onChange={(e) => setLeilao({ ...leilao, praca1_data: e.target.value })} />
+              </div>
+              <div>
+                <label className={label}>1ª praça — lance mínimo (R$)</label>
+                <input className={input} inputMode="numeric" placeholder="Ex.: 420.000" value={leilao.praca1_lance}
+                  onChange={(e) => setLeilao({ ...leilao, praca1_lance: e.target.value })} />
+              </div>
+              <div>
+                <label className={label}>2ª praça — data e hora</label>
+                <input type="datetime-local" className={input} value={leilao.praca2_data}
+                  onChange={(e) => setLeilao({ ...leilao, praca2_data: e.target.value })} />
+              </div>
+              <div>
+                <label className={label}>2ª praça — lance mínimo (R$)</label>
+                <input className={input} inputMode="numeric" placeholder="Ex.: 252.000" value={leilao.praca2_lance}
+                  onChange={(e) => setLeilao({ ...leilao, praca2_lance: e.target.value })} />
+              </div>
+              <div>
+                <label className={label}>Processo / origem</label>
+                <input className={input} placeholder="Nº do processo ou “extrajudicial”" value={leilao.processo}
+                  onChange={(e) => setLeilao({ ...leilao, processo: e.target.value })} />
+              </div>
+              <div>
+                <label className={label}>Comitente</label>
+                <input className={input} placeholder="Banco, vara ou vendedor" value={leilao.comitente}
+                  onChange={(e) => setLeilao({ ...leilao, comitente: e.target.value })} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={label}>Página do leilão (onde se dá o lance)</label>
+                <input className={input} type="url" placeholder="https://…" value={leilao.site}
+                  onChange={(e) => setLeilao({ ...leilao, site: e.target.value })} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={label}>Condições (comissão do leiloeiro, forma de pagamento, ocupação)</label>
+                <textarea rows={2} className={input} value={leilao.condicoes}
+                  onChange={(e) => setLeilao({ ...leilao, condicoes: e.target.value })} />
+              </div>
+            </div>
+          )}
+        </fieldset>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -217,6 +315,17 @@ export default function NovoImovel() {
         {fotos.length > 0 && <p className="text-xs text-texto-2 mt-1">{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
       </div>
 
+      <div>
+        <label className={label}>Vídeos (até 3, opcional)</label>
+        <input type="file" accept={VIDEO_ACEITA} multiple className={input}
+          onChange={(e) => setVideos(Array.from(e.target.files ?? []).slice(0, 3))} />
+        <p className="text-xs text-texto-2 mt-1">
+          {videos.length
+            ? `${videos.length} vídeo(s): ${videos.map((v) => `${v.name} (${(v.size / 1048576).toFixed(0)} MB)`).join(", ")}`
+            : `MP4, MOV ou WebM, até ${VIDEO_MAX_MB} MB cada — de 1 a 2 minutos em 1080p.`}
+        </p>
+      </div>
+
       {form.tipo === "urbano" && (
         <div>
           <label className={label}>Faz parte de um empreendimento? (opcional)</label>
@@ -251,8 +360,9 @@ export default function NovoImovel() {
           só você e a equipe da Arini veem. PDF ou foto, até 25 MB cada.
         </p>
         {([
-          ["matricula", "Matrícula atualizada do imóvel", "Ou escritura, contrato de compra e venda registrado, formal de partilha.", !ehEquipe],
-          ...(ehParceiro ? [["autorizacao", "Autorização de venda assinada pelo proprietário", "Com prazo, preço e condições compatíveis com o anúncio.", true] as const] : []),
+          ...(emLeilao ? [["edital", "Edital do leilão", "O edital publicado, com a descrição do bem, as praças e as condições.", !ehEquipe] as const] : []),
+          ["matricula", "Matrícula atualizada do imóvel", "Ou escritura, contrato de compra e venda registrado, formal de partilha.", !ehEquipe && !emLeilao],
+          ...(ehParceiro && !emLeilao ? [["autorizacao", "Autorização de venda assinada pelo proprietário", "Com prazo, preço e condições compatíveis com o anúncio.", true] as const] : []),
           ...(form.tipo === "rural" ? [["ccir_itr", "CCIR e/ou ITR", "Recomendado para imóvel rural — agiliza a análise.", false] as const] : []),
           ["outro", "Outros documentos", "Procuração, certidões, documento do cônjuge…", false],
         ] as const).map(([tipo, titulo, ajuda, obrigatorio]) => (
@@ -271,7 +381,7 @@ export default function NovoImovel() {
         <legend className="text-sm font-medium text-texto px-1">Condição de comercialização *</legend>
         {ehParceiro ? (
           <p className="text-sm text-texto-2">
-            Imóvel de parceiro: a autorização do proprietário é com você, e a Arini intermedia os
+            {ehLeiloeiro ? "Imóvel de leilão: a venda segue o edital, e a Arini encaminha os" : "Imóvel de parceiro: a autorização do proprietário é com você, e a Arini intermedia os"}
             interessados que chegam pela plataforma, conforme o{" "}
             <Link href="/termos/parceiros" target="_blank" className="text-verde underline">Termo de Parceria</Link>.
           </p>
@@ -294,6 +404,19 @@ export default function NovoImovel() {
           </div>
         )}
 
+        {pedeSelfie && (
+          <div className="rounded-lg border border-ouro/40 bg-ouro/5 p-3 space-y-1.5">
+            <label className="block text-sm font-medium text-texto">Selfie de quem está aceitando a exclusividade *</label>
+            <input type="file" accept="image/*" capture="user" className={input}
+              onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} />
+            <p className="text-xs text-texto-2">
+              {selfie ? `Foto selecionada: ${selfie.name}. ` : ""}
+              A foto fica guardada junto do aceite, em área privada, só para a Arini conferir com o seu
+              documento. Não é usada para reconhecimento facial.
+            </p>
+          </div>
+        )}
+
         {ehEquipe ? (
           <p className="text-xs text-texto-2">
             Cadastro feito pela equipe Arini: não há aceite eletrônico do proprietário. Anexe a
@@ -305,8 +428,9 @@ export default function NovoImovel() {
               onChange={(e) => setAceite(e.target.checked)} className="mt-0.5" />
             <span>
               {ehParceiro ? (
-                <>Declaro ter autorização escrita do proprietário para anunciar este imóvel, no preço e nas
-                condições acima, e aceito o{" "}
+                <>{ehLeiloeiro
+                  ? "Declaro estar habilitado a conduzir este leilão, nos termos do edital enviado, e aceito o"
+                  : "Declaro ter autorização escrita do proprietário para anunciar este imóvel, no preço e nas condições acima, e aceito o"}{" "}
                 <Link href="/termos/parceiros" target="_blank" className="text-verde underline">Termo de Parceria</Link></>
               ) : (
                 <>Declaro ser proprietário (ou ter poderes para vender) e aceito o{" "}
@@ -326,7 +450,7 @@ export default function NovoImovel() {
 
       <button disabled={enviando}
         className="rounded-lg bg-verde text-white font-semibold px-6 py-2.5 hover:bg-verde-escuro disabled:opacity-60">
-        {enviando ? "Enviando…" : "Enviar para análise da Arini"}
+        {enviando ? (progresso || "Enviando…") : "Enviar para análise da Arini"}
       </button>
     </form>
   );

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { lerConfiguracoes, numero } from "@/lib/settings";
 import { assinatura, ipDe } from "@/lib/juridico";
+import { ehParceiro } from "@/lib/perfis";
 
 // Cria imóvel (multipart): dados + geometria GeoJSON + fotos.
 // Proprietário/parceiro precisa estar aprovado/ativo; Arini também pode cadastrar.
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
       );
     }
     owner_id = data.id;
-  } else if (["corretor", "imobiliaria", "engenheiro"].includes(profile.role)) {
+  } else if (ehParceiro(profile.role)) {
     const { data } = await admin.from("partners").select("id, status").eq("profile_id", user.id).single();
     if (!data || !["aprovado", "ativo"].includes(data.status)) {
       return NextResponse.json(
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
   const dados = JSON.parse(String(form.get("dados") ?? "{}"));
   const geometria = JSON.parse(String(form.get("geometria") ?? "null"));
   const fotos = form.getAll("fotos").filter((f): f is File => f instanceof File);
-  const TIPOS_DOC = ["matricula", "ccir_itr", "autorizacao", "outro"] as const;
+  const TIPOS_DOC = ["matricula", "edital", "ccir_itr", "autorizacao", "outro"] as const;
   const docs = TIPOS_DOC.flatMap((tipo) =>
     form.getAll(`doc_${tipo}`).filter((f): f is File => f instanceof File && f.size > 0).map((arquivo) => ({ tipo, arquivo }))
   );
@@ -68,14 +69,39 @@ export async function POST(request: Request) {
   const condicao: "autorizacao" | "exclusividade" | "parceiro" = partner_id
     ? "parceiro"
     : dados.condicao === "exclusividade" ? "exclusividade" : "autorizacao";
+  // Leilão: só leiloeiro ou a equipe cadastram; o documento que sustenta o
+  // anúncio é o edital, não a autorização do proprietário.
+  const modalidade: "venda" | "leilao" =
+    profile.role === "leiloeiro" || (equipe && dados.modalidade === "leilao") ? "leilao" : "venda";
+  const txt = (v: unknown, max = 300) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+  const dinheiro = (v: unknown) => {
+    const n = Number(String(v ?? "").replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const leilao = modalidade === "leilao" ? {
+    praca1_data: txt(dados.leilao?.praca1_data, 40), praca1_lance: dinheiro(dados.leilao?.praca1_lance),
+    praca2_data: txt(dados.leilao?.praca2_data, 40), praca2_lance: dinheiro(dados.leilao?.praca2_lance),
+    processo: txt(dados.leilao?.processo), comitente: txt(dados.leilao?.comitente),
+    site: /^https?:\/\//i.test(String(dados.leilao?.site ?? "")) ? txt(dados.leilao?.site, 500) : null,
+    condicoes: txt(dados.leilao?.condicoes, 2000),
+  } : {};
+  if (modalidade === "leilao" && !equipe) {
+    if (!docs.some((d) => d.tipo === "edital")) {
+      return NextResponse.json({ error: "Envie o edital do leilão." }, { status: 400 });
+    }
+    if (!(leilao as { praca1_data?: string | null }).praca1_data) {
+      return NextResponse.json({ error: "Informe a data da 1ª praça do leilão." }, { status: 400 });
+    }
+  }
+
   // comprovação de propriedade: sem matrícula não entra (a equipe Arini anexa depois)
-  if (!equipe && !docs.some((d) => d.tipo === "matricula")) {
+  if (!equipe && modalidade === "venda" && !docs.some((d) => d.tipo === "matricula")) {
     return NextResponse.json(
       { error: "Envie a matrícula do imóvel (ou escritura/contrato registrado) para comprovar a propriedade." },
       { status: 400 }
     );
   }
-  if (partner_id && !docs.some((d) => d.tipo === "autorizacao")) {
+  if (partner_id && modalidade === "venda" && !docs.some((d) => d.tipo === "autorizacao")) {
     return NextResponse.json(
       { error: "Imóvel de parceiro: envie a autorização de venda assinada pelo proprietário." },
       { status: 400 }
@@ -153,6 +179,8 @@ export async function POST(request: Request) {
       exclusividade: condicao === "exclusividade",
       parent_property_id,
       car_codigo: carCodigo,
+      modalidade,
+      leilao,
       created_by: user.id,
     })
     .select("id, codigo")
@@ -167,8 +195,33 @@ export async function POST(request: Request) {
     : condicao === "exclusividade"
       ? assinatura("autorizacao", "exclusividade", "remuneracao")
       : assinatura("autorizacao", "remuneracao");
+  // Selfie no aceite da exclusividade (pedido do Carlos, 01/10/2026): foto de
+  // identificação de quem aceitou, no cofre privado. Não há reconhecimento
+  // facial — é evidência para conferência humana.
+  let selfiePath: string | null = null;
+  const selfie = form.get("selfie");
+  const exigeSelfie = condicao === "exclusividade" && !equipe && cfg.juridico_selfie_exclusividade !== false;
+  if (exigeSelfie) {
+    if (!(selfie instanceof File) || !selfie.type.startsWith("image/") || selfie.size > 15 * 1024 * 1024) {
+      await admin.from("properties").delete().eq("id", property.id);
+      return NextResponse.json(
+        { error: "Para a exclusividade, envie uma selfie (foto de até 15 MB) de quem está aceitando o termo." },
+        { status: 400 }
+      );
+    }
+    const ext = (selfie.name.split(".").pop() || "jpg").toLowerCase().slice(0, 5);
+    selfiePath = `imoveis/${property.id}/selfie-${crypto.randomUUID()}.${ext}`;
+    const { error: sErro } = await admin.storage.from("docs")
+      .upload(selfiePath, await selfie.arrayBuffer(), { contentType: selfie.type });
+    if (sErro) {
+      await admin.from("properties").delete().eq("id", property.id);
+      return NextResponse.json({ error: "A selfie não pôde ser salva. Tente de novo." }, { status: 502 });
+    }
+  }
+
   await admin.from("property_authorizations").insert({
     property_id: property.id,
+    selfie_path: selfiePath,
     tipo: condicao,
     validade: validade.toISOString().slice(0, 10),
     aceite_at: equipe ? null : new Date().toISOString(),
@@ -248,8 +301,9 @@ export async function POST(request: Request) {
     dados_depois: {
       codigo: property.codigo, titulo: dados.titulo, condicao, aceite: equipe ? null : versao,
       car: carCodigo, documentos: docs.length - docsFalharam.length, documentos_falharam: docsFalharam,
+      modalidade, selfie: !!selfiePath,
     },
   });
 
-  return NextResponse.json({ ok: true, codigo: property.codigo, documentos_falharam: docsFalharam });
+  return NextResponse.json({ ok: true, id: property.id, codigo: property.codigo, documentos_falharam: docsFalharam });
 }

@@ -25,6 +25,7 @@ type ImovelProps = {
   codigo: string;
   titulo: string;
   tipo: "urbano" | "rural";
+  modalidade?: "venda" | "leilao";
   status: string;
   valor: number | null;
   area_m2: number | null;
@@ -150,7 +151,9 @@ function centrosDe(features: GeoJSON.Feature[]): GeoJSON.FeatureCollection {
 }
 
 const CORES_MATCH: unknown[] = [
-  "match", ["get", "status"],
+  // `cor` vem do banco: é o status, ou "leilao" para leilão ainda disponível
+  "match", ["coalesce", ["get", "cor"], ["get", "status"]],
+  "leilao", STATUS_CORES.leilao,
   "publicado", STATUS_CORES.publicado,
   "em_negociacao", STATUS_CORES.em_negociacao,
   "vendido", STATUS_CORES.vendido,
@@ -193,7 +196,7 @@ export default function MapaRegional() {
   // satélite é a base de abertura (pedido do Carlos em 01/10/2026); "Mapa" vira opção
   const [base, setBase] = useState<"ruas" | "satelite">("satelite");
   const [selecionado, setSelecionado] = useState<ImovelProps | null>(null);
-  const [filtroTipo, setFiltroTipo] = useState<"todos" | "urbano" | "rural">("todos");
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | "urbano" | "rural" | "leilao">("todos");
   const [faixaPreco, setFaixaPreco] = useState(0);
   const [busca, setBusca] = useState("");
   // no celular o mapa é o protagonista: a lista começa fechada e vira gaveta
@@ -329,7 +332,8 @@ export default function MapaRegional() {
     const termo = norm(q.trim());
     return dados.features.filter((f) => {
       const p = f.properties as ImovelProps;
-      if (tipo !== "todos" && p.tipo !== tipo) return false;
+      if (tipo === "leilao") { if (p.modalidade !== "leilao") return false; }
+      else if (tipo !== "todos" && p.tipo !== tipo) return false;
       if (p.valor != null) {
         if (p.valor < faixa.min) return false;
         if (faixa.max != null && p.valor > faixa.max) return false;
@@ -689,10 +693,10 @@ export default function MapaRegional() {
           )}
 
           <div className="flex gap-1.5 flex-wrap">
-            {(["todos", "rural", "urbano"] as const).map((t) => (
+            {(["todos", "rural", "urbano", "leilao"] as const).map((t) => (
               <button key={t} onClick={() => setFiltroTipo(t)} data-ativo={filtroTipo === t}
                 className="chip px-3.5 py-1.5 text-xs capitalize">
-                {t}
+                {t === "leilao" ? "leilão" : t}
               </button>
             ))}
           </div>

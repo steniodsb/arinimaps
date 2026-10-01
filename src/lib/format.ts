@@ -18,5 +18,5 @@ export const STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho", pendente: "Pendente", em_analise: "Em análise",
   correcao: "Aguardando correção", aprovado: "Aprovado", publicado: "Publicado",
   em_negociacao: "Em negociação", vendido: "Vendido", historico: "Histórico",
-  suspenso: "Suspenso", inativo: "Inativo", reprovado: "Reprovado",
+  suspenso: "Suspenso", inativo: "Inativo", reprovado: "Reprovado", leilao: "Leilão",
 };

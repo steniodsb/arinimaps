@@ -36,7 +36,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   const [{ data: bruto }, { data: municipios }, user] = await Promise.all([
     admin.from("properties")
       .select(`
-        codigo, titulo, tipo, status, valor, published_at,
+        codigo, titulo, tipo, status, valor, published_at, modalidade,
         municipality:municipalities(id, nome, uf),
         geo:property_geometries(area_m2),
         media:property_media(storage_path, capa)
@@ -51,7 +51,8 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   const munDe = (p: Linha) => p.municipality as unknown as { id: string; nome: string; uf: string } | null;
 
   let lista = (bruto ?? []).filter((p) => {
-    if (tipo !== "todos" && p.tipo !== tipo) return false;
+    if (tipo === "leilao") { if (p.modalidade !== "leilao") return false; }
+    else if (tipo !== "todos" && p.tipo !== tipo) return false;
     if (municipio && munDe(p)?.id !== municipio) return false;
     if (q) {
       const alvo = norm(`${p.titulo} ${p.codigo} ${munDe(p)?.nome ?? ""}`);
@@ -97,6 +98,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
             <option value="todos">Todos</option>
             <option value="rural">Rural</option>
             <option value="urbano">Urbano</option>
+            <option value="leilao">Leilão</option>
           </select>
         </div>
         <div>
@@ -145,6 +147,11 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
                   <span className="absolute top-3 left-3 text-[11px] rounded-full bg-fundo/85 text-texto px-3 py-1 capitalize backdrop-blur">
                     {p.tipo}
                   </span>
+                  {p.modalidade === "leilao" && !vendido && (
+                    <span className="absolute top-3 left-3 text-[11px] font-semibold rounded-full bg-[#B18CFF] text-[#1b1033] px-3 py-1">
+                      LEILÃO
+                    </span>
+                  )}
                   {vendido && (
                     <span className="absolute top-3 right-3 text-[11px] rounded-full bg-fundo/85 text-texto-2 px-3 py-1">
                       {STATUS_LABEL[p.status]}

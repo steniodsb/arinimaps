@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 const FILTROS: Record<string, string[]> = {
   analise: ["pendente", "em_analise", "correcao"],
@@ -10,6 +11,7 @@ const FILTROS: Record<string, string[]> = {
 };
 
 export default async function AdminImoveis({ searchParams }: PageProps<"/admin/imoveis">) {
+  await exigirSetor("operacoes");
   const { filtro } = await searchParams;
   const chave = typeof filtro === "string" && FILTROS[filtro] ? filtro : "analise";
 

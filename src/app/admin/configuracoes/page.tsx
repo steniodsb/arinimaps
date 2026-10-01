@@ -2,8 +2,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { comPadroes } from "@/lib/configuracoes";
 import { currentUser } from "@/lib/supabase/server";
 import ConfiguracoesForm from "./ConfiguracoesForm";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function AdminConfiguracoes() {
+  await exigirSetor("diretoria");
   const [{ data }, user] = await Promise.all([
     supabaseAdmin().from("settings").select("chave, valor"),
     currentUser(),

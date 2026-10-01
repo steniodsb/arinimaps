@@ -2,8 +2,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import AdicionarMunicipio from "./AdicionarMunicipio";
 import ConfereSatelite from "./ConfereSatelite";
 import AtualizarCar from "./AtualizarCar";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function AdminRegioes() {
+  await exigirSetor("cartografia");
   const admin = supabaseAdmin();
   const [{ data: regioes }, { data: municipios }, { data: car }] = await Promise.all([
     admin.from("regions").select("id, nome, ativa").order("nome"),

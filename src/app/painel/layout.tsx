@@ -7,6 +7,8 @@ const ABAS = [
   { href: "/painel", rotulo: "Meus imóveis" },
   { href: "/painel/oportunidades", rotulo: "Minhas oportunidades" },
   { href: "/painel/novo", rotulo: "Anunciar" },
+  { href: "/suporte", rotulo: "Suporte" },
+  { href: "/conta/seguranca", rotulo: "Segurança da conta" },
 ];
 
 export default async function PainelLayout({ children }: LayoutProps<"/painel">) {

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 import { TODOS_CAMPOS, CHAVES_VALIDAS, validarCampo } from "@/lib/configuracoes";
 
 export async function POST(request: Request) {
   const a = await ator();
-  if (!a?.ehArini) return NextResponse.json({ error: "Acesso restrito à Arini." }, { status: 403 });
+  if (!a || !temSetor(a, "diretoria")) return NextResponse.json({ error: "Configurações são da diretoria." }, { status: 403 });
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const admin = supabaseAdmin();

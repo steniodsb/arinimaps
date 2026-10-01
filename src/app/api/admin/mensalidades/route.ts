@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 import { asaasConfigurado, asaasCriarCliente, asaasCriarCobranca } from "@/lib/asaas";
 import { emailDoProfile } from "@/lib/notify";
 import { falha, falhaBanco } from "@/lib/erros";
@@ -9,7 +9,7 @@ import { falha, falhaBanco } from "@/lib/erros";
 // Ações de mensalidade: gerar_faturas | marcar_paga | marcar_inadimplentes | cobrar_asaas
 export async function POST(request: Request) {
   const a = await ator();
-  if (!a?.ehArini) return falha(403, "sem_permissao", "Acesso restrito à Arini.", { solucao: "Entre com uma conta da Arini." });
+  if (!a || !temSetor(a, "financeiro")) return falha(403, "sem_permissao", "Restrito ao setor Financeiro.", { solucao: "Peça à diretoria para incluir você no setor Financeiro." });
 
   const body = await request.json().catch(() => ({}));
   const admin = supabaseAdmin();

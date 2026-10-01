@@ -1,12 +1,14 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL } from "@/lib/format";
 import MensalidadeAcoes, { FaturaAcoes, ValorMensal } from "./MensalidadeAcoes";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 const SUB_LABEL: Record<string, string> = {
   ativa: "Ativa", pendente: "Pendente", inadimplente: "Inadimplente", isenta: "Isenta", cancelada: "Cancelada",
 };
 
 export default async function AdminMensalidades() {
+  await exigirSetor("financeiro");
   const admin = supabaseAdmin();
   const [{ data: subs }, { data: invoices }] = await Promise.all([
     admin.from("subscriptions")

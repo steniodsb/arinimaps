@@ -352,6 +352,7 @@ export default async function Home() {
             <Link href="/imoveis" className="hover:text-verde">Imóveis</Link>
             <Link href="/entrar" className="hover:text-verde">Anunciar</Link>
             <Link href="/entrar" className="hover:text-verde">Entrar</Link>
+            <Link href="/suporte" className="hover:text-verde">Suporte</Link>
             <Link href="/termos" className="hover:text-verde">Termos e privacidade</Link>
           </nav>
         </div>

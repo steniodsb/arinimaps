@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import GestaoUsuarios from "./GestaoUsuarios";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 const PAPEL_LABEL: Record<string, string> = {
   admin_central: "Diretoria", analista_arini: "Analista",
@@ -9,9 +10,10 @@ const PAPEL_LABEL: Record<string, string> = {
 };
 
 export default async function AdminUsuarios() {
+  await exigirSetor("diretoria");
   const admin = supabaseAdmin();
   const [{ data: perfis }, { data: usuarios }, user] = await Promise.all([
-    admin.from("profiles").select("user_id, nome, role, telefone, ativo, created_at").order("created_at"),
+    admin.from("profiles").select("user_id, nome, role, telefone, ativo, setores, created_at").order("created_at"),
     admin.auth.admin.listUsers({ perPage: 200 }),
     currentUser(),
   ]);
@@ -25,13 +27,14 @@ export default async function AdminUsuarios() {
       <div>
         <h1 className="text-2xl font-semibold text-texto">Usuários e acessos</h1>
         <p className="text-sm text-texto-2">
-          Equipe da Arini opera o sistema; proprietários, parceiros e compradores usam os portais.
+          A equipe da Arini opera o sistema por setor; proprietários, parceiros e compradores usam os portais.
         </p>
       </div>
 
       <GestaoUsuarios
         equipe={equipe.map((p) => ({
           user_id: p.user_id, nome: p.nome, role: p.role, ativo: p.ativo,
+          setores: (p.setores ?? []) as string[],
           email: emailPorId.get(p.user_id) ?? "",
         }))}
         souEu={user?.id ?? ""}

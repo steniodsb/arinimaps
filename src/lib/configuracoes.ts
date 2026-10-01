@@ -8,14 +8,14 @@
  * Regra: só entra aqui o que REALMENTE muda o comportamento do sistema.
  */
 
-export type TipoCampo = "texto" | "textarea" | "numero" | "dinheiro" | "percentual" | "email" | "telefone" | "lista" | "coordenada";
+export type TipoCampo = "texto" | "textarea" | "numero" | "dinheiro" | "percentual" | "email" | "telefone" | "lista" | "coordenada" | "sim_nao";
 
 export type Campo = {
   chave: string;
   rotulo: string;
   ajuda?: string;
   tipo: TipoCampo;
-  padrao: string | number | string[];
+  padrao: string | number | string[] | boolean;
   min?: number;
   max?: number;
   sufixo?: string;
@@ -113,6 +113,18 @@ export const GRUPOS: Grupo[] = [
     ],
   },
   {
+    id: "seguranca",
+    titulo: "Segurança",
+    descricao: "Regras de acesso da equipe. As contas de clientes escolhem o segundo fator por conta própria.",
+    icone: "⛨",
+    campos: [
+      { chave: "seguranca_mfa_equipe", rotulo: "Exigir segundo fator da equipe", tipo: "sim_nao", padrao: false, somenteDiretoria: true,
+        ajuda: "Com “Sim”, ninguém da equipe entra na Central sem o código do aplicativo autenticador. Ative o seu próprio em Minha segurança antes de ligar." },
+      { chave: "seguranca_sessao_equipe_horas", rotulo: "Sessão da equipe expira em", tipo: "numero", padrao: 12, min: 1, max: 720, sufixo: "horas", somenteDiretoria: true,
+        ajuda: "Depois desse tempo desde o login, a Central pede a senha de novo. Evita sessão administrativa aberta para sempre num computador." },
+    ],
+  },
+  {
     id: "mapa",
     titulo: "Mapa e território",
     descricao: "Onde o mapa abre e o alcance da busca de pontos de interesse.",
@@ -143,6 +155,10 @@ export function validarCampo(campo: Campo, bruto: unknown): { valor: unknown } |
       ? bruto.map(String)
       : String(bruto ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
     return { valor: itens };
+  }
+
+  if (campo.tipo === "sim_nao") {
+    return { valor: bruto === true || bruto === "true" || bruto === "sim" };
   }
 
   if (["numero", "dinheiro", "percentual", "coordenada"].includes(campo.tipo)) {

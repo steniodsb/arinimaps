@@ -55,7 +55,14 @@ export default function ConfiguracoesForm({
           )}
         </label>
         <div className="relative">
-          {c.tipo === "textarea" || c.tipo === "lista" ? (
+          {c.tipo === "sim_nao" ? (
+            <select id={c.chave} className={inputBase} disabled={bloqueado}
+              value={v === "true" ? "true" : "false"}
+              onChange={(e) => alterar(c.chave, e.target.value)}>
+              <option value="false">Não</option>
+              <option value="true">Sim</option>
+            </select>
+          ) : c.tipo === "textarea" || c.tipo === "lista" ? (
             <textarea id={c.chave} rows={c.tipo === "lista" ? 7 : 3} className={inputBase}
               value={v} disabled={bloqueado} onChange={(e) => alterar(c.chave, e.target.value)} />
           ) : (

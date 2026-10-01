@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ETAPA_LABEL } from "@/lib/funil";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function AdminLeads() {
+  await exigirSetor("comercial");
   const { data: opps } = await supabaseAdmin()
     .from("opportunities")
     .select(`

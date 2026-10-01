@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 import { falha, falhaBanco } from "@/lib/erros";
 
 const TRANSICOES: Record<string, string[]> = {
@@ -12,8 +12,8 @@ const TRANSICOES: Record<string, string[]> = {
 
 export async function POST(request: Request) {
   const a = await ator();
-  if (a?.role !== "admin_central") {
-    return falha(403, "sem_permissao", "Comissões são restritas à diretoria.", { solucao: "Peça a alguém da diretoria." });
+  if (!a || !temSetor(a, "financeiro")) {
+    return falha(403, "sem_permissao", "Comissões são do setor Financeiro.", { solucao: "Peça à diretoria para incluir você no setor Financeiro." });
   }
   const { commission_id, status } = await request.json().catch(() => ({}));
   const admin = supabaseAdmin();

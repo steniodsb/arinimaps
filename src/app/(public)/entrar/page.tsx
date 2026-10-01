@@ -35,7 +35,14 @@ export default function Entrar() {
   // veio de "Esta área é minha": quem cria conta nesse caminho é proprietário
   useEffect(() => {
     if (lerCarPendente()) setForm((f) => ({ ...f, role: "proprietario" }));
-    if (new URLSearchParams(window.location.search).get("recuperar")) setModo("recuperar");
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("recuperar")) setModo("recuperar");
+    // a Central mandou de volta: a sessão existe, falta confirmar o segundo fator
+    if (q.get("mfa")) { setDestino("/admin"); setModo("mfa"); }
+    if (q.get("expirou")) {
+      supabaseBrowser().auth.signOut();
+      setAviso("Sua sessão na Central expirou. Entre de novo.");
+    }
   }, []);
 
   const ehParceiro = ["imobiliaria", "corretor", "engenheiro"].includes(form.role);
@@ -230,7 +237,7 @@ export default function Entrar() {
 
           <div className={modo === "mfa" ? "hidden" : ""}>
             <label className={ROTULO} htmlFor="email">E-mail *</label>
-            <input id="email" required type="email" placeholder="seu@email.com" className={INPUT}
+            <input id="email" required={modo !== "mfa"} type="email" placeholder="seu@email.com" className={INPUT}
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
 

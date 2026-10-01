@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 const ENTIDADES = ["properties", "opportunities", "leads", "proposals", "visits", "contracts", "sales", "commissions", "invoices", "subscriptions", "partners", "owners", "settings", "profiles", "property_documents", "cartography_layers", "municipalities"];
 
 export default async function AdminAuditoria({ searchParams }: PageProps<"/admin/auditoria">) {
+  await exigirSetor("seguranca", "diretoria");
   const sp = await searchParams;
   const entidade = typeof sp.entidade === "string" && ENTIDADES.includes(sp.entidade) ? sp.entidade : null;
   const acao = typeof sp.acao === "string" && sp.acao ? sp.acao : null;

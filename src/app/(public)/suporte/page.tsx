@@ -1,0 +1,50 @@
+import type { Metadata } from "next";
+import SiteHeader from "@/components/SiteHeader";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { currentUser } from "@/lib/supabase/server";
+import FormSuporte from "./FormSuporte";
+import MeusChamados, { type Chamado } from "./MeusChamados";
+
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Suporte",
+  description: "Fale com a equipe do Arini Maps: dúvidas, problemas, anúncios, cobrança e dados pessoais.",
+};
+
+export default async function Suporte() {
+  const user = await currentUser();
+  let chamados: Chamado[] = [];
+  if (user) {
+    const admin = supabaseAdmin();
+    const { data: tickets } = await admin.from("support_tickets")
+      .select("id, codigo, assunto, status, created_at, updated_at")
+      .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(30);
+    const ids = (tickets ?? []).map((t) => t.id);
+    const { data: msgs } = ids.length
+      ? await admin.from("support_messages")
+          .select("id, ticket_id, autor_nome, da_equipe, corpo, created_at")
+          .in("ticket_id", ids).eq("interno", false).order("created_at")
+      : { data: [] };
+    chamados = (tickets ?? []).map((t) => ({ ...t, mensagens: (msgs ?? []).filter((m) => m.ticket_id === t.id) }));
+  }
+
+  return (
+    <div className="min-h-screen bg-fundo">
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-4 py-12 space-y-8">
+        <div className="space-y-2">
+          <p className="text-sm text-verde font-medium">Suporte</p>
+          <h1 className="text-3xl font-semibold text-texto">Como podemos ajudar?</h1>
+          <p className="text-texto-2">
+            Escreva para a equipe. Respondemos por e-mail em horário comercial
+            {user ? ", e a conversa fica guardada aqui embaixo." : ". Com uma conta, a conversa também fica guardada nesta página."}
+          </p>
+        </div>
+
+        <FormSuporte nome={user?.nome ?? ""} email={user?.email ?? ""} logado={!!user} />
+
+        {user && <MeusChamados chamados={chamados} />}
+      </main>
+    </div>
+  );
+}

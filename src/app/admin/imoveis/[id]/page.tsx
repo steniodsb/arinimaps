@@ -5,12 +5,14 @@ import MiniMapa from "@/components/map/MiniMapa";
 import DecisaoBotoes from "./DecisaoBotoes";
 import DocumentosImovel from "@/components/crm/DocumentosImovel";
 import ConsultaRural from "@/components/rural/ConsultaRural";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
 }
 
 export default async function AnaliseImovel({ params }: PageProps<"/admin/imoveis/[id]">) {
+  await exigirSetor("operacoes");
   const { id } = await params;
   const admin = supabaseAdmin();
 

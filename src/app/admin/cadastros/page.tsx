@@ -1,8 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { STATUS_LABEL } from "@/lib/format";
 import CadastroBotoes from "./CadastroBotoes";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function AdminCadastros() {
+  await exigirSetor("operacoes");
   const admin = supabaseAdmin();
   const [{ data: partners }, { data: owners }] = await Promise.all([
     admin.from("partners")

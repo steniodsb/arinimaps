@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 
 async function podeEditarImovel(a: NonNullable<Awaited<ReturnType<typeof ator>>>, propertyId: string) {
   if (a.ehArini) return true;
@@ -64,7 +64,9 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/imoveis/[id
 export async function PATCH(request: Request, ctx: RouteContext<"/api/imoveis/[id]/documentos">) {
   const { id } = await ctx.params;
   const a = await ator();
-  if (!a?.ehArini) return NextResponse.json({ error: "Só a equipe da Arini confere documentos." }, { status: 403 });
+  if (!a || !temSetor(a, "operacoes", "juridico")) {
+    return NextResponse.json({ error: "A conferência de documentos é dos setores de Operações e Jurídico." }, { status: 403 });
+  }
 
   const { documento_id, verificado } = await request.json().catch(() => ({}));
   if (!documento_id || typeof verificado !== "boolean") {

@@ -1,12 +1,14 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL } from "@/lib/format";
 import ComissaoBotoes from "./ComissaoBotoes";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 const LABEL: Record<string, string> = {
   registrada: "Registrada", cobrada: "Cobrada", paga: "Paga", conciliada: "Conciliada",
 };
 
 export default async function AdminComissoes() {
+  await exigirSetor("financeiro");
   const { data: comissoes } = await supabaseAdmin()
     .from("commissions")
     .select(`

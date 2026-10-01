@@ -1,8 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import CartografiaUpload from "./CartografiaUpload";
 import ListaCamadas from "./ListaCamadas";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function AdminCartografia() {
+  await exigirSetor("cartografia");
   const { data: municipios } = await supabaseAdmin()
     .from("municipalities").select("id, nome").eq("ativo", true).order("nome");
 

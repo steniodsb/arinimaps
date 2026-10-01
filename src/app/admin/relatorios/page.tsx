@@ -1,8 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
 import { formatBRL } from "@/lib/format";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function AdminRelatorios() {
+  await exigirSetor("diretoria");
   const admin = supabaseAdmin();
   const [{ data: opps }, { data: vendas }, { data: comissoes }, { data: faturas }, { data: leads }] = await Promise.all([
     admin.from("opportunities").select("etapa"),

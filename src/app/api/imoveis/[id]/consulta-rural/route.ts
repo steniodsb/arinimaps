@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 import { ADAPTADORES, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
 import { buscarEVincularPois } from "@/lib/overpass";
 
@@ -11,7 +11,9 @@ export const maxDuration = 120;
 export async function POST(request: Request, ctx: RouteContext<"/api/imoveis/[id]/consulta-rural">) {
   const { id } = await ctx.params;
   const a = await ator();
-  if (!a?.ehArini) return NextResponse.json({ error: "Consulta territorial é da equipe Arini." }, { status: 403 });
+  if (!a || !temSetor(a, "operacoes", "cartografia")) {
+    return NextResponse.json({ error: "A consulta territorial do anúncio é dos setores de Operações e Cartografia." }, { status: 403 });
+  }
 
   const { raio_m = 5000 } = await request.json().catch(() => ({}));
   const admin = supabaseAdmin();

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { sendEmail, emailDoProfile } from "@/lib/notify";
 import { buscarEVincularPois } from "@/lib/overpass";
+import { setoresDe } from "@/lib/setores";
 
 async function emailDoAnunciante(propertyId: string): Promise<string | null> {
   const admin = supabaseAdmin();
@@ -29,9 +30,11 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
 
   const admin = supabaseAdmin();
-  const { data: profile } = await admin.from("profiles").select("role").eq("user_id", user.id).single();
-  if (!profile || !["admin_central", "analista_arini"].includes(profile.role)) {
-    return NextResponse.json({ error: "Acesso restrito à Arini." }, { status: 403 });
+  const { data: profile } = await admin.from("profiles").select("role, setores").eq("user_id", user.id).single();
+  const daEquipe = !!profile && ["admin_central", "analista_arini"].includes(profile.role);
+  // aprovar e publicar é do setor de Operações (diretoria entra em todos)
+  if (!daEquipe || !setoresDe(profile.role, profile.setores as string[] | null).includes("operacoes")) {
+    return NextResponse.json({ error: "Decisões sobre anúncios e cadastros são do setor de Operações." }, { status: 403 });
   }
 
   const { alvo, id, acao, motivo } = await request.json().catch(() => ({}));

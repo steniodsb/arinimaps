@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SETORES } from "@/lib/setores";
+import { SENHA_MIN } from "@/lib/seguranca/senha";
 
-type Membro = { user_id: string; nome: string; role: string; ativo: boolean; email: string };
+type Membro = { user_id: string; nome: string; role: string; ativo: boolean; email: string; setores: string[] };
+
+// a diretoria entra em todos os setores; para os demais, escolhe-se aqui
+const ESCOLHIVEIS = SETORES.filter((s) => s.id !== "diretoria");
 
 export default function GestaoUsuarios({
   equipe, souEu, ehDiretoria,
@@ -13,7 +18,7 @@ export default function GestaoUsuarios({
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState("");
   const [msg, setMsg] = useState("");
-  const [form, setForm] = useState({ nome: "", email: "", senha: "", role: "analista_arini" });
+  const [form, setForm] = useState({ nome: "", email: "", senha: "", role: "analista_arini", setores: ["operacoes"] as string[] });
 
   const input = "w-full rounded-lg cartao px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde transition";
 
@@ -48,18 +53,34 @@ export default function GestaoUsuarios({
               value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
             <input className={input} type="email" placeholder="E-mail de acesso"
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <input className={input} type="password" placeholder="Senha (mínimo 8 caracteres)"
+            <input className={input} type="password" placeholder={`Senha provisória (mínimo ${SENHA_MIN} caracteres, letras e números)`}
               value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} />
             <select className={input} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              <option value="analista_arini">Analista — opera imóveis, funil e visitas</option>
-              <option value="admin_central">Diretoria — acesso total, comissões e configurações</option>
+              <option value="analista_arini">Equipe — entra só nos setores marcados abaixo</option>
+              <option value="admin_central">Diretoria — entra em todos os setores</option>
             </select>
           </div>
+          {form.role === "analista_arini" && (
+            <div className="flex flex-wrap gap-2">
+              {ESCOLHIVEIS.map((s) => {
+                const marcado = form.setores.includes(s.id);
+                return (
+                  <label key={s.id}
+                    className={"rounded-full border px-3 py-1 text-xs cursor-pointer transition " +
+                      (marcado ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2")}>
+                    <input type="checkbox" className="hidden" checked={marcado}
+                      onChange={() => setForm({ ...form, setores: marcado ? form.setores.filter((x) => x !== s.id) : [...form.setores, s.id] })} />
+                    {s.nome}
+                  </label>
+                );
+              })}
+            </div>
+          )}
           <button disabled={ocupado} className="btn-ouro px-6 py-2.5 disabled:opacity-50"
             onClick={async () => {
               if (await chamar("POST", form)) {
                 setMsg(`Acesso criado para ${form.email}.`);
-                setForm({ nome: "", email: "", senha: "", role: "analista_arini" });
+                setForm({ nome: "", email: "", senha: "", role: "analista_arini", setores: ["operacoes"] });
                 setCriando(false);
               }
             }}>
@@ -80,17 +101,40 @@ export default function GestaoUsuarios({
                 {m.user_id === souEu && <span className="ml-2 text-xs text-texto-2">(você)</span>}
               </p>
               <p className="text-xs text-texto-2">{m.email}</p>
+              {m.role === "admin_central" ? (
+                <p className="text-xs text-texto-2 mt-1.5">Todos os setores</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {ESCOLHIVEIS.map((s) => {
+                    const marcado = m.setores.includes(s.id);
+                    return ehDiretoria ? (
+                      <button key={s.id} type="button" disabled={ocupado}
+                        onClick={() => chamar("PATCH", {
+                          user_id: m.user_id,
+                          setores: marcado ? m.setores.filter((x) => x !== s.id) : [...m.setores, s.id],
+                        })}
+                        className={"rounded-full border px-2.5 py-0.5 text-[11px] transition " +
+                          (marcado ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2 hover:text-texto")}>
+                        {s.nome}
+                      </button>
+                    ) : marcado ? (
+                      <span key={s.id} className="rounded-full border border-verde bg-verde/10 text-verde px-2.5 py-0.5 text-[11px]">{s.nome}</span>
+                    ) : null;
+                  })}
+                  {!m.setores.length && !ehDiretoria && <span className="text-xs text-alerta">sem setor</span>}
+                </div>
+              )}
             </div>
             {ehDiretoria && m.user_id !== souEu ? (
               <select value={m.role} disabled={ocupado}
                 onChange={(e) => chamar("PATCH", { user_id: m.user_id, role: e.target.value })}
                 className="rounded-lg border border-linha px-3 py-1.5 text-xs">
-                <option value="analista_arini">Analista</option>
+                <option value="analista_arini">Equipe</option>
                 <option value="admin_central">Diretoria</option>
               </select>
             ) : (
               <span className="text-xs rounded-full bg-superficie-2 px-3 py-1">
-                {m.role === "admin_central" ? "Diretoria" : "Analista"}
+                {m.role === "admin_central" ? "Diretoria" : "Equipe"}
               </span>
             )}
             <span className={`text-xs rounded-full px-3 py-1 ${m.ativo ? "bg-verde/10 text-verde" : "bg-critico/10 text-critico"}`}>

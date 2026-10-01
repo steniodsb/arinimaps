@@ -13,48 +13,35 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/shell/AppShell";
 import BotaoTema from "@/components/shell/BotaoTema";
+import { SETORES, type ItemMenu, type SetorId } from "@/lib/setores";
 
-const GRUPOS: { titulo: string; itens: { href: string; rotulo: string; icone: string }[] }[] = [
-  {
-    titulo: "Operação",
-    itens: [
-      { href: "/admin", rotulo: "Dashboard", icone: "◫" },
-      { href: "/admin/imoveis", rotulo: "Imóveis", icone: "▦" },
-      { href: "/admin/cadastros", rotulo: "Cadastros", icone: "✓" },
-      { href: "/admin/cartografia", rotulo: "Cartografia", icone: "🗺" },
-    ],
-  },
-  {
-    titulo: "Comercial",
-    itens: [
-      { href: "/admin/funil", rotulo: "Funil comercial", icone: "⇉" },
-      { href: "/admin/leads", rotulo: "Leads", icone: "◎" },
-      { href: "/admin/comissoes", rotulo: "Comissões", icone: "％" },
-      { href: "/admin/mensalidades", rotulo: "Mensalidades", icone: "₿" },
-    ],
-  },
-  {
-    titulo: "Gestão",
-    itens: [
-      { href: "/admin/relatorios", rotulo: "Relatórios", icone: "▤" },
-      { href: "/admin/auditoria", rotulo: "Auditoria", icone: "⧉" },
-      { href: "/admin/regioes", rotulo: "Regiões", icone: "⊕" },
-      { href: "/admin/usuarios", rotulo: "Usuários", icone: "☺" },
-      { href: "/admin/configuracoes", rotulo: "Configurações", icone: "⚙" },
-    ],
-  },
+/** Itens que todo membro da equipe tem, qualquer que seja o setor. */
+const GERAL: ItemMenu[] = [
+  { href: "/admin", rotulo: "Matriz", icone: "◈" },
+  { href: "/admin/tarefas", rotulo: "Tarefas", icone: "☑" },
 ];
 
 export default function AdminShell({
-  children, nome, papel,
-}: { children: React.ReactNode; nome: string; papel: string }) {
+  children, nome, papel, setores,
+}: { children: React.ReactNode; nome: string; papel: string; setores: SetorId[] }) {
   const caminho = usePathname();
   const [aberto, setAberto] = useState(false);
   // "/admin" só fica ativo na raiz; os demais casam por prefixo
   const ativo = (href: string) => (href === "/admin" ? caminho === "/admin" : caminho.startsWith(href));
 
-  const titulo =
-    GRUPOS.flatMap((g) => g.itens).find((i) => ativo(i.href))?.rotulo ?? "Central Arini";
+  // o menu mostra só os setores do membro; a trava de verdade é no servidor
+  const GRUPOS = [
+    { titulo: "Geral", itens: GERAL },
+    ...SETORES.filter((st) => setores.includes(st.id)).map((st) => ({ titulo: st.nome, itens: st.itens })),
+  ];
+  // o item mais específico vence: "/admin/juridico/lgpd" não acende "/admin/juridico"
+  const todos = GRUPOS.flatMap((g) => g.itens);
+  const maisEspecifico = todos
+    .filter((i) => ativo(i.href))
+    .sort((x, y) => y.href.length - x.href.length)[0];
+  const aceso = (href: string) => maisEspecifico?.href === href;
+
+  const titulo = maisEspecifico?.rotulo ?? "Central Arini";
 
   const navegacao = (
     <>
@@ -65,10 +52,10 @@ export default function AdminShell({
           </p>
           <div className="space-y-0.5">
             {g.itens.map((i) => (
-              <Link key={i.href} href={i.href} onClick={() => setAberto(false)}
+              <Link key={g.titulo + i.href} href={i.href} onClick={() => setAberto(false)}
                 className={
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition " +
-                  (ativo(i.href)
+                  (aceso(i.href)
                     ? "bg-verde/12 text-verde font-medium"
                     : "text-texto-2 hover:text-texto hover:bg-superficie-2")
                 }>
@@ -91,9 +78,10 @@ export default function AdminShell({
         <div className="p-4 border-t border-linha">
           <p className="text-sm text-texto truncate">{nome}</p>
           <p className="text-xs text-texto-2">{papel}</p>
-          <Link href="/" className="mt-2 inline-block text-xs text-verde hover:underline">
-            ← Voltar ao site
-          </Link>
+          <div className="mt-2 flex gap-3 text-xs">
+            <Link href="/conta/seguranca" className="text-verde hover:underline">Minha segurança</Link>
+            <Link href="/" className="text-texto-2 hover:text-texto">Site</Link>
+          </div>
         </div>
       </aside>
 

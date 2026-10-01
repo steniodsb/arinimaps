@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 import { converterDxf, ErroDxf } from "@/lib/geo/dxf";
 import { falha, falhaBanco } from "@/lib/erros";
 
@@ -31,7 +31,7 @@ function km(a: [number, number], b: [number, number]) {
  */
 export async function POST(request: Request) {
   const a = await ator();
-  if (!a?.ehArini) {
+  if (!a || !temSetor(a, "cartografia")) {
     return falha(403, "sem_permissao", "Restrito à equipe da Arini.", {
       solucao: "Entre com uma conta da Arini para publicar cartografia.",
     });

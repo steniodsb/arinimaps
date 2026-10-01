@@ -4,8 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
 import { ETAPA_LABEL } from "@/lib/funil";
 import OportunidadeClient from "@/components/crm/OportunidadeClient";
+import { exigirSetor } from "@/lib/setores-servidor";
 
 export default async function OportunidadeAdmin({ params }: PageProps<"/admin/oportunidades/[id]">) {
+  await exigirSetor("comercial");
   const { id } = await params;
   const admin = supabaseAdmin();
 

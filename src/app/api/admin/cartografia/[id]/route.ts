@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator } from "@/lib/authz";
+import { ator, temSetor } from "@/lib/authz";
 import { falha, falhaBanco } from "@/lib/erros";
 import { gerarPlantaPublica } from "@/lib/geo/plantaPublica";
 
@@ -22,7 +22,7 @@ const LIMITES = {
 export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cartografia/[id]">) {
   const { id } = await ctx.params;
   const a = await ator();
-  if (!a?.ehArini) {
+  if (!a || !temSetor(a, "cartografia")) {
     return falha(403, "sem_permissao", "Restrito à equipe da Arini.", {
       solucao: "Entre com uma conta da Arini para calibrar a cartografia.",
     });

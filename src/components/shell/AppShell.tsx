@@ -47,7 +47,7 @@ export function Logo({ compacto = false }: { compacto?: boolean }) {
       {!compacto && (
         <span className="leading-none">
           <span className="block font-semibold tracking-wide text-texto text-sm">ARINI</span>
-          <span className="block text-[9px] tracking-[0.32em] text-texto-2">IMÓVEIS BRASIL</span>
+          <span className="block text-[9px] tracking-[0.32em] text-texto-2">MAPS</span>
         </span>
       )}
     </span>

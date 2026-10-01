@@ -303,3 +303,16 @@ button:disabled,
   a[href]::after { content: ""; }
   .break-inside-avoid { break-inside: avoid; }
 }
+
+/* Tour 3D: etiquetas dos pontos de referência (nome + distância) */
+.tour-etiqueta {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 4px 9px; border-radius: 9px;
+  background: rgba(8, 18, 13, 0.82); color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 11px; line-height: 1.25; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+.tour-etiqueta b { font-weight: 600; }
+.tour-etiqueta span { font-size: 10px; color: #E4C77E; }
+.tour-etiqueta-cidade { background: rgba(201, 161, 78, 0.92); color: #10130f; border-color: transparent; }

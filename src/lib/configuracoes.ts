@@ -37,7 +37,7 @@ export const GRUPOS: Grupo[] = [
     descricao: "Como o sistema se apresenta e por onde a Arini fala com o cliente.",
     icone: "🏷️",
     campos: [
-      { chave: "nome_sistema", rotulo: "Nome do sistema", tipo: "texto", padrao: "Arini Imóveis Brasil",
+      { chave: "nome_sistema", rotulo: "Nome do sistema", tipo: "texto", padrao: "Arini Maps",
         ajuda: "Aparece no topo do site, nos e-mails e no título das páginas." },
       { chave: "whatsapp_central", rotulo: "WhatsApp da central", tipo: "telefone", padrao: "553499745140",
         ajuda: "Botão “Chamar no WhatsApp” em cada anúncio. Use DDI+DDD+número, só dígitos." },
@@ -66,7 +66,7 @@ export const GRUPOS: Grupo[] = [
       { chave: "sobre_titulo", rotulo: "Sobre a empresa — título", tipo: "texto", padrao: "Quem está por trás do mapa",
         ajuda: "Título da seção institucional da página inicial." },
       { chave: "sobre_texto", rotulo: "Sobre a empresa — texto", tipo: "textarea",
-        padrao: "A Arini Negócios Imobiliários atua no Pontal do Triângulo Mineiro com compra, venda e locação de imóveis rurais e urbanos. O Arini Imóveis Brasil nasceu da rotina da imobiliária: reunir num só lugar a divisa da propriedade, a cartografia oficial e as consultas aos órgãos públicos que hoje se fazem em dezenas de sites diferentes. Cada anúncio é verificado pela nossa equipe antes de ir ao ar, e toda negociação passa pela central da Arini.",
+        padrao: "A Arini Negócios Imobiliários atua no Pontal do Triângulo Mineiro com compra, venda e locação de imóveis rurais e urbanos. O Arini Maps nasceu da rotina da imobiliária: reunir num só lugar a divisa da propriedade, a cartografia oficial e as consultas aos órgãos públicos que hoje se fazem em dezenas de sites diferentes. Cada anúncio é verificado pela nossa equipe antes de ir ao ar, e toda negociação passa pela central da Arini.",
         ajuda: "Parágrafo institucional. Quebra de linha vira parágrafo novo." },
       { chave: "sobre_site", rotulo: "Site institucional", tipo: "texto", padrao: "https://arininegociosimobiliarios.com.br",
         ajuda: "Link exibido na seção institucional e no rodapé. Deixe vazio para ocultar." },

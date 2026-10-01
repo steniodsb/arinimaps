@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { validarDocumento } from "@/lib/br/documentos";
 import { assinatura, ipDe } from "@/lib/juridico";
+import { validarSenha } from "@/lib/seguranca/senha";
+import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 
 const ROLES_PERMITIDOS = ["comprador", "proprietario", "corretor", "imobiliaria", "engenheiro"];
 
@@ -12,15 +14,18 @@ const ROLES_PERMITIDOS = ["comprador", "proprietario", "corretor", "imobiliaria"
  * contato e trilha de auditoria.
  */
 export async function POST(request: Request) {
+  // criação de conta em massa é o primeiro passo de quase todo abuso
+  const limite = await limitar(`cadastro:ip:${ipDoPedido(request)}`, 6, 3600);
+  if (!limite.permitido) return respostaLimite(limite, "cadastro");
+
   const body = await request.json().catch(() => null);
   const { email, senha, nome, telefone, role, cpf, razao_social, registro_profissional, aceite_termos } = body ?? {};
 
-  if (!email?.trim() || !senha || senha.length < 8 || !nome?.trim()) {
-    return NextResponse.json(
-      { error: "Preencha nome, e-mail e uma senha com pelo menos 8 caracteres." },
-      { status: 400 }
-    );
+  if (!email?.trim() || !senha || !nome?.trim()) {
+    return NextResponse.json({ error: "Preencha nome, e-mail e senha." }, { status: 400 });
   }
+  const erroSenha = validarSenha(String(senha));
+  if (erroSenha) return NextResponse.json({ error: erroSenha }, { status: 400 });
   if (!ROLES_PERMITIDOS.includes(role)) {
     return NextResponse.json({ error: "Perfil inválido." }, { status: 400 });
   }

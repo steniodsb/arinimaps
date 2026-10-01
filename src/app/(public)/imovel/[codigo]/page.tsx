@@ -46,7 +46,7 @@ export async function generateMetadata(
     description: imovel.descricao.slice(0, 160),
     openGraph: {
       title: imovel.titulo,
-      description: `${formatBRL(imovel.valor)} · ${imovel.municipio?.nome ?? ""} — Arini Imóveis Brasil`,
+      description: `${formatBRL(imovel.valor)} · ${imovel.municipio?.nome ?? ""} — Arini Maps`,
       images: capa ? [mediaUrl(capa.path)] : [],
     },
   };

@@ -54,6 +54,13 @@ type Camada = {
  * claro o amarelo some, e sobre asfalto o traço escuro some. O contorno garante
  * contraste contra os dois, que é como carta cadastral é impressa há décadas.
  */
+/**
+ * Cor da cartografia RURAL (malha do CAR). A urbana usa CARTO_CORES — amarelo
+ * claro no satélite, verde-acinzentado no mapa. Laranja separa as duas à
+ * primeira vista (pedido: "cores cartográficas distintas para urbano e rural").
+ */
+const COR_RURAL = "#FF9D3D";
+
 /** A partir deste zoom a malha do CAR aparece (visão de município). */
 const CAR_ZOOM_MIN = 12;
 /** Maior lado do retângulo que /api/geo/car aceita, em graus. */
@@ -98,6 +105,10 @@ function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
         className="btn-ouro flex w-full items-center justify-center py-2.5 text-sm">
         Esta área é minha — anunciar
       </Link>
+      <Link href={`/consulta/car/${encodeURIComponent(car.cod)}`}
+        className="btn-contorno flex w-full items-center justify-center py-2.5 text-sm">
+        Consultar informações
+      </Link>
       <p className="text-[11px] text-texto-2 leading-snug">
         A divisa vem pronta do CAR. Para publicar, a Arini confere a matrícula do imóvel — o CAR é
         autodeclarado e não comprova propriedade.
@@ -120,6 +131,23 @@ const ESTILO_RUAS = {
   escuro: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   claro: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
 } as const;
+
+/** Abaixo deste zoom o imóvel aparece como marcador; acima, pela divisa. */
+const ZOOM_MARCADOR = 12.5;
+
+/** Um ponto no centro de cada imóvel, com as mesmas propriedades. */
+function centrosDe(features: GeoJSON.Feature[]): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: features
+      .filter((f) => Number.isFinite((f.properties as { lng?: number })?.lng))
+      .map((f) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [(f.properties as { lng: number }).lng, (f.properties as { lat: number }).lat] },
+        properties: f.properties,
+      })),
+  };
+}
 
 const CORES_MATCH: unknown[] = [
   "match", ["get", "status"],
@@ -156,13 +184,14 @@ export default function MapaRegional() {
   // plantas urbanas conhecidas mas ainda não baixadas, e as que já entraram
   const plantasRef = useRef<Camada[]>([]);
   const plantasCarregadasRef = useRef<Set<string>>(new Set());
-  const baseRef = useRef<"ruas" | "satelite">("ruas");
+  const baseRef = useRef<"ruas" | "satelite">("satelite");
   // malha do CAR: retângulo já carregado (com folga) e se a camada está ligada
   const carBboxRef = useRef<[number, number, number, number] | null>(null);
   const carAtivoRef = useRef(true);
   const carHoverRef = useRef<string | null>(null);
 
-  const [base, setBase] = useState<"ruas" | "satelite">("ruas");
+  // satélite é a base de abertura (pedido do Carlos em 01/10/2026); "Mapa" vira opção
+  const [base, setBase] = useState<"ruas" | "satelite">("satelite");
   const [selecionado, setSelecionado] = useState<ImovelProps | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "urbano" | "rural">("todos");
   const [faixaPreco, setFaixaPreco] = useState(0);
@@ -318,6 +347,7 @@ export default function MapaRegional() {
     const features = filtrar(tipo, faixaIdx, q);
     if (map?.getSource("imoveis")) {
       (map.getSource("imoveis") as GeoJSONSource).setData({ type: "FeatureCollection", features });
+      (map.getSource("imoveis-centros") as GeoJSONSource | undefined)?.setData(centrosDe(features));
     }
     setLista(
       features
@@ -394,7 +424,7 @@ export default function MapaRegional() {
 
         // satélite fica acima da base vetorial e abaixo das camadas de dados
         map.addSource("satelite", SATELITE);
-        map.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: "none" } });
+        map.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: baseRef.current === "satelite" ? "visible" : "none" } });
 
         // Cartografia urbana. O raster entra agora — tile só é baixado quando
         // aparece na tela, o MapLibre cuida disso. A planta VETORIAL é um
@@ -426,14 +456,14 @@ export default function MapaRegional() {
         map.addLayer({
           id: "car-fill", type: "fill", source: "car", minzoom: CAR_ZOOM_MIN,
           paint: {
-            "fill-color": "#E4C77E",
-            "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.22, 0.04] as never,
+            "fill-color": COR_RURAL,
+            "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.25, 0.04] as never,
           },
         });
         map.addLayer({
           id: "car-linha", type: "line", source: "car", minzoom: CAR_ZOOM_MIN,
           paint: {
-            "line-color": "#E4C77E",
+            "line-color": COR_RURAL,
             "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 15, 1.6] as never,
             "line-opacity": 0.8,
           },
@@ -464,6 +494,21 @@ export default function MapaRegional() {
             "circle-radius": ["case", ["boolean", ["feature-state", "hover"], false], 10, 7] as never,
             "circle-stroke-width": 2,
             "circle-stroke-color": "#0A1310",
+          },
+        });
+
+        // Visão regional: afastando o zoom, o polígono de um lote vira menos de
+        // um pixel e o imóvel "some" do mapa — queixa do Carlos em 01/10/2026.
+        // Abaixo do zoom em que a divisa aparece, cada imóvel vira um marcador
+        // no centro dele, na cor do status.
+        map.addSource("imoveis-centros", { type: "geojson", data: centrosDe(imoveis.features ?? []) });
+        map.addLayer({
+          id: "imoveis-marcador", type: "circle", source: "imoveis-centros", maxzoom: ZOOM_MARCADOR,
+          paint: {
+            "circle-color": CORES_MATCH as never,
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 9, 7.5, 12, 9] as never,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#FFFFFF",
           },
         });
 
@@ -512,7 +557,7 @@ export default function MapaRegional() {
           destacar(null);
           popup.remove();
         };
-        for (const layer of ["imoveis-fill", "imoveis-ponto"]) {
+        for (const layer of ["imoveis-fill", "imoveis-ponto", "imoveis-marcador"]) {
           map.on("click", layer, aoClicar);
           map.on("mousemove", layer, aoMover);
           map.on("mouseleave", layer, aoSair);
@@ -521,7 +566,7 @@ export default function MapaRegional() {
         // CAR: clique abre o cartão "anunciar esta área" — mas anúncio por
         // cima tem prioridade (o clique nele já abre o imóvel)
         map.on("click", "car-fill", (e: MapLayerMouseEvent) => {
-          const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"] });
+          const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"].filter((l) => map.getLayer(l)) });
           if (emAnuncio.length) return;
           const f = e.features?.[0];
           if (f) setCarSel(f.properties as unknown as CarProps);
@@ -717,7 +762,7 @@ export default function MapaRegional() {
             className={chipBase}>
             ☰ Camadas e Dados
           </button>
-          {(["ruas", "satelite"] as const).map((b) => (
+          {(["satelite", "ruas"] as const).map((b) => (
             <button key={b} onClick={() => setBase(b)} data-ativo={base === b} className={chipBase}>
               {b === "ruas" ? "Mapa" : "Satélite"}
             </button>

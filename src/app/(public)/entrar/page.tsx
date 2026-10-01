@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { formatarCPF, validarDocumento } from "@/lib/br/documentos";
 import { lerCarPendente } from "@/lib/map/carPendente";
+import { SENHA_MIN, validarSenha } from "@/lib/seguranca/senha";
 
 const PERFIS = [
   { value: "comprador", label: "Quero comprar / procurar imóvel" },
@@ -20,7 +21,10 @@ const ROTULO = "block text-sm font-medium text-texto mb-1";
 
 export default function Entrar() {
   const router = useRouter();
-  const [modo, setModo] = useState<"login" | "cadastro">("login");
+  const [modo, setModo] = useState<"login" | "cadastro" | "recuperar" | "mfa">("login");
+  const [aviso, setAviso] = useState("");
+  const [codigoMfa, setCodigoMfa] = useState("");
+  const [destino, setDestino] = useState("/painel");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [form, setForm] = useState({
@@ -31,36 +35,80 @@ export default function Entrar() {
   // veio de "Esta área é minha": quem cria conta nesse caminho é proprietário
   useEffect(() => {
     if (lerCarPendente()) setForm((f) => ({ ...f, role: "proprietario" }));
+    if (new URLSearchParams(window.location.search).get("recuperar")) setModo("recuperar");
   }, []);
 
   const ehParceiro = ["imobiliaria", "corretor", "engenheiro"].includes(form.role);
   const docInvalido = form.cpf.length > 0 && !validarDocumento(form.cpf).ok;
 
-  async function entrar() {
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.senha });
-    if (error) throw new Error("E-mail ou senha incorretos.");
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user!.id).single();
-    const role = profile?.role;
+  function destinoDe(role: string) {
     // clicou numa área do CAR antes de entrar: volta direto para anunciá-la
     const carPendente = lerCarPendente();
-    const anuncia = role === "proprietario" || ["corretor", "imobiliaria", "engenheiro"].includes(role ?? "");
-    router.push(
-      role === "admin_central" || role === "analista_arini" ? "/admin"
-        : carPendente && anuncia ? `/painel/novo?car=${encodeURIComponent(carPendente)}`
-        : role === "comprador" ? "/mapa"
-        : "/painel"
-    );
+    const anuncia = role === "proprietario" || ["corretor", "imobiliaria", "engenheiro", "leiloeiro"].includes(role);
+    return role === "admin_central" || role === "analista_arini" ? "/admin"
+      : carPendente && anuncia ? `/painel/novo?car=${encodeURIComponent(carPendente)}`
+      : ["comprador", "consulta"].includes(role) ? "/mapa"
+      : "/painel";
+  }
+
+  // O login passa pelo servidor: é lá que as tentativas são contadas e registradas.
+  async function entrar() {
+    const res = await fetch("/api/auth/entrar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email, senha: form.senha }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? "Não foi possível entrar.");
+    const para = destinoDe(data.role);
+    if (data.mfa) {
+      // conta com segundo fator: a sessão só vale depois do código
+      setDestino(para);
+      setModo("mfa");
+      setCarregando(false);
+      return;
+    }
+    router.push(para);
     router.refresh();
+  }
+
+  async function confirmarMfa() {
+    const supabase = supabaseBrowser();
+    const { data: fatores } = await supabase.auth.mfa.listFactors();
+    const fator = fatores?.totp?.find((f) => f.status === "verified");
+    if (!fator) throw new Error("Nenhum segundo fator ativo nesta conta.");
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: fator.id, code: codigoMfa.replace(/[^0-9]/g, "") });
+    await fetch("/api/auth/evento", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ evento: error ? "mfa_falhou" : "mfa_ok" }),
+    }).catch(() => undefined);
+    if (error) throw new Error("Código incorreto ou vencido. Confira o aplicativo e tente de novo.");
+    router.push(destino);
+    router.refresh();
+  }
+
+  async function pedirRecuperacao() {
+    const res = await fetch("/api/auth/recuperar", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? "Não foi possível enviar o link.");
+    setAviso(data.mensagem);
+    setCarregando(false);
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
     setCarregando(true);
+    setAviso("");
     try {
+      if (modo === "recuperar") { await pedirRecuperacao(); return; }
+      if (modo === "mfa") { await confirmarMfa(); return; }
       if (modo === "cadastro") {
+        const problema = validarSenha(form.senha);
+        if (problema) throw new Error(problema);
         const res = await fetch("/api/cadastro", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -80,15 +128,28 @@ export default function Entrar() {
     <div className="min-h-screen flex flex-col bg-fundo">
       <div className="px-4 py-4 border-b border-linha">
         <Link href="/" className="font-semibold text-texto">
-          Arini <span className="texto-ouro">Imóveis Brasil</span>
+          Arini <span className="texto-ouro">Maps</span>
         </Link>
       </div>
 
       <main className="flex-1 flex items-center justify-center p-4">
         <form onSubmit={submit} className="w-full max-w-md cartao p-6 space-y-3.5">
-          <div className="flex rounded-xl overflow-hidden border border-linha text-sm font-medium">
+          {(modo === "recuperar" || modo === "mfa") && (
+            <div className="space-y-1">
+              <h1 className="text-lg font-semibold text-texto">
+                {modo === "recuperar" ? "Recuperar a senha" : "Confirme que é você"}
+              </h1>
+              <p className="text-sm text-texto-2">
+                {modo === "recuperar"
+                  ? "Informe o e-mail da conta. Enviamos um link de uso único para criar uma senha nova."
+                  : "Digite o código de 6 dígitos do seu aplicativo autenticador."}
+              </p>
+            </div>
+          )}
+
+          <div className={"rounded-xl overflow-hidden border border-linha text-sm font-medium " + (modo === "login" || modo === "cadastro" ? "flex" : "hidden")}>
             {(["login", "cadastro"] as const).map((m) => (
-              <button key={m} type="button" onClick={() => { setModo(m); setErro(""); }}
+              <button key={m} type="button" onClick={() => { setModo(m); setErro(""); setAviso(""); }}
                 className={
                   "flex-1 py-2.5 transition " +
                   (modo === m ? "bg-verde text-[#06140D]" : "bg-superficie-2 text-texto-2 hover:text-texto")
@@ -158,17 +219,36 @@ export default function Entrar() {
             </>
           )}
 
-          <div>
+          {modo === "mfa" && (
+            <div>
+              <label className={ROTULO} htmlFor="mfa">Código de verificação</label>
+              <input id="mfa" required autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={7}
+                placeholder="000 000" className={INPUT + " tracking-[0.4em] text-center text-lg"}
+                value={codigoMfa} onChange={(e) => setCodigoMfa(e.target.value)} />
+            </div>
+          )}
+
+          <div className={modo === "mfa" ? "hidden" : ""}>
             <label className={ROTULO} htmlFor="email">E-mail *</label>
             <input id="email" required type="email" placeholder="seu@email.com" className={INPUT}
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
 
-          <div>
-            <label className={ROTULO} htmlFor="senha">Senha *</label>
-            <input id="senha" required type="password" placeholder="Mínimo 8 caracteres" className={INPUT}
-              value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} />
-          </div>
+          {(modo === "login" || modo === "cadastro") && (
+            <div>
+              <label className={ROTULO} htmlFor="senha">Senha *</label>
+              <input id="senha" required type="password" className={INPUT}
+                autoComplete={modo === "login" ? "current-password" : "new-password"}
+                placeholder={modo === "login" ? "Sua senha" : `Mínimo ${SENHA_MIN} caracteres, com letras e números`}
+                value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} />
+              {modo === "login" && (
+                <button type="button" onClick={() => { setModo("recuperar"); setErro(""); setAviso(""); }}
+                  className="mt-1.5 text-xs text-verde hover:underline">
+                  Esqueci minha senha
+                </button>
+              )}
+            </div>
+          )}
 
           {modo === "cadastro" && (
             <div className="space-y-2">
@@ -193,10 +273,25 @@ export default function Entrar() {
             </div>
           )}
           {erro && <p className="text-sm text-critico">{erro}</p>}
+          {aviso && <p className="text-sm text-verde">{aviso}</p>}
 
           <button disabled={carregando} className="btn-verde w-full py-3 disabled:opacity-60">
-            {carregando ? "Aguarde…" : modo === "login" ? "Entrar" : "Criar conta"}
+            {carregando ? "Aguarde…"
+              : modo === "login" ? "Entrar"
+              : modo === "cadastro" ? "Criar conta"
+              : modo === "recuperar" ? "Enviar link"
+              : "Confirmar código"}
           </button>
+
+          {(modo === "recuperar" || modo === "mfa") && (
+            <button type="button" className="w-full text-xs text-texto-2 hover:text-texto"
+              onClick={async () => {
+                if (modo === "mfa") await supabaseBrowser().auth.signOut();
+                setModo("login"); setErro(""); setAviso(""); setCodigoMfa("");
+              }}>
+              ← Voltar para o login
+            </button>
+          )}
         </form>
       </main>
     </div>

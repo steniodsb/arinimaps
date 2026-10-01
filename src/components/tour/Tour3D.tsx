@@ -34,7 +34,28 @@ type Key = { t: number; cam: Cam };
 const easeInOut = (x: number) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
-function buildKeyframes(d: TourData): { keys: Key[]; orbit: { start: number; end: number; base: Cam } } {
+/**
+ * Ritmo do tour ao vivo. O roteiro original (ritmo 1) foi pensado para o vídeo
+ * e passava rápido demais para quem assiste na tela — pedido do Carlos em
+ * 01/10/2026: "reduzir a velocidade e deixar o movimento mais suave". O vídeo
+ * gravado pelo worker continua no ritmo 1, para não alongar a renderização.
+ */
+const RITMO_AO_VIVO = 1.7;
+
+/** Espera o mapa terminar de baixar e desenhar o que está na tela, com teto. */
+function esperarMapa(map: MLMap, tetoMs: number) {
+  return new Promise<void>((ok) => {
+    if (map.loaded() && map.areTilesLoaded()) { ok(); return; }
+    const fim = () => { clearTimeout(timer); map.off("idle", fim); ok(); };
+    const timer = setTimeout(fim, tetoMs);
+    map.on("idle", fim);
+  });
+}
+
+const distancia = (m: number) =>
+  m >= 1000 ? `${(m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : `${Math.round(m)} m`;
+
+function buildKeyframes(d: TourData, ritmo = 1): { keys: Key[]; orbit: { start: number; end: number; base: Cam } } {
   const c = d.centroid;
   const sede = d.municipio?.sede_lng != null
     ? { lng: d.municipio.sede_lng!, lat: d.municipio.sede_lat! }
@@ -60,6 +81,11 @@ function buildKeyframes(d: TourData): { keys: Key[]; orbit: { start: number; end
   }
   t += 5;
   keys.push({ t, cam: { lng: c.lng, lat: c.lat, zoom: 14, pitch: 55, bearing: 340 } });
+  if (ritmo !== 1) {
+    for (const k of keys) k.t *= ritmo;
+    orbit.start *= ritmo;
+    orbit.end *= ritmo;
+  }
   return { keys, orbit };
 }
 
@@ -83,6 +109,11 @@ function camAt(t: number, keys: Key[], orbit: { start: number; end: number; base
   };
 }
 
+const CATEGORIA_NOME: Record<string, string> = {
+  combustivel: "Posto", farmacia: "Farmácia", supermercado: "Supermercado", hospital: "Hospital",
+  escola: "Escola", centro: "Centro", acesso_rodovia: "Acesso à rodovia",
+};
+
 const CATEGORIA_EMOJI: Record<string, string> = {
   combustivel: "⛽", farmacia: "💊", supermercado: "🛒", hospital: "🏥",
   escola: "🏫", centro: "🏙️", acesso_rodovia: "🛣️",
@@ -92,10 +123,11 @@ export default function Tour3D(dados: TourData) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const [fase, setFase] = useState<"carregando" | "tocando" | "pausado" | "fim">("carregando");
+  const [etapa, setEtapa] = useState("Carregando o mapa…");
   const faseRef = useRef(fase);
   faseRef.current = fase;
 
-  const { keys, orbit } = buildKeyframes(dados);
+  const { keys, orbit } = buildKeyframes(dados, dados.record ? 1 : RITMO_AO_VIVO);
   const duracao = keys[keys.length - 1].t;
 
   useEffect(() => {
@@ -134,7 +166,7 @@ export default function Tour3D(dados: TourData) {
       mapRef.current = map;
       map.on("error", (e: MLErrorEvent) => console.error("[tour] erro do mapa:", e.error?.message ?? e));
 
-      map.on("load", () => {
+      map.on("load", async () => {
         map.addSource("imovel", { type: "geojson", data: { type: "Feature", geometry: dados.geometry, properties: {} } });
         if (dados.geometry.type !== "Point") {
           map.addLayer({ id: "imovel-fill", type: "fill", source: "imovel", paint: { "fill-color": "#C9A14E", "fill-opacity": 0.22 } });
@@ -161,6 +193,28 @@ export default function Tour3D(dados: TourData) {
           });
         }
 
+        // Pontos de referência com nome e distância, como etiquetas sobre o
+        // mapa. São elementos HTML (não camada de texto do MapLibre) porque
+        // assim independem de fonte remota e aparecem iguais no vídeo.
+        const etiquetados = [...dados.pois]
+          .sort((a, b) => Number(b.destaque) - Number(a.destaque) || a.distancia_m - b.distancia_m)
+          .slice(0, 8);
+        for (const p of etiquetados) {
+          const el = document.createElement("div");
+          el.className = "tour-etiqueta";
+          el.innerHTML =
+            `<b>${CATEGORIA_EMOJI[p.categoria] ?? "📍"} ${(p.nome ?? CATEGORIA_NOME[p.categoria] ?? p.categoria).replace(/[<>&]/g, "")}</b>` +
+            `<span>${distancia(p.distancia_m)}</span>`;
+          new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, -8] }).setLngLat([p.lng, p.lat]).addTo(map);
+        }
+        if (dados.municipio?.sede_lng != null && dados.municipio.sede_lat != null) {
+          const el = document.createElement("div");
+          el.className = "tour-etiqueta tour-etiqueta-cidade";
+          el.innerHTML = `<b>🏙️ ${dados.municipio.nome.replace(/[<>&]/g, "")}</b>`;
+          new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, -8] })
+            .setLngLat([dados.municipio.sede_lng, dados.municipio.sede_lat]).addTo(map);
+        }
+
         const seek = (t: number) => {
           const cam = camAt(Math.min(t, duracao), keys, orbit);
           map.jumpTo({ center: [cam.lng, cam.lat], zoom: cam.zoom, pitch: cam.pitch, bearing: cam.bearing });
@@ -176,6 +230,19 @@ export default function Tour3D(dados: TourData) {
           setFase("pausado");
           return;
         }
+
+        // Antes de tocar, o mapa carrega: primeiro a vista de perto do imóvel
+        // (é onde o tour passa mais tempo e onde a imagem pesa), depois a vista
+        // de abertura. Sem isso o tour começava sobre uma tela cinza e chegava
+        // ao imóvel antes do satélite — queixa do Carlos em 01/10/2026.
+        setEtapa("Carregando a imagem do imóvel…");
+        seek(orbit.start);
+        await esperarMapa(map, 12_000);
+        if (cancelado) return;
+        setEtapa("Preparando o sobrevoo…");
+        seek(0);
+        await esperarMapa(map, 8_000);
+        if (cancelado) return;
 
         // reprodução ao vivo
         setFase("tocando");
@@ -233,6 +300,14 @@ export default function Tour3D(dados: TourData) {
                 className="rounded-full bg-verde text-white font-medium px-5 py-2.5 shadow-lg hover:bg-verde-escuro">
                 Ver o imóvel
               </a>
+            </div>
+          )}
+          {fase === "carregando" && (
+            <div className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-sm">
+              <div className="text-center text-white space-y-3">
+                <div className="mx-auto h-9 w-9 rounded-full border-2 border-white/25 border-t-ouro-claro animate-spin" />
+                <p className="text-sm">{etapa}</p>
+              </div>
             </div>
           )}
           {fase === "tocando" && (

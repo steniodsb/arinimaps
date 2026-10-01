@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { assinatura } from "@/lib/juridico";
+import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 
 // Formulário público "Tenho interesse" → lead + oportunidade + auditoria + e-mail à Arini.
 export async function POST(request: Request) {
+  // formulário público: sem limite, um robô enche o funil de leads falsos
+  const limite = await limitar(`lead:ip:${ipDoPedido(request)}`, 8, 600);
+  if (!limite.permitido) return respostaLimite(limite, "envio");
+
   const body = await request.json().catch(() => null);
   const { codigo, nome, telefone, email, mensagem, consentimento } = body ?? {};
 
@@ -81,7 +86,7 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Arini Imóveis Brasil <leads@arinimaps.com.br>",
+          from: "Arini Maps <leads@arinimaps.com.br>",
           to: [process.env.ARINI_NOTIFY_EMAIL],
           subject: `Novo lead ${opp.codigo} — ${property.titulo}`,
           text: `Novo interesse no imóvel ${property.codigo} (${property.titulo}).\n\nNome: ${nome}\nTelefone: ${telefone || "-"}\nE-mail: ${email || "-"}\nMensagem: ${mensagem || "-"}\n\nAbra o painel: ${process.env.NEXT_PUBLIC_SITE_URL}/admin/leads`,

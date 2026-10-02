@@ -1,8 +1,22 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { bloqueioAtivo, caminhoLivre, cookieValido, COOKIE_BLOQUEIO } from "@/lib/seguranca/bloqueio";
 
-// Mantém a sessão do Supabase viva (refresh de token via cookies).
+// Trava o site com a senha de bloqueio (SITE_SENHA) e mantém a sessão do
+// Supabase viva (refresh de token via cookies).
 export async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  if (bloqueioAtivo() && !caminhoLivre(pathname) &&
+      !(await cookieValido(request.cookies.get(COOKIE_BLOQUEIO)?.value))) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Site em acesso restrito." }, { status: 401 });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/acesso";
+    url.search = pathname === "/" ? "" : "?volta=" + encodeURIComponent(pathname + search);
+    return NextResponse.redirect(url);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

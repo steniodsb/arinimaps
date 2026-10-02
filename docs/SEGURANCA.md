@@ -109,6 +109,7 @@ Teste (chave pública, sem login): `fn_financeiro_mensal`, `fn_rate_limit`,
 | Recuperação de senha | Link de uso único com validade de 1 hora; a senha antiga nunca é enviada; a resposta é a mesma exista a conta ou não. |
 | Sessões | Trocar a senha encerra as outras sessões. O usuário encerra as outras sessões quando quiser. A sessão da Central expira (padrão: 12 horas, configurável). |
 | Mensagem de erro de login | Igual para e-mail inexistente e senha errada. |
+| Senha de bloqueio do site (fase de testes) | Com `SITE_SENHA` definida, o proxy manda toda página para `/acesso` e responde 401 nas APIs até a senha ser digitada. O cookie (`arini_acesso`, httpOnly, 30 dias) guarda um HMAC da senha com `SITE_BLOQUEIO_SEGREDO`: trocar a senha derruba todos os acessos. 10 tentativas por IP a cada 15 min. Só o webhook do Asaas fica de fora (tem token próprio). Para lançar, apagar `SITE_SENHA`. Código em `src/lib/seguranca/bloqueio.ts`. |
 
 Testado em `scripts/testa-matriz.mjs`: ativação do TOTP, login exigindo o
 código, eventos gravados.

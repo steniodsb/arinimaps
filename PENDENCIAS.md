@@ -1,130 +1,123 @@
-# Arini Imóveis Brasil — o que falta (24/09/2026)
+# ARINI MAPS — Roadmap de pendências (02/10/2026)
 
-> O sistema está construído: F0 a F3 entregues, migrations 0001–0022 aplicadas,
-> todas as telas no design escuro/claro, desktop e celular.
-> Rode `npm run dev` em `arini-maps/` e entre com `admin@arinimaps.com.br`.
-> Repositório: github.com/steniodsb/arinimaps
+> Repositório: github.com/steniodsb/arinimaps · migrations até a 0027.
+> Site travado pela senha de bloqueio (`SITE_SENHA`) até o lançamento.
+> Acessos e senhas: `ACESSOS - NAO COMPARTILHAR.md`, fora do repositório.
 >
-> **O que falta para 100% cabe em quatro etapas, nesta ordem.** De código, não
-> sobrou nada que dependa só de mim — o resto é deploy, conteúdo e decisão.
+> **Quem:** Stênio (desenvolvimento) · Carlos (Arini) · Stênio + Carlos (decisão conjunta).
+> **Situação:** Pendente · Parcial · Bloqueado (esperando outra coisa).
 
 ---
 
-## Feito em 24/09/2026 — CAR no mapa e comprovação de propriedade
+## 1. Colocar no ar (infraestrutura)
 
-Pedido do Carlos (áudio de 24/09): o proprietário clica na área dele no mapa,
-cadastra para venda, manda os documentos, a Arini confere e libera.
+| # | Pendência | Situação | Quem | Depende de |
+|---|---|---|---|---|
+| 1.1 | Cadastrar as variáveis no Dokploy, incluindo `SITE_SENHA` e `SITE_BLOQUEIO_SEGREDO` | Pendente | Stênio | — |
+| 1.2 | Deploy da `main` | Pendente | Stênio | 1.1 |
+| 1.3 | Domínio (`arinimaps.com.br` ou subdomínio) e `NEXT_PUBLIC_SITE_URL` + rebuild | Bloqueado | Stênio + Carlos | decisão 7.6 |
+| 1.4 | Worker como 2º serviço (vídeo, tiles de imagem, imagem de compartilhamento e **geração dos lotes urbanos**) | Pendente | Stênio | 1.2 |
+| 1.5 | Ambiente de homologação separado da produção (pedido no item 22 do documento do Carlos) | Pendente | Stênio | segundo projeto no Supabase |
+| 1.6 | Backup automático e teste de restauração | Bloqueado | Stênio | plano pago do banco (7.8) |
+| 1.7 | Domínio atrás da Cloudflare (proteção de borda) | Bloqueado | Stênio | 1.3 |
+| 1.8 | Limpar dados de demonstração no lançamento (`scripts/limpa-demo.mjs --tudo --executar`) | Pendente | Stênio | dia do lançamento |
 
-| Item | Como ficou |
-|---|---|
-| **CAR tem API agora** | Em 28/08 o WFS do SICAR publicava zero camadas; em 24/09 publica `sicar_imoveis_<uf>` com divisa, código, área e situação. **O CAR saiu da lista de arquivos que o Carlos precisa mandar, e o KML de teste também deixou de ser necessário.** |
-| **Malha no banco** | 10.196 imóveis dos 6 municípios importados para `car_imoveis` (migrations 0020–0022). Iturama: 1.540 em 1,5 s. Atualização: botão em Admin › Regiões ou `node scripts/importa-car.mjs`. Município novo já entra com o CAR. |
-| **Camada no mapa** | Botão "Imóveis rurais (CAR)", ligado por padrão, a partir do zoom de município. Clique numa área → cartão com área, situação e código → **"Esta área é minha — anunciar"**. Se a pessoa precisar entrar ou criar conta no meio, a área escolhida é guardada. |
-| **Anúncio pela área do CAR** | Divisa e área vêm prontas; a geometria é lida do nosso banco pelo código (o navegador não consegue trocá-la). |
-| **Comprovação obrigatória** | O anúncio exige a matrícula (ou escritura/contrato registrado); parceiro exige também a autorização assinada do proprietário. Arquivos em bucket privado. |
-| **Conferência e bloqueio** | A Arini marca cada documento como conferido. **Aprovar e publicar são recusados pelo servidor** sem a matrícula conferida (e a autorização, em imóvel de parceiro). A análise mostra o CAR de origem para comparar com a matrícula. |
-| **Proprietário novo anuncia sem esperar** | A conta do proprietário não precisa mais estar aprovada para enviar o imóvel — a prova é o documento do imóvel. Parceiros seguem exigindo aprovação (CRECI). |
-| **Relatório territorial** | CAR entra como fonte ao vivo (MG + SP, GO e MS, porque o raio cruza os rios de divisa). |
-| **Termos** | Termos de Uso, Autorização e Privacidade atualizados: documento obrigatório e CAR ≠ prova de propriedade. |
+## 2. APIs e integrações
 
-Testado de ponta a ponta com a conta de teste: anúncio pela área do CAR sem
-matrícula recusado; com matrícula criado; aprovar sem conferir recusado;
-conferido → aprovado. O imóvel de teste foi apagado.
+| # | Pendência | Situação | Quem | Depende de |
+|---|---|---|---|---|
+| 2.1 | **Esri ArcGIS** — criar conta e chave (privilégio Basemaps, restrita ao domínio) → `NEXT_PUBLIC_ARCGIS_KEY` e rebuild. Depois, conferir nuvem nos municípios | Pendente | Stênio | 1.3 |
+| 2.2 | **Resend** — e-mails de lead, aprovação, recuperação de senha e alertas | Bloqueado | Stênio | domínio (1.3) |
+| 2.3 | **Asaas** — cobrança de mensalidade e baixa automática | Bloqueado | Carlos cria a conta no CNPJ da Arini, Stênio liga | 7.3 |
+| 2.4 | **SIGEF, IBAMA embargos, quilombolas e IPHAN** — baixar os dados abertos e importar para o relatório territorial | Pendente | Stênio | — |
+| 2.5 | **MapBiomas** (uso do solo) — token com aceite de termos ou raster importado | Bloqueado | Stênio | decisão 7.7 |
+| 2.6 | **API de avaliação de imóveis** para a pré-avaliação de valor | Bloqueado | Carlos indica qual | 7.4 |
+| 2.7 | **Chave de IA** (Anthropic) para o chat | Bloqueado | Carlos aprova o custo | 7.2 |
+| 2.8 | **ANM/SIGMINE** devolvendo erro do servidor deles — acompanhar; o relatório já mostra "indisponível" | Parcial | Stênio | órgão |
+| 2.9 | Catálogo das APIs: fonte, finalidade, autenticação, atualização, limites, licença e campos (item 19) | Pendente | Stênio | — |
+| 2.10 | Monitor de disponibilidade e tempo de resposta das fontes, com alerta | Parcial | Stênio | 2.2 |
 
-## Feito em 23/09/2026
+## 3. Design
 
-| Item | Como ficou |
-|---|---|
-| **Textos jurídicos** | 6 documentos em `/termos`: Termos de Uso, Política de Privacidade (LGPD), Autorização de Venda, Exclusividade, Regra de Remuneração (1% + mensalidade + proteção contra venda por fora) e Termo de Parceria. Texto em `src/lib/juridico.ts`, versionado. |
-| **Aceite registrado** | Cadastro exige aceite (Termos + Privacidade; parceiro também o Termo de Parceria). Anúncio exige escolher a **condição de comercialização** — autorização simples, exclusividade Arini ou imóvel de parceiro — e aceitar o termo dela. Grava versão, data, hora, usuário e IP (migration 0018), como a especificação pede no item 8. A análise do imóvel no admin mostra o aceite. |
-| **Dados jurídicos no painel** | Aba nova em Admin › Configurações: razão social, CNPJ, CRECI-J, endereço, foro, e-mail do encarregado LGPD, prazo da autorização (180 dias) e proteção pós-contrato (12 meses). Os termos leem daí; campo vazio aparece marcado no texto. |
-| **Planta de Iturama mais leve** | Ao salvar a seleção de camadas na calibração, o servidor grava o arquivo já sem as camadas ocultas (migration 0019). Medido: **19,3 MB → 13,9 MB** baixados no zoom da cidade, 60 → 50 camadas. O centro do arquivo completo vai gravado junto, para giro/escala não moverem a planta calibrada. |
-| **Páginas de teste removidas** | `public/teste-mapa.html` e `public/teste-satelite.html` (diagnóstico de agosto) saíram. |
-| **Limpeza dos dados demo pronta** | `scripts/limpa-demo.mjs` — ver Etapa 2. Ensaiado, não executado. |
+| # | Pendência | Situação | Quem | Depende de |
+|---|---|---|---|---|
+| 3.1 | Revisar o **modo claro** tela por tela: virou o padrão para quem usa o aparelho no claro | Pendente | Stênio | — |
+| 3.2 | Testar layout e velocidade no **celular real** (mapa, anúncio, painel) | Pendente | Stênio | 1.2 |
+| 3.3 | Logo e cores oficiais da Arini Maps (hoje é logotipo em texto) | Pendente | Carlos envia, Stênio aplica | — |
+| 3.4 | Fotos reais na página inicial e nos imóveis de vitrine, no lugar das de demonstração | Pendente | Carlos | — |
+| 3.5 | Botão de tema na tela "Acesso restrito" | Pendente | Stênio | — |
+| 3.6 | Plantas de **Limeira do Oeste e União de Minas** completas (hoje sem os blocos de loteamento) — exportar o DWG como DXF no AutoCAD e subir em Admin › Cartografia | Bloqueado | Stênio | AutoCAD |
 
----
+## 4. Funcionalidades
 
-## Etapa 1 — Colocar no ar (você, ~1h)
+| # | Pendência | Situação | Quem | Depende de |
+|---|---|---|---|---|
+| 4.1 | **Chat de IA** em linguagem natural ("lotes de R$ 40 mil em Iturama"), respeitando as permissões do usuário, com base de conhecimento auditável (itens 16 e 17) | Pendente | Stênio | 2.7 e 7.2 |
+| 4.2 | **Pré-avaliação de valor** e **aptidão territorial**, com fatores, limitações e encaminhamento a profissional (item 18) | Bloqueado | Stênio | 2.6 e 7.4 |
+| 4.3 | **Consulta básica × profissional**: o que cada uma mostra e como se libera (item 15) | Bloqueado | Stênio | 7.5 |
+| 4.4 | **"Consultar informações" no lote urbano** — o rural já tem (consulta do CAR); falta o painel equivalente do lote (item 7) | Pendente | Stênio | — |
+| 4.5 | **Número de lote e quadra** no lote urbano: tentar ler os textos do CAD e casar com cada lote | Pendente | Stênio | qualidade do CAD |
+| 4.6 | Pasta digital do imóvel com **histórico de versões** de documentos e fotos (item 13) — upload e organização já existem | Parcial | Stênio | — |
+| 4.7 | Separação por **organização** (vários clientes no mesmo SaaS). Hoje há território por região para franquia (item 1) | Parcial | Stênio | 7.10 |
+| 4.8 | Botão de tema e preferências salvos na conta, não só no navegador | Pendente | Stênio | — |
 
-Trava todo o resto: sem ela, o satélite sem nuvem, as correções do mapa e os
-termos não chegam ao público. Roteiro completo em `deploy/DEPLOY.md`.
+## 5. Segurança e LGPD
 
-| # | O quê | Onde |
-|---|---|---|
-| 1 | **Envs antes do primeiro build**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`. As `NEXT_PUBLIC_*` entram no build — adicionadas depois, o navegador quebra sem erro claro. Mudou `NEXT_PUBLIC_*`? **Rebuild**, não restart. | Dokploy › Environment |
-| 2 | **Deploy** da `main` | Dokploy |
-| 3 | **Domínio**: comprar `arinimaps.com.br` ou apontar subdomínio na Cloudflare; ajustar `NEXT_PUBLIC_SITE_URL` e rebuild | Registro.br / Cloudflare |
-| 4 | **Worker** (vídeo automático, tiles de imagem, imagem de compartilhamento) — `deploy/worker-compose.yml` como 2º serviço. Todo o resto funciona sem ele. | Dokploy |
+| # | Pendência | Situação | Quem | Depende de |
+|---|---|---|---|---|
+| 5.1 | Varredura de vulnerabilidades e pentest externo antes do lançamento | Pendente | contratação externa | 1.2 |
+| 5.2 | Plano de resposta a incidentes (quem faz o quê) | Pendente | Stênio + Carlos | — |
+| 5.3 | Registro formal das operações de tratamento de dados (mapa de dados LGPD) | Parcial | Stênio + Carlos | 6.2 |
+| 5.4 | Alertas ativos por e-mail (login suspeito, bloqueios, fonte fora do ar) | Bloqueado | Stênio | 2.2 |
+| 5.5 | Limite de requisições nas leituras do mapa | Parcial | Stênio | tráfego real |
+| 5.6 | Rotina mensal de `npm audit` e atualização de dependências | Pendente | Stênio | — |
+| 5.7 | Carlos trocar a senha e ativar o código do celular no primeiro acesso; tornar o segundo fator obrigatório para a equipe | Pendente | Carlos | — |
 
-## Etapa 2 — Deixar apresentável (você, meio dia)
+## 6. Dados e conteúdo que vêm do Carlos
 
-| # | O quê | Onde |
-|---|---|---|
-| 5 | **Exportar DXF de Limeira do Oeste e União de Minas** no AutoCAD e subir. Hoje as plantas estão pobres (47.786 e 7.773 linhas contra 207.603 de Iturama — sem o conteúdo dos blocos de loteamento). DWG é formato fechado e não há conversor nesta máquina. Conversão e publicação são automáticas. | AutoCAD → Salvar como → DXF → Admin › Cartografia |
-| 6 | **Preencher Dados jurídicos** (CNPJ, CRECI-J, endereço, foro, e-mail LGPD) — enquanto vazios, os termos publicados mostram `〔… preencher em Admin › Configurações〕` | Admin › Configurações › Dados jurídicos |
-| 7 | **Preencher contatos e textos** (e-mail que recebe leads, telefone, e-mail público) | Admin › Configurações |
-| 8 | **Desfazer a venda de teste** antes de mostrar: `node scripts/limpa-demo.mjs --vitrine --executar`. Apaga lead, oportunidade, visita, 3 propostas, contrato, venda e comissão do teste E2E e devolve a Fazenda Boa Vista a "publicado". Os 3 imóveis demo continuam para a apresentação. Sem `--executar` é só ensaio. | terminal, em `arini-maps/` |
-| 9 | **Trocar a senha do admin** e criar a conta real do Carlos | Admin › Usuários |
-| 10 | **Olhar com calma**: `/`, `/mapa` (satélite + plantas), `/imoveis`, `/relatorios`, `/imovel/ARINI-MAP-000002` e o relatório, o tour 3D, `/termos`, o cadastro com aceite, anunciar um imóvel de teste, e Admin › Cartografia › Calibrar. | navegador |
-
-## Etapa 3 — Reunião com o Carlos (demo + decisões)
-
-Pauta pronta em `PAUTA-REUNIAO-CARLOS.md` (na pasta do projeto). Resumo:
-
-- **Orçamento** — ainda não enviado (recomendação registrada: R$ 7.000 em 3 parcelas + sustentação R$ 400–500/mês).
-- **Validar os termos com o advogado dele.** A especificação exige (itens 8 e 24.2). Os pontos que são decisão comercial, não redação, estão listados na pauta.
-- **Mensalidade** do anúncio e dias de tolerância (hoje R$ 0 / 15 dias). O texto dos termos se ajusta sozinho ao valor configurado.
-- **Lista final de municípios** do piloto (você adiciona só com o código IBGE).
-- **Satélite licenciado**: resolvido sem custo — conta gratuita do Esri ArcGIS Location Platform (Etapa 4).
-- **MapBiomas**: token com aceite de termos, ou raster importado?
-- **Pedir**: arquivos oficiais de SIGEF, IBAMA embargos, quilombolas e IPHAN; o fluxograma resumido. (CAR e KML não são mais necessários — 24/09.)
-
-## Etapa 4 — Ligar o que depende da reunião
-
-| Serviço / item | Env ou ação | O que liga | Quem |
+| # | Pendência | Situação | Onde entra |
 |---|---|---|---|
-| Resend | `RESEND_API_KEY`, `RESEND_FROM` | E-mails: lead novo, imóvel aprovado/publicado/correção, encaminhamento a parceiro | você cria a conta, eu verifico |
-| Asaas | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Botão "Cobrar via Asaas" + baixa automática (`/api/asaas/webhook`) | você |
-| Esri ArcGIS Location Platform | `NEXT_PUBLIC_ARCGIS_KEY` | Satélite licenciado, **grátis até 2 milhões de tiles/mês** (~7–10 mil visitas ao mapa). Decidido em 23/09 no lugar do MapTiler, cujo plano grátis não permite uso comercial. Depois de ligar: Admin › Regiões › Conferir os municípios — o mosaico licenciado é o atual, que em 23/09 tinha um tile com 52,9% de nuvem em Iturama | você cria a conta e a chave (privilégio Basemaps, restrita ao domínio), rebuild |
-| Arquivos oficiais | — | SIGEF, IBAMA, quilombolas, IPHAN passam a cruzar no relatório (o CAR já está ligado) | **eu importo** no PostGIS |
-| MapBiomas | token ou raster | Uso do solo no relatório | **eu**, conforme a decisão |
-| Termos revisados | subir `VERSOES` em `src/lib/juridico.ts` | Aceites antigos seguem apontando para a versão lida | **eu** |
-| Abertura ao público | `node scripts/limpa-demo.mjs --tudo --executar` | Remove os 3 imóveis demo e as contas de teste | você, no dia |
+| 6.1 | CNPJ, CRECI-J, endereço da sede e foro | Pendente | Admin › Configurações › Dados jurídicos (aparecem nos termos) |
+| 6.2 | E-mail do encarregado de dados (LGPD) e e-mail que recebe os leads | Pendente | Admin › Configurações |
+| 6.3 | E-mail real do Carlos para a conta de admin (hoje `carlos@arinimaps.com.br`, provisório) | Pendente | conta dele |
+| 6.4 | Lista final de municípios do piloto | Pendente | Admin › Regiões (só o código IBGE) |
+| 6.5 | Mensalidade do anúncio e dias de tolerância (hoje R$ 0 / 15 dias) | Pendente | Admin › Configurações |
+| 6.6 | Contas reais da equipe e o setor de cada pessoa | Pendente | Admin › Usuários |
 
-Sem as chaves o sistema funciona — só esses recursos ficam inativos. Admin ›
-Configurações mostra o estado de cada integração.
+## 7. Dúvidas gerais e decisões para seguir
+
+| # | Decisão | Quem | O que destrava |
+|---|---|---|---|
+| 7.1 | **Prazo e custo por etapa** do escopo novo (item 22 do documento) | Stênio apresenta, Carlos aprova | tudo da seção 4 |
+| 7.2 | Chat de IA: aprovar o custo por uso da chave | Carlos | 4.1 |
+| 7.3 | Asaas: conta no CNPJ da Arini e quais cobranças passam por ele | Carlos | 2.3 |
+| 7.4 | Pré-avaliação: qual API ou metodologia, e validação jurídica do uso | Carlos | 4.2 |
+| 7.5 | Consulta profissional: o que libera, para quem e quanto custa | Carlos | 4.3 |
+| 7.6 | Domínio: `arinimaps.com.br` ou subdomínio | Carlos | 1.3, 2.1, 2.2 |
+| 7.7 | MapBiomas: token com aceite de termos ou raster importado | Stênio + Carlos | 2.5 |
+| 7.8 | Plano pago do banco (~US$ 25/mês) para backup | Carlos | 1.6 |
+| 7.9 | Selfie na exclusividade: finalidade, base legal, retenção e descarte validados pelo jurídico dele | Carlos | uso definitivo da selfie |
+| 7.10 | Franquias: regras de território e o que cada franqueado enxerga | Carlos | 4.7 |
+| 7.11 | Data de lançamento (quando tirar a senha de bloqueio) | Stênio + Carlos | 1.8 |
+
+## 8. Testes e revisão
+
+| # | Teste | Situação | Quem |
+|---|---|---|---|
+| 8.1 | Envio real de vídeo de ponta a ponta (com o worker no ar) | Pendente | Stênio |
+| 8.2 | Roteiro completo em homologação: cadastro, anúncio pelo CAR e pelo lote, documentos, aprovação, lead, proposta, venda e comissão | Pendente | Stênio |
+| 8.3 | Rodada de teste com o Carlos usando a conta dele, com lista de ajustes | Pendente | Stênio + Carlos |
+| 8.4 | Teste em celular Android e iPhone, em 4G | Pendente | Stênio |
+| 8.5 | Regressão automática (`testa-rodada`, `testa-matriz`, `testa-perfis`, `testa-lotes`) antes de cada deploy | Parcial | Stênio |
 
 ---
 
-## Referência — Consulta Rural
+## Já entregue (resumo)
 
-**Consultam ao vivo, sem chave (10 fontes):** **CAR/SICAR (desde 24/09)**, ANM/SIGMINE, FUNAI, INPE PRODES,
-DETER, Queimadas, unidades de conservação, corpos d'água (TerraBrasilis),
-ANA/SNIRH e ANEEL/SIGEL — mais IBGE e OpenStreetMap.
-
-**Sem consulta pública por polígono (medido em 28/08/2026) — dependem de arquivo:**
-
-| Fonte | O que medi |
-|---|---|
-| INCRA / SIGEF | acervo fundiário deu timeout; certificação exige login |
-| IBAMA — embargos | nenhum host respondeu; usar a planilha de dados abertos |
-| Territórios quilombolas | mesmo acervo do INCRA |
-| IPHAN | geoserver devolve a página do portal; sai pelo SICG |
-| MapBiomas | API exige token e aceite de termos — **decisão** |
-| DNIT | nenhum endpoint público; rodovias vêm do OpenStreetMap |
-
-Duas limitações que são dos órgãos, não nossas: o SIGEL da ANEEL não expõe
-linhas de transmissão nem subestações, e o geoserver do Programa Queimadas é
-instável (3 de 8 chamadas idênticas voltam 404; o sistema repete sozinho).
-
-## Referência — Mapa urbano (medições de 17/09/2026)
-
-| Queixa | Estado |
-|---|---|
-| Calibração não salvava (cache de 60 s regravava valor velho) | corrigido — lê sem cache e ecoa o que o banco gravou |
-| Mapa pesado para abrir (22 MB em z9) | corrigido — 0 MB em z9; planta só quando a cidade está na tela |
-| Arraste travado (863 ms por movimento) | corrigido — 16,7 ms/quadro, 60 fps |
-| Linha do lote invisível | corrigido — contorno escuro + linha clara |
-| Nuvem no satélite | corrigido no código (Wayback 20512) — **vai ao ar no deploy** |
-| Iturama pesada (19,3 MB) | corrigido em 23/09 — 13,9 MB |
-| Limeira e União pobres | **depende do DXF** (Etapa 2, item 5) |
+- **Mapa:** satélite como padrão, alternância satélite/mapa, marcadores regionais, CAR clicável ("Esta área é minha"), **25.910 lotes urbanos clicáveis** em Iturama (4.166 em Limeira, 1.169 em União) com metragens, planta do CAD como camada opcional, cores rural/urbano/leilão, tour 3D mais lento com pontos de referência.
+- **Anúncio:** pelo CAR, pelo lote ou desenhando; documentos obrigatórios conferidos pela Arini antes de publicar; vídeos; selfie na exclusividade; leilão com edital.
+- **Perfis:** proprietário, comprador, corretor, imobiliária, engenheiro, leiloeiro, franqueado, consulta e equipe; território por franquia.
+- **Matriz por setores:** Operações, Comercial, Financeiro (com exportação), Jurídico (com pedidos LGPD), Marketing, Cartografia, Suporte (chamados), Segurança e Diretoria; tarefas internas; trava de setor no servidor.
+- **Segurança:** segundo fator (TOTP), recuperação por link de uso único, limite de tentativas, registro de acessos, expiração da sessão da equipe, funções do banco fechadas, **senha de bloqueio do site**, tema claro/escuro seguindo o aparelho.
+- **Jurídico:** 6 termos versionados com aceite registrado (versão, data, hora, IP).
+- **Conta de admin geral do Carlos** criada (Diretoria).

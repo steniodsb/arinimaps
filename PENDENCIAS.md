@@ -3,121 +3,194 @@
 > Repositório: github.com/steniodsb/arinimaps · migrations até a 0027.
 > Site travado pela senha de bloqueio (`SITE_SENHA`) até o lançamento.
 > Acessos e senhas: `ACESSOS - NAO COMPARTILHAR.md`, fora do repositório.
+> PDF: `Arini Maps - Roadmap de pendencias.pdf` (gerado destes mesmos dados).
 >
-> **Quem:** Stênio (desenvolvimento) · Carlos (Arini) · Stênio + Carlos (decisão conjunta).
-> **Situação:** Pendente · Parcial · Bloqueado (esperando outra coisa).
+> **Situação:** Pendente · Parcial · Validar (ajustado, falta conferir com o Carlos) · Bloqueado (aguarda outro item) · Decisão.
+> 
+> **Origem:** Call = call de 01/10 · Melhorias N = documento de melhorias, item N · Segurança N = requisitos de segurança e LGPD, item N · APIs = levantamento de APIs.
 
 ---
 
-## 1. Colocar no ar (infraestrutura)
+## 1. Colocar no ar
 
-| # | Pendência | Situação | Quem | Depende de |
-|---|---|---|---|---|
-| 1.1 | Cadastrar as variáveis no Dokploy, incluindo `SITE_SENHA` e `SITE_BLOQUEIO_SEGREDO` | Pendente | Stênio | — |
-| 1.2 | Deploy da `main` | Pendente | Stênio | 1.1 |
-| 1.3 | Domínio (`arinimaps.com.br` ou subdomínio) e `NEXT_PUBLIC_SITE_URL` + rebuild | Bloqueado | Stênio + Carlos | decisão 7.6 |
-| 1.4 | Worker como 2º serviço (vídeo, tiles de imagem, imagem de compartilhamento e **geração dos lotes urbanos**) | Pendente | Stênio | 1.2 |
-| 1.5 | Ambiente de homologação separado da produção (pedido no item 22 do documento do Carlos) | Pendente | Stênio | segundo projeto no Supabase |
-| 1.6 | Backup automático e teste de restauração | Bloqueado | Stênio | plano pago do banco (7.8) |
-| 1.7 | Domínio atrás da Cloudflare (proteção de borda) | Bloqueado | Stênio | 1.3 |
-| 1.8 | Limpar dados de demonstração no lançamento (`scripts/limpa-demo.mjs --tudo --executar`) | Pendente | Stênio | dia do lançamento |
+Servidor, domínio e a estrutura que sustenta o sistema em produção.
 
-## 2. APIs e integrações
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 1.1 | **Variáveis de ambiente no servidor** — Inclui a senha de bloqueio, que mantém o site fechado até o lançamento. | Pendente | Stênio | — | — |
+| 1.2 | **Publicar a versão atual** — Site, mapa, painel do anunciante e Matriz fora do ambiente de desenvolvimento. | Pendente | Stênio | 1.1 | — |
+| 1.3 | **Domínio definitivo** — Apontar o endereço e gerar a versão final com ele. | Bloqueado | Stênio e Carlos | 8.6 | — |
+| 1.4 | **Serviço de processamento** — Vídeo automático, imagens de compartilhamento e geração dos lotes urbanos. | Pendente | Stênio | 1.2 | — |
+| 1.5 | **Ambiente de homologação** — Cópia separada da produção, sem dados reais sensíveis, para testar cada mudança antes de publicar. | Pendente | Stênio | — | Melhorias 22 · Segurança 9 e 15 |
+| 1.6 | **Backup automático e recuperação** — Backup criptografado e fora do ambiente principal, retenção definida, restauração testada e metas de tempo de recuperação. | Bloqueado | Stênio | 8.8 | Call · Melhorias 20 · Segurança 16 |
+| 1.7 | **Proteção de borda (Cloudflare)** — Filtro de ataques na frente do site. | Bloqueado | Stênio | 1.3 | Segurança 9 |
+| 1.8 | **Acesso direto ao banco restrito** — Banco sem exposição aberta à internet: acesso administrativo só por rede e IPs autorizados. | Pendente | Stênio | — | Segurança 9 |
+| 1.9 | **Dimensionar banco e armazenamento** — Capacidade para fotos, vídeos, documentos, geometrias e histórico com o volume esperado da região. | Pendente | Stênio | 8.8 | Call · Melhorias 13 e 20 |
+| 1.10 | **Monitoramento com alertas** — Site, banco, APIs, armazenamento e IA, com responsáveis definidos para receber os alertas. | Bloqueado | Stênio | 3.2 | Melhorias 20 · Segurança 17 |
+| 1.11 | **Limpeza dos dados de demonstração** — No dia do lançamento. | Pendente | Stênio | 8.13 | — |
 
-| # | Pendência | Situação | Quem | Depende de |
-|---|---|---|---|---|
-| 2.1 | **Esri ArcGIS** — criar conta e chave (privilégio Basemaps, restrita ao domínio) → `NEXT_PUBLIC_ARCGIS_KEY` e rebuild. Depois, conferir nuvem nos municípios | Pendente | Stênio | 1.3 |
-| 2.2 | **Resend** — e-mails de lead, aprovação, recuperação de senha e alertas | Bloqueado | Stênio | domínio (1.3) |
-| 2.3 | **Asaas** — cobrança de mensalidade e baixa automática | Bloqueado | Carlos cria a conta no CNPJ da Arini, Stênio liga | 7.3 |
-| 2.4 | **SIGEF, IBAMA embargos, quilombolas e IPHAN** — baixar os dados abertos e importar para o relatório territorial | Pendente | Stênio | — |
-| 2.5 | **MapBiomas** (uso do solo) — token com aceite de termos ou raster importado | Bloqueado | Stênio | decisão 7.7 |
-| 2.6 | **API de avaliação de imóveis** para a pré-avaliação de valor | Bloqueado | Carlos indica qual | 7.4 |
-| 2.7 | **Chave de IA** (Anthropic) para o chat | Bloqueado | Carlos aprova o custo | 7.2 |
-| 2.8 | **ANM/SIGMINE** devolvendo erro do servidor deles — acompanhar; o relatório já mostra "indisponível" | Parcial | Stênio | órgão |
-| 2.9 | Catálogo das APIs: fonte, finalidade, autenticação, atualização, limites, licença e campos (item 19) | Pendente | Stênio | — |
-| 2.10 | Monitor de disponibilidade e tempo de resposta das fontes, com alerta | Parcial | Stênio | 2.2 |
+## 2. Mapa e cartografia
 
-## 3. Design
+O que foi apontado no mapa, o que já foi ajustado e precisa ser conferido, e o que falta.
 
-| # | Pendência | Situação | Quem | Depende de |
-|---|---|---|---|---|
-| 3.1 | Revisar o **modo claro** tela por tela: virou o padrão para quem usa o aparelho no claro | Pendente | Stênio | — |
-| 3.2 | Testar layout e velocidade no **celular real** (mapa, anúncio, painel) | Pendente | Stênio | 1.2 |
-| 3.3 | Logo e cores oficiais da Arini Maps (hoje é logotipo em texto) | Pendente | Carlos envia, Stênio aplica | — |
-| 3.4 | Fotos reais na página inicial e nos imóveis de vitrine, no lugar das de demonstração | Pendente | Carlos | — |
-| 3.5 | Botão de tema na tela "Acesso restrito" | Pendente | Stênio | — |
-| 3.6 | Plantas de **Limeira do Oeste e União de Minas** completas (hoje sem os blocos de loteamento) — exportar o DWG como DXF no AutoCAD e subir em Admin › Cartografia | Bloqueado | Stênio | AutoCAD |
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 2.1 | **Velocidade do mapa no celular e no 4G** — No computador a cidade passou de 14 MB para cerca de 2 MB na tela. Falta medir em aparelho real e definir metas de tempo. | Parcial | Stênio | 1.2 | Call · Melhorias 2 |
+| 2.2 | **Tour 3D só depois do mapa carregar** — Ajustado e mais lento. Conferir no celular. | Validar | Stênio e Carlos | — | Call · Melhorias 4 |
+| 2.3 | **Marcações visíveis ao afastar o zoom** — Ajustado com marcadores regionais. Conferir na rodada de testes. | Validar | Stênio e Carlos | — | Call |
+| 2.4 | **Mapa limpo, só com o essencial** — Lotes e metragens numa camada limpa; a planta original, com círculos, setas, rodovias e nomes de rua, virou camada opcional. | Validar | Stênio e Carlos | — | Call · Melhorias 3 |
+| 2.5 | **Revisar os arquivos de planta com o Miguel** — Limpar os desenhos na origem e corrigir o que veio errado no arquivo. | Pendente | Stênio e Carlos | 7.7 | Call |
+| 2.6 | **Regiões onde a planta não bate com o satélite** — Conferir quadra a quadra nas três cidades e recalibrar onde houver deslocamento. | Pendente | Stênio | — | Call |
+| 2.7 | **Metragem em todos os lotes** — Agora calculada pela divisa de cada lote, inclusive onde a planta não trazia. Conferir com o Carlos. | Validar | Stênio e Carlos | — | Call |
+| 2.8 | **Ferramentas da parte de baixo do mapa** — Medir área e distância estão no mapa. Conferir com o Carlos. | Validar | Stênio e Carlos | — | Call |
+| 2.9 | **Plantas completas de Limeira do Oeste e União de Minas** — Exportar os arquivos do AutoCAD no formato que o sistema lê. | Bloqueado | Stênio | — | — |
+| 2.10 | **“Consultar informações” no lote urbano** — O rural já tem, pela consulta do CAR. | Pendente | Stênio | — | Melhorias 7 |
+| 2.11 | **Número do lote e da quadra** — Ler os textos da planta e associar a cada lote. | Pendente | Stênio | — | Melhorias 6 |
+| 2.12 | **Pontos de referência** — Distância até o imóvel e atualização periódica da fonte (OpenStreetMap). | Parcial | Stênio | — | Melhorias 5 |
+| 2.13 | **Expansão para novas regiões** — Nova região (por exemplo Frutal, num raio de 150 km) entra só com municípios e plantas, com acesso próprio. O município já entra pelo código do IBGE, com o CAR automático; falta o roteiro e um teste completo. | Parcial | Stênio | — | Call · Melhorias 1 |
 
-## 4. Funcionalidades
+## 3. APIs e integrações
 
-| # | Pendência | Situação | Quem | Depende de |
-|---|---|---|---|---|
-| 4.1 | **Chat de IA** em linguagem natural ("lotes de R$ 40 mil em Iturama"), respeitando as permissões do usuário, com base de conhecimento auditável (itens 16 e 17) | Pendente | Stênio | 2.7 e 7.2 |
-| 4.2 | **Pré-avaliação de valor** e **aptidão territorial**, com fatores, limitações e encaminhamento a profissional (item 18) | Bloqueado | Stênio | 2.6 e 7.4 |
-| 4.3 | **Consulta básica × profissional**: o que cada uma mostra e como se libera (item 15) | Bloqueado | Stênio | 7.5 |
-| 4.4 | **"Consultar informações" no lote urbano** — o rural já tem (consulta do CAR); falta o painel equivalente do lote (item 7) | Pendente | Stênio | — |
-| 4.5 | **Número de lote e quadra** no lote urbano: tentar ler os textos do CAD e casar com cada lote | Pendente | Stênio | qualidade do CAD |
-| 4.6 | Pasta digital do imóvel com **histórico de versões** de documentos e fotos (item 13) — upload e organização já existem | Parcial | Stênio | — |
-| 4.7 | Separação por **organização** (vários clientes no mesmo SaaS). Hoje há território por região para franquia (item 1) | Parcial | Stênio | 7.10 |
-| 4.8 | Botão de tema e preferências salvos na conta, não só no navegador | Pendente | Stênio | — |
+Serviços externos e bases oficiais que alimentam o mapa, os avisos e o relatório.
 
-## 5. Segurança e LGPD
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 3.1 | **Satélite licenciado (Esri)** — Conta e chave restrita ao domínio; depois, conferir nuvem em cada município. | Pendente | Stênio | 1.3 | — |
+| 3.2 | **E-mails automáticos (Resend)** — Novo interessado, imóvel aprovado, recuperação de senha e alertas. | Bloqueado | Stênio | 1.3 | — |
+| 3.3 | **Cobrança (Asaas)** — Mensalidade do anúncio e assinatura da consulta, com baixa automática. | Bloqueado | Carlos | 8.3 | Call |
+| 3.4 | **SIGEF, IBAMA embargos, quilombolas e IPHAN** — Baixar os dados abertos e importar para o relatório territorial. | Pendente | Stênio | — | APIs |
+| 3.5 | **Camadas ambientais do CAR** — APP, reserva legal e demais camadas declaradas, além do perímetro que já está no mapa. | Pendente | Stênio | — | APIs |
+| 3.6 | **MapBiomas (uso do solo)** — Por token com aceite de termos ou por arquivo importado. | Bloqueado | Stênio | 8.7 | APIs |
+| 3.7 | **SNCR, CNIR, CAFIR e CIB** — Bases cadastrais rurais que exigem acesso autorizado pelo órgão. | Bloqueado | Carlos | 8.12 | APIs |
+| 3.8 | **Imagens históricas (Sentinel-2 e Landsat)** — Séries temporais e análises de vegetação. | Pendente | Stênio | — | APIs |
+| 3.9 | **Rodovias (DNIT e DER/MG)** — Hoje vêm do OpenStreetMap; os órgãos não oferecem consulta pública. | Parcial | Stênio | — | APIs |
+| 3.10 | **ANEEL e ANM** — A ANEEL não publica linhas de transmissão e a ANM está com erro no servidor deles; o relatório mostra a fonte como indisponível. | Parcial | Stênio | — | APIs |
+| 3.11 | **API de avaliação de imóveis** — Base para a pré-avaliação de valor. | Bloqueado | Carlos | 8.4 | Call · Melhorias 18 |
+| 3.12 | **Chave de inteligência artificial** — Necessária para o chat. | Bloqueado | Carlos | 8.2 | Call |
+| 3.13 | **Busca por matrícula** — “Fazenda Santa Maria, matrícula X”: definir a fonte, já que matrícula fica nos cartórios. | Bloqueado | Stênio e Carlos | 8.12 | Call · Melhorias 16 |
+| 3.14 | **Matriz técnica das fontes** — Para cada fonte: órgão, endereço oficial, tipo de acesso, autenticação, custo, limites, licença, atualização e campos. | Pendente | Stênio | — | APIs · Melhorias 19 |
+| 3.15 | **Origem e data de cada informação** — Separar dados oficiais, de terceiros, derivados e inseridos pelo usuário, com fonte e data visíveis. | Parcial | Stênio | — | APIs · Melhorias 19 |
+| 3.16 | **Teste de queda e lentidão das fontes** — Disponibilidade e tempo de resposta acompanhados, com aviso quando uma fonte cair. | Parcial | Stênio | 3.2 | Melhorias 19 |
 
-| # | Pendência | Situação | Quem | Depende de |
-|---|---|---|---|---|
-| 5.1 | Varredura de vulnerabilidades e pentest externo antes do lançamento | Pendente | contratação externa | 1.2 |
-| 5.2 | Plano de resposta a incidentes (quem faz o quê) | Pendente | Stênio + Carlos | — |
-| 5.3 | Registro formal das operações de tratamento de dados (mapa de dados LGPD) | Parcial | Stênio + Carlos | 6.2 |
-| 5.4 | Alertas ativos por e-mail (login suspeito, bloqueios, fonte fora do ar) | Bloqueado | Stênio | 2.2 |
-| 5.5 | Limite de requisições nas leituras do mapa | Parcial | Stênio | tráfego real |
-| 5.6 | Rotina mensal de `npm audit` e atualização de dependências | Pendente | Stênio | — |
-| 5.7 | Carlos trocar a senha e ativar o código do celular no primeiro acesso; tornar o segundo fator obrigatório para a equipe | Pendente | Carlos | — |
+## 4. Design
 
-## 6. Dados e conteúdo que vêm do Carlos
+Acabamento visual e experiência em cada tela e aparelho.
 
-| # | Pendência | Situação | Onde entra |
-|---|---|---|---|
-| 6.1 | CNPJ, CRECI-J, endereço da sede e foro | Pendente | Admin › Configurações › Dados jurídicos (aparecem nos termos) |
-| 6.2 | E-mail do encarregado de dados (LGPD) e e-mail que recebe os leads | Pendente | Admin › Configurações |
-| 6.3 | E-mail real do Carlos para a conta de admin (hoje `carlos@arinimaps.com.br`, provisório) | Pendente | conta dele |
-| 6.4 | Lista final de municípios do piloto | Pendente | Admin › Regiões (só o código IBGE) |
-| 6.5 | Mensalidade do anúncio e dias de tolerância (hoje R$ 0 / 15 dias) | Pendente | Admin › Configurações |
-| 6.6 | Contas reais da equipe e o setor de cada pessoa | Pendente | Admin › Usuários |
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 4.1 | **Interface mais simples e amigável** — Menos informação por tela, botões mais claros e interação mais fácil, para ninguém ter preguiça de usar. | Pendente | Stênio | — | Call |
+| 4.2 | **Revisão do modo claro tela por tela** — O site agora segue o tema do aparelho, então o claro passa a ser visto por muita gente. | Pendente | Stênio | — | — |
+| 4.3 | **Layout no celular real** — Mapa, anúncio e painel. | Pendente | Stênio | 1.2 | — |
+| 4.4 | **Logo e cores oficiais** — Hoje o logotipo é só texto. | Pendente | Carlos | — | — |
+| 4.5 | **Fotos reais** — Página inicial e imóveis de vitrine. | Pendente | Carlos | — | — |
+| 4.6 | **Foto no perfil de cada usuário** — Imagem vinculada ao cadastro, à parte da selfie da exclusividade. | Pendente | Stênio | — | Melhorias 9 |
+| 4.7 | **Botão de tema na tela de acesso restrito** | Pendente | Stênio | — | — |
 
-## 7. Dúvidas gerais e decisões para seguir
+## 5. Funcionalidades
 
-| # | Decisão | Quem | O que destrava |
-|---|---|---|---|
-| 7.1 | **Prazo e custo por etapa** do escopo novo (item 22 do documento) | Stênio apresenta, Carlos aprova | tudo da seção 4 |
-| 7.2 | Chat de IA: aprovar o custo por uso da chave | Carlos | 4.1 |
-| 7.3 | Asaas: conta no CNPJ da Arini e quais cobranças passam por ele | Carlos | 2.3 |
-| 7.4 | Pré-avaliação: qual API ou metodologia, e validação jurídica do uso | Carlos | 4.2 |
-| 7.5 | Consulta profissional: o que libera, para quem e quanto custa | Carlos | 4.3 |
-| 7.6 | Domínio: `arinimaps.com.br` ou subdomínio | Carlos | 1.3, 2.1, 2.2 |
-| 7.7 | MapBiomas: token com aceite de termos ou raster importado | Stênio + Carlos | 2.5 |
-| 7.8 | Plano pago do banco (~US$ 25/mês) para backup | Carlos | 1.6 |
-| 7.9 | Selfie na exclusividade: finalidade, base legal, retenção e descarte validados pelo jurídico dele | Carlos | uso definitivo da selfie |
-| 7.10 | Franquias: regras de território e o que cada franqueado enxerga | Carlos | 4.7 |
-| 7.11 | Data de lançamento (quando tirar a senha de bloqueio) | Stênio + Carlos | 1.8 |
+Recursos novos que ainda não estão no sistema.
 
-## 8. Testes e revisão
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 5.1 | **Chat de inteligência artificial** — Busca em linguagem natural (“lotes de R$ 40 mil em Iturama”), sem acesso livre ao banco e respeitando as permissões de quem pergunta. | Pendente | Stênio | 3.12 | Call · Melhorias 16 · Segurança 18 |
+| 5.2 | **Base de conhecimento da IA** — Atualizável e auditável, com fonte e data, em vez de aprendizado sem controle. | Pendente | Stênio | 5.1 | Melhorias 17 |
+| 5.3 | **Pré-avaliação de valor** — Localização, área, topografia, aproveitamento e infraestrutura, sempre como estimativa e com encaminhamento a profissional. | Bloqueado | Stênio | 3.11 | Call · Melhorias 18 |
+| 5.4 | **Aptidão territorial** — Indicar se a área é mais propícia para lavoura ou gado de corte e qual a rentabilidade esperada, mostrando os fatores usados. | Bloqueado | Stênio | 8.4 | Call · Melhorias 18 |
+| 5.5 | **Consulta básica, profissional e assinatura** — O que cada uma mostra e a assinatura paga da consulta. | Bloqueado | Stênio | 8.5 | Call · Melhorias 15 |
+| 5.6 | **Consulta nacional** — A consulta vale para o Brasil todo; a venda começa na região de Iturama. As fontes ao vivo já consultam qualquer área, falta abrir a consulta para fora da região. | Parcial | Stênio | — | Call |
+| 5.7 | **Acesso do franqueado** — Só consulta e gestão dos próprios imóveis; aprovação continua na Matriz. Perfil e território existem; falta conferir as telas dele. | Validar | Stênio e Carlos | 8.10 | Call · Melhorias 12 |
+| 5.8 | **Histórico de versões na pasta do imóvel** — O envio e a organização de documentos, fotos e vídeos já existem. | Parcial | Stênio | — | Melhorias 13 |
+| 5.9 | **Separação por organização** — Vários clientes no mesmo sistema; o território por franquia já existe. | Parcial | Stênio | 8.10 | Melhorias 1 |
+| 5.10 | **Preferências salvas na conta** — Tema e ajustes acompanham o usuário em qualquer aparelho. | Pendente | Stênio | — | — |
 
-| # | Teste | Situação | Quem |
-|---|---|---|---|
-| 8.1 | Envio real de vídeo de ponta a ponta (com o worker no ar) | Pendente | Stênio |
-| 8.2 | Roteiro completo em homologação: cadastro, anúncio pelo CAR e pelo lote, documentos, aprovação, lead, proposta, venda e comissão | Pendente | Stênio |
-| 8.3 | Rodada de teste com o Carlos usando a conta dele, com lista de ajustes | Pendente | Stênio + Carlos |
-| 8.4 | Teste em celular Android e iPhone, em 4G | Pendente | Stênio |
-| 8.5 | Regressão automática (`testa-rodada`, `testa-matriz`, `testa-perfis`, `testa-lotes`) antes de cada deploy | Parcial | Stênio |
+## 6. Segurança e LGPD
 
----
+O que falta para fechar os requisitos de segurança e proteção de dados.
+
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 6.1 | **Varredura de vulnerabilidades e pentest** — Feito por empresa externa antes do lançamento. | Pendente | Externo | 1.2 | Segurança 15 e 21 |
+| 6.2 | **Revisão de segurança das APIs** — Injeção, XSS, CSRF, SSRF, upload malicioso e respostas sem dados desnecessários. | Pendente | Stênio | — | Segurança 14 |
+| 6.3 | **Registro de quem abre cada documento** — Visualização e download de documentos e selfies ficam registrados. | Pendente | Stênio | — | Segurança 11 e 13 |
+| 6.4 | **Retenção e descarte automático** — Documentos, selfies e registros apagados no prazo definido. | Bloqueado | Stênio | 8.9 | Segurança 11, 12 e 19 |
+| 6.5 | **Criptografia de campos sensíveis** — Avaliar criptografia por campo para dados como CPF, além da criptografia do disco. | Pendente | Stênio | — | Segurança 10 |
+| 6.6 | **Rotação de chaves e segredos** — Troca periódica das chaves do sistema e controle de quem tem acesso. | Pendente | Stênio | — | Segurança 2 e 10 |
+| 6.7 | **Recuperação reforçada para a equipe** — Validação extra para recuperar contas com mais privilégios. | Pendente | Stênio | — | Segurança 5 |
+| 6.8 | **Alertas de acesso anormal** — Novo aparelho, local diferente e excesso de tentativas avisam por e-mail. | Bloqueado | Stênio | 3.2 | Segurança 3, 6 e 17 |
+| 6.9 | **Segundo fator obrigatório para a equipe** — A opção existe; falta ativar e cada pessoa cadastrar o código do celular. | Pendente | Carlos | — | Segurança 4 |
+| 6.10 | **Plano de resposta a incidentes** — Quem faz o quê, canais internos e o procedimento perante a lei. | Pendente | Stênio e Carlos | — | Segurança 20 |
+| 6.11 | **Mapa de dados pessoais** — Quais dados, para quê, onde ficam e quem acessa; a Política de Privacidade já lista o principal. | Parcial | Stênio e Carlos | 7.2 | Segurança 19 |
+| 6.12 | **Proteção dos registros** — Logs protegidos contra alteração e exclusão, com prazo de guarda definido. | Parcial | Stênio | — | Segurança 13 |
+| 6.13 | **Revisão periódica de permissões** — Conferir a cada trimestre quem acessa o quê. | Pendente | Stênio e Carlos | — | Segurança 8 |
+| 6.14 | **Limite de requisições nas leituras do mapa** — Login, cadastro e consultas já têm limite. | Parcial | Stênio | — | Segurança 14 |
+| 6.15 | **Atualização mensal de dependências** | Pendente | Stênio | — | Segurança 15 |
+
+## 7. Dados e conteúdo da Arini
+
+Informações que só a Arini tem e que entram direto no painel.
+
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 7.1 | **CNPJ, CRECI-J, endereço da sede e foro** — Aparecem nos termos publicados. | Pendente | Carlos | — | — |
+| 7.2 | **E-mail do encarregado de dados e e-mail dos interessados** | Pendente | Carlos | — | — |
+| 7.3 | **E-mail definitivo da conta de administrador** — O atual é provisório. | Pendente | Carlos | — | — |
+| 7.4 | **Lista final de municípios do piloto** | Pendente | Carlos | — | — |
+| 7.5 | **Mensalidade do anúncio e dias de tolerância** | Pendente | Carlos | — | — |
+| 7.6 | **Equipe e setor de cada pessoa** — Para criar as contas da Matriz. | Pendente | Carlos | — | — |
+| 7.7 | **Contato do Miguel** — Para a revisão dos arquivos de planta. | Pendente | Carlos | — | Call |
+
+## 8. Dúvidas gerais e decisões
+
+Definições que destravam os itens bloqueados.
+
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 8.1 | **Prazo, custo e valor do escopo novo** — Por etapa, separando correção, melhoria, novidade e integração, com riscos e dependências. | Decisão | Stênio e Carlos | — | Call · Melhorias 22 |
+| 8.2 | **Custo por uso da inteligência artificial** — E quais dados podem ser enviados ao serviço de IA. | Decisão | Carlos | — | Segurança 18 |
+| 8.3 | **Conta do Asaas e quais cobranças passam por ele** | Decisão | Carlos | — | — |
+| 8.4 | **API ou metodologia da pré-avaliação e da aptidão** — E a validação jurídica do uso. | Decisão | Carlos | — | Call · Melhorias 18 |
+| 8.5 | **Regras da consulta profissional** — O que libera, para quem e o valor da assinatura. | Decisão | Carlos | — | Call · Melhorias 15 |
+| 8.6 | **Domínio** — arinimaps.com.br ou subdomínio. | Decisão | Carlos | — | — |
+| 8.7 | **MapBiomas por token ou por arquivo** | Decisão | Stênio e Carlos | — | — |
+| 8.8 | **Plano pago do banco de dados** — Cerca de US$ 25 por mês: backup automático e mais capacidade. | Decisão | Carlos | — | Call |
+| 8.9 | **Selfie e prazos de guarda** — Finalidade, base legal, retenção e descarte de selfies e documentos. | Decisão | Carlos | — | Melhorias 9 · Segurança 12 |
+| 8.10 | **Regras das franquias** — Território e o que cada franqueado enxerga. | Decisão | Carlos | — | Call · Melhorias 12 |
+| 8.11 | **Pacote de suporte pós-lançamento** — Horário comercial, para usuários e para o sistema, e quando passar a ter pessoas dedicadas. | Decisão | Stênio e Carlos | — | Call |
+| 8.12 | **Fontes que exigem autorização ou custo** — Matrícula em cartório e bases como SNCR e CNIR: vale contratar ou pedir acesso? | Decisão | Carlos | — | Call · APIs |
+| 8.13 | **Data de lançamento** — Quando o site deixa de pedir a senha de acesso. | Decisão | Stênio e Carlos | — | Call |
+
+## 9. Testes e revisão
+
+Validação antes de abrir ao público.
+
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 9.1 | **Envio de vídeo de ponta a ponta** — Com o serviço de processamento no ar. | Pendente | Stênio | 1.4 | — |
+| 9.2 | **Roteiro completo em homologação** — Cadastro, anúncio pelo CAR e pelo lote, documentos, aprovação, interessado, proposta, venda e comissão. | Pendente | Stênio | 1.5 | Melhorias 22 |
+| 9.3 | **Rodada de testes com o Carlos** — Acesso, visualização e rastreio de ajustes, com a conta dele. | Pendente | Stênio e Carlos | — | Call |
+| 9.4 | **Android e iPhone em 4G** | Pendente | Stênio | — | Melhorias 2 |
+| 9.5 | **Testes de segurança antes do lançamento** — Força bruta, permissões com todos os perfis, acesso direto a endereços e registros de outros usuários, envio de arquivos e segregação por território. | Parcial | Stênio | — | Segurança 21 e 22 |
+| 9.6 | **Teste de restauração do backup** | Bloqueado | Stênio | 1.6 | Segurança 22 |
+| 9.7 | **Testes automáticos antes de cada publicação** — Já existem; falta torná-los rotina. | Parcial | Stênio | — | — |
+
+## 10. Pós-lançamento e suporte
+
+O que garante o sistema funcionando depois da abertura.
+
+| # | Pendência | Situação | Quem | Depende de | Origem |
+|---|---|---|---|---|---|
+| 10.1 | **Suporte em horário comercial** — Para os usuários e para o sistema, conforme o pacote definido. | Bloqueado | Stênio | 8.11 | Call |
+| 10.2 | **Chat de suporte dentro do sistema** — Os chamados já existem; falta a conversa ao vivo com a equipe de suporte. | Parcial | Stênio | 8.11 | Call |
+| 10.3 | **Acompanhamento das primeiras semanas** — Correção rápida do que aparecer com os primeiros anunciantes. | Pendente | Stênio | 8.13 | Call |
+| 10.4 | **Treinamento da equipe da Matriz** — Análise de anúncios, documentos, funil e cartografia. | Pendente | Stênio e Carlos | — | — |
+| 10.5 | **Manual de funcionalidades e permissões** — A matriz de permissões e a arquitetura de segurança já estão documentadas. | Parcial | Stênio | — | Melhorias 22 · Segurança 22 |
+| 10.6 | **Integração com o CRM de atendimento** — O CRM vira um braço deste sistema, com as melhorias pendentes dele, depois desta fase. | Pendente | Stênio | — | Call |
 
 ## Já entregue (resumo)
 
-- **Mapa:** satélite como padrão, alternância satélite/mapa, marcadores regionais, CAR clicável ("Esta área é minha"), **25.910 lotes urbanos clicáveis** em Iturama (4.166 em Limeira, 1.169 em União) com metragens, planta do CAD como camada opcional, cores rural/urbano/leilão, tour 3D mais lento com pontos de referência.
-- **Anúncio:** pelo CAR, pelo lote ou desenhando; documentos obrigatórios conferidos pela Arini antes de publicar; vídeos; selfie na exclusividade; leilão com edital.
-- **Perfis:** proprietário, comprador, corretor, imobiliária, engenheiro, leiloeiro, franqueado, consulta e equipe; território por franquia.
-- **Matriz por setores:** Operações, Comercial, Financeiro (com exportação), Jurídico (com pedidos LGPD), Marketing, Cartografia, Suporte (chamados), Segurança e Diretoria; tarefas internas; trava de setor no servidor.
-- **Segurança:** segundo fator (TOTP), recuperação por link de uso único, limite de tentativas, registro de acessos, expiração da sessão da equipe, funções do banco fechadas, **senha de bloqueio do site**, tema claro/escuro seguindo o aparelho.
-- **Jurídico:** 6 termos versionados com aceite registrado (versão, data, hora, IP).
-- **Conta de admin geral do Carlos** criada (Diretoria).
+- **Mapa:** Satélite como padrão, marcadores regionais, imóveis rurais do CAR clicáveis (“esta área é minha”), 31 mil lotes urbanos clicáveis com metragens, cores para rural, urbano e leilão, tour 3D esperando o mapa e com pontos de referência.
+- **Anúncio:** Pelo CAR, pelo lote ou desenhando a área; documentos conferidos pela Arini antes de publicar; fotos e vídeos; selfie na exclusividade; leilão com edital.
+- **Perfis:** Proprietário, comprador, corretor, imobiliária, engenheiro, leiloeiro, franqueado, consulta e equipe interna, com território por franquia.
+- **Matriz:** Nove setores com acesso controlado: operações, comercial, financeiro, jurídico, marketing, cartografia, suporte, segurança e diretoria; tarefas internas e chamados.
+- **Segurança:** Senhas com hash, segundo fator, recuperação por link de uso único, limite de tentativas, regras de acesso no banco (RLS), registro de acessos e auditoria, sessões com expiração, senha de bloqueio do site.
+- **Jurídico:** Seis termos com aceite registrado: versão, data, hora e IP. Pedidos de titulares (LGPD) atendidos pela Matriz.

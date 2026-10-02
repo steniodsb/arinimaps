@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * Alterna entre o tema escuro (padrão) e o claro.
+ * Alterna entre o tema escuro e o claro.
  *
- * A escolha vira `data-tema` no <html> e fica no localStorage. Quem aplica o
+ * Sem escolha salva, vale o tema do aparelho (prefers-color-scheme) e o site
+ * acompanha se a pessoa mudar o aparelho com a página aberta. Clicar no botão
+ * grava a escolha no localStorage, e ela passa a valer por cima do aparelho.
+ * O tema vira `data-tema` no <html>. Quem aplica o
  * tema ANTES da pintura é o script de `TEMA_SCRIPT` (no <head>), senão a tela
  * piscaria escura antes de virar clara a cada navegação.
  */
@@ -20,8 +23,22 @@ export const CHAVE_TEMA = "arini:tema";
  */
 export const TEMA_SCRIPT = `
 try {
-  var t = localStorage.getItem("${CHAVE_TEMA}");
-  if (t === "claro") document.documentElement.setAttribute("data-tema", "claro");
+  var h = document.documentElement, t = null;
+  try { t = localStorage.getItem("${CHAVE_TEMA}"); } catch (e) {}
+  var mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)");
+  var aplica = function (claro) {
+    if (claro) h.setAttribute("data-tema", "claro"); else h.removeAttribute("data-tema");
+  };
+  if (t === "claro" || t === "escuro") aplica(t === "claro");
+  else if (mq) {
+    aplica(mq.matches);
+    var segue = function (e) {
+      var s = null;
+      try { s = localStorage.getItem("${CHAVE_TEMA}"); } catch (x) {}
+      if (s !== "claro" && s !== "escuro") aplica(e.matches);
+    };
+    if (mq.addEventListener) mq.addEventListener("change", segue); else if (mq.addListener) mq.addListener(segue);
+  }
 } catch (e) {}
 `;
 
@@ -52,17 +69,14 @@ export function useTema(): Tema {
 export default function BotaoTema({ compacto = false }: { compacto?: boolean }) {
   // começa no escuro no servidor e no primeiro render do cliente para não dar
   // divergência de hidratação; o efeito abaixo corrige com o valor real.
-  const [tema, setTema] = useState<Tema>("escuro");
+  // acompanha o <html>: o tema pode mudar sozinho quando segue o aparelho
+  const tema = useTema();
   const [montado, setMontado] = useState(false);
 
-  useEffect(() => {
-    setTema(lerTema());
-    setMontado(true);
-  }, []);
+  useEffect(() => { setMontado(true); }, []);
 
   function alternar() {
     const novo: Tema = tema === "claro" ? "escuro" : "claro";
-    setTema(novo);
     if (novo === "claro") document.documentElement.setAttribute("data-tema", "claro");
     else document.documentElement.removeAttribute("data-tema");
     try { localStorage.setItem(CHAVE_TEMA, novo); } catch { /* storage bloqueado: vale só nesta aba */ }
@@ -81,7 +95,7 @@ export default function BotaoTema({ compacto = false }: { compacto?: boolean }) 
         (compacto ? "w-9 h-9" : "w-9 h-9 sm:w-auto sm:h-9 sm:px-3 sm:gap-2 sm:flex sm:items-center")
       }
     >
-      {/* enquanto não montou, mostra o ícone do tema escuro — é o padrão */}
+      {/* enquanto não montou, mostra o ícone do tema escuro (o do servidor) */}
       <span aria-hidden className="text-base leading-none">
         {montado && tema === "claro" ? "☾" : "☀"}
       </span>

@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { lerConfiguracoes, numero } from "@/lib/settings";
 import { assinatura, ipDe } from "@/lib/juridico";
 import { ehParceiro } from "@/lib/perfis";
+import { registrarOrigemDado } from "@/lib/imovel/eventos";
 
 // Cria imóvel (multipart): dados + geometria GeoJSON + fotos.
 // Proprietário/parceiro precisa estar aprovado/ativo; Arini também pode cadastrar.
@@ -237,16 +238,36 @@ export async function POST(request: Request) {
     aceite_ip: equipe ? null : ipDe(request),
   });
 
-  // geometria (fonte: desenho | kml | kmz | ponto)
+  // geometria (fonte: desenho | kml | kmz | ponto | car | lote)
+  // §1.5 origem do dado: CAR e lote vêm do nosso banco (fonte oficial); o
+  // resto é geometria informada pelo usuário até a Matriz validar (§3).
+  const fonteGeometria: string = geometriaFinal.fonte ?? "desenho";
+  const origemGeometria = ["car", "lote"].includes(fonteGeometria) ? "fonte_oficial" : "geometria_usuario";
   const { error: geoError } = await admin.rpc("fn_upsert_geometry", {
     p_property_id: property.id,
     p_geojson: geometriaFinal.geometry ?? geometriaFinal,
-    p_fonte: geometriaFinal.fonte ?? "desenho",
+    p_fonte: fonteGeometria,
+    p_origem: origemGeometria,
+    p_motivo: "Cadastro do imóvel",
+    p_user_id: user.id,
   });
   if (geoError) {
     await admin.from("properties").delete().eq("id", property.id);
     return NextResponse.json({ error: `Geometria inválida: ${geoError.message}` }, { status: 400 });
   }
+  await Promise.all([
+    registrarOrigemDado({
+      propertyId: property.id, campo: "cadastro", userId: user.id,
+      origem: partner_id ? "corretor_franquia" : "proprietario",
+      detalhe: equipe ? "Cadastrado pela equipe da Arini em nome do anunciante" : "Cadastro informado pelo anunciante",
+    }),
+    registrarOrigemDado({
+      propertyId: property.id, campo: "geometria", userId: user.id, origem: origemGeometria,
+      detalhe: fonteGeometria === "car"
+        ? `Divisa trazida do CAR ${carCodigo ?? ""}`.trim()
+        : fonteGeometria === "lote" ? "Divisa do lote da base cartográfica" : `Divisa informada pelo anunciante (${fonteGeometria})`,
+    }),
+  ]);
 
   // município por contenção espacial do centroide; select manual do usuário prevalece
   if (dados.municipality_id) {

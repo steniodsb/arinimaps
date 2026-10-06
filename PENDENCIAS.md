@@ -1,13 +1,14 @@
-# ARINI MAPS — Roadmap de pendências (02/10/2026)
+# ARINI MAPS — Roadmap de pendências (06/10/2026)
 
-> Repositório: github.com/steniodsb/arinimaps · migrations até a 0027.
+> Repositório: github.com/steniodsb/arinimaps · migrations até a 0030.
+> Cobertura dos documentos de 05/10 (Fluxograma Mestre e Requisitos cartográficos): `docs/FLUXOGRAMA-COBERTURA.md` · planos por nicho: `docs/PLANOS.md`.
 > Site travado pela senha de bloqueio (`SITE_SENHA`) até o lançamento.
 > Acessos e senhas: `ACESSOS - NAO COMPARTILHAR.md`, fora do repositório.
 > PDF: `Arini Maps - Roadmap de pendencias.pdf` (gerado destes mesmos dados).
 >
 > **Situação:** Pendente · Parcial · Validar (ajustado, falta conferir com o Carlos) · Bloqueado (aguarda outro item) · Decisão.
 > 
-> **Origem:** Call = call de 01/10 · Melhorias N = documento de melhorias, item N · Segurança N = requisitos de segurança e LGPD, item N · APIs = levantamento de APIs.
+> **Origem:** Call = call de 01/10 · Melhorias N = documento de melhorias, item N · Segurança N = requisitos de segurança e LGPD, item N · APIs = levantamento de APIs · Fluxograma N = Fluxograma Mestre (05/10), seção N · Carto N = Requisitos cartográficos (05/10), seção N.
 
 ---
 
@@ -96,12 +97,18 @@ Recursos novos que ainda não estão no sistema.
 | 5.2 | **Base de conhecimento da IA** — Atualizável e auditável, com fonte e data, em vez de aprendizado sem controle. | Pendente | Stênio | 5.1 | Melhorias 17 |
 | 5.3 | **Pré-avaliação de valor** — Localização, área, topografia, aproveitamento e infraestrutura, sempre como estimativa e com encaminhamento a profissional. | Bloqueado | Stênio | 3.11 | Call · Melhorias 18 |
 | 5.4 | **Aptidão territorial** — Indicar se a área é mais propícia para lavoura ou gado de corte e qual a rentabilidade esperada, mostrando os fatores usados. | Bloqueado | Stênio | 8.4 | Call · Melhorias 18 |
-| 5.5 | **Consulta básica, profissional e assinatura** — O que cada uma mostra e a assinatura paga da consulta. | Bloqueado | Stênio | 8.5 | Call · Melhorias 15 |
+| 5.5 | **Consulta básica, profissional e assinatura** — Estrutura pronta: planos por nicho com recursos, cotas e trava no servidor; consulta de área limitada pela cota do plano. Faltam preço e cobrança. | Parcial | Stênio | 8.5 · 8.14 | Call · Melhorias 15 |
 | 5.6 | **Consulta nacional** — A consulta vale para o Brasil todo; a venda começa na região de Iturama. As fontes ao vivo já consultam qualquer área, falta abrir a consulta para fora da região. | Parcial | Stênio | — | Call |
 | 5.7 | **Acesso do franqueado** — Só consulta e gestão dos próprios imóveis; aprovação continua na Matriz. Perfil e território existem; falta conferir as telas dele. | Validar | Stênio e Carlos | 8.10 | Call · Melhorias 12 |
 | 5.8 | **Histórico de versões na pasta do imóvel** — O envio e a organização de documentos, fotos e vídeos já existem. | Parcial | Stênio | — | Melhorias 13 |
 | 5.9 | **Separação por organização** — Vários clientes no mesmo sistema; o território por franquia já existe. | Parcial | Stênio | 8.10 | Melhorias 1 |
 | 5.10 | **Preferências salvas na conta** — Tema e ajustes acompanham o usuário em qualquer aparelho. | Pendente | Stênio | — | — |
+| 5.11 | **Planos por nicho** — Conta tem nicho (persona do fluxograma) e plano; o plano libera ferramentas, camadas e consultas, com cota mensal. Diretoria edita em Planos e nichos e troca o plano de cada conta em Equipe e usuários; página pública /planos; tentativas bloqueadas registradas em Segurança. Preços em zero até a definição. | Validar | Stênio e Carlos | 8.14 · 8.15 | Fluxograma 3 e 20 · Melhorias 1, 10 e 15 |
+| 5.12 | **Solicitações cartográficas** — “Não encontrei meu imóvel” e “o mapa está divergente” pelo mapa, com protocolo, anexos, fila do setor de Cartografia, status e devolutiva; a geometria do usuário só vira oficial quando a Matriz aplica e valida. | Validar | Stênio e Carlos | — | Carto 2 e 3 |
+| 5.13 | **Histórico e rastreabilidade do imóvel** — Acessos e interações, versões da divisa com origem e responsável, origem de cada dado e trilha de auditoria na ficha (Matriz e anunciante); resumo público “Rastreabilidade”. | Validar | Stênio e Carlos | — | Carto 1 |
+| 5.14 | **Alteração de anúncio publicado** — Anunciante propõe mudanças (título, descrição, valor, área, condições); vira versão para a Matriz aprovar ou rejeitar; o anúncio atual continua no ar durante a análise. | Validar | Stênio e Carlos | — | Fluxograma 9 |
+| 5.15 | **Pedido de complemento** — Além de “corrigir”, a Matriz pede dados complementares; o anunciante vê a diferença no painel. | Validar | Stênio e Carlos | — | Fluxograma 7 |
+| 5.16 | **Cadastro de demanda sem imóvel** — Quando o cliente não gosta de nenhum imóvel, registrar a demanda para busca futura. Hoje só reencaminha a oportunidade. | Decisão | Carlos | — | Fluxograma 12 |
 
 ## 6. Segurança e LGPD
 
@@ -158,6 +165,8 @@ Definições que destravam os itens bloqueados.
 | 8.11 | **Pacote de suporte pós-lançamento** — Horário comercial, para usuários e para o sistema, e quando passar a ter pessoas dedicadas. | Decisão | Stênio e Carlos | — | Call |
 | 8.12 | **Fontes que exigem autorização ou custo** — Matrícula em cartório e bases como SNCR e CNIR: vale contratar ou pedir acesso? | Decisão | Carlos | — | Call · APIs |
 | 8.13 | **Data de lançamento** — Quando o site deixa de pedir a senha de acesso. | Decisão | Stênio e Carlos | — | Call |
+| 8.14 | **Preço e cobrança dos planos** — Valor de cada plano (consulta profissional, parceiro, organização, franquia), periodicidade, se a assinatura soma ou substitui a mensalidade por anúncio, e cota de degustação do gratuito (hoje 2 consultas de área por mês). | Decisão | Carlos | 8.3 | Fluxograma 3 · Melhorias 15 |
+| 8.15 | **Nichos da primeira versão** — Produtor rural, empresa/holding e prefeitura estão reservados no modelo (o fluxograma não define o fluxo deles). Entram agora, com qual plano, ou ficam para depois? Plano por pessoa ou por organização? | Decisão | Carlos | — | Fluxograma personas 5, 6 e 7 |
 
 ## 9. Testes e revisão
 
@@ -171,7 +180,7 @@ Validação antes de abrir ao público.
 | 9.4 | **Android e iPhone em 4G** | Pendente | Stênio | — | Melhorias 2 |
 | 9.5 | **Testes de segurança antes do lançamento** — Força bruta, permissões com todos os perfis, acesso direto a endereços e registros de outros usuários, envio de arquivos e segregação por território. | Parcial | Stênio | — | Segurança 21 e 22 |
 | 9.6 | **Teste de restauração do backup** | Bloqueado | Stênio | 1.6 | Segurança 22 |
-| 9.7 | **Testes automáticos antes de cada publicação** — Já existem; falta torná-los rotina. | Parcial | Stênio | — | — |
+| 9.7 | **Testes automáticos antes de cada publicação** — Já existem (`scripts/testa-*.mjs`, incluindo `testa-planos.mjs` de 06/10); falta torná-los rotina. | Parcial | Stênio | — | — |
 
 ## 10. Pós-lançamento e suporte
 
@@ -194,3 +203,4 @@ O que garante o sistema funcionando depois da abertura.
 - **Matriz:** Nove setores com acesso controlado: operações, comercial, financeiro, jurídico, marketing, cartografia, suporte, segurança e diretoria; tarefas internas e chamados.
 - **Segurança:** Senhas com hash, segundo fator, recuperação por link de uso único, limite de tentativas, regras de acesso no banco (RLS), registro de acessos e auditoria, sessões com expiração, senha de bloqueio do site.
 - **Jurídico:** Seis termos com aceite registrado: versão, data, hora e IP. Pedidos de titulares (LGPD) atendidos pela Matriz.
+- **06/10 — documentos de 05/10:** Planos por nicho (recursos, cotas, trava no servidor, tela da Diretoria, página pública), solicitações cartográficas com protocolo e fila da Matriz, histórico/versões/origem dos dados na ficha do imóvel, alteração de anúncio publicado como nova versão, pedido de complemento, tentativas de acesso bloqueadas registradas. Cobertura item a item em `docs/FLUXOGRAMA-COBERTURA.md`.

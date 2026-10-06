@@ -32,13 +32,16 @@ export async function currentUser() {
   if (!user) return null;
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, nome, setores")
+    .select("role, nome, setores, nicho, plan_id, plan_valido_ate")
     .eq("user_id", user.id)
     .single();
   return profile
     ? {
         id: user.id, email: user.email, role: profile.role as string, nome: profile.nome as string,
         setores: (profile.setores ?? []) as string[],
+        nicho: (profile.nicho ?? null) as string | null,
+        planId: (profile.plan_id ?? null) as string | null,
+        planValidoAte: (profile.plan_valido_ate ?? null) as string | null,
       }
     : null;
 }

@@ -11,9 +11,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup } from "maplibre-gl";
 import { STATUS_CORES, CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
-import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
+import { formatBRL, formatArea } from "@/lib/format";
 import { transformarGeoJSON, centroDe, TRANSFORM_ZERO, type Transform } from "@/lib/geo/deslocar";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 import Ferramentas from "@/components/map/Ferramentas";
@@ -111,6 +112,10 @@ function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
         className="btn-contorno block w-full text-center py-2.5 text-sm">
         Consultar informações
       </Link>
+      <Link href={`/cartografia/solicitar?referencia=${encodeURIComponent("car:" + car.cod)}&tipo=divergencia`}
+        className="block text-center text-xs text-texto-2 hover:text-verde transition">
+        ⚑ O mapa está divergente desta área
+      </Link>
       <p className="text-[11px] text-texto-2 leading-snug">
         A divisa vem pronta do CAR. Para publicar, a Arini confere a matrícula do imóvel — o CAR é
         autodeclarado e não comprova propriedade.
@@ -176,8 +181,16 @@ function mediaUrl(path: string) {
 const norm = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export default function MapaRegional() {
+export default function MapaRegional({
+  recursos, logado = false,
+}: {
+  /** recursos do plano de quem está olhando (planos por nicho); ausente = tudo liberado */
+  recursos?: string[];
+  logado?: boolean;
+} = {}) {
   const tema = useTema();
+  const router = useRouter();
+  const liberado = (r: string) => !recursos || recursos.includes(r);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const dadosRef = useRef<GeoJSON.FeatureCollection | null>(null);
@@ -917,6 +930,17 @@ export default function MapaRegional() {
             title="Desenho completo da planta da cidade, como veio do CAD: ruas, calçadas, textos e detalhes">
             Planta completa
           </button>
+          {/* requisitos cartográficos §2.1: "Não encontrei meu imóvel no mapa" / "O mapa está divergente" */}
+          <button
+            onClick={() => {
+              const c = mapRef.current?.getCenter();
+              const z = mapRef.current?.getZoom();
+              const qs = c ? `?lng=${c.lng.toFixed(6)}&lat=${c.lat.toFixed(6)}&zoom=${(z ?? 14).toFixed(1)}` : "";
+              router.push(`/cartografia/solicitar${qs}`);
+            }}
+            className={chipBase} title="Informar um imóvel ausente ou uma divergência do mapa à equipe de cartografia">
+            ⚑ Não encontrei meu imóvel
+          </button>
         </div>
 
         {carAtivo && carAviso && !carSel && (
@@ -933,11 +957,16 @@ export default function MapaRegional() {
           }} />
         )}
 
-        {camadasAbertas && <PainelCamadas onFechar={() => setCamadasAbertas(false)} />}
+        {camadasAbertas && (
+          <PainelCamadas onFechar={() => setCamadasAbertas(false)}
+            bloqueado={!liberado("camadas_oficiais")} logado={logado} />
+        )}
         <Legenda />
 
         <Ferramentas
           mapa={mapaPronto}
+          recursos={recursos}
+          logado={logado}
           onImportarKml={async (arquivo) => {
             const map = mapRef.current;
             if (!map) return;

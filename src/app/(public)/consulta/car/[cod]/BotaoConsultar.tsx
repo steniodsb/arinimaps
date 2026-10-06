@@ -1,19 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function BotaoConsultar({ cod, jaConsultou }: { cod: string; jaConsultou: boolean }) {
+/**
+ * Dispara o cruzamento da área com as fontes oficiais. Quem decide se pode é o
+ * servidor (plano + cota): aqui só mostramos o que ele responder, inclusive a
+ * `solucao` quando a consulta é negada (sem plano, cota esgotada).
+ */
+export default function BotaoConsultar({
+  cod, jaConsultou, planNome, cotaRestante,
+}: { cod: string; jaConsultou: boolean; planNome?: string | null; cotaRestante?: number | null }) {
   const router = useRouter();
   const [rodando, setRodando] = useState(false);
   const [msg, setMsg] = useState("");
+  const [solucao, setSolucao] = useState("");
+  const [negado, setNegado] = useState(false);
 
   async function consultar() {
-    setRodando(true); setMsg("");
+    setRodando(true); setMsg(""); setSolucao(""); setNegado(false);
     const r = await fetch(`/api/consulta/car/${encodeURIComponent(cod)}`, { method: "POST" }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};
     setRodando(false);
-    if (!r?.ok) { setMsg(data.error ?? "Não foi possível consultar agora."); return; }
+    if (!r?.ok) {
+      setMsg(data.error ?? "Não foi possível consultar agora.");
+      if (typeof data.solucao === "string") setSolucao(data.solucao);
+      if (data.codigo === "sem_plano" || data.codigo === "cota_esgotada") setNegado(true);
+      return;
+    }
     setMsg(
       data.falharam?.length
         ? `${data.falharam.length} fonte(s) não responderam e aparecem como indisponíveis.`
@@ -22,12 +37,25 @@ export default function BotaoConsultar({ cod, jaConsultou }: { cod: string; jaCo
     router.refresh();
   }
 
+  const semCota = cotaRestante != null && cotaRestante <= 0;
+
   return (
     <div className="text-right space-y-1">
-      <button onClick={consultar} disabled={rodando} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">
+      <button onClick={consultar} disabled={rodando || semCota} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">
         {rodando ? "Consultando os órgãos…" : jaConsultou ? "Atualizar consulta" : "Consultar fontes oficiais"}
       </button>
-      {msg && <p className="text-xs text-texto-2 max-w-64">{msg}</p>}
+      {cotaRestante != null && (
+        <p className={"text-xs " + (semCota ? "text-alerta" : "text-texto-2")}>
+          Consultas restantes no mês: {cotaRestante}{planNome ? ` · plano ${planNome}` : ""}
+          {semCota && <> · <Link href="/planos" className="text-verde underline">ver planos</Link></>}
+        </p>
+      )}
+      {msg && <p className={"text-xs max-w-64 " + (negado ? "text-alerta" : "text-texto-2")}>{msg}</p>}
+      {solucao && (
+        <p className="text-xs text-texto max-w-64">
+          {solucao}{negado && <> <Link href="/planos" className="text-verde underline">Ver planos</Link></>}
+        </p>
+      )}
     </div>
   );
 }

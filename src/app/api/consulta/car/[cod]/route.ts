@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { ADAPTADORES, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
+import { conferirRecurso, registrarTentativa, respostaNegacao } from "@/lib/planos-servidor";
 
 export const maxDuration = 120;
 
@@ -22,8 +23,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/consulta/ca
   const cod = decodeURIComponent((await ctx.params).cod);
   const user = await currentUser();
   if (!user) {
+    await registrarTentativa({ request, recurso: "consulta_area", motivo: "sem_sessao" });
     return NextResponse.json({ error: "Entre na sua conta para consultar as informações da área." }, { status: 401 });
   }
+
+  // planos por nicho: a consulta de área é recurso da consulta profissional e
+  // tem cota mensal por plano (a básica tem umas poucas, de degustação)
+  const { negacao } = await conferirRecurso(request, user, "consulta_area", { cota: "consultas_area_mes" });
+  if (negacao) return respostaNegacao(negacao);
 
   const limite = await limitar(`consulta:${user.id}`, 20, 3600);
   if (!limite.permitido) return respostaLimite(limite, "consulta");

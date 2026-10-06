@@ -1,6 +1,26 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataHoraBR } from "@/components/admin/Painel";
+import { PAPEL_LABEL } from "@/lib/perfis";
+import { recursoPorId } from "@/lib/planos";
+import { SETORES } from "@/lib/setores";
+
+const MOTIVO_TENTATIVA: Record<string, string> = {
+  sem_sessao: "Sem sessão", sem_plano: "Fora do plano", sem_setor: "Fora do setor", sem_equipe: "Não é da equipe",
+};
+/** Nome legível do recurso ou setor negado. */
+function recursoLabel(recurso: string) {
+  if (recurso.startsWith("setor:")) {
+    const id = recurso.slice(6);
+    return `Setor ${SETORES.find((s) => s.id === id)?.nome ?? id}`;
+  }
+  return recursoPorId(recurso)?.nome ?? recurso;
+}
+function motivoLabel(motivo: string | null) {
+  if (!motivo) return "—";
+  if (motivo.startsWith("cota:")) return `Cota esgotada (${motivo.slice(5)})`;
+  return MOTIVO_TENTATIVA[motivo] ?? motivo;
+}
 
 const EVENTO: Record<string, { rotulo: string; cor: string }> = {
   login_ok: { rotulo: "Entrou", cor: "text-verde" },
@@ -28,7 +48,7 @@ export default async function PainelSeguranca() {
   const ha24h = new Date(Date.now() - 86_400_000).toISOString();
   const ha7d = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
-  const [{ data: eventos }, falhas24, bloqueios24, entradas24, { data: equipe }, { data: usuarios }, { data: falhasIp }] = await Promise.all([
+  const [{ data: eventos }, falhas24, bloqueios24, entradas24, { data: equipe }, { data: usuarios }, { data: falhasIp }, { data: tentativas }] = await Promise.all([
     admin.from("auth_events").select("id, user_id, email, evento, ip, agente, created_at").order("created_at", { ascending: false }).limit(80),
     contar("auth_events", (q) => q.in("evento", ["login_falhou", "mfa_falhou"]).gte("created_at", ha24h)),
     contar("auth_events", (q) => q.eq("evento", "login_bloqueado").gte("created_at", ha24h)),
@@ -36,7 +56,16 @@ export default async function PainelSeguranca() {
     admin.from("profiles").select("user_id, nome, role, ativo, setores").in("role", ["admin_central", "analista_arini"]).order("nome"),
     admin.auth.admin.listUsers({ perPage: 500 }),
     admin.from("auth_events").select("ip").in("evento", ["login_falhou", "login_bloqueado"]).gte("created_at", ha7d).limit(2000),
+    admin.from("access_attempts").select("id, user_id, role, plan_id, recurso, rota, motivo, ip, created_at")
+      .order("created_at", { ascending: false }).limit(50),
   ]);
+
+  // nomes de quem tentou (fluxograma §20: bloqueia e registra), numa segunda consulta
+  const idsTentativa = [...new Set((tentativas ?? []).map((t) => t.user_id).filter((v): v is string => !!v))];
+  const { data: perfisTentativa } = idsTentativa.length
+    ? await admin.from("profiles").select("user_id, nome").in("user_id", idsTentativa)
+    : { data: [] as { user_id: string; nome: string | null }[] };
+  const nomePorId = new Map((perfisTentativa ?? []).map((p) => [p.user_id, p.nome ?? ""]));
 
   const authPorId = new Map((usuarios?.users ?? []).map((u) => [u.id, u]));
   const contas = (equipe ?? []).map((p) => {
@@ -130,6 +159,44 @@ export default async function PainelSeguranca() {
             </tbody>
           </table>
         </div>
+      </Secao>
+
+      <Secao titulo="Tentativas bloqueadas (planos e setores)">
+        <div className="cartao overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
+                <th className="px-4 py-3">Quando</th>
+                <th className="px-4 py-3">Usuário</th>
+                <th className="px-4 py-3">Papel</th>
+                <th className="px-4 py-3">Plano</th>
+                <th className="px-4 py-3">Recurso</th>
+                <th className="px-4 py-3">Motivo</th>
+                <th className="px-4 py-3">Rota</th>
+                <th className="px-4 py-3">Endereço</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-linha">
+              {(tentativas ?? []).map((t) => (
+                <tr key={t.id}>
+                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(t.created_at)}</td>
+                  <td className="px-4 py-2 text-xs">{t.user_id ? (nomePorId.get(t.user_id) || "conta sem nome") : <span className="text-texto-2">visitante</span>}</td>
+                  <td className="px-4 py-2 text-xs text-texto-2">{t.role ? PAPEL_LABEL[t.role] ?? t.role : "—"}</td>
+                  <td className="px-4 py-2 text-xs text-texto-2">{t.plan_id ?? "—"}</td>
+                  <td className="px-4 py-2 text-xs">{recursoLabel(t.recurso)}</td>
+                  <td className="px-4 py-2 text-xs text-alerta">{motivoLabel(t.motivo)}</td>
+                  <td className="px-4 py-2 font-mono text-[11px] text-texto-2 max-w-48 truncate" title={t.rota ?? ""}>{t.rota ?? "—"}</td>
+                  <td className="px-4 py-2 font-mono text-[11px] text-texto-2">{t.ip ?? "—"}</td>
+                </tr>
+              ))}
+              {!tentativas?.length && <tr><td colSpan={8} className="px-4 py-6 text-center text-texto-2">Nenhuma tentativa bloqueada registrada.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-texto-2">
+          Toda negação do servidor (recurso fora do plano, cota esgotada, setor sem acesso) é registrada aqui e não pode
+          ser apagada pela tela. Muitas tentativas de uma mesma conta podem indicar interesse num plano maior — ou abuso.
+        </p>
       </Secao>
 
       <TarefasDoSetor setor="seguranca" souEu={user.id} />

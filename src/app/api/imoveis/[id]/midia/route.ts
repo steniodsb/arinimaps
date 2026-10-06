@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, type Ator } from "@/lib/authz";
 import { limitar, respostaLimite } from "@/lib/seguranca/limite";
+import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
 /**
  * Vídeos do imóvel enviados pelo anunciante.
@@ -83,6 +84,7 @@ export async function PUT(request: Request, ctx: RouteContext<"/api/imoveis/[id]
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   await logAudit({ user_id: a.userId, acao: "video_anexado", entidade: "property_media", entidade_id: data.id, property_id: id });
+  void registrarEventoImovel({ propertyId: id, tipo: "midia", userId: a.userId, partnerId: a.partnerId, request, detalhe: { acao: "video_anexado", path } });
   return NextResponse.json({ ok: true, id: data.id });
 }
 
@@ -101,5 +103,6 @@ export async function DELETE(request: Request, ctx: RouteContext<"/api/imoveis/[
   await admin.from("property_media").delete().eq("id", m.id);
   await admin.storage.from("media").remove([m.storage_path]);
   await logAudit({ user_id: a.userId, acao: "video_removido", entidade: "property_media", entidade_id: m.id, property_id: id });
+  void registrarEventoImovel({ propertyId: id, tipo: "midia", userId: a.userId, partnerId: a.partnerId, request, detalhe: { acao: "video_removido", path: m.storage_path } });
   return NextResponse.json({ ok: true });
 }

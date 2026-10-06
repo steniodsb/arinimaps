@@ -92,6 +92,10 @@ export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () =>
           Este lote é meu — anunciar
         </Link>
       )}
+      <Link href={`/cartografia/solicitar?referencia=${encodeURIComponent("lote:" + lote.id)}&tipo=divergencia`}
+        className="block text-center text-xs text-texto-2 hover:text-verde transition">
+        ⚑ O mapa está divergente deste lote
+      </Link>
       <p className="text-[11px] text-texto-2 leading-snug">
         Medidas calculadas sobre a planta da cidade. São referência: não substituem a matrícula nem o
         levantamento do lote. Para publicar, a Arini confere a matrícula.

@@ -5,6 +5,7 @@
  * MapaRegional para o componente do mapa cuidar só de mapa.
  */
 
+import Link from "next/link";
 import { STATUS_CORES } from "@/lib/map/config";
 import { STATUS_LABEL } from "@/lib/format";
 
@@ -48,7 +49,9 @@ const ESTADO_ROTULO: Record<string, string> = {
   importar: "importar",
 };
 
-export function PainelCamadas({ onFechar }: { onFechar: () => void }) {
+export function PainelCamadas({
+  onFechar, bloqueado = false, logado = false,
+}: { onFechar: () => void; /** sem o recurso `camadas_oficiais` no plano */ bloqueado?: boolean; logado?: boolean }) {
   return (
     <div className="absolute top-16 left-3 w-72 cartao p-4 space-y-4 shadow-2xl z-10 max-h-[70%] overflow-y-auto anima-subir">
       <div className="flex items-center justify-between">
@@ -57,8 +60,20 @@ export function PainelCamadas({ onFechar }: { onFechar: () => void }) {
           className="text-texto-2 hover:text-texto transition">✕</button>
       </div>
 
+      {bloqueado && (
+        <div className="rounded-xl border border-ouro/40 bg-ouro/10 px-3 py-2.5 text-xs text-texto space-y-1">
+          <p className="font-semibold">🔒 Camadas oficiais na consulta profissional</p>
+          <p className="text-texto-2 leading-snug">
+            As divisas do CAR e os lotes urbanos continuam abertos. As demais fontes entram com o plano profissional.
+          </p>
+          <Link href={logado ? "/planos" : "/entrar"} className="text-verde font-medium">
+            {logado ? "Ver planos ›" : "Entrar ›"}
+          </Link>
+        </div>
+      )}
+
       {CAMADAS_GRUPOS.map((g) => (
-        <div key={g.grupo} className="space-y-1.5">
+        <div key={g.grupo} className={"space-y-1.5" + (bloqueado && g.grupo !== "Cartografia" ? " opacity-60" : "")}>
           <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-verde">{g.grupo}</p>
           {g.itens.map((i) => (
             <div key={i.id} className="flex items-center justify-between gap-2 text-xs py-1">

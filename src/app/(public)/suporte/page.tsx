@@ -11,11 +11,23 @@ export const metadata: Metadata = {
   description: "Fale com a equipe do Arini Maps: dúvidas, problemas, anúncios, cobrança e dados pessoais.",
 };
 
-export default async function Suporte() {
-  const user = await currentUser();
+export default async function Suporte({ searchParams }: PageProps<"/suporte">) {
+  const [user, sp] = await Promise.all([currentUser(), searchParams]);
+  const admin = supabaseAdmin();
+
+  // veio de /planos ("Falar com a Arini"): assunto já preenchido com o plano
+  let assuntoInicial = "";
+  const assuntoParam = typeof sp.assunto === "string" ? sp.assunto : "";
+  const planoPedido = /^plano:([a-z][a-z0-9_]{2,40})$/.exec(assuntoParam)?.[1];
+  if (planoPedido) {
+    const { data: plano } = await admin.from("plans").select("nome").eq("id", planoPedido).maybeSingle();
+    assuntoInicial = `Quero contratar o plano ${plano?.nome ?? planoPedido}`;
+  } else if (assuntoParam) {
+    assuntoInicial = assuntoParam.slice(0, 120);
+  }
+
   let chamados: Chamado[] = [];
   if (user) {
-    const admin = supabaseAdmin();
     const { data: tickets } = await admin.from("support_tickets")
       .select("id, codigo, assunto, status, created_at, updated_at")
       .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(30);
@@ -41,7 +53,7 @@ export default async function Suporte() {
           </p>
         </div>
 
-        <FormSuporte nome={user?.nome ?? ""} email={user?.email ?? ""} logado={!!user} />
+        <FormSuporte nome={user?.nome ?? ""} email={user?.email ?? ""} logado={!!user} assuntoInicial={assuntoInicial} />
 
         {user && <MeusChamados chamados={chamados} />}
       </main>

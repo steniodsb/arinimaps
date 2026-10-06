@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabaseServer, currentUser } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
 
 const STATUS_COR: Record<string, string> = {
@@ -21,13 +22,13 @@ export default async function MeusImoveis() {
   // RLS garante que só vêm os imóveis do usuário
   const { data: imoveis } = await supabase
     .from("properties")
-    .select("id, codigo, titulo, tipo, status, valor, motivo_correcao, created_at")
+    .select("id, codigo, titulo, tipo, status, valor, motivo_correcao, pendencia_tipo, created_at")
     .not("status", "in", '("publicado","em_negociacao","vendido","historico")')
     .order("created_at", { ascending: false });
 
   const { data: publicados } = await supabase
     .from("properties")
-    .select("id, codigo, titulo, tipo, status, valor, motivo_correcao, created_at")
+    .select("id, codigo, titulo, tipo, status, valor, motivo_correcao, pendencia_tipo, created_at")
     .in("status", ["publicado", "em_negociacao", "vendido"])
     .order("created_at", { ascending: false });
 
@@ -38,6 +39,13 @@ export default async function MeusImoveis() {
   const aguardando = statusCadastro && !["aprovado", "ativo"].includes(statusCadastro);
 
   const meus = [...(imoveis ?? []), ...(publicados ?? [])];
+
+  // Fluxograma §9: anúncios publicados com alteração aguardando a Matriz
+  const { data: revisoes } = meus.length
+    ? await supabaseAdmin().from("property_revisions").select("property_id")
+        .in("property_id", meus.map((p) => p.id)).eq("status", "pendente")
+    : { data: [] };
+  const comRevisao = new Set((revisoes ?? []).map((r) => r.property_id));
 
   return (
     <div className="space-y-6">
@@ -73,11 +81,14 @@ export default async function MeusImoveis() {
               </Link>
               <span className="text-sm text-texto-2">{formatBRL(p.valor)}</span>
               <span className={`text-xs rounded-full px-3 py-1 ${STATUS_COR[p.status] ?? "bg-superficie-2"}`}>
-                {STATUS_LABEL[p.status] ?? p.status}
+                {p.status === "correcao" && p.pendencia_tipo === "complemento" ? "Aguardando complemento" : STATUS_LABEL[p.status] ?? p.status}
               </span>
+              {comRevisao.has(p.id) && (
+                <span className="text-xs rounded-full px-2.5 py-0.5 bg-alerta/15 text-alerta">alteração em análise</span>
+              )}
               {p.motivo_correcao && (
                 <p className="w-full text-xs text-orange-800 bg-orange-50 rounded px-2 py-1">
-                  Correção solicitada: {p.motivo_correcao}
+                  {p.pendencia_tipo === "complemento" ? "Complemento solicitado" : "Correção solicitada"}: {p.motivo_correcao}
                 </p>
               )}
             </div>

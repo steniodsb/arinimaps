@@ -12,7 +12,7 @@ export default async function PainelOperacoes() {
   const admin = supabaseAdmin();
   const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
-  const [emAnalise, parceiros, proprietarios, publicadosMes, { data: fila }, { data: docs }] = await Promise.all([
+  const [emAnalise, parceiros, proprietarios, publicadosMes, { data: fila }, { data: docs }, { data: revisoes }] = await Promise.all([
     contar("properties", (q) => q.in("status", ["pendente", "em_analise", "correcao"])),
     contar("partners", (q) => q.in("status", ["solicitado", "em_analise"])),
     contar("owners", (q) => q.in("status", ["solicitado", "em_analise"])),
@@ -24,7 +24,13 @@ export default async function PainelOperacoes() {
     admin.from("property_documents")
       .select("id, tipo, nome_arquivo, created_at, property:properties(id, codigo, titulo, status)")
       .eq("verificado", false).order("created_at").limit(40),
+    // Fluxograma §9: alterações propostas em anúncios publicados
+    admin.from("property_revisions")
+      .select("id, versao, dados, created_at, property:properties(id, codigo, titulo)")
+      .eq("status", "pendente").order("created_at").limit(30),
   ]);
+  type Rev = { id: string; versao: number; dados: Record<string, unknown>; created_at: string; property: { id: string; codigo: string; titulo: string } | null };
+  const alteracoes = ((revisoes ?? []) as unknown as Rev[]).filter((r) => r.property);
 
   type Doc = { id: string; tipo: string; nome_arquivo: string | null; created_at: string; property: { id: string; codigo: string; titulo: string; status: string } | null };
   const pendentes = ((docs ?? []) as unknown as Doc[])
@@ -37,6 +43,8 @@ export default async function PainelOperacoes() {
       <Indicadores itens={[
         { rotulo: "Anúncios na fila de análise", valor: emAnalise, href: "/admin/imoveis?filtro=analise", destaque: emAnalise > 0 },
         { rotulo: "Documentos sem conferência", valor: pendentes.length, destaque: pendentes.length > 0 },
+        { rotulo: "Alterações propostas", valor: alteracoes.length, href: "/admin/imoveis?revisao=1", destaque: alteracoes.length > 0,
+          nota: "anúncios publicados com nova versão" },
         { rotulo: "Cadastros para aprovar", valor: parceiros + proprietarios, href: "/admin/cadastros", destaque: parceiros + proprietarios > 0,
           nota: `${parceiros} parceiro(s) · ${proprietarios} proprietário(s)` },
         { rotulo: "Publicados neste mês", valor: publicadosMes },
@@ -85,6 +93,31 @@ export default async function PainelOperacoes() {
             </Link>
           ))}
           {!pendentes.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhum documento esperando conferência.</p>}
+        </div>
+      </Secao>
+
+      <Secao titulo="Alterações propostas em anúncios publicados" acao={<Link href="/admin/imoveis?revisao=1" className="text-xs text-verde hover:underline">Ver fila</Link>}>
+        <p className="text-sm text-texto-2 -mt-1">
+          O anúncio atual continua no ar até a decisão; aprovar aplica a nova versão.
+        </p>
+        <div className="cartao divide-y divide-linha">
+          {alteracoes.map((r) => {
+            const espera = dias(r.created_at);
+            return (
+              <Link key={r.id} href={`/admin/imoveis/${r.property!.id}`}
+                className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm hover:bg-superficie-2 transition">
+                <span className="font-mono text-xs text-texto-2">{r.property!.codigo}</span>
+                <span className="flex-1 min-w-48 text-texto">
+                  {r.property!.titulo}
+                  <span className="text-texto-2 text-xs"> · versão {r.versao} · {Object.keys(r.dados ?? {}).join(", ")}</span>
+                </span>
+                <span className={"text-xs tabular-nums " + (espera >= 3 ? "text-alerta" : "text-texto-2")}>
+                  {espera === 0 ? "hoje" : `há ${espera} dia${espera === 1 ? "" : "s"}`}
+                </span>
+              </Link>
+            );
+          })}
+          {!alteracoes.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma alteração esperando decisão.</p>}
         </div>
       </Secao>
 

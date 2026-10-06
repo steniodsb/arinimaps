@@ -48,6 +48,7 @@ tela e `temSetor()` em cada rota.
 | Pedidos de titulares (LGPD), autorizações, contratos | Jurídico |
 | Origem de leads, materiais de divulgação | Marketing |
 | Plantas urbanas, calibração, CAR, municípios | Cartografia |
+| Solicitações cartográficas (triagem, vetorização, validação de geometria) | Cartografia |
 | Chamados de suporte | Suporte |
 | Eventos de acesso, auditoria | Segurança (auditoria também Diretoria) |
 | Configurações, equipe, território de franquia | Diretoria |
@@ -59,6 +60,7 @@ tela e `temSetor()` em cada rota.
 |---|---|---|---|---|---|
 | Ver mapa, anúncios e termos | sim | sim | sim | sim | sim |
 | Consultar informações de área do CAR | sim | sim | sim | sim | sim (com conta) |
+| Informar imóvel ausente/divergente no mapa | sim (com conta) | sim (com conta) | sim (com conta) | sim (com conta) | sim (com conta) |
 | Anunciar imóvel | sim, o próprio | sim, com conta aprovada | sim, em leilão | sim, com conta aprovada | não |
 | Documento obrigatório | matrícula | matrícula + autorização do proprietário | edital | matrícula + autorização | — |
 | Ver os próprios imóveis e documentos | sim | sim | sim | sim | — |

@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { sendEmail, emailDoProfile } from "@/lib/notify";
 import { buscarEVincularPois } from "@/lib/overpass";
 import { setoresDe } from "@/lib/setores";
+import { CAMPOS_REVISAO, CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 
 async function emailDoAnunciante(propertyId: string): Promise<string | null> {
   const admin = supabaseAdmin();
@@ -21,7 +22,9 @@ async function emailDoAnunciante(propertyId: string): Promise<string | null> {
   return null;
 }
 
-const ACOES_IMOVEL = ["em_analise", "aprovado", "correcao", "reprovado", "publicado", "suspenso"];
+// "complementar" (Fluxograma §7) é o mesmo status `correcao`, com pendência
+// de dados em vez de erro: o anunciante vê "Aguardando complemento".
+const ACOES_IMOVEL = ["em_analise", "aprovado", "correcao", "complementar", "reprovado", "publicado", "suspenso"];
 
 // Decisões da Arini sobre imóveis e cadastros (parceiro/proprietário).
 export async function POST(request: Request) {
@@ -71,11 +74,33 @@ export async function POST(request: Request) {
       }
     }
 
+    const statusNovo = acao === "complementar" ? "correcao" : acao;
     const { error } = await admin
       .from("properties")
-      .update({ status: acao, motivo_correcao: ["correcao", "reprovado"].includes(acao) ? motivo || null : null })
+      .update({
+        status: statusNovo,
+        motivo_correcao: ["correcao", "complementar", "reprovado"].includes(acao) ? motivo || null : null,
+        pendencia_tipo: acao === "correcao" ? "correcao" : acao === "complementar" ? "complemento" : null,
+      })
       .eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 }); // transição inválida cai aqui
+
+    // §3: aprovar é o ato da Matriz que valida a divisa — se a versão atual
+    // ainda está "informada pelo usuário", passa a validada. Nunca derruba a decisão.
+    if (acao === "aprovado") {
+      const { data: versaoAtual } = await admin.from("property_geometry_versions").select("id, situacao")
+        .eq("property_id", id).neq("situacao", "substituida").order("versao", { ascending: false }).limit(1).maybeSingle();
+      if (versaoAtual && versaoAtual.situacao !== "validada") {
+        const { data: vid, error: vErro } = await admin.rpc("fn_validar_geometria", {
+          p_property_id: id, p_user_id: user.id, p_motivo: "Validada na aprovação do anúncio",
+        });
+        if (vErro) console.error("fn_validar_geometria na aprovação falhou:", vErro.message);
+        else await logAudit({
+          user_id: user.id, acao: "geometria_validada", entidade: "property_geometry_versions",
+          entidade_id: (vid as string | null) ?? null, property_id: id, dados_depois: { motivo: "aprovação do anúncio" },
+        });
+      }
+    }
 
     if (acao === "publicado") {
       // mensalidade nasce junto com a publicação (idempotente)
@@ -102,6 +127,7 @@ export async function POST(request: Request) {
       aprovado: "Seu imóvel foi APROVADO pela Arini e será publicado em breve.",
       publicado: `Seu imóvel está PUBLICADO no mapa: ${process.env.NEXT_PUBLIC_SITE_URL}/imovel/${antes.codigo}`,
       correcao: `A Arini pediu correções no seu imóvel: ${motivo ?? "veja o painel"}. Acesse ${process.env.NEXT_PUBLIC_SITE_URL}/painel`,
+      complementar: `A Arini pediu informações complementares: ${motivo ?? "veja o painel"}. Acesse ${process.env.NEXT_PUBLIC_SITE_URL}/painel`,
       reprovado: `Seu imóvel não foi aprovado. Motivo: ${motivo ?? "entre em contato com a Arini"}.`,
     };
     if (mensagens[acao]) {
@@ -117,8 +143,66 @@ export async function POST(request: Request) {
       entidade_id: id,
       property_id: id,
       dados_antes: { status: antes.status },
-      dados_depois: { status: acao, motivo },
+      dados_depois: { status: statusNovo, pendencia_tipo: acao === "complementar" ? "complemento" : acao === "correcao" ? "correcao" : null, motivo },
     });
+    return NextResponse.json({ ok: true });
+  }
+
+  // ---------- alteração de anúncio publicado (Fluxograma §9) ----------
+  // O imóvel fica publicado o tempo todo; aprovar aplica os campos propostos.
+  if (alvo === "revisao") {
+    if (!["aprovar", "rejeitar"].includes(acao)) {
+      return NextResponse.json({ error: "Ação inválida." }, { status: 400 });
+    }
+    const { data: rev } = await admin.from("property_revisions")
+      .select("id, property_id, versao, status, dados, dados_anteriores, created_by")
+      .eq("id", id).maybeSingle();
+    if (!rev) return NextResponse.json({ error: "Alteração não encontrada." }, { status: 404 });
+    if (rev.status !== "pendente") return NextResponse.json({ error: "Esta alteração já foi decidida." }, { status: 409 });
+    const { data: prop } = await admin.from("properties").select("id, codigo, titulo").eq("id", rev.property_id).single();
+    if (!prop) return NextResponse.json({ error: "Imóvel não encontrado." }, { status: 404 });
+
+    const agora = new Date().toISOString();
+    const dados = (rev.dados ?? {}) as Record<string, unknown>;
+    if (acao === "aprovar") {
+      // só os campos permitidos entram em properties
+      const patch: Record<string, unknown> = {};
+      for (const c of CAMPOS_REVISAO) if (c in dados) patch[c] = dados[c];
+      if (!Object.keys(patch).length) return NextResponse.json({ error: "A proposta não tem campos aplicáveis." }, { status: 400 });
+      const { data: antesProp } = await admin.from("properties").select(CAMPOS_REVISAO.join(", ")).eq("id", prop.id).single();
+      const { error: upErro } = await admin.from("properties").update(patch).eq("id", prop.id);
+      if (upErro) return NextResponse.json({ error: upErro.message }, { status: 400 });
+      await admin.from("property_revisions")
+        .update({ status: "aprovada", revisada_por: user.id, revisada_em: agora })
+        .eq("id", rev.id);
+      await logAudit({
+        user_id: user.id, acao: "revisao_aprovada", entidade: "property_revisions", entidade_id: rev.id,
+        property_id: prop.id, dados_antes: antesProp ?? rev.dados_anteriores, dados_depois: { versao: rev.versao, ...patch },
+      });
+    } else {
+      await admin.from("property_revisions")
+        .update({ status: "rejeitada", motivo: motivo || null, revisada_por: user.id, revisada_em: agora })
+        .eq("id", rev.id);
+      await logAudit({
+        user_id: user.id, acao: "revisao_rejeitada", entidade: "property_revisions", entidade_id: rev.id,
+        property_id: prop.id, dados_antes: { versao: rev.versao, dados }, dados_depois: { motivo },
+      });
+    }
+    // a tarefa de Operações criada na proposta se encerra junto
+    await admin.from("tasks").update({ status: "concluida", concluida_em: agora })
+      .eq("property_id", prop.id).eq("setor", "operacoes").in("status", ["aberta", "andamento"])
+      .ilike("titulo", "Alteração proposta — %");
+
+    const resumo = Object.keys(dados)
+      .map((c) => `${CAMPO_REVISAO_LABEL[c as keyof typeof CAMPO_REVISAO_LABEL] ?? c}: ${valorRevisao(c, dados[c])}`)
+      .join("\n");
+    const texto = acao === "aprovar"
+      ? `Sua alteração foi aplicada ao anúncio ${prop.codigo} (${prop.titulo}).\n\n${resumo}\n\nVeja: ${process.env.NEXT_PUBLIC_SITE_URL}/imovel/${prop.codigo}`
+      : `A Arini não aplicou a alteração proposta no anúncio ${prop.codigo}. Motivo: ${motivo || "entre em contato com a Arini"}.\n\nO anúncio continua publicado como estava.`;
+    emailDoAnunciante(prop.id).then((to) =>
+      sendEmail(to, `Arini Maps — alteração do anúncio ${prop.codigo}`, texto)
+    ).catch(() => undefined);
+
     return NextResponse.json({ ok: true });
   }
 

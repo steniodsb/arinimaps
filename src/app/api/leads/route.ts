@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { assinatura } from "@/lib/juridico";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
+import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
 // Formulário público "Tenho interesse" → lead + oportunidade + auditoria + e-mail à Arini.
 export async function POST(request: Request) {
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
   if (!property) {
     return NextResponse.json({ error: "Imóvel não disponível." }, { status: 404 });
   }
+  // §1.1: demonstração de interesse (antes de criar o lead, para registrar a tentativa)
+  void registrarEventoImovel({ propertyId: property.id, tipo: "interesse", request, detalhe: { codigo: property.codigo } });
 
   const { data: lead, error: leadError } = await admin
     .from("leads")
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
     tipo: "contato",
     descricao: `Lead recebido pelo site para ${property.codigo} — ${property.titulo}`,
   });
+  void registrarEventoImovel({ propertyId: property.id, tipo: "lead", request, detalhe: { lead_id: lead.id, opportunity: opp.codigo } });
 
   await logAudit({
     acao: "lead_criado",

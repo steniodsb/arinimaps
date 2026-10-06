@@ -4,6 +4,7 @@ import { exigirEquipe } from "@/lib/setores-servidor";
 import { SETORES, setorPorId, type SetorId } from "@/lib/setores";
 import { formatBRL } from "@/lib/format";
 import { contar } from "@/components/admin/Painel";
+import { STATUS_ABERTOS } from "@/lib/cartografia/solicitacoes";
 
 type Fila = { rotulo: string; n: number | string; href: string; urgente?: boolean };
 
@@ -27,6 +28,7 @@ export default async function Matriz({ searchParams }: PageProps<"/admin">) {
     lgpdAbertos, autVencendo,
     publicados, leads30,
     chamadosAbertos, falhasLogin,
+    cartAbertas, cartRecebidas,
     minhasTarefas, tarefasPorSetor,
   ] = await Promise.all([
     contar("properties", (q) => q.in("status", ["pendente", "em_analise", "correcao"])),
@@ -46,6 +48,9 @@ export default async function Matriz({ searchParams }: PageProps<"/admin">) {
     contar("leads", (q) => q.gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString())),
     contar("support_tickets", (q) => q.in("status", ["aberto", "em_atendimento"])),
     contar("auth_events", (q) => q.in("evento", ["login_falhou", "login_bloqueado", "mfa_falhou"]).gte("created_at", ha24h)),
+    // requisitos cartográficos §2: fila de "não encontrei meu imóvel" / "mapa divergente"
+    contar("cartographic_requests", (q) => q.in("status", STATUS_ABERTOS)),
+    contar("cartographic_requests", (q) => q.eq("status", "recebida")),
     admin.from("tasks").select("id, titulo, setor, prazo, prioridade")
       .eq("responsavel", user.id).in("status", ["aberta", "andamento"])
       .order("prazo", { ascending: true, nullsFirst: false }).limit(8)
@@ -81,6 +86,7 @@ export default async function Matriz({ searchParams }: PageProps<"/admin">) {
       { rotulo: "interessados nos últimos 30 dias", n: leads30, href: "/admin/marketing" },
     ],
     cartografia: [
+      { rotulo: "solicitações cartográficas abertas", n: cartAbertas, href: "/admin/cartografia/solicitacoes", urgente: cartRecebidas > 0 },
       { rotulo: "plantas e malha do CAR", n: "→", href: "/admin/cartografia" },
     ],
     suporte: [

@@ -6,20 +6,27 @@
  * mediria em campo, não com pixels de tela.
  */
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Map as MLMap, MapMouseEvent, GeoJSONSource } from "maplibre-gl";
+import type { RecursoId } from "@/lib/planos";
 
 type Modo = null | "area" | "distancia";
 
 export default function Ferramentas({
-  mapa, onImportarKml, onCapturar,
+  mapa, onImportarKml, onCapturar, recursos, logado = false,
 }: {
   mapa: MLMap | null;
   onImportarKml: (arquivo: File) => void;
   onCapturar: () => void;
+  /** recursos do plano de quem está olhando (planos por nicho); ausente = tudo liberado */
+  recursos?: string[];
+  logado?: boolean;
 }) {
   const [modo, setModo] = useState<Modo>(null);
   const [resultado, setResultado] = useState<string>("");
+  const [bloqueio, setBloqueio] = useState<string>("");
+  const liberado = (r: RecursoId) => !recursos || recursos.includes(r);
   const pontosRef = useRef<[number, number][]>([]);
   const modoRef = useRef<Modo>(null);
   modoRef.current = modo;
@@ -134,16 +141,32 @@ export default function Ferramentas({
     if (mapa) mapa.getCanvas().style.cursor = "";
   };
 
+  // cada ferramenta pertence a um recurso do plano (src/lib/planos.ts); a trava
+  // de verdade é no servidor — aqui o botão só avisa e aponta para os planos
   const FERRAMENTAS = [
-    { id: "area", icone: "△", rotulo: "Medir Área", acao: () => iniciar("area") },
-    { id: "distancia", icone: "↔", rotulo: "Medir Distância", acao: () => iniciar("distancia") },
-    { id: "kml", icone: "⬆", rotulo: "Importar KML", acao: null },
-    { id: "imprimir", icone: "⎙", rotulo: "Imprimir", acao: () => window.print() },
-    { id: "captura", icone: "◉", rotulo: "Capturar Imagem", acao: onCapturar },
+    { id: "area", icone: "△", rotulo: "Medir Área", recurso: "ferramenta_medir", acao: () => iniciar("area") },
+    { id: "distancia", icone: "↔", rotulo: "Medir Distância", recurso: "ferramenta_medir", acao: () => iniciar("distancia") },
+    { id: "kml", icone: "⬆", rotulo: "Importar KML", recurso: "ferramenta_kml", acao: null },
+    { id: "imprimir", icone: "⎙", rotulo: "Imprimir", recurso: "ferramenta_exportar", acao: () => window.print() },
+    { id: "captura", icone: "◉", rotulo: "Capturar Imagem", recurso: "ferramenta_exportar", acao: onCapturar },
   ] as const;
+
+  const avisarBloqueio = (rotulo: string) =>
+    setBloqueio(logado
+      ? `“${rotulo}” faz parte da consulta profissional e não está no seu plano.`
+      : `Entre na sua conta para usar “${rotulo}”.`);
 
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-[min(92%,680px)]">
+      {bloqueio && (
+        <div className="cartao px-4 py-2.5 mb-2 flex items-center gap-3 text-sm shadow-xl anima-subir">
+          <span className="text-texto-2 flex-1">{bloqueio}</span>
+          <Link href={logado ? "/planos" : "/entrar"} className="text-verde font-medium whitespace-nowrap">
+            {logado ? "Ver planos ›" : "Entrar ›"}
+          </Link>
+          <button onClick={() => setBloqueio("")} aria-label="Fechar" className="text-texto-2 hover:text-texto">✕</button>
+        </div>
+      )}
       {(modo || resultado) && (
         <div className="cartao px-4 py-2.5 mb-2 flex items-center gap-3 text-sm shadow-xl anima-subir">
           <span className="text-texto-2">
@@ -161,9 +184,20 @@ export default function Ferramentas({
         <div className="flex items-center justify-between gap-1 overflow-x-auto">
           {FERRAMENTAS.map((f) => {
             const ativo = modo === f.id;
+            const pode = liberado(f.recurso);
             const classe =
               "flex flex-col items-center gap-1 rounded-xl px-3 py-2 min-w-[74px] text-[11px] transition " +
-              (ativo ? "bg-verde/15 text-verde" : "text-texto-2 hover:text-texto hover:bg-superficie-2");
+              (ativo ? "bg-verde/15 text-verde" : "text-texto-2 hover:text-texto hover:bg-superficie-2") +
+              (pode ? "" : " opacity-60");
+            if (!pode) {
+              return (
+                <button key={f.id} onClick={() => avisarBloqueio(f.rotulo)} className={classe}
+                  title="Disponível na consulta profissional">
+                  <span className="text-base leading-none">🔒</span>
+                  {f.rotulo}
+                </button>
+              );
+            }
             if (f.id === "kml") {
               return (
                 <label key={f.id} className={classe + " cursor-pointer"}>

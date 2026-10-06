@@ -74,6 +74,7 @@ export const SETORES: Setor[] = [
     descricao: "Plantas urbanas, malha do CAR, municípios e fontes oficiais.",
     itens: [
       { href: "/admin/cartografia", rotulo: "Cartografia", icone: "🗺" },
+      { href: "/admin/cartografia/solicitacoes", rotulo: "Solicitações cartográficas", icone: "⚑" },
       { href: "/admin/regioes", rotulo: "Regiões e CAR", icone: "⊕" },
     ],
   },
@@ -98,6 +99,7 @@ export const SETORES: Setor[] = [
     itens: [
       { href: "/admin/relatorios", rotulo: "Relatórios", icone: "▤" },
       { href: "/admin/usuarios", rotulo: "Equipe e usuários", icone: "☺" },
+      { href: "/admin/planos", rotulo: "Planos e nichos", icone: "◧" },
       { href: "/admin/configuracoes", rotulo: "Configurações", icone: "⚙" },
     ],
   },

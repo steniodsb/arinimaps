@@ -6,6 +6,7 @@ import MiniMapa from "@/components/map/MiniMapa";
 import FontesLista, { type FonteConsultada } from "@/components/rural/FontesLista";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
+import { acessoAtual, consultasAreaNoMes } from "@/lib/planos-servidor";
 import { formatArea } from "@/lib/format";
 import BotaoConsultar from "./BotaoConsultar";
 
@@ -31,17 +32,25 @@ type Car = {
 export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[cod]">) {
   const cod = decodeURIComponent((await params).cod);
   const admin = supabaseAdmin();
-  const [{ data: carRaw }, { data: fontes }, { data: consultas }, { data: anuncio }, user] = await Promise.all([
+  const [{ data: carRaw }, { data: fontes }, { data: consultas }, { data: anuncio }, user, { userId, acesso }] = await Promise.all([
     admin.rpc("fn_car_imovel", { p_cod: cod }),
     admin.from("fontes_externas").select("id, nome, orgao, prioridade, ativa, tipo").order("prioridade"),
     admin.from("consultas_area").select("fonte_id, quantidade, raio_m, erro, consultado_em, resultado").eq("chave", `car:${cod}`),
     admin.from("properties").select("codigo, titulo, status").eq("car_codigo", cod)
       .in("status", ["publicado", "em_negociacao"]).limit(1).maybeSingle(),
     currentUser(),
+    acessoAtual(),
   ]);
   const car = carRaw as Car | null;
   if (!car?.geometry) notFound();
   const p = car.properties;
+
+  // planos por nicho: a consulta de área é da consulta profissional, com cota mensal
+  const podeConsultar = acesso.recursos.has("consulta_area");
+  const limiteMes = acesso.cotas.consultas_area_mes;
+  const cotaRestante = podeConsultar && userId && limiteMes != null && !acesso.equipe
+    ? Math.max(0, Number(limiteMes) - (await consultasAreaNoMes(userId)))
+    : null;
 
   const porFonte = new Map((consultas ?? []).map((c) => [c.fonte_id, c]));
   // as fontes que consultam ao vivo, menos o próprio CAR (que já é o assunto da página)
@@ -113,18 +122,30 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
                 queimadas, unidades de conservação, água e energia. Cada resultado mostra o órgão e a data.
               </p>
             </div>
-            {user
-              ? <BotaoConsultar cod={p.cod} jaConsultou={jaConsultou} />
-              : <Link href="/entrar" className="btn-verde px-5 py-2.5 text-sm">Entrar para consultar</Link>}
+            {!user ? (
+              <Link href="/entrar" className="btn-verde px-5 py-2.5 text-sm">Entre para consultar</Link>
+            ) : !podeConsultar ? (
+              <div className="text-right text-sm space-y-1 max-w-72">
+                <p className="text-texto">A consulta de área faz parte da consulta profissional.</p>
+                <p className="text-xs text-texto-2">
+                  Seu plano{acesso.planNome ? ` (${acesso.planNome})` : ""} não inclui o cruzamento com as fontes oficiais.
+                </p>
+                <Link href="/planos" className="btn-ouro inline-block px-5 py-2.5 text-sm">Ver planos</Link>
+              </div>
+            ) : (
+              <BotaoConsultar cod={p.cod} jaConsultou={jaConsultou} planNome={acesso.planNome} cotaRestante={cotaRestante} />
+            )}
           </div>
 
           {jaConsultou
             ? <FontesLista fontes={lista} alvo="a área" />
             : (
               <p className="cartao p-5 text-sm text-texto-2">
-                {user
-                  ? "Nenhuma consulta feita ainda para esta área. Clique em “Consultar fontes oficiais” — leva de 10 a 40 segundos."
-                  : "Crie uma conta ou entre para consultar as fontes oficiais sobre esta área."}
+                {!user
+                  ? "Crie uma conta ou entre para consultar as fontes oficiais sobre esta área."
+                  : !podeConsultar
+                  ? "Nenhuma consulta feita ainda para esta área. O cruzamento com as fontes oficiais está disponível nos planos profissionais."
+                  : "Nenhuma consulta feita ainda para esta área. Clique em “Consultar fontes oficiais” — leva de 10 a 40 segundos."}
               </p>
             )}
 

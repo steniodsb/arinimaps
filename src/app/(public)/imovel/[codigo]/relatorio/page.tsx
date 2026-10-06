@@ -4,6 +4,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea } from "@/lib/format";
 import { lerConfiguracoes, texto } from "@/lib/settings";
 import BotoesRelatorio from "./BotoesRelatorio";
+import { currentUser } from "@/lib/supabase/server";
+import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
 export const metadata: Metadata = { title: "Relatório Territorial" };
 
@@ -33,12 +35,15 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
     .maybeSingle();
   if (!imovel) notFound();
 
-  const [{ data: geo }, { data: relatorio }, { data: tour }, cfg] = await Promise.all([
+  const [{ data: geo }, { data: relatorio }, { data: tour }, cfg, user] = await Promise.all([
     admin.from("property_geometries").select("area_m2, perimeter_m, fonte").eq("property_id", imovel.id).maybeSingle(),
     admin.rpc("fn_consulta_rural", { p_property_id: imovel.id }),
     admin.rpc("fn_property_tour", { p_codigo: codigo }),
     lerConfiguracoes(),
+    currentUser(),
   ]);
+  // §1.1: relatório territorial aberto vira evento do imóvel
+  void registrarEventoImovel({ propertyId: imovel.id, tipo: "relatorio", userId: user?.id, detalhe: { codigo } });
 
   const municipio = imovel.municipality as unknown as { nome: string; uf: string } | null;
   const fontes = ((relatorio as { fontes?: Fonte[] } | null)?.fontes ?? []);

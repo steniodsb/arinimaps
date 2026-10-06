@@ -21,6 +21,7 @@ const MENU = [
   { href: "/mapa", rotulo: "Mapa Interativo", icone: "🗺" },
   { href: "/imoveis", rotulo: "Buscar Imóveis", icone: "⌕" },
   { href: "/relatorios", rotulo: "Relatórios", icone: "▤" },
+  { href: "/planos", rotulo: "Planos", icone: "◧" },
   { href: "/painel", rotulo: "Meu Painel", icone: "◫" },
 ];
 

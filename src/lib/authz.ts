@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { setoresDe, type SetorId } from "@/lib/setores";
+import { montarAcesso, type Acesso, type Plano, type RecursoId } from "@/lib/planos";
 
 export type Ator = {
   userId: string;
@@ -11,7 +12,16 @@ export type Ator = {
   ownerId: string | null;
   /** setores da Matriz em que o membro da equipe atua (diretoria: todos) */
   setores: SetorId[];
+  /** nicho comercial da conta (planos por nicho, 05/10/2026) */
+  nicho: string | null;
+  /** plano + recursos já resolvidos; a equipe tem tudo pelo papel */
+  acesso: Acesso;
 };
+
+/** O ator tem este recurso no plano (ou é da equipe)? */
+export function temRecurso(a: Ator | null | undefined, recurso: RecursoId) {
+  return !!a?.acesso.recursos.has(recurso);
+}
 
 /** O ator é da equipe e atua neste setor? Diretoria atua em todos. */
 export function temSetor(a: Ator | null | undefined, ...setores: SetorId[]) {
@@ -24,11 +34,13 @@ export async function ator(): Promise<Ator | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const admin = supabaseAdmin();
-  const { data: profile } = await admin.from("profiles").select("role, setores, ativo").eq("user_id", user.id).single();
+  const { data: profile } = await admin.from("profiles")
+    .select("role, setores, ativo, nicho, plan_id, plan_valido_ate").eq("user_id", user.id).single();
   if (!profile || profile.ativo === false) return null;
-  const [{ data: partner }, { data: owner }] = await Promise.all([
+  const [{ data: partner }, { data: owner }, { data: plano }] = await Promise.all([
     admin.from("partners").select("id").eq("profile_id", user.id).maybeSingle(),
     admin.from("owners").select("id").eq("profile_id", user.id).maybeSingle(),
+    profile.plan_id ? admin.from("plans").select("*").eq("id", profile.plan_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   return {
     userId: user.id,
@@ -39,6 +51,8 @@ export async function ator(): Promise<Ator | null> {
       : [],
     partnerId: partner?.id ?? null,
     ownerId: owner?.id ?? null,
+    nicho: (profile.nicho as string | null) ?? null,
+    acesso: montarAcesso(profile.role, (plano as Plano | null) ?? null, profile.nicho as string | null, profile.plan_valido_ate as string | null),
   };
 }
 

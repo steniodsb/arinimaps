@@ -4,6 +4,7 @@ import { logAudit } from "@/lib/audit";
 import { ator, temSetor } from "@/lib/authz";
 import { ADAPTADORES, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
 import { buscarEVincularPois } from "@/lib/overpass";
+import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
 export const maxDuration = 120;
 
@@ -48,6 +49,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/imoveis/[id
   // POIs e acessos reaproveitam o motor que já alimenta a página do imóvel
   const pois = await buscarEVincularPois(id).catch(() => 0);
 
+  void registrarEventoImovel({ propertyId: id, tipo: "consulta", userId: a.userId, request, detalhe: { raio_m } });
   await logAudit({
     user_id: a.userId, acao: "consulta_rural_executada",
     entidade: "consultas_rurais", property_id: id,

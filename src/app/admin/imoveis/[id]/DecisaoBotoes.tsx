@@ -8,6 +8,8 @@ const ACOES: { acao: string; label: string; classe: string; pedirMotivo?: boolea
   { acao: "aprovado", label: "Aprovar", classe: "bg-verde text-fundo hover:bg-verde/80" },
   { acao: "publicado", label: "Publicar no mapa", classe: "bg-verde text-white hover:bg-verde-escuro" },
   { acao: "correcao", label: "Pedir correção", classe: "bg-alerta text-white hover:bg-alerta/80", pedirMotivo: true },
+  // Fluxograma §7: faltam dados (não há erro) — o anunciante vê "Aguardando complemento"
+  { acao: "complementar", label: "Pedir complemento", classe: "bg-ouro text-texto hover:bg-ouro/80", pedirMotivo: true },
   { acao: "reprovado", label: "Reprovar", classe: "bg-critico text-fundo hover:bg-critico/80", pedirMotivo: true },
   { acao: "suspenso", label: "Suspender", classe: "bg-superficie-2 text-texto border border-linha hover:bg-linha" },
 ];
@@ -20,7 +22,7 @@ export default function DecisaoBotoes({ propertyId }: { propertyId: string }) {
   async function decidir(acao: string, pedirMotivo?: boolean) {
     let motivo: string | null = null;
     if (pedirMotivo) {
-      motivo = prompt("Motivo (o anunciante vai ver):");
+      motivo = prompt(acao === "complementar" ? "O que falta informar? (o anunciante vai ver):" : "Motivo (o anunciante vai ver):");
       if (motivo === null) return;
     }
     setOcupado(true);

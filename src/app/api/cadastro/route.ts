@@ -6,6 +6,7 @@ import { assinatura, ipDe } from "@/lib/juridico";
 import { validarSenha } from "@/lib/seguranca/senha";
 import { PAPEIS_CADASTRO, ehParceiro as papelEhParceiro } from "@/lib/perfis";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
+import { nichoPorId } from "@/lib/planos";
 
 const ROLES_PERMITIDOS: readonly string[] = PAPEIS_CADASTRO;
 
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   if (!limite.permitido) return respostaLimite(limite, "cadastro");
 
   const body = await request.json().catch(() => null);
-  const { email, senha, nome, telefone, role, cpf, razao_social, registro_profissional, aceite_termos } = body ?? {};
+  const { email, senha, nome, telefone, role, nicho, cpf, razao_social, registro_profissional, aceite_termos } = body ?? {};
 
   if (!email?.trim() || !senha || !nome?.trim()) {
     return NextResponse.json({ error: "Preencha nome, e-mail e senha." }, { status: 400 });
@@ -29,6 +30,15 @@ export async function POST(request: Request) {
   if (erroSenha) return NextResponse.json({ error: erroSenha }, { status: 400 });
   if (!ROLES_PERMITIDOS.includes(role)) {
     return NextResponse.json({ error: "Perfil inválido." }, { status: 400 });
+  }
+  // nicho (perfil de uso) é opcional: ausente, o gatilho do banco põe o padrão do papel
+  let nichoEscolhido: string | null = null;
+  if (nicho) {
+    const n = nichoPorId(String(nicho));
+    if (!n || !n.escolhivel || !n.papeis.includes(role)) {
+      return NextResponse.json({ error: "Perfil de uso inválido para este tipo de conta." }, { status: 400 });
+    }
+    nichoEscolhido = n.id;
   }
 
   if (aceite_termos !== true) {
@@ -83,6 +93,7 @@ export async function POST(request: Request) {
     aceite_termos_at: agora,
     aceite_termos_versao: versao,
     aceite_termos_ip: ip,
+    ...(nichoEscolhido ? { nicho: nichoEscolhido } : {}),
   }).eq("user_id", userId);
   if (perfilErro) {
     // corrida no índice único: desfaz o usuário para não deixar conta órfã
@@ -111,7 +122,7 @@ export async function POST(request: Request) {
     acao: "cadastro_criado",
     entidade: "profiles",
     entidade_id: userId,
-    dados_depois: { role, email, documento: doc.tipo, aceite: versao, ip },
+    dados_depois: { role, nicho: nichoEscolhido, email, documento: doc.tipo, aceite: versao, ip },
   });
 
   return NextResponse.json({ ok: true });

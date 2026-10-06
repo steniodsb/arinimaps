@@ -3,7 +3,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import MiniMapa from "@/components/map/MiniMapa";
 import DecisaoBotoes from "./DecisaoBotoes";
+import RevisaoBotoes from "./RevisaoBotoes";
 import DocumentosImovel from "@/components/crm/DocumentosImovel";
+import HistoricoImovel from "@/components/crm/HistoricoImovel";
+import { CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 import ConsultaRural from "@/components/rural/ConsultaRural";
 import { exigirSetor } from "@/lib/setores-servidor";
 
@@ -20,7 +23,8 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     .from("properties")
     .select(`
       id, codigo, titulo, descricao, tipo, status, valor, area_declarada,
-      caracteristicas, condicoes_venda, exclusividade, motivo_correcao, created_at, car_codigo, modalidade, leilao,
+      caracteristicas, condicoes_venda, aceita_permuta, aceita_financiamento, exclusividade, motivo_correcao,
+      pendencia_tipo, created_at, car_codigo, modalidade, leilao,
       municipality:municipalities(nome, uf),
       owner:owners(id, profile:profiles(nome, telefone)),
       partner:partners(id, razao_social, tipo, profile:profiles(nome, telefone))
@@ -29,7 +33,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
     .single();
   if (!p) notFound();
 
-  const [{ data: geo }, { data: media }, { data: geoJson }, { data: autorizacao }, { data: documentos }] = await Promise.all([
+  const [{ data: geo }, { data: media }, { data: geoJson }, { data: autorizacao }, { data: documentos }, { data: revisao }] = await Promise.all([
     admin.from("property_geometries").select("area_m2, perimeter_m, fonte").eq("property_id", id).maybeSingle(),
     admin.from("property_media").select("tipo, storage_path").eq("property_id", id).order("ordem"),
     admin.rpc("fn_property_admin_geometry", { p_property_id: id }).then(
@@ -43,7 +47,14 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       .limit(1)
       .maybeSingle(),
     admin.from("property_documents").select("tipo, verificado").eq("property_id", id),
+    // Fluxograma §9: alteração proposta pelo anunciante, aguardando decisão
+    admin.from("property_revisions").select("id, versao, dados, dados_anteriores, created_at, created_by")
+      .eq("property_id", id).eq("status", "pendente").maybeSingle(),
   ]);
+  const camposRevisao = revisao ? Object.keys((revisao.dados ?? {}) as Record<string, unknown>) : [];
+  const { data: autorRevisao } = revisao?.created_by
+    ? await admin.from("profiles").select("nome").eq("user_id", revisao.created_by).maybeSingle()
+    : { data: null };
   const docs = documentos ?? [];
   // leilão é conferido pelo edital; venda comum, pela matrícula
   const ehLeilao = p.modalidade === "leilao";
@@ -84,9 +95,41 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
         <h1 className="text-2xl font-semibold text-texto">{p.titulo}</h1>
         <p className="text-sm text-texto-2">
           {municipio ? `${municipio.nome} · ${municipio.uf}` : "Sem município"} · {p.tipo} ·{" "}
-          <strong>{STATUS_LABEL[p.status]}</strong>
+          <strong>{p.status === "correcao" && p.pendencia_tipo === "complemento" ? "Aguardando complemento" : STATUS_LABEL[p.status]}</strong>
         </p>
       </div>
+
+      {revisao && (
+        <section className="cartao p-5 space-y-3 border-ouro/50">
+          <div>
+            <h2 className="font-semibold text-texto">Alteração proposta pela versão {revisao.versao}</h2>
+            <p className="text-sm text-texto-2">
+              Enviada em {new Date(revisao.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+              {autorRevisao?.nome ? ` por ${autorRevisao.nome}` : ""}. O anúncio publicado continua no ar como está;
+              aprovar substitui os campos abaixo.
+            </p>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
+                <th className="py-2 pr-3 font-medium">Campo</th>
+                <th className="py-2 pr-3 font-medium">Atual</th>
+                <th className="py-2 font-medium">Proposto</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-linha">
+              {camposRevisao.map((c) => (
+                <tr key={c} className="align-top">
+                  <td className="py-2 pr-3 text-texto">{CAMPO_REVISAO_LABEL[c as keyof typeof CAMPO_REVISAO_LABEL] ?? c}</td>
+                  <td className="py-2 pr-3 text-texto-2 whitespace-pre-line">{valorRevisao(c, (p as unknown as Record<string, unknown>)[c])}</td>
+                  <td className="py-2 text-texto whitespace-pre-line">{valorRevisao(c, (revisao.dados as Record<string, unknown>)[c])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <RevisaoBotoes revisaoId={revisao.id} />
+        </section>
+      )}
 
       <section className="cartao p-5 space-y-2">
         <h2 className="font-semibold text-texto">Checklist de análise</h2>
@@ -194,6 +237,9 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
           <ConsultaRural propertyId={p.id} />
         </section>
       )}
+
+      {/* §1: histórico, versões da divisa, origem dos dados e auditoria */}
+      <HistoricoImovel propertyId={p.id} modo="admin" tipoImovel={p.tipo as "urbano" | "rural"} />
 
       <section className="cartao p-5 space-y-3">
         <h2 className="font-semibold text-texto">Documentos</h2>

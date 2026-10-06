@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/supabase/server";
 import { setoresDe, type SetorId } from "@/lib/setores";
+import { registrarTentativa } from "@/lib/planos-servidor";
 
 /**
  * Trava de página por setor. Chamada no topo de cada tela da Central: quem não
@@ -12,9 +13,16 @@ import { setoresDe, type SetorId } from "@/lib/setores";
 export async function exigirSetor(...setores: SetorId[]) {
   const user = await currentUser();
   if (!user) redirect("/entrar");
-  if (!["admin_central", "analista_arini"].includes(user.role)) redirect("/");
+  if (!["admin_central", "analista_arini"].includes(user.role)) {
+    // fluxograma §20: bloqueia E registra a tentativa
+    await registrarTentativa({ userId: user.id, role: user.role, recurso: `setor:${setores[0]}`, motivo: "sem_equipe" });
+    redirect("/");
+  }
   const meus = setoresDe(user.role, user.setores);
-  if (!setores.some((s) => meus.includes(s))) redirect(`/admin?sem_acesso=${setores[0]}`);
+  if (!setores.some((s) => meus.includes(s))) {
+    await registrarTentativa({ userId: user.id, role: user.role, recurso: `setor:${setores[0]}`, motivo: "sem_setor" });
+    redirect(`/admin?sem_acesso=${setores[0]}`);
+  }
   return { ...user, setores: meus };
 }
 

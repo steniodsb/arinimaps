@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatArea } from "@/lib/format";
 import Tour3D from "@/components/tour/Tour3D";
+import { currentUser } from "@/lib/supabase/server";
+import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
 export const metadata: Metadata = { title: "Tour 3D" };
 
@@ -20,6 +22,13 @@ export default async function TourPage({ params, searchParams }: PageProps<"/imo
     pois: { nome: string | null; categoria: string; lng: number; lat: number; distancia_m: number; destaque: boolean }[];
   } | null;
   if (!tour?.geometry || !tour.centroid) notFound();
+
+  // §1.1: tour aberto vira evento do imóvel
+  const [{ data: prop }, user] = await Promise.all([
+    supabaseAdmin().from("properties").select("id").eq("codigo", codigo).maybeSingle(),
+    currentUser(),
+  ]);
+  if (prop?.id) void registrarEventoImovel({ propertyId: prop.id, tipo: "tour", userId: user?.id, detalhe: { codigo, record } });
 
   return (
     <Tour3D

@@ -18,6 +18,30 @@ node scripts/seed.mjs      # idempotente: região, municípios IBGE, usuários, 
 | proprietario.teste@arinimaps.com.br | proprietário (ativo) | /painel |
 | corretor.teste@arinimaps.com.br | corretor (ativo) | /painel |
 
+## 05→06/10: planos por nicho + módulos cartográficos (migrations 0028–0030)
+
+Documentos do Carlos de 05/10 (Fluxograma Mestre e Requisitos cartográficos). Cobertura
+item a item em `docs/FLUXOGRAMA-COBERTURA.md`; planos em `docs/PLANOS.md`.
+
+- **Planos por nicho** (0028): `plans`, `profiles.nicho/plan_id/plan_origem/plan_valido_ate`,
+  `plan_subscriptions`, `access_attempts`. Registro em `src/lib/planos.ts` (RECURSOS, NICHOS, COTAS);
+  trava em `src/lib/planos-servidor.ts` (`conferirRecurso` → 401/403 + tentativa registrada);
+  `ator()` devolve `acesso`. Telas: `/planos`, `/admin/planos`, troca de plano por conta em
+  `/admin/usuarios`, nicho no cadastro, tentativas em `/admin/seguranca`. O mapa esconde as
+  ferramentas que o plano não libera (`Ferramentas.tsx`, `UiMapa.tsx`).
+- **Rastreabilidade** (0029): `property_events` (ficha, tour, relatório, documento, mídia, interesse,
+  lead, consulta, compartilhamento, revisão), `property_geometry_versions` (gatilho em toda troca da
+  divisa; `fn_upsert_geometry` ganhou origem/motivo/responsável; `fn_validar_geometria`),
+  `property_data_sources`. Componente `src/components/crm/HistoricoImovel.tsx` na ficha admin e no painel.
+- **Solicitações cartográficas** (0029 + 0030): `cartographic_requests` (protocolo `CART-000001`, máquina
+  de status, `fn_cart_request_transicao`), `cartographic_request_events`. Rotas em `src/app/api/cartografia`
+  e `src/app/api/admin/cartografia/solicitacoes`; telas `/cartografia/solicitar`, `/painel/cartografia`,
+  `/admin/cartografia/solicitacoes`. Labels/transições em `src/lib/cartografia/solicitacoes.ts`.
+- **Alteração de anúncio publicado** (Fluxograma §9): `property_revisions`; `POST /api/imoveis/[id]/revisao`;
+  decisão `alvo: "revisao"` em `/api/admin/decisao`. **Pedido de complemento** (§7): ação `complementar`
+  + `properties.pendencia_tipo`.
+- Teste de ponta a ponta: `node scripts/testa-planos.mjs` (com `npm run dev`). SQL avulso: `node scripts/sql.mjs "select …"`.
+
 ## Sessão noturna 24→25/08: F1+F2+F3 entregues
 
 Tudo do fluxograma do cliente está implementado (38 rotas, migrations 0001–0008 aplicadas):

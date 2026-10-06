@@ -9,6 +9,8 @@ import BotaoCompartilhar from "@/components/BotaoCompartilhar";
 import GaleriaImovel, { type Slide } from "@/components/GaleriaImovel";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
+import { registrarEventoImovel, ORIGEM_DADO_LABEL } from "@/lib/imovel/eventos";
+import { ator, temRecurso } from "@/lib/authz";
 
 const CATEGORIA_LABEL: Record<string, string> = {
   combustivel: "Posto de combustível", farmacia: "Farmácia", supermercado: "Supermercado",
@@ -87,9 +89,9 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   if (!imovel) notFound();
 
   const admin = supabaseAdmin();
-  const { data: propId } = await admin.from("properties").select("id, modalidade, leilao").eq("codigo", codigo).single();
+  const { data: propId } = await admin.from("properties").select("id, modalidade, leilao, owner_id, partner_id").eq("codigo", codigo).single();
   const leilao = propId?.modalidade === "leilao" ? (propId.leilao ?? {}) as Leilao : null;
-  const [{ data: tourData }, { data: video }, { data: unidades }, { data: whats }] = await Promise.all([
+  const [{ data: tourData }, { data: video }, { data: unidades }, { data: whats }, { data: divisa }, { data: origemCadastro }] = await Promise.all([
     admin.rpc("fn_property_tour", { p_codigo: codigo }),
     admin.from("presentations").select("output_path")
       .eq("tipo", "video").eq("status", "pronto").not("output_path", "is", null)
@@ -100,6 +102,13 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
       .in("status", ["publicado", "em_negociacao", "vendido"])
       .order("titulo"),
     admin.from("settings").select("valor").eq("chave", "whatsapp_central").maybeSingle(),
+    // rastreabilidade (§1.3/§1.5): versão atual da divisa e origem do cadastro
+    admin.from("property_geometry_versions").select("versao, situacao, validada_em")
+      .eq("property_id", propId?.id ?? "").neq("situacao", "substituida")
+      .order("versao", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("property_data_sources").select("origem")
+      .eq("property_id", propId?.id ?? "").eq("campo", "cadastro")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const pois = ((tourData as { pois?: { nome: string | null; categoria: string; distancia_m: number }[] } | null)?.pois ?? [])
@@ -129,6 +138,16 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   const usuario = user
     ? { nome: user.nome || "Conta", papel: user.role === "admin_central" ? "Administrador" : "Usuário" }
     : null;
+
+  // §1.1: abertura da ficha vira evento (nunca derruba a página)
+  if (propId?.id) void registrarEventoImovel({ propertyId: propId.id, tipo: "ficha", userId: user?.id, detalhe: { codigo } });
+
+  // histórico completo: dono, parceiro responsável ou quem tem o recurso no plano
+  const a = user ? await ator() : null;
+  const podeVerHistorico = !!a && !!propId && (
+    a.ehArini || temRecurso(a, "historico_imovel") ||
+    (!!a.ownerId && propId.owner_id === a.ownerId) || (!!a.partnerId && propId.partner_id === a.partnerId)
+  );
 
   return (
     <AppShell usuario={usuario} semPadding>
@@ -328,6 +347,27 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                 className="block text-center cartao font-medium py-3 hover:bg-superficie-2 transition">
                 📍 Como chegar até o imóvel
               </a>
+            )}
+            {(divisa || origemCadastro) && (
+              <div className="cartao p-4 text-sm space-y-1">
+                <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-texto-2">Rastreabilidade</p>
+                {divisa && (
+                  <p className={divisa.situacao === "validada" ? "text-verde" : "text-texto-2"}>
+                    {divisa.situacao === "validada"
+                      ? `✓ Divisa validada pela Arini${divisa.validada_em ? ` em ${new Date(divisa.validada_em).toLocaleDateString("pt-BR")}` : ""}`
+                      : "Divisa informada pelo anunciante (em análise)"}
+                  </p>
+                )}
+                {divisa && <p className="text-texto-2">Versão {divisa.versao} da divisa</p>}
+                {origemCadastro && (
+                  <p className="text-texto-2">Origem do cadastro: {ORIGEM_DADO_LABEL[origemCadastro.origem] ?? origemCadastro.origem}</p>
+                )}
+                {podeVerHistorico && propId && (
+                  <Link href={`/painel/imoveis/${propId.id}`} className="inline-block text-verde hover:underline text-xs">
+                    Ver histórico completo →
+                  </Link>
+                )}
+              </div>
             )}
             <p className="text-xs text-texto-2 text-center">
               Intermediação: Arini Negócios Imobiliários

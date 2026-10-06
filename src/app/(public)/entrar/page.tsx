@@ -8,6 +8,7 @@ import { formatarCPF, validarDocumento } from "@/lib/br/documentos";
 import { lerCarPendente } from "@/lib/map/carPendente";
 import { SENHA_MIN, validarSenha } from "@/lib/seguranca/senha";
 import { REGISTRO_LABEL, ehParceiro as papelEhParceiro, podeAnunciar } from "@/lib/perfis";
+import { nichoPadrao, nichosDoPapel } from "@/lib/planos";
 
 const PERFIS = [
   { value: "comprador", label: "Quero comprar / procurar imóvel" },
@@ -32,12 +33,16 @@ export default function Entrar() {
   const [carregando, setCarregando] = useState(false);
   const [form, setForm] = useState({
     nome: "", email: "", senha: "", telefone: "", cpf: "", role: "comprador",
+    nicho: nichoPadrao("comprador") ?? "",
     razao_social: "", registro_profissional: "",
   });
   const [aceite, setAceite] = useState(false);
+  // o nicho (perfil de uso) acompanha o papel; só vira pergunta quando há mais de uma opção
+  const mudarPapel = (role: string) => setForm((f) => ({ ...f, role, nicho: nichoPadrao(role) ?? "" }));
+  const nichosOpcoes = nichosDoPapel(form.role);
   // veio de "Esta área é minha": quem cria conta nesse caminho é proprietário
   useEffect(() => {
-    if (lerCarPendente()) setForm((f) => ({ ...f, role: "proprietario" }));
+    if (lerCarPendente()) mudarPapel("proprietario");
     const q = new URLSearchParams(window.location.search);
     if (q.get("recuperar")) setModo("recuperar");
     // a Central mandou de volta: a sessão existe, falta confirmar o segundo fator
@@ -174,10 +179,21 @@ export default function Entrar() {
               <div>
                 <label className={ROTULO} htmlFor="perfil">Como você usa o sistema</label>
                 <select id="perfil" className={INPUT} value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                  onChange={(e) => mudarPapel(e.target.value)}>
                   {PERFIS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
               </div>
+
+              {nichosOpcoes.length > 1 && (
+                <div>
+                  <label className={ROTULO} htmlFor="nicho">Qual é o seu perfil de uso?</label>
+                  <select id="nicho" className={INPUT} value={form.nicho}
+                    onChange={(e) => setForm({ ...form, nicho: e.target.value })}>
+                    {nichosOpcoes.map((n) => <option key={n.id} value={n.id}>{n.nome} — {n.descricao}</option>)}
+                  </select>
+                  <p className="text-xs text-texto-2 mt-1">Define o plano com que a conta começa. A Arini pode ajustar depois.</p>
+                </div>
+              )}
 
               <div>
                 <label className={ROTULO} htmlFor="nome">Nome completo *</label>

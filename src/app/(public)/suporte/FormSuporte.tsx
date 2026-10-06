@@ -24,10 +24,12 @@ const LGPD = [
   ["informacao", "Quero saber com quem meus dados são compartilhados"],
 ] as const;
 
-export default function FormSuporte({ nome, email, logado }: { nome: string; email: string; logado: boolean }) {
+export default function FormSuporte({
+  nome, email, logado, assuntoInicial = "",
+}: { nome: string; email: string; logado: boolean; assuntoInicial?: string }) {
   const router = useRouter();
   const [form, setForm] = useState({
-    nome, email, telefone: "", categoria: "duvida", lgpd_tipo: "acesso", assunto: "", mensagem: "",
+    nome, email, telefone: "", categoria: "duvida", lgpd_tipo: "acesso", assunto: assuntoInicial, mensagem: "",
   });
   const [estado, setEstado] = useState<"" | "enviando">("");
   const [erro, setErro] = useState("");

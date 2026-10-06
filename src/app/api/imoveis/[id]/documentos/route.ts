@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, temSetor } from "@/lib/authz";
+import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
 async function podeEditarImovel(a: NonNullable<Awaited<ReturnType<typeof ator>>>, propertyId: string) {
   if (a.ehArini) return true;
@@ -36,6 +37,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/imoveis/[id
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await logAudit({ user_id: a.userId, acao: "documento_anexado", entidade: "property_documents", entidade_id: doc.id, property_id: id, dados_depois: { tipo, nome: arquivo.name } });
+  void registrarEventoImovel({ propertyId: id, tipo: "documento", userId: a.userId, partnerId: a.partnerId, request, detalhe: { acao: "upload", tipo, nome: arquivo.name } });
   return NextResponse.json({ ok: true });
 }
 
@@ -53,6 +55,13 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/imoveis/[id
   for (const d of docs ?? []) {
     const { data: signed } = await admin.storage.from("docs").createSignedUrl(d.storage_path, 3600);
     out.push({ ...d, url: signed?.signedUrl ?? null });
+  }
+  // §1.1: abertura da lista (com links assinados) é acesso aos documentos
+  if (out.length) {
+    void registrarEventoImovel({
+      propertyId: id, tipo: "documento", userId: a.userId, partnerId: a.partnerId, request: _request,
+      detalhe: { acao: "visualizacao", tipo: out.map((d) => d.tipo).join(","), nome: `${out.length} documento(s)` },
+    });
   }
   return NextResponse.json({ documentos: out });
 }

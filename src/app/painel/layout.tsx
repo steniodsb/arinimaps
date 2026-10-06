@@ -7,6 +7,7 @@ const ABAS = [
   { href: "/painel", rotulo: "Meus imóveis" },
   { href: "/painel/oportunidades", rotulo: "Minhas oportunidades" },
   { href: "/painel/novo", rotulo: "Anunciar" },
+  { href: "/painel/cartografia", rotulo: "Mapa: solicitações" },
   { href: "/suporte", rotulo: "Suporte" },
   { href: "/conta/seguranca", rotulo: "Segurança da conta" },
 ];

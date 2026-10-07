@@ -36,9 +36,9 @@ O que foi apontado no mapa, o que já foi ajustado e precisa ser conferido, e o 
 
 | # | Pendência | Situação | Quem | Depende de | Origem |
 |---|---|---|---|---|---|
-| 2.1 | **Velocidade do mapa no celular e no 4G** — No computador a cidade passou de 14 MB para cerca de 2 MB na tela. Falta medir em aparelho real e definir metas de tempo. | Parcial | Stênio | 1.2 | Call · Melhorias 2 |
+| 2.1 | **Velocidade e fluidez do mapa** — CAR e lotes agora chegam como tiles vetoriais gerados no banco (poucos KB por tile, cache no navegador e no servidor); o mapa não baixa mais GeoJSON a cada movimento e os pedidos de tile não passam pelo refresh de sessão. Falta medir em aparelho real no 4G. | Validar | Stênio e Carlos | 1.2 | Call · Melhorias 2 |
 | 2.2 | **Tour 3D só depois do mapa carregar** — Ajustado e mais lento. Conferir no celular. | Validar | Stênio e Carlos | — | Call · Melhorias 4 |
-| 2.3 | **Marcações visíveis ao afastar o zoom** — Ajustado com marcadores regionais. Conferir na rodada de testes. | Validar | Stênio e Carlos | — | Call |
+| 2.3 | **Marcações visíveis ao afastar o zoom** — Imóveis têm marcador regional; a malha do CAR agora aparece desde a visão regional (de longe só as áreas maiores, com aviso) em vez de sumir abaixo do zoom 12. | Validar | Stênio e Carlos | — | Call |
 | 2.4 | **Mapa limpo, só com o essencial** — Lotes e metragens numa camada limpa; a planta original, com círculos, setas, rodovias e nomes de rua, virou camada opcional. | Validar | Stênio e Carlos | — | Call · Melhorias 3 |
 | 2.5 | **Revisar os arquivos de planta com o Miguel** — Limpar os desenhos na origem e corrigir o que veio errado no arquivo. | Pendente | Stênio e Carlos | 7.7 | Call |
 | 2.6 | **Regiões onde a planta não bate com o satélite** — Conferir quadra a quadra nas três cidades e recalibrar onde houver deslocamento. | Pendente | Stênio | — | Call |
@@ -86,6 +86,7 @@ Acabamento visual e experiência em cada tela e aparelho.
 | 4.5 | **Fotos reais** — Página inicial e imóveis de vitrine. | Pendente | Carlos | — | — |
 | 4.6 | **Foto no perfil de cada usuário** — Imagem vinculada ao cadastro, à parte da selfie da exclusividade. | Pendente | Stênio | — | Melhorias 9 |
 | 4.7 | **Botão de tema na tela de acesso restrito** | Pendente | Stênio | — | — |
+| 4.8 | **Seção “Entre na área de consultas” da home com mapa vivo** — Mapa não interativo passeando por três cenas (CAR, lotes de Iturama, região) atrás de cartões com ícones. Conferir no celular e no 4G. | Validar | Stênio e Carlos | — | 07/10 |
 
 ## 5. Funcionalidades
 
@@ -203,4 +204,5 @@ O que garante o sistema funcionando depois da abertura.
 - **Matriz:** Nove setores com acesso controlado: operações, comercial, financeiro, jurídico, marketing, cartografia, suporte, segurança e diretoria; tarefas internas e chamados.
 - **Segurança:** Senhas com hash, segundo fator, recuperação por link de uso único, limite de tentativas, regras de acesso no banco (RLS), registro de acessos e auditoria, sessões com expiração, senha de bloqueio do site.
 - **Jurídico:** Seis termos com aceite registrado: versão, data, hora e IP. Pedidos de titulares (LGPD) atendidos pela Matriz.
+- **07/10:** Mapa fluido com tiles vetoriais (CAR de longe, lotes e metragens de perto, cliques mantidos) e home com mapa vivo na seção de consultas.
 - **06/10 — documentos de 05/10:** Planos por nicho (recursos, cotas, trava no servidor, tela da Diretoria, página pública), solicitações cartográficas com protocolo e fila da Matriz, histórico/versões/origem dos dados na ficha do imóvel, alteração de anúncio publicado como nova versão, pedido de complemento, tentativas de acesso bloqueadas registradas. Cobertura item a item em `docs/FLUXOGRAMA-COBERTURA.md`.

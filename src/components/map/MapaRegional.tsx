@@ -19,7 +19,7 @@ import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
-import { CartaoLote, medidasDe, LOTE_LADO_MAX, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
+import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
 import { useTema } from "@/components/shell/BotaoTema";
 
 type ImovelProps = {
@@ -64,10 +64,8 @@ type Camada = {
  */
 const COR_RURAL = "#FF9D3D";
 
-/** A partir deste zoom a malha do CAR aparece (visão de município). */
-const CAR_ZOOM_MIN = 12;
-/** Maior lado do retângulo que /api/geo/car aceita, em graus. */
-const CAR_LADO_MAX = 0.6;
+/** A partir deste zoom a malha do CAR aparece (tiles vetoriais; de longe, só as áreas grandes). */
+const CAR_ZOOM_MIN = 7;
 
 type CarProps = {
   cod: string;
@@ -202,8 +200,7 @@ export default function MapaRegional({
   const plantasRef = useRef<Camada[]>([]);
   const plantasCarregadasRef = useRef<Set<string>>(new Set());
   const baseRef = useRef<"ruas" | "satelite">("satelite");
-  // malha do CAR: retângulo já carregado (com folga) e se a camada está ligada
-  const carBboxRef = useRef<[number, number, number, number] | null>(null);
+  // malha do CAR: se a camada está ligada
   const carAtivoRef = useRef(true);
   const carHoverRef = useRef<string | null>(null);
 
@@ -226,9 +223,7 @@ export default function MapaRegional({
   const [carAtivo, setCarAtivo] = useState(true);
   const [carSel, setCarSel] = useState<CarProps | null>(null);
   const [carAviso, setCarAviso] = useState("");
-  // lotes urbanos: retângulo já carregado, a coleção em mãos e o lote clicado
-  const lotesBboxRef = useRef<[number, number, number, number] | null>(null);
-  const lotesRef = useRef<GeoJSON.FeatureCollection>({ type: "FeatureCollection", features: [] });
+  // lotes urbanos: o lote sob o cursor e o clicado
   const loteHoverRef = useRef<string | null>(null);
   const [loteSel, setLoteSel] = useState<LoteInfo | null>(null);
   // Planta completa do CAD: desligada por padrão. Pedido do Carlos em 01/10/2026
@@ -239,74 +234,23 @@ export default function MapaRegional({
   const plantaAtivaRef = useRef(false);
 
   /**
-   * Lotes urbanos sob demanda, a partir do zoom de quadra. As metragens dos
-   * lados só entram no zoom de lote e só para o que está na tela: são milhares
-   * de etiquetas na cidade inteira, e ninguém as lê de longe.
+   * CAR e lotes chegam como TILES VETORIAIS gerados no banco (migration 0031):
+   * o MapLibre pede só os tiles da tela, guarda em cache e desenha na GPU. Não
+   * há mais GeoJSON inteiro a cada movimento nem metragens recalculadas aqui —
+   * as etiquetas dos lados vêm prontas no próprio tile (camada `medidas`).
+   * Única coisa que resta ao código: avisar quando a malha do CAR ainda não
+   * entra (abaixo do zoom 7, longe demais para qualquer divisa fazer sentido)
+   * ou entra só com as áreas grandes.
    */
-  const garantirLotes = useCallback(async () => {
+  const conferirZoomCar = useCallback(() => {
     const map = mapRef.current;
-    const fonte = map?.getSource("lotes") as GeoJSONSource | undefined;
-    const medidas = map?.getSource("lotes-medidas") as GeoJSONSource | undefined;
-    if (!map || !fonte || !medidas) return;
+    if (!map || !carAtivoRef.current) { setCarAviso(""); return; }
     const z = map.getZoom();
-    if (z < LOTE_ZOOM_MIN) return;
-    const t = map.getBounds();
-    const [w, s, e, n] = [t.getWest(), t.getSouth(), t.getEast(), t.getNorth()];
-    if (e - w > LOTE_LADO_MAX || n - s > LOTE_LADO_MAX) return;
-
-    const cache = lotesBboxRef.current;
-    if (!cache || w < cache[0] || s < cache[1] || e > cache[2] || n > cache[3]) {
-      const fx = Math.min((e - w) * 0.4, (LOTE_LADO_MAX - (e - w)) / 2);
-      const fy = Math.min((n - s) * 0.4, (LOTE_LADO_MAX - (n - s)) / 2);
-      const pedido: [number, number, number, number] = [w - fx, s - fy, e + fx, n + fy];
-      const fc = await fetch(`/api/geo/lotes?bbox=${pedido.map((v) => v.toFixed(6)).join(",")}`)
-        .then((r) => r.json()).catch(() => null);
-      if (!fc?.features || !mapRef.current) return;
-      lotesRef.current = fc;
-      fonte.setData(fc);
-      lotesBboxRef.current = fc.truncado ? null : pedido;
-    }
-    medidas.setData(
-      z >= MEDIDA_ZOOM_MIN ? medidasDe(lotesRef.current, { w, s, e, n }) : { type: "FeatureCollection", features: [] }
+    setCarAviso(
+      z < CAR_ZOOM_MIN ? "Aproxime o mapa para ver os imóveis rurais do CAR."
+        : z < 11 ? "De longe, só as áreas maiores do CAR aparecem. Aproxime para ver todas."
+        : ""
     );
-  }, []);
-
-  /**
-   * Malha do CAR sob demanda, como as plantas: só a partir do zoom de município
-   * (abaixo disso seriam milhares de polígonos sem ninguém conseguir clicar em
-   * um) e só o retângulo da tela com 40% de folga — mover um pouco o mapa não
-   * dispara outra busca.
-   */
-  const garantirCar = useCallback(async () => {
-    const map = mapRef.current;
-    const fonte = map?.getSource("car") as GeoJSONSource | undefined;
-    if (!map || !fonte || !carAtivoRef.current) return;
-    if (map.getZoom() < CAR_ZOOM_MIN) {
-      setCarAviso("Aproxime o mapa para ver os imóveis rurais do CAR.");
-      return;
-    }
-    const t = map.getBounds();
-    const [w, s, e, n] = [t.getWest(), t.getSouth(), t.getEast(), t.getNorth()];
-    const cache = carBboxRef.current;
-    if (cache && w >= cache[0] && s >= cache[1] && e <= cache[2] && n <= cache[3]) {
-      setCarAviso("");
-      return;
-    }
-    if (e - w > CAR_LADO_MAX || n - s > CAR_LADO_MAX) {
-      setCarAviso("Aproxime o mapa para ver os imóveis rurais do CAR.");
-      return;
-    }
-    // folga de até 40% por lado, sem passar do retângulo máximo da API
-    const fx = Math.min((e - w) * 0.4, (CAR_LADO_MAX - (e - w)) / 2);
-    const fy = Math.min((n - s) * 0.4, (CAR_LADO_MAX - (n - s)) / 2);
-    const pedido: [number, number, number, number] = [w - fx, s - fy, e + fx, n + fy];
-    const fc = await fetch(`/api/geo/car?bbox=${pedido.map((v) => v.toFixed(5)).join(",")}`)
-      .then((r) => r.json()).catch(() => null);
-    if (!fc || !mapRef.current) return;
-    if (fc.aproxime) { setCarAviso("Aproxime o mapa para ver os imóveis rurais do CAR."); return; }
-    fonte.setData(fc);
-    carBboxRef.current = fc.truncado ? null : pedido;
-    setCarAviso(fc.truncado ? "Muitos imóveis nesta área — aproxime para ver todos." : "");
   }, []);
 
   /**
@@ -461,6 +405,8 @@ export default function MapaRegional({
       });
       mapa = map;
       mapRef.current = map;
+      // em desenvolvimento, o mapa fica acessível no console (window.__mapa) para depurar camadas
+      if (process.env.NODE_ENV !== "production") (window as unknown as { __mapa?: MLMap }).__mapa = map;
       setMapaPronto(map);
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
       map.addControl(new maplibregl.FullscreenControl(), "top-right");
@@ -516,19 +462,21 @@ export default function MapaRegional({
         // Lotes urbanos clicáveis (pedido do Carlos, 01/10/2026). O preenchimento
         // é invisível: quem desenha a divisa é a planta; o lote só "acende" sob
         // o cursor e quando é clicado.
-        const vazio: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
-        map.addSource("lotes", { type: "geojson", data: vazio, promoteId: "id" });
-        map.addSource("lotes-medidas", { type: "geojson", data: vazio });
+        const origem = window.location.origin;
+        map.addSource("lotes", {
+          type: "vector", tiles: [`${origem}/api/tiles/lotes/{z}/{x}/{y}.pbf`],
+          minzoom: LOTE_ZOOM_MIN, maxzoom: 17, promoteId: { lotes: "id" },
+        });
         map.addLayer({
-          id: "lotes-fill", type: "fill", source: "lotes", minzoom: LOTE_ZOOM_MIN,
+          id: "lotes-fill", type: "fill", source: "lotes", "source-layer": "lotes", minzoom: LOTE_ZOOM_MIN,
           paint: {
             "fill-color": "#FFE9A8",
             "fill-opacity": ["case", ["boolean", ["feature-state", "sel"], false], 0.42,
-              ["boolean", ["feature-state", "hover"], false], 0.25, 0] as never,
+              ["boolean", ["feature-state", "hover"], false], 0.25, 0.01] as never,
           },
         });
         map.addLayer({
-          id: "lotes-borda", type: "line", source: "lotes", minzoom: LOTE_ZOOM_MIN,
+          id: "lotes-borda", type: "line", source: "lotes", "source-layer": "lotes", minzoom: LOTE_ZOOM_MIN,
           paint: {
             "line-color": ["case", ["boolean", ["feature-state", "sel"], false], "#FFD45E", CARTO_CORES[baseRef.current].linha] as never,
             // o zoom só pode ser a entrada do interpolate mais externo; o estado
@@ -542,7 +490,7 @@ export default function MapaRegional({
         });
         // contorno escuro por baixo: a divisa clara some sobre telhado claro
         map.addLayer({
-          id: "lotes-contorno", type: "line", source: "lotes", minzoom: LOTE_ZOOM_MIN,
+          id: "lotes-contorno", type: "line", source: "lotes", "source-layer": "lotes", minzoom: LOTE_ZOOM_MIN,
           paint: {
             "line-color": CARTO_CORES[baseRef.current].contorno,
             "line-width": ["interpolate", ["linear"], ["zoom"], 15, 1.3, 17, 2.6, 19, 4] as never,
@@ -550,7 +498,7 @@ export default function MapaRegional({
           },
         }, "lotes-borda");
         map.addLayer({
-          id: "lotes-medidas", type: "symbol", source: "lotes-medidas", minzoom: MEDIDA_ZOOM_MIN,
+          id: "lotes-medidas", type: "symbol", source: "lotes", "source-layer": "medidas", minzoom: MEDIDA_ZOOM_MIN,
           layout: {
             "text-field": ["get", "m"],
             "text-font": ["Open Sans Regular"],
@@ -563,20 +511,24 @@ export default function MapaRegional({
         });
 
         // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima)
-        map.addSource("car", { type: "geojson", data: { type: "FeatureCollection", features: [] }, promoteId: "cod" });
+        map.addSource("car", {
+          type: "vector", tiles: [`${origem}/api/tiles/car/{z}/{x}/{y}.pbf`],
+          minzoom: CAR_ZOOM_MIN, maxzoom: 13, promoteId: { car: "cod" },
+        });
         map.addLayer({
-          id: "car-fill", type: "fill", source: "car", minzoom: CAR_ZOOM_MIN,
+          id: "car-fill", type: "fill", source: "car", "source-layer": "car", minzoom: CAR_ZOOM_MIN,
           paint: {
             "fill-color": COR_RURAL,
             "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.25, 0.04] as never,
           },
         });
+        // o traço afina conforme afasta: de longe a malha vira textura, de perto vira divisa
         map.addLayer({
-          id: "car-linha", type: "line", source: "car", minzoom: CAR_ZOOM_MIN,
+          id: "car-linha", type: "line", source: "car", "source-layer": "car", minzoom: CAR_ZOOM_MIN,
           paint: {
             "line-color": COR_RURAL,
-            "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 15, 1.6] as never,
-            "line-opacity": 0.8,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 7, 0.25, 10, 0.5, 12, 0.9, 15, 1.6] as never,
+            "line-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.45, 10, 0.65, 12, 0.8] as never,
           },
         });
 
@@ -685,18 +637,18 @@ export default function MapaRegional({
         map.on("mousemove", "car-fill", (e: MapLayerMouseEvent) => {
           const cod = String(e.features?.[0]?.properties?.cod ?? "");
           if (!cod || cod === carHoverRef.current) return;
-          if (carHoverRef.current) map.setFeatureState({ source: "car", id: carHoverRef.current }, { hover: false });
+          if (carHoverRef.current) map.setFeatureState({ source: "car", sourceLayer: "car", id: carHoverRef.current }, { hover: false });
           carHoverRef.current = cod;
-          map.setFeatureState({ source: "car", id: cod }, { hover: true });
+          map.setFeatureState({ source: "car", sourceLayer: "car", id: cod }, { hover: true });
           if (!map.getCanvas().style.cursor) map.getCanvas().style.cursor = "pointer";
         });
         map.on("mouseleave", "car-fill", () => {
-          if (carHoverRef.current) map.setFeatureState({ source: "car", id: carHoverRef.current }, { hover: false });
+          if (carHoverRef.current) map.setFeatureState({ source: "car", sourceLayer: "car", id: carHoverRef.current }, { hover: false });
           carHoverRef.current = null;
           map.getCanvas().style.cursor = "";
         });
-        map.on("moveend", () => void garantirCar());
-        void garantirCar();
+        map.on("zoomend", conferirZoomCar);
+        conferirZoomCar();
 
         // lote urbano: clique abre o cartão com as medidas
         map.on("click", "lotes-fill", async (e: MapLayerMouseEvent) => {
@@ -705,25 +657,23 @@ export default function MapaRegional({
           if (emAnuncio.length || !id) return;
           const f = await fetch(`/api/geo/lotes/${id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
           if (!f?.properties) return;
-          map.removeFeatureState({ source: "lotes" });
-          map.setFeatureState({ source: "lotes", id }, { sel: true });
+          map.removeFeatureState({ source: "lotes", sourceLayer: "lotes" });
+          map.setFeatureState({ source: "lotes", sourceLayer: "lotes", id }, { sel: true });
           setLoteSel(f.properties as LoteInfo);
         });
         map.on("mousemove", "lotes-fill", (e: MapLayerMouseEvent) => {
           const id = String(e.features?.[0]?.properties?.id ?? "");
           if (!id || id === loteHoverRef.current) return;
-          if (loteHoverRef.current) map.setFeatureState({ source: "lotes", id: loteHoverRef.current }, { hover: false });
+          if (loteHoverRef.current) map.setFeatureState({ source: "lotes", sourceLayer: "lotes", id: loteHoverRef.current }, { hover: false });
           loteHoverRef.current = id;
-          map.setFeatureState({ source: "lotes", id }, { hover: true });
+          map.setFeatureState({ source: "lotes", sourceLayer: "lotes", id }, { hover: true });
           if (!map.getCanvas().style.cursor) map.getCanvas().style.cursor = "pointer";
         });
         map.on("mouseleave", "lotes-fill", () => {
-          if (loteHoverRef.current) map.setFeatureState({ source: "lotes", id: loteHoverRef.current }, { hover: false });
+          if (loteHoverRef.current) map.setFeatureState({ source: "lotes", sourceLayer: "lotes", id: loteHoverRef.current }, { hover: false });
           loteHoverRef.current = null;
           map.getCanvas().style.cursor = "";
         });
-        map.on("moveend", () => void garantirLotes());
-        void garantirLotes();
 
         setLista((imoveis.features ?? []).map((f: GeoJSON.Feature) => f.properties as ImovelProps));
         setPronto(true);
@@ -780,9 +730,9 @@ export default function MapaRegional({
     const map = mapRef.current;
     if (!map || !pronto || !map.getLayer("car-fill")) return;
     for (const id of ["car-fill", "car-linha"]) map.setLayoutProperty(id, "visibility", carAtivo ? "visible" : "none");
-    if (carAtivo) void garantirCar();
+    if (carAtivo) conferirZoomCar();
     else { setCarSel(null); setCarAviso(""); }
-  }, [carAtivo, pronto, garantirCar]);
+  }, [carAtivo, pronto, conferirZoomCar]);
 
   // filtros e busca
   useEffect(() => {
@@ -953,7 +903,7 @@ export default function MapaRegional({
         {loteSel && !carSel && (
           <CartaoLote lote={loteSel} onFechar={() => {
             setLoteSel(null);
-            mapRef.current?.removeFeatureState({ source: "lotes" });
+            mapRef.current?.removeFeatureState({ source: "lotes", sourceLayer: "lotes" });
           }} />
         )}
 

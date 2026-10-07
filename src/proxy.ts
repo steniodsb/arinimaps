@@ -47,7 +47,10 @@ export const config = {
   // corpo inteiro da requisição para renovar a sessão, e planta de cidade passa
   // de 100 MB. A rota confere a sessão por conta própria (ator()) e lê o arquivo
   // em fluxo, sem nunca carregá-lo inteiro na memória.
+  // `api/tiles` e `api/geo` também ficam de fora: são dezenas de pedidos por
+  // movimento do mapa e nenhum precisa de sessão — passar cada um pelo refresh
+  // do token (uma ida ao Supabase Auth) era parte da lentidão do zoom.
   matcher: [
-    "/((?!api/admin/cartografia|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp)).*)",
+    "/((?!api/admin/cartografia|api/tiles|api/geo|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|pbf)).*)",
   ],
 };

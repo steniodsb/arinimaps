@@ -18,6 +18,28 @@ node scripts/seed.mjs      # idempotente: região, municípios IBGE, usuários, 
 | proprietario.teste@arinimaps.com.br | proprietário (ativo) | /painel |
 | corretor.teste@arinimaps.com.br | corretor (ativo) | /painel |
 
+## 07/10: mapa fluido com tiles vetoriais + home com mapa vivo (migration 0031)
+
+Queixas do Stenio: zoom demorava a acompanhar, mapa pouco fluido, malha sumia ao afastar;
+seção "Entre na área de consultas" da home sem vida.
+
+- **Tiles vetoriais (MVT) no banco**: `fn_mvt_car` e `fn_mvt_lotes` (ST_AsMVT sobre colunas
+  `geom_3857` pré-projetadas, com gatilho que as mantém em dia). Servidos por
+  `src/app/api/tiles/[camada]/[z]/[x]/[y]/route.ts` (`/api/tiles/car/{z}/{x}/{y}.pbf`,
+  `/api/tiles/lotes/…`), gzip, cache HTTP de 1 h + cache em memória do processo. O PostgREST
+  não devolve bytea cru, então `fn_tile_*` entrega base64 e a rota decodifica. `api/tiles` e
+  `api/geo` ficaram fora do `proxy.ts` (cada tile passava pelo refresh de sessão).
+- **MapaRegional** deixou de baixar GeoJSON do CAR/lotes a cada movimento: fontes `vector`,
+  `source-layer` `car` / `lotes` / `medidas` (as metragens dos lados vêm prontas no tile a partir
+  do zoom 17). CAR aparece desde o zoom 7 (de longe só áreas ≥ 200/100/10 ha; aviso na tela);
+  lotes a partir do 15. As rotas `/api/geo/car?bbox` e `/api/geo/lotes?bbox` foram removidas.
+  Em desenvolvimento, `window.__mapa` expõe o mapa no console.
+- **Home**: `src/components/home/VitrineConsultas.tsx` + `src/components/map/MapaVitrine.tsx`
+  (mapa não interativo que passeia por 3 cenas — rural/CAR, Iturama/lotes, regional — com
+  legenda; pausa fora da tela e respeita `prefers-reduced-motion`); cartões em vidro com ícones SVG.
+- Testes: `BASE_URL=… node scripts/testa-tiles.mjs` (CAR de longe, clique no CAR e no lote,
+  metragens, cache); `scripts/screenshot-home.mjs` captura a seção.
+
 ## 05→06/10: planos por nicho + módulos cartográficos (migrations 0028–0030)
 
 Documentos do Carlos de 05/10 (Fluxograma Mestre e Requisitos cartográficos). Cobertura

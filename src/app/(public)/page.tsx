@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import SiteHeader from "@/components/SiteHeader";
+import VitrineConsultas, { type Consulta } from "@/components/home/VitrineConsultas";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { lerConfiguracoes, texto } from "@/lib/settings";
 import { formatBRL, formatArea } from "@/lib/format";
@@ -72,14 +73,14 @@ const FERRAMENTA = [
     desc: "Nenhum anúncio vai ao ar sem verificação. Todo interessado passa pela central antes de chegar ao proprietário ou parceiro." },
 ];
 
-const CONSULTAS = [
-  { rotulo: "Mapa interativo", desc: "Satélite, plantas das cidades e todos os imóveis publicados.", href: "/mapa", destaque: true },
-  { rotulo: "Consultar CAR", desc: "Cadastro Ambiental Rural sobre a divisa.", href: "/mapa?camada=car" },
-  { rotulo: "Embargos ambientais", desc: "Áreas embargadas pelo IBAMA.", href: "/mapa?camada=ibama_embargos" },
-  { rotulo: "Focos de queimadas", desc: "Histórico do INPE por ano.", href: "/mapa?camada=inpe_queimadas" },
-  { rotulo: "Processos minerários", desc: "Requerimentos e concessões da ANM.", href: "/mapa?camada=anm" },
-  { rotulo: "Buscar imóveis", desc: "Filtros por tipo, município e preço.", href: "/imoveis" },
-  { rotulo: "Relatórios territoriais", desc: "Todos os rurais com as incidências consultadas.", href: "/relatorios" },
+const CONSULTAS: Consulta[] = [
+  { rotulo: "Mapa interativo", desc: "Satélite, plantas das cidades e todos os imóveis publicados.", href: "/mapa", icone: "mapa", destaque: true },
+  { rotulo: "Consultar CAR", desc: "Cadastro Ambiental Rural sobre a divisa.", href: "/mapa?camada=car", icone: "car" },
+  { rotulo: "Embargos ambientais", desc: "Áreas embargadas pelo IBAMA.", href: "/mapa?camada=ibama_embargos", icone: "embargo" },
+  { rotulo: "Focos de queimadas", desc: "Histórico do INPE por ano.", href: "/mapa?camada=inpe_queimadas", icone: "fogo" },
+  { rotulo: "Processos minerários", desc: "Requerimentos e concessões da ANM.", href: "/mapa?camada=anm", icone: "mineracao" },
+  { rotulo: "Buscar imóveis", desc: "Filtros por tipo, município e preço.", href: "/imoveis", icone: "busca" },
+  { rotulo: "Relatórios territoriais", desc: "Todos os rurais com as incidências consultadas.", href: "/relatorios", icone: "relatorio" },
 ];
 
 export default async function Home() {
@@ -160,39 +161,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ---------- consultas ---------- */}
-      <section id="consultas" className="bg-superficie border-y border-linha scroll-mt-20">
-        <div className="mx-auto max-w-7xl px-4 py-20">
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
-            <div className="max-w-2xl">
-              <p className="text-verde font-mono text-[11px] tracking-[0.25em] uppercase">Consultas</p>
-              <h2 className="text-3xl sm:text-4xl font-semibold mt-3 text-balance">
-                Entre na área de <span className="texto-verde">consultas</span>
-              </h2>
-              <p className="text-texto-2 mt-4">
-                Mapa, busca de imóveis e relatórios ficam numa área própria, com menu lateral e atalhos para cada camada oficial.
-              </p>
-            </div>
-            <Link href="/mapa" className="btn-verde px-6 py-3">Abrir o mapa</Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {CONSULTAS.map((c) => (
-              <Link key={c.rotulo} href={c.href}
-                className={
-                  "group rounded-2xl border p-5 transition hover:-translate-y-0.5 " +
-                  (c.destaque
-                    ? "border-verde/50 bg-verde-escuro/70 sm:col-span-2 lg:col-span-1"
-                    : "border-linha bg-superficie-2 hover:border-verde/40")
-                }>
-                <p className="font-medium flex items-center justify-between">
-                  {c.rotulo} <span className="text-verde group-hover:translate-x-0.5 transition">›</span>
-                </p>
-                <p className="text-xs text-texto-2 mt-1.5">{c.desc}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ---------- consultas (mapa ao vivo + atalhos; componente de cliente) ---------- */}
+      <VitrineConsultas consultas={CONSULTAS} />
 
       {/* ---------- imóveis publicados ---------- */}
       {imoveis.length > 0 && (

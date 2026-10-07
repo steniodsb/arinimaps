@@ -316,3 +316,25 @@ button:disabled,
 .tour-etiqueta b { font-weight: 600; }
 .tour-etiqueta span { font-size: 10px; color: #E4C77E; }
 .tour-etiqueta-cidade { background: rgba(201, 161, 78, 0.92); color: #10130f; border-color: transparent; }
+
+/* ---------- vitrine de consultas (home) ---------- */
+/* espera animada no lugar do satélite: a faixa nunca fica preta enquanto o
+   mapa baixa (cores fixas do tema escuro — a faixa é sempre o satélite) */
+@keyframes vitrine-espera {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.vitrine-espera {
+  background: linear-gradient(115deg, #0A1310 0%, #0E2C1E 35%, #17402C 50%, #0E2C1E 65%, #0A1310 100%);
+  background-size: 260% 260%;
+  animation: vitrine-espera 4.5s ease-in-out infinite;
+}
+/* a legenda da cena entra com um fade curto a cada troca */
+@keyframes vitrine-legenda {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.vitrine-legenda { animation: vitrine-legenda 0.8s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .vitrine-espera, .vitrine-legenda { animation: none; }
+}

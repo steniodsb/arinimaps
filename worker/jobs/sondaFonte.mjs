@@ -6,7 +6,7 @@
 // ~2 km em Iturama, pedindo só a CONTAGEM (hits / returnCountOnly), para medir
 // o serviço sem pesar nele.
 
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
 /** acima disso a fonte conta como fora: o relatório não espera mais que 40 s */
 export const LIMITE_MS = 30_000;
 

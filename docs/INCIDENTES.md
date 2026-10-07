@@ -21,7 +21,7 @@ do jurídico; enquanto estiverem vazios, o plano não está valendo.
 | Jurídico (avalia risco e redige comunicações) | [PREENCHER] | [PREENCHER] | — |
 | Comunicação com clientes e parceiros | [PREENCHER] | [PREENCHER] | — |
 
-Canal interno do incidente: [PREENCHER — ex.: grupo de WhatsApp "Incidente Arini Maps", criado só na hora].
+Canal interno do incidente: [PREENCHER — ex.: grupo de WhatsApp "Incidente Arini Imóveis Brasil", criado só na hora].
 Fornecedores a acionar: Supabase (banco, autenticação e arquivos — suporte pelo painel),
 provedor do servidor da aplicação [PREENCHER], registro do domínio [PREENCHER],
 Cloudflare (quando houver, item 1.7), Resend (e-mail), Asaas (cobrança).
@@ -116,7 +116,7 @@ volume grande de pessoas.
 
 Modelo de aviso ao titular:
 
-> Assunto: Aviso de segurança sobre sua conta no Arini Maps
+> Assunto: Aviso de segurança sobre sua conta no Arini Imóveis Brasil
 >
 > Em [DATA], identificamos [O QUE ACONTECEU, em uma frase]. Os dados
 > envolvidos foram: [LISTA]. Assim que soubemos, [MEDIDAS: ex.: bloqueamos o

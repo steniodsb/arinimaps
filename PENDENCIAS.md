@@ -1,10 +1,10 @@
-# ARINI MAPS — Roadmap de pendências (06/10/2026)
+# ARINI IMÓVEIS BRASIL — Roadmap de pendências (06/10/2026)
 
 > Repositório: github.com/steniodsb/arinimaps · migrations até a 0030.
 > Cobertura dos documentos de 05/10 (Fluxograma Mestre e Requisitos cartográficos): `docs/FLUXOGRAMA-COBERTURA.md` · planos por nicho: `docs/PLANOS.md`.
 > Site travado pela senha de bloqueio (`SITE_SENHA`) até o lançamento.
 > Acessos e senhas: `ACESSOS - NAO COMPARTILHAR.md`, fora do repositório.
-> PDF: `Arini Maps - Roadmap de pendencias.pdf` (gerado destes mesmos dados).
+> PDF: `Arini Imóveis Brasil - Roadmap de pendencias.pdf` (gerado destes mesmos dados).
 >
 > **Situação:** Pendente · Parcial · Validar (ajustado, falta conferir com o Carlos) · Bloqueado (aguarda outro item) · Decisão.
 > 
@@ -158,7 +158,7 @@ Definições que destravam os itens bloqueados.
 | 8.3 | **Conta do Asaas e quais cobranças passam por ele** | Decisão | Carlos | — | — |
 | 8.4 | **API ou metodologia da pré-avaliação e da aptidão** — E a validação jurídica do uso. | Decisão | Carlos | — | Call · Melhorias 18 |
 | 8.5 | **Regras da consulta profissional** — O que libera, para quem e o valor da assinatura. | Decisão | Carlos | — | Call · Melhorias 15 |
-| 8.6 | **Domínio** — arinimaps.com.br ou subdomínio. | Decisão | Carlos | — | — |
+| 8.6 | **Domínio** — ariniimoveisbrasil.com.br ou subdomínio. | Decisão | Carlos | — | — |
 | 8.7 | **MapBiomas por token ou por arquivo** | Decisão | Stênio e Carlos | — | — |
 | 8.8 | **Plano pago do banco de dados** — Cerca de US$ 25 por mês: backup automático e mais capacidade. | Decisão | Carlos | — | Call |
 | 8.9 | **Selfie e prazos de guarda** — Finalidade, base legal, retenção e descarte de selfies e documentos. | Decisão | Carlos | — | Melhorias 9 · Segurança 12 |

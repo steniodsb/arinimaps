@@ -1,4 +1,4 @@
-# Arini Maps — arquitetura de segurança
+# Arini Imóveis Brasil — arquitetura de segurança
 
 Documento pedido no item 22 de "Requisitos de segurança, LGPD e proteção de
 dados" (01/10/2026). Descreve o que está implementado, como foi testado e o que

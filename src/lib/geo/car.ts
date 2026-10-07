@@ -12,7 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * pela metade calada é pior que importação que falha.
  */
 export const CAR_WFS = "https://geoserver.car.gov.br/geoserver/sicar/ows";
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
 const PAGINA = 2000;
 
 export type ResultadoCar = { municipio: string; cod_ibge: number; gravados: number; total: number };

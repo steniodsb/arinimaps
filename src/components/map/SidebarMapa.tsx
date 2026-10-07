@@ -24,7 +24,7 @@ export default function SidebarMapa({ onAtalho }: { onAtalho?: (chave: string) =
       <Link href="/" className="px-5 h-16 flex items-center gap-2 border-b border-linha">
         <span className="text-ouro text-xl">◈</span>
         <span className="font-semibold tracking-wide text-texto text-sm">
-          ARINI <span className="text-texto-2 font-normal text-xs tracking-[0.2em]">MAPS</span>
+          ARINI <span className="text-texto-2 font-normal text-xs tracking-[0.2em]">IMÓVEIS BRASIL</span>
         </span>
       </Link>
 

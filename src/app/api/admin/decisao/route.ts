@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     };
     if (mensagens[acao]) {
       emailDoAnunciante(id).then((to) =>
-        sendEmail(to, `Arini Maps — imóvel ${antes.codigo}`, mensagens[acao])
+        sendEmail(to, `Arini Imóveis Brasil — imóvel ${antes.codigo}`, mensagens[acao])
       ).catch(() => undefined);
     }
 
@@ -203,7 +203,7 @@ export async function POST(request: Request) {
       ? `Sua alteração foi aplicada ao anúncio ${prop.codigo} (${prop.titulo}).\n\n${resumo}\n\nVeja: ${process.env.NEXT_PUBLIC_SITE_URL}/imovel/${prop.codigo}`
       : `A Arini não aplicou a alteração proposta no anúncio ${prop.codigo}. Motivo: ${motivo || "entre em contato com a Arini"}.\n\nO anúncio continua publicado como estava.`;
     emailDoAnunciante(prop.id).then((to) =>
-      sendEmail(to, `Arini Maps — alteração do anúncio ${prop.codigo}`, texto)
+      sendEmail(to, `Arini Imóveis Brasil — alteração do anúncio ${prop.codigo}`, texto)
     ).catch(() => undefined);
 
     return NextResponse.json({ ok: true });

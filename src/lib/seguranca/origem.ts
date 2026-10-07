@@ -39,7 +39,7 @@ function hostsPermitidos(request: Request) {
   if (daUrl) hosts.add(daUrl);
   const site = hostDe(process.env.NEXT_PUBLIC_SITE_URL);
   if (site) hosts.add(site);
-  // ORIGENS_PERMITIDAS="https://homolog.arinimaps.com.br,https://outro" — opcional
+  // ORIGENS_PERMITIDAS="https://homolog.ariniimoveisbrasil.com.br,https://outro" — opcional
   for (const o of (process.env.ORIGENS_PERMITIDAS ?? "").split(",")) {
     const h = hostDe(o.trim());
     if (h) hosts.add(h);
@@ -73,7 +73,7 @@ export function conferirOrigem(request: Request, pathname?: string): ResultadoOr
 export function respostaOrigemNegada(motivo: string) {
   return Response.json(
     {
-      error: "Pedido recusado: ele não partiu de uma página do Arini Maps.",
+      error: "Pedido recusado: ele não partiu de uma página do Arini Imóveis Brasil.",
       motivo,
       solucao: "Recarregue a página do sistema e tente de novo. Se usa uma extensão que altera pedidos, desative-a.",
       codigo: "origem_invalida",

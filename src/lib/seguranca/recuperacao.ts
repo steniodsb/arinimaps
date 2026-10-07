@@ -88,7 +88,7 @@ export async function segundaEtapaRecuperacao(
       expira_em: new Date(Date.now() + VALIDADE_MIN * 60_000).toISOString(), tentativas: 0,
       created_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
-    await sendEmail(user.email, "Código de confirmação — Arini Maps",
+    await sendEmail(user.email, "Código de confirmação — Arini Imóveis Brasil",
       `Seu código para concluir a redefinição de senha é: ${novo}\n\n` +
       `Ele vale por ${VALIDADE_MIN} minutos. Contas da equipe da Arini precisam desta confirmação extra.\n\n` +
       "Se não foi você que pediu, NÃO informe o código a ninguém e avise a diretoria: alguém pode estar tentando entrar na sua conta.");
@@ -147,7 +147,7 @@ export async function avisarRecuperacaoEquipe(
       tipo: "recuperacao_equipe", severidade: etapa.via === "sem_segunda_etapa" ? "alta" : "media",
       userId: user.id, email: user.email, request,
       detalhe: { via: etapa.via, papel: etapa.papel, nome: etapa.nome },
-      aviso: [`Senha da equipe redefinida: ${quem} — Arini Maps`,
+      aviso: [`Senha da equipe redefinida: ${quem} — Arini Imóveis Brasil`,
         `A senha da conta de ${quem} (${user.email}) foi redefinida pelo link de recuperação em ${quando}, a partir do endereço ${ip}.\n\n` +
         `Confirmação extra: ${etapa.via === "mfa" ? "código do aplicativo autenticador" : etapa.via === "codigo_email" ? "código enviado ao e-mail" : "nenhuma (serviço de e-mail ausente)"}.\n\n` +
         "Se a pessoa não confirmar que foi ela, desative a conta em Equipe e usuários e siga o plano de resposta a incidentes (docs/INCIDENTES.md)."],

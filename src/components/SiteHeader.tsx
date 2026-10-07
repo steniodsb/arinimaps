@@ -23,7 +23,7 @@ export default async function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-linha bg-superficie/85 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 h-16 flex items-center gap-4">
-        <Link href="/" aria-label="Arini Maps — início" className="shrink-0">
+        <Link href="/" aria-label="Arini Imóveis Brasil — início" className="shrink-0">
           <span className="sm:hidden"><Logo compacto /></span>
           <span className="hidden sm:block whitespace-nowrap"><Logo /></span>
         </Link>

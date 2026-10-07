@@ -124,7 +124,7 @@ const pxGlobal = (lng: number, lat: number, z: number) => {
 
 async function baixarTile(z: number, x: number, y: number) {
   const url = URL_TILE.replace("{z}", String(z)).replace("{x}", String(x)).replace("{y}", String(y));
-  const res = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { "User-Agent": "AriniMaps/1.0 (pre-avaliacao)" } });
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { "User-Agent": "AriniImoveisBrasil/1.0 (pre-avaliacao)" } });
   if (!res.ok) throw new Error(`Terrarium ${res.status}`);
   return decodificarPng(Buffer.from(await res.arrayBuffer()));
 }

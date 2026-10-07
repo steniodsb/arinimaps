@@ -1,4 +1,4 @@
-# Arini Maps — planos por nicho
+# Arini Imóveis Brasil — planos por nicho
 
 Pedido do Carlos (05/10/2026): "criar tipos de planos de acordo com o nicho do
 usuário; esses planos dão ou bloqueiam acesso a ferramentas". Cobre o Fluxograma

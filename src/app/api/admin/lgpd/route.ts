@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   if (encerra && b.avisar !== false) {
-    sendEmail(antes.email, `Resposta ao pedido ${antes.codigo} — Arini Maps`, resposta!).catch(() => undefined);
+    sendEmail(antes.email, `Resposta ao pedido ${antes.codigo} — Arini Imóveis Brasil`, resposta!).catch(() => undefined);
   }
   await logAudit({
     user_id: a.userId, acao: "lgpd_" + b.status, entidade: "lgpd_requests", entidade_id: b.id,

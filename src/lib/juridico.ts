@@ -51,7 +51,7 @@ function dados(cfg: Record<string, unknown>) {
   const mensal = numero(cfg, "mensalidade_valor_padrao", 0);
   const empresa = texto(cfg, "juridico_razao_social", "Arini Negócios Imobiliários");
   return {
-    sistema: texto(cfg, "nome_sistema", "Arini Maps"),
+    sistema: texto(cfg, "nome_sistema", "Arini Imóveis Brasil"),
     empresa,
     qualificacao:
       `${empresa}, inscrita no CNPJ sob o nº ${texto(cfg, "juridico_cnpj", falta("CNPJ"))}, ` +

@@ -29,7 +29,7 @@ export async function fetchPois(payload, db) {
     body: "data=" + encodeURIComponent(`[out:json][timeout:25];(${blocos});out center 120;`),
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "AriniMaps/1.0 (contato@arinimaps.com.br)",
+      "User-Agent": "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)",
       Accept: "application/json",
     },
   });

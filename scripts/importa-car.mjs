@@ -32,7 +32,7 @@ for (const m of ms) {
     while (inicio < total) {
       const url = `${WFS}?service=WFS&version=2.0.0&request=GetFeature&typeNames=sicar:sicar_imoveis_${m.uf.toLowerCase()}` +
         `&outputFormat=application/json&count=${PAGINA}&startIndex=${inicio}&sortBy=cod_imovel&CQL_FILTER=cod_municipio_ibge=${Number(m.codigo_ibge)}`;
-      const r = await fetch(url, { headers: { "User-Agent": "AriniMaps/1.0" }, signal: AbortSignal.timeout(90_000) });
+      const r = await fetch(url, { headers: { "User-Agent": "AriniImoveisBrasil/1.0" }, signal: AbortSignal.timeout(90_000) });
       if (!r.ok) throw new Error(`SICAR HTTP ${r.status}`);
       const fc = await r.json();
       total = Number(fc.numberMatched ?? fc.totalFeatures ?? fc.features.length);

@@ -1,4 +1,4 @@
-# Arini Maps — Arquitetura completa do sistema
+# Arini Imóveis Brasil — Arquitetura completa do sistema
 
 > Documento mestre do projeto. Versão 1.1 — 21/08/2026 (revisada: licenciamento de imagens, POIs via extract OSM, OSRM self-host, notificação de lead na F0, georreferenciamento por pontos de controle, render headless).
 > Baseado em: especificação funcional do cliente (fluxograma §1–§32), transcrição da reunião de 21/08 e nos padrões já validados no CRM da Arini.
@@ -8,7 +8,7 @@
 
 ## 0. Resumo executivo
 
-O Arini Maps é um **marketplace imobiliário regional com o mapa como porta de entrada**: o comprador navega pelo mapa (urbano e rural), vê imóveis à venda destacados por cor, abre a página do imóvel (fotos, 3D, vídeo automático, pontos de interesse), clica em "Tenho interesse" e vira lead. A Arini é a **central de intermediação**: aprova todo cadastro (parceiro, proprietário e imóvel), qualifica todo lead e acompanha o funil até a venda, cobrando **1% sobre a operação** + **mensalidade de permanência** do anúncio.
+O Arini Imóveis Brasil é um **marketplace imobiliário regional com o mapa como porta de entrada**: o comprador navega pelo mapa (urbano e rural), vê imóveis à venda destacados por cor, abre a página do imóvel (fotos, 3D, vídeo automático, pontos de interesse), clica em "Tenho interesse" e vira lead. A Arini é a **central de intermediação**: aprova todo cadastro (parceiro, proprietário e imóvel), qualifica todo lead e acompanha o funil até a venda, cobrando **1% sobre a operação** + **mensalidade de permanência** do anúncio.
 
 Cadeia completa: `MAPA → IMÓVEL → APROVAÇÃO → PUBLICAÇÃO → INTERESSE → ARINI → INTERMEDIAÇÃO → NEGOCIAÇÃO → VENDA`.
 
@@ -280,7 +280,7 @@ arini-maps/
 └── deploy/                          # compose do worker, notas Dokploy
 ```
 
-Domínio sugerido: `arinimaps.com.br` (ou `maps.arininegociosimobiliarios.com.br` para começar sem comprar domínio — decisão do Carlos).
+Domínio sugerido: `ariniimoveisbrasil.com.br` (ou `maps.arininegociosimobiliarios.com.br` para começar sem comprar domínio — decisão do Carlos).
 
 ---
 
@@ -313,7 +313,7 @@ Asaas (mensalidade recorrente + cobrança de comissão) · relatórios (funil, c
 6. **Valor da mensalidade** de permanência e regra de suspensão (quantos dias de atraso).
 7. **Categorias de POI** que ele quer destacar (a lista da spec §9 já é o default).
 8. **Logo/identidade** (reaproveito verde/dourado do CRM se ele quiser consistência).
-9. **Domínio**: comprar `arinimaps.com.br` ou usar subdomínio do site atual.
+9. **Domínio**: comprar `ariniimoveisbrasil.com.br` ou usar subdomínio do site atual.
 9b. **Aprovar o custo do satélite em produção** (~US$25/mês MapTiler ou free tier Mapbox) — único custo recorrente de mapa do projeto.
 10. **Vídeos de referência** dos concorrentes (ele mostrou na reunião — pedir os links no WhatsApp).
 

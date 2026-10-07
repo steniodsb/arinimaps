@@ -33,7 +33,7 @@ export default function FormAcesso() {
       <div className="space-y-1">
         <h1 className="text-lg font-semibold text-texto">Acesso restrito</h1>
         <p className="text-sm text-texto-2">
-          O Arini Maps está em fase de testes. Digite a senha de acesso para continuar.
+          O Arini Imóveis Brasil está em fase de testes. Digite a senha de acesso para continuar.
         </p>
       </div>
       <input type="password" autoFocus required autoComplete="current-password"

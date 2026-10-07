@@ -1,6 +1,6 @@
 // Lista as camadas publicadas em cada serviço oficial que respondeu à sondagem.
 // Sem o nome exato da camada não existe consulta — este script é o mapa do tesouro.
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
 
 const WFS = [
   ["SICAR / CAR", "https://geoserver.car.gov.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities"],

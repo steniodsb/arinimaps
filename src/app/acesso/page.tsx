@@ -13,7 +13,7 @@ export default function Acesso() {
     <div className="min-h-screen flex flex-col bg-fundo">
       <div className="px-4 py-3 border-b border-linha flex items-center justify-between gap-3">
         <span className="font-semibold text-texto">
-          Arini <span className="texto-ouro">Maps</span>
+          Arini <span className="texto-ouro">Imóveis Brasil</span>
         </span>
         {/* 4.7: o tema também se escolhe na porta do site */}
         <BotaoTema />

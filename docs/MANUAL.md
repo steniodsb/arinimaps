@@ -1,4 +1,4 @@
-# Arini Maps — manual de funcionalidades e permissões
+# Arini Imóveis Brasil — manual de funcionalidades e permissões
 
 Para a equipe da Arini (Matriz) e para quem vai treinar novos usuários (roadmap 10.4 e 10.5).
 Detalhe técnico de permissões: `SEGURANCA.md` §2. Planos: `PLANOS.md`.

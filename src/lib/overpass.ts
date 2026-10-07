@@ -35,7 +35,7 @@ export async function buscarPoisAoRedor(lng: number, lat: number, raio: number, 
     body: "data=" + encodeURIComponent(query),
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "AriniMaps/1.0 (contato@arinimaps.com.br)",
+      "User-Agent": "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)",
       Accept: "application/json",
     },
     signal: AbortSignal.timeout(22_000),

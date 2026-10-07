@@ -68,7 +68,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
         <header className="flex items-start justify-between gap-4 border-b border-linha print:border-gray-300 pb-5 mb-6">
           <div>
             <p className="text-[10px] tracking-[0.28em] uppercase text-ouro print:text-gray-500">
-              {texto(cfg, "nome_sistema", "Arini Maps")}
+              {texto(cfg, "nome_sistema", "Arini Imóveis Brasil")}
             </p>
             <h1 className="text-2xl font-semibold mt-1">Relatório Territorial</h1>
             <p className="text-texto-2 print:text-gray-600">{imovel.titulo}</p>
@@ -240,7 +240,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
           <p>
             <strong className="text-texto print:text-black">Origem dos dados.</strong> As incidências vêm dos
             órgãos citados, consultadas na data indicada em cada bloco. Área, perímetro e distâncias são
-            cálculos do {texto(cfg, "nome_sistema", "Arini Maps")} sobre a geometria cadastrada do imóvel.
+            cálculos do {texto(cfg, "nome_sistema", "Arini Imóveis Brasil")} sobre a geometria cadastrada do imóvel.
           </p>
           <p>
             Este documento é um apoio à decisão e <strong className="text-texto print:text-black">não substitui

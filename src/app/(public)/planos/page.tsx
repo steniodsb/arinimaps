@@ -12,7 +12,7 @@ import {
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Planos",
-  description: "Planos do Arini Maps por perfil de uso: consulta básica, consulta profissional, anunciante, parceiro e organização.",
+  description: "Planos do Arini Imóveis Brasil por perfil de uso: consulta básica, consulta profissional, anunciante, parceiro e organização.",
 };
 
 const GRUPOS = Object.keys(GRUPO_RECURSO_LABEL) as Recurso["grupo"][];

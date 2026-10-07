@@ -85,7 +85,7 @@ export default function RedefinirSenha() {
   return (
     <div className="min-h-screen flex flex-col bg-fundo">
       <div className="px-4 py-4 border-b border-linha">
-        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Maps</span></Link>
+        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Imóveis Brasil</span></Link>
       </div>
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md cartao p-6 space-y-4">

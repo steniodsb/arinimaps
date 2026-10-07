@@ -5,7 +5,7 @@
 //
 // Uso: node scripts/sonda-fontes4.mjs
 
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
 const B = "-50.6,-20.0,-49.8,-19.4";
 const ESRI = "geometry=" + encodeURIComponent(JSON.stringify({ xmin: -50.6, ymin: -20.0, xmax: -49.8, ymax: -19.4, spatialReference: { wkid: 4326 } })) +
   "&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&returnCountOnly=true&f=json";

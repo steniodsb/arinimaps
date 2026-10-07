@@ -143,7 +143,7 @@ export default function Entrar() {
     <div className="min-h-screen flex flex-col bg-fundo">
       <div className="px-4 py-4 border-b border-linha">
         <Link href="/" className="font-semibold text-texto">
-          Arini <span className="texto-ouro">Maps</span>
+          Arini <span className="texto-ouro">Imóveis Brasil</span>
         </Link>
       </div>
 

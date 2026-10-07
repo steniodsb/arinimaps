@@ -8,7 +8,7 @@ import MeusChamados, { type Chamado } from "./MeusChamados";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Suporte",
-  description: "Fale com a equipe do Arini Maps: dúvidas, problemas, anúncios, cobrança e dados pessoais.",
+  description: "Fale com a equipe do Arini Imóveis Brasil: dúvidas, problemas, anúncios, cobrança e dados pessoais.",
 };
 
 export default async function Suporte({ searchParams }: PageProps<"/suporte">) {

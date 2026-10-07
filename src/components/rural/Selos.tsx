@@ -11,7 +11,7 @@ export type Situacao = "ok" | "instavel" | "sem_verificacao";
 const CLASSIFICACAO: Record<Classificacao, { rotulo: string; dica: string; cor: string }> = {
   oficial: { rotulo: "oficial", dica: "Dado publicado pelo órgão responsável (ou republicado por outro órgão público).", cor: "bg-verde/10 text-verde" },
   terceiro: { rotulo: "terceiro", dica: "Base não governamental (ex.: OpenStreetMap, MapBiomas).", cor: "bg-ouro/15 text-ouro-escuro" },
-  derivado: { rotulo: "derivado", dica: "Cálculo do Arini Maps sobre outra base (área, distância, índice).", cor: "bg-superficie-2 text-texto-2" },
+  derivado: { rotulo: "derivado", dica: "Cálculo do Arini Imóveis Brasil sobre outra base (área, distância, índice).", cor: "bg-superficie-2 text-texto-2" },
   usuario: { rotulo: "informado pelo usuário", dica: "Declarado por quem cadastrou o imóvel; não conferido em base oficial.", cor: "bg-alerta/15 text-alerta" },
 };
 

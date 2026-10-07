@@ -1,4 +1,4 @@
-# Arini Maps — guia de desenvolvimento
+# Arini Imóveis Brasil — guia de desenvolvimento
 
 Arquitetura completa: `../ARQUITETURA.md` (v1.1).
 

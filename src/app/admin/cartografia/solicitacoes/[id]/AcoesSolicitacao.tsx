@@ -103,7 +103,7 @@ export default function AcoesSolicitacao({
           ? <p className="text-xs text-texto-2">Ligada a <span className="font-mono text-texto">{imovel.codigo}</span>. Informe outro código para trocar.</p>
           : <p className="text-xs text-texto-2">Nenhum. Vincule o imóvel cadastrado a que esta solicitação se refere.</p>}
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); agir("vincular", { acao: "vincular_imovel", codigo }, () => setCodigo("")); }}>
-          <input className={input} placeholder="ARINI-MAP-000010" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+          <input className={input} placeholder="AIB-000010" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
           <button disabled={!!ocupado || !codigo.trim()} className="btn-contorno px-3 py-2 text-xs shrink-0 disabled:opacity-60">
             {ocupado === "vincular" ? "…" : "Vincular"}
           </button>

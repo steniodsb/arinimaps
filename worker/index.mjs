@@ -1,4 +1,4 @@
-// Worker do Arini Maps — polling da tabela jobs (Postgres/Supabase).
+// Worker do Arini Imóveis Brasil — polling da tabela jobs (Postgres/Supabase).
 // Processa: render_video · screenshot_og · tile_raster · fetch_pois · refresh_pois · gerar_lotes · descarte_retencao · verificar_fontes
 // 1 job por vez, teto de memória no container (ver docker-compose).
 import pg from "pg";
@@ -106,7 +106,7 @@ async function agendarVerificacaoFontes() {
   }
 }
 
-console.log("Arini Maps worker iniciado.");
+console.log("Arini Imóveis Brasil worker iniciado.");
 agendarVerificacaoFontes();
 setInterval(agendarVerificacaoFontes, 30 * 60 * 1000);
 agendarRotinas();

@@ -2,7 +2,7 @@
 // usando a área da Fazenda Boa Vista (Iturama/MG) com 10 km de entorno.
 // Só entra no sistema o que devolver feição aqui.
 
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
 const T = 30_000;
 // bbox ~10 km ao redor do imóvel de teste
 const BB = { xmin: -50.30, ymin: -19.85, xmax: -50.05, ymax: -19.60 };

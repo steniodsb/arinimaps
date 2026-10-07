@@ -31,7 +31,7 @@ export default async function ContaSeguranca({ searchParams }: PageProps<"/conta
   return (
     <div className="min-h-screen bg-fundo">
       <div className="px-4 py-4 border-b border-linha flex items-center justify-between">
-        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Maps</span></Link>
+        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Imóveis Brasil</span></Link>
         <Link href={daEquipe ? "/admin" : "/painel"} className="text-sm text-verde hover:underline">
           ← Voltar {daEquipe ? "à Central" : "ao painel"}
         </Link>

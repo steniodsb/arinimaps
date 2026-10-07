@@ -1,4 +1,4 @@
-# Arini Maps — matriz técnica das fontes oficiais
+# Arini Imóveis Brasil — matriz técnica das fontes oficiais
 
 Entrega do item 6 do documento "Levantamento de APIs, serviços geoespaciais e
 fontes de dados" e das pendências 3.4, 3.5, 3.9, 3.10, 3.14, 3.15 e 3.16.

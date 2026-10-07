@@ -85,7 +85,7 @@ const CONSULTAS: Consulta[] = [
 
 export default async function Home() {
   const [imoveis, cfg, n] = await Promise.all([destaques(), lerConfiguracoes(), numeros()]);
-  const marca = texto(cfg, "nome_sistema", "Arini Maps");
+  const marca = texto(cfg, "nome_sistema", "Arini Imóveis Brasil");
   const siteArini = texto(cfg, "sobre_site");
   const paragrafosSobre = texto(cfg, "sobre_texto").split("\n").map((p) => p.trim()).filter(Boolean);
 

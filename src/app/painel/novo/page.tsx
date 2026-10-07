@@ -359,7 +359,7 @@ export default function NovoImovel() {
       {form.tipo === "urbano" && (
         <div>
           <label className={label}>Faz parte de um empreendimento? (opcional)</label>
-          <input className={input} placeholder="Código do imóvel principal — ex.: ARINI-MAP-000010"
+          <input className={input} placeholder="Código do imóvel principal — ex.: AIB-000010"
             value={form.parent_codigo} onChange={(e) => setForm({ ...form, parent_codigo: e.target.value })} />
           <p className="text-xs text-texto-2 mt-0.5">
             Para apartamentos em bloco ou lotes de um loteamento: cadastre o empreendimento uma vez e

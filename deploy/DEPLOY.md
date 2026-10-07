@@ -110,12 +110,19 @@ Na ordem, porque cada uma isola uma camada diferente:
 
 ## 6. Domínio
 
-`arinimaps.com.br` **já existe e já resolve**, mas em 17/09/2026 estava servindo
-um **WordPress em Apache**, não esta aplicação. Apontar o domínio para o Dokploy
-tira aquele site do ar — decisão sua, feita à parte deste deploy.
+O sistema se chama **Arini Imóveis Brasil** e atende em **`ariniimoveisbrasil.com.br`**
+(decisão de 08/10/2026; o nome antigo era Arini Maps e o domínio `arinimaps.com.br`).
+O deploy vai para uma **VPS exclusiva** do projeto, não para o App Hosting compartilhado.
 
-Enquanto isso, use a URL interna do Dokploy (ou um subdomínio tipo
-`app.arinimaps.com.br`) e ponha o mesmo valor em `NEXT_PUBLIC_SITE_URL`.
+1. No Registro.br, registro **A** de `ariniimoveisbrasil.com.br` e de `www` para o IP da VPS.
+2. `NEXT_PUBLIC_SITE_URL=https://ariniimoveisbrasil.com.br` no app e `SITE_URL` no worker.
+3. No Resend, verificar o domínio de envio `ariniimoveisbrasil.com.br` e usar
+   `RESEND_FROM="Arini Imóveis Brasil <naoresponda@ariniimoveisbrasil.com.br>"`.
+4. No Supabase › Authentication › URL Configuration, Site URL e Redirect URLs com o domínio novo
+   (o link de recuperação de senha depende disso).
+
+O repositório no GitHub e a pasta local continuam com o nome técnico `arinimaps` / `arini-maps`;
+isso não aparece para o usuário.
 
 ---
 

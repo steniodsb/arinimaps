@@ -254,7 +254,7 @@ export default function ChatIA() {
             {estado?.ligado && estado.permitido && msgs.length === 0 && (
               <div className="space-y-3">
                 <p className="text-texto-2">
-                  Pergunte sobre imóveis publicados, uma área do CAR ou como o Arini Maps funciona.
+                  Pergunte sobre imóveis publicados, uma área do CAR ou como o Arini Imóveis Brasil funciona.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {SUGESTOES.map((s) => (

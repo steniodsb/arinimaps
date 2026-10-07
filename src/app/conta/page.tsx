@@ -34,7 +34,7 @@ export default async function MinhaConta() {
   return (
     <div className="min-h-screen bg-fundo">
       <div className="px-4 py-3 border-b border-linha flex items-center justify-between gap-3">
-        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Maps</span></Link>
+        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Imóveis Brasil</span></Link>
         <div className="flex items-center gap-2">
           <BotaoTema />
           <Link href={daEquipe ? "/admin" : "/painel"} className="text-sm text-verde hover:underline">

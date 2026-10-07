@@ -90,7 +90,7 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Arini Maps <leads@arinimaps.com.br>",
+          from: "Arini Imóveis Brasil <leads@ariniimoveisbrasil.com.br>",
           to: [process.env.ARINI_NOTIFY_EMAIL],
           subject: `Novo lead ${opp.codigo} — ${property.titulo}`,
           text: `Novo interesse no imóvel ${property.codigo} (${property.titulo}).\n\nNome: ${nome}\nTelefone: ${telefone || "-"}\nE-mail: ${email || "-"}\nMensagem: ${mensagem || "-"}\n\nAbra o painel: ${process.env.NEXT_PUBLIC_SITE_URL}/admin/leads`,

@@ -35,7 +35,7 @@ export const FERRAMENTAS: Anthropic.Beta.BetaTool[] = [
   {
     name: "buscar_imoveis",
     description:
-      "Busca imóveis PUBLICADOS na vitrine pública do Arini Maps (mesma busca da página /imoveis). Use para pedidos como " +
+      "Busca imóveis PUBLICADOS na vitrine pública do Arini Imóveis Brasil (mesma busca da página /imoveis). Use para pedidos como " +
       "\"lotes de R$ 40 mil em Iturama\" ou \"fazendas acima de 100 ha em União de Minas\". Lote, casa, terreno na cidade = tipo urbano; " +
       "fazenda, sítio, chácara, área rural = tipo rural. Para valor aproximado (\"de R$ 40 mil\"), use uma faixa de cerca de ±20%. " +
       "Devolve no máximo 15 imóveis com código, título, município, valor, área e o link da ficha.",

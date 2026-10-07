@@ -21,7 +21,7 @@ import { ufsDoEnvelope } from "./ufs";
  * cache sem mudar nenhuma rota.
  */
 
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
 /** teto de cada requisição */
 const TIMEOUT = 20_000;
 /** teto do adaptador inteiro, tentativas incluídas: o relatório não espera mais que isso */

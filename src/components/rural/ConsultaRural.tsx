@@ -193,7 +193,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
 
       <p className="text-xs text-texto-2">
         Dados oficiais dos órgãos citados, consultados na data indicada. Distâncias e interseções são
-        cálculos do Arini Maps sobre a geometria do imóvel — não substituem certidão oficial.
+        cálculos do Arini Imóveis Brasil sobre a geometria do imóvel — não substituem certidão oficial.
       </p>
     </div>
   );

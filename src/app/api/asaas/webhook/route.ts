@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
+import { timingSafeEqual } from "node:crypto";
+
+/** Comparação em tempo constante: o tempo de resposta não revela quantos caracteres acertaram. */
+function tokenConfere(recebido: string | null, esperado: string) {
+  const a = Buffer.from(recebido ?? "");
+  const b = Buffer.from(esperado);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 // Webhook do Asaas: confirma pagamento de mensalidade/comissão.
 // Configure no Asaas com o header de autenticação = ASAAS_WEBHOOK_TOKEN.
 export async function POST(request: Request) {
   const token = process.env.ASAAS_WEBHOOK_TOKEN;
   if (!token) return NextResponse.json({ error: "Webhook desativado." }, { status: 503 });
-  if (request.headers.get("asaas-access-token") !== token) {
+  if (!tokenConfere(request.headers.get("asaas-access-token"), token)) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 

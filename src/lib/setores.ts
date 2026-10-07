@@ -43,6 +43,8 @@ export const SETORES: Setor[] = [
       { href: "/admin/comercial", rotulo: "Painel do setor", icone: "◫" },
       { href: "/admin/funil", rotulo: "Funil comercial", icone: "⇉" },
       { href: "/admin/leads", rotulo: "Leads", icone: "◎" },
+      { href: "/admin/demandas", rotulo: "Demandas sem imóvel", icone: "⌖" },
+      { href: "/admin/organizacoes", rotulo: "Organizações", icone: "▣" },
     ],
   },
   {
@@ -67,6 +69,7 @@ export const SETORES: Setor[] = [
     descricao: "Origem dos leads, imóveis mais procurados, materiais de divulgação e vitrine do site.",
     itens: [
       { href: "/admin/marketing", rotulo: "Painel do setor", icone: "◫" },
+      { href: "/admin/conhecimento", rotulo: "Conhecimento e IA", icone: "✎" },
     ],
   },
   {
@@ -76,6 +79,7 @@ export const SETORES: Setor[] = [
       { href: "/admin/cartografia", rotulo: "Cartografia", icone: "🗺" },
       { href: "/admin/cartografia/solicitacoes", rotulo: "Solicitações cartográficas", icone: "⚑" },
       { href: "/admin/regioes", rotulo: "Regiões e CAR", icone: "⊕" },
+      { href: "/admin/fontes", rotulo: "Fontes oficiais", icone: "⇄" },
     ],
   },
   {
@@ -90,6 +94,7 @@ export const SETORES: Setor[] = [
     descricao: "Acessos, tentativas de login, segundo fator e trilha de auditoria.",
     itens: [
       { href: "/admin/seguranca", rotulo: "Acessos e eventos", icone: "⛨" },
+      { href: "/admin/seguranca/revisao", rotulo: "Revisão de acessos", icone: "☑" },
       { href: "/admin/auditoria", rotulo: "Auditoria", icone: "⧉" },
     ],
   },

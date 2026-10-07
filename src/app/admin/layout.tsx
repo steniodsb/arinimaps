@@ -36,6 +36,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       nome={user.nome ?? ""}
       papel={PAPEL_LABEL[user.role] ?? user.role}
       setores={setoresDe(user.role, user.setores)}
+      avatar={user.avatarUrl}
     >
       {children}
     </AdminShell>

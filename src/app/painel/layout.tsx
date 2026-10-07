@@ -8,7 +8,9 @@ const ABAS = [
   { href: "/painel/oportunidades", rotulo: "Minhas oportunidades" },
   { href: "/painel/novo", rotulo: "Anunciar" },
   { href: "/painel/cartografia", rotulo: "Mapa: solicitações" },
+  { href: "/painel/organizacao", rotulo: "Organização" },
   { href: "/suporte", rotulo: "Suporte" },
+  { href: "/conta", rotulo: "Minha conta" },
   { href: "/conta/seguranca", rotulo: "Segurança da conta" },
 ];
 
@@ -18,7 +20,7 @@ export default async function PainelLayout({ children }: LayoutProps<"/painel">)
   if (["admin_central", "analista_arini"].includes(user.role)) redirect("/admin");
 
   return (
-    <AppShell usuario={{ nome: user.nome || "Conta", papel: "Anunciante" }} busca={false}>
+    <AppShell usuario={{ nome: user.nome || "Conta", papel: "Anunciante", avatar: user.avatarUrl }} busca={false}>
       <nav className="flex gap-1.5 mb-5 overflow-x-auto">
         {ABAS.map((a) => (
           <Link key={a.href} href={a.href} className="chip px-4 py-2 text-sm whitespace-nowrap">

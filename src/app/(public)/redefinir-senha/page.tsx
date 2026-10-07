@@ -19,7 +19,11 @@ export default function RedefinirSenha() {
   const [senha, setSenha] = useState("");
   const [confirma, setConfirma] = useState("");
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  // contas da equipe (item 6.7): etapa extra pedida pelo servidor
+  const [etapa, setEtapa] = useState<null | "mfa" | "codigo">(null);
+  const [codigo, setCodigo] = useState("");
 
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -48,12 +52,32 @@ export default function RedefinirSenha() {
     if (problema) { setErro(problema); return; }
     if (senha !== confirma) { setErro("As duas senhas não são iguais."); return; }
     setOcupado(true);
+    // conta da equipe com segundo fator: confirma o código do aplicativo antes (sessão aal2)
+    if (etapa === "mfa") {
+      const supabase = supabaseBrowser();
+      const { data: fatores } = await supabase.auth.mfa.listFactors();
+      const fator = fatores?.totp?.find((f) => f.status === "verified");
+      const { error } = fator
+        ? await supabase.auth.mfa.challengeAndVerify({ factorId: fator.id, code: codigo.replace(/[^0-9]/g, "") })
+        : { error: new Error("sem fator") };
+      await fetch("/api/auth/evento", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ evento: error ? "mfa_falhou" : "mfa_ok" }),
+      }).catch(() => undefined);
+      if (error) { setOcupado(false); setErro("Código incorreto ou vencido. Confira o aplicativo e tente de novo."); return; }
+    }
     const res = await fetch("/api/auth/redefinir", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ senha }),
+      body: JSON.stringify({ senha, ...(etapa === "codigo" && codigo ? { codigo } : {}) }),
     });
     setOcupado(false);
-    if (!res.ok) { setErro((await res.json()).error ?? "Não foi possível salvar a senha."); return; }
+    if (!res.ok) {
+      const corpo = await res.json().catch(() => ({}));
+      if (corpo.codigo === "mfa_necessario") { setEtapa("mfa"); setCodigo(""); setAviso(corpo.error); return; }
+      if (corpo.codigo === "codigo_email_necessario") { setEtapa("codigo"); setCodigo(""); setAviso(corpo.error); return; }
+      setErro(corpo.error ?? "Não foi possível salvar a senha.");
+      return;
+    }
     setEstado("feito");
     setTimeout(() => { router.push("/entrar"); router.refresh(); }, 2500);
   }
@@ -91,6 +115,16 @@ export default function RedefinirSenha() {
                 <input id="conf" type="password" required autoComplete="new-password" className={INPUT}
                   value={confirma} onChange={(e) => setConfirma(e.target.value)} />
               </div>
+              {etapa && (
+                <div>
+                  <label className="block text-sm font-medium text-texto mb-1" htmlFor="codigo">
+                    {etapa === "mfa" ? "Código do aplicativo autenticador" : "Código enviado ao seu e-mail"}
+                  </label>
+                  <input id="codigo" required inputMode="numeric" autoComplete="one-time-code" maxLength={8} className={INPUT}
+                    placeholder="000000" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+                  {aviso && <p className="text-xs text-texto-2 mt-1">{aviso}</p>}
+                </div>
+              )}
               {erro && <p className="text-sm text-critico">{erro}</p>}
               <button disabled={ocupado} className="btn-verde w-full py-3 disabled:opacity-60">
                 {ocupado ? "Salvando…" : "Salvar senha nova"}

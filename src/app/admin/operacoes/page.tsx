@@ -23,7 +23,7 @@ export default async function PainelOperacoes() {
       .order("created_at").limit(30),
     admin.from("property_documents")
       .select("id, tipo, nome_arquivo, created_at, property:properties(id, codigo, titulo, status)")
-      .eq("verificado", false).order("created_at").limit(40),
+      .eq("verificado", false).is("substituido_por", null).order("created_at").limit(40),
     // Fluxograma §9: alterações propostas em anúncios publicados
     admin.from("property_revisions")
       .select("id, versao, dados, created_at, property:properties(id, codigo, titulo)")

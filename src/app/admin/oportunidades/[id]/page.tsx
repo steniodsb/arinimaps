@@ -63,6 +63,11 @@ export default async function OportunidadeAdmin({ params }: PageProps<"/admin/op
               {prop.municipality?.nome} · {formatBRL(prop.valor)} · {STATUS_LABEL[prop.status]}
             </p>
           )}
+          {/* 5.16: o cliente não gostou do imóvel — guarda o que ele procura para casar com os próximos */}
+          <Link href={`/admin/demandas?opp=${opp.id}`} className="inline-block text-xs text-verde hover:underline"
+            title="O cliente não gostou deste imóvel? Registre o que ele procura e o sistema avisa quando um imóvel novo casar.">
+            Registrar demanda do cliente →
+          </Link>
         </div>
       </div>
 

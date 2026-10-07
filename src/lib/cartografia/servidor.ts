@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emailDoProfile, sendEmail } from "@/lib/notify";
 import { ARQUIVOS_ACEITOS, STATUS_SOLICITACAO_LABEL, type ArquivoSolicitacao, type StatusSolicitacao } from "./solicitacoes";
+import { urlArquivo } from "@/lib/seguranca/link-arquivo";
 
 /**
  * Peças de servidor das solicitações cartográficas: referência (CAR/lote)
@@ -91,7 +92,7 @@ export async function subirArquivos(protocolo: string, arquivos: File[], inicio 
     const ext = extensaoDe(f.name);
     const path = `cartografia/${protocolo}/${n}-${nomeSeguro(f.name)}`;
     const { error } = await admin.storage.from("docs")
-      .upload(path, await f.arrayBuffer(), { contentType: f.type || CONTENT_TYPE[ext] || "application/octet-stream", upsert: true });
+      .upload(path, await f.arrayBuffer(), { contentType: CONTENT_TYPE[ext] || "application/octet-stream", upsert: true });
     if (error) { falharam.push(f.name); continue; }
     salvos.push({ nome: f.name, path, tipo: ext, bytes: f.size });
     n++;
@@ -99,12 +100,13 @@ export async function subirArquivos(protocolo: string, arquivos: File[], inicio 
   return { salvos, falharam };
 }
 
-/** Endereços assinados (1 h) para os arquivos de uma solicitação. */
+/**
+ * Endereços para abrir os arquivos de uma solicitação. Passam por
+ * /api/arquivos, que confere a permissão a cada clique, registra quem abriu
+ * (item 6.3) e só então assina por 60 s — o link da tela não vaza o arquivo.
+ */
 export async function assinarArquivos(arquivos: ArquivoSolicitacao[]) {
-  if (!arquivos.length) return [] as (ArquivoSolicitacao & { url: string | null })[];
-  const { data } = await supabaseAdmin().storage.from("docs").createSignedUrls(arquivos.map((a) => a.path), 3600);
-  const porPath = new Map((data ?? []).map((d) => [d.path, d.signedUrl]));
-  return arquivos.map((a) => ({ ...a, url: porPath.get(a.path) ?? null }));
+  return arquivos.map((a) => ({ ...a, url: urlArquivo(a.path) as string | null }));
 }
 
 export type GeoSolicitacao = { ponto: GeoJSON.Point | null; geom: GeoJSON.Geometry | null; area_m2: number | null };

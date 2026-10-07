@@ -13,8 +13,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import BotaoTema from "./BotaoTema";
+import ChatIA from "@/components/ia/ChatIA";
+import Avatar from "./Avatar";
+import { usePreferencias } from "@/lib/usePreferencias";
 
-export type Usuario = { nome: string; papel: string } | null;
+/** avatar: foto do perfil (4.6); ausente = o cabeçalho busca na conta */
+export type Usuario = { nome: string; papel: string; avatar?: string | null } | null;
 
 const MENU = [
   { href: "/", rotulo: "Início", icone: "⌂" },
@@ -66,6 +70,9 @@ export default function AppShell({
 }) {
   const caminho = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
+  // a maioria das páginas não passa a foto: vem do mesmo pedido das preferências
+  const { conta } = usePreferencias();
+  const avatar = usuario?.avatar !== undefined ? usuario.avatar : conta?.avatar_url ?? null;
   const ativo = (href: string) => (href === "/" ? caminho === "/" : caminho.startsWith(href));
 
   return (
@@ -151,9 +158,7 @@ export default function AppShell({
             </button>
             {usuario ? (
               <Link href="/painel" className="flex items-center gap-2 rounded-xl hover:bg-superficie-2 px-2 py-1.5 transition">
-                <span className="w-8 h-8 rounded-full bg-verde/15 text-verde grid place-items-center text-sm font-semibold">
-                  {usuario.nome.charAt(0).toUpperCase()}
-                </span>
+                <Avatar nome={usuario.nome} url={avatar} tamanho={32} />
                 <span className="hidden md:block leading-tight text-left">
                   <span className="block text-xs font-medium text-texto">{usuario.nome.split(" ")[0]}</span>
                   <span className="block text-[10px] text-texto-2">{usuario.papel}</span>
@@ -209,6 +214,9 @@ export default function AppShell({
           </Link>
         ))}
       </nav>
+
+      {/* assistente de IA (5.1): inerte sem ANTHROPIC_API_KEY */}
+      <ChatIA />
     </div>
   );
 }

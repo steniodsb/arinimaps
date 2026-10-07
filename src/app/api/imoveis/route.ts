@@ -6,6 +6,7 @@ import { lerConfiguracoes, numero } from "@/lib/settings";
 import { assinatura, ipDe } from "@/lib/juridico";
 import { ehParceiro } from "@/lib/perfis";
 import { registrarOrigemDado } from "@/lib/imovel/eventos";
+import { ACEITA, conferirArquivo, type ArquivoConferido } from "@/lib/seguranca/arquivos";
 
 // Cria imóvel (multipart): dados + geometria GeoJSON + fotos.
 // Proprietário/parceiro precisa estar aprovado/ativo; Arini também pode cadastrar.
@@ -112,6 +113,20 @@ export async function POST(request: Request) {
   if (docGrande) {
     return NextResponse.json({ error: `O arquivo ${docGrande.arquivo.name} passa de 25 MB.` }, { status: 400 });
   }
+  // conteúdo conferido pelos primeiros bytes (item 6.2): página ou script
+  // renomeado para .jpg/.pdf não entra, e o tipo gravado é o real
+  const fotosOk: ArquivoConferido[] = [];
+  for (const foto of fotos.slice(0, 20)) {
+    const c = await conferirArquivo(foto, ACEITA.imagem, 20 * 1024 * 1024);
+    if (!c.ok) return NextResponse.json({ error: c.erro }, { status: 400 });
+    fotosOk.push(c.arquivo);
+  }
+  const docsOk: { tipo: string; nome: string; arquivo: ArquivoConferido }[] = [];
+  for (const { tipo, arquivo } of docs.slice(0, 30)) {
+    const c = await conferirArquivo(arquivo, ACEITA.documento, 25 * 1024 * 1024);
+    if (!c.ok) return NextResponse.json({ error: c.erro }, { status: 400 });
+    docsOk.push({ tipo, nome: arquivo.name, arquivo: c.arquivo });
+  }
 
   // área do CAR: a divisa vem do NOSSO banco, não do navegador — quem manda o
   // código não consegue trocar a geometria no caminho
@@ -210,17 +225,17 @@ export async function POST(request: Request) {
   const selfie = form.get("selfie");
   const exigeSelfie = condicao === "exclusividade" && !equipe && cfg.juridico_selfie_exclusividade !== false;
   if (exigeSelfie) {
-    if (!(selfie instanceof File) || !selfie.type.startsWith("image/") || selfie.size > 15 * 1024 * 1024) {
+    const selfieOk = selfie instanceof File ? await conferirArquivo(selfie, ACEITA.imagem, 15 * 1024 * 1024) : null;
+    if (!selfieOk?.ok) {
       await admin.from("properties").delete().eq("id", property.id);
       return NextResponse.json(
         { error: "Para a exclusividade, envie uma selfie (foto de até 15 MB) de quem está aceitando o termo." },
         { status: 400 }
       );
     }
-    const ext = (selfie.name.split(".").pop() || "jpg").toLowerCase().slice(0, 5);
-    selfiePath = `imoveis/${property.id}/selfie-${crypto.randomUUID()}.${ext}`;
+    selfiePath = `imoveis/${property.id}/selfie-${crypto.randomUUID()}.${selfieOk.arquivo.ext}`;
     const { error: sErro } = await admin.storage.from("docs")
-      .upload(selfiePath, await selfie.arrayBuffer(), { contentType: selfie.type });
+      .upload(selfiePath, selfieOk.arquivo.bytes, { contentType: selfieOk.arquivo.contentType });
     if (sErro) {
       await admin.from("properties").delete().eq("id", property.id);
       return NextResponse.json({ error: "A selfie não pôde ser salva. Tente de novo." }, { status: 502 });
@@ -278,12 +293,11 @@ export async function POST(request: Request) {
 
   // fotos → storage público
   let ordem = 0;
-  for (const foto of fotos.slice(0, 20)) {
-    const ext = (foto.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `properties/${property.id}/${crypto.randomUUID()}.${ext}`;
+  for (const foto of fotosOk) {
+    const path = `properties/${property.id}/${crypto.randomUUID()}.${foto.ext}`;
     const { error: upError } = await admin.storage
       .from("media")
-      .upload(path, await foto.arrayBuffer(), { contentType: foto.type || "image/jpeg" });
+      .upload(path, foto.bytes, { contentType: foto.contentType });
     if (!upError) {
       await admin.from("property_media").insert({
         property_id: property.id,
@@ -298,17 +312,16 @@ export async function POST(request: Request) {
 
   // documentos de comprovação → bucket PRIVADO (docs), conferidos pela Arini
   const docsFalharam: string[] = [];
-  for (const { tipo, arquivo } of docs.slice(0, 30)) {
-    const ext = (arquivo.name.split(".").pop() || "pdf").toLowerCase();
-    const path = `imoveis/${property.id}/${tipo}-${crypto.randomUUID()}.${ext}`;
+  for (const { tipo, nome, arquivo } of docsOk) {
+    const path = `imoveis/${property.id}/${tipo}-${crypto.randomUUID()}.${arquivo.ext}`;
     const { error: upErro } = await admin.storage.from("docs")
-      .upload(path, await arquivo.arrayBuffer(), { contentType: arquivo.type || "application/octet-stream" });
-    if (upErro) { docsFalharam.push(arquivo.name); continue; }
+      .upload(path, arquivo.bytes, { contentType: arquivo.contentType });
+    if (upErro) { docsFalharam.push(nome); continue; }
     await admin.from("property_documents").insert({
-      property_id: property.id, tipo, storage_path: path, nome_arquivo: arquivo.name,
+      property_id: property.id, tipo, storage_path: path, nome_arquivo: nome,
     });
   }
-  if (!equipe && docsFalharam.length === docs.length) {
+  if (!equipe && docsFalharam.length === docsOk.length) {
     // nenhum documento subiu: sem comprovação o imóvel não pode ir para análise
     await admin.from("properties").delete().eq("id", property.id);
     return NextResponse.json(

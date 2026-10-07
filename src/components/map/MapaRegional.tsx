@@ -19,8 +19,12 @@ import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
 import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
-import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
+import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, ROTULO_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
+import ComparaImagens from "@/components/map/ComparaImagens";
+import { IMAGENS_HISTORICAS, imagemHistoricaPorId } from "@/lib/map/historico";
 import { useTema } from "@/components/shell/BotaoTema";
+import { usePreferencias } from "@/lib/usePreferencias";
+import { escaparHtml } from "@/lib/seguranca/html";
 
 type ImovelProps = {
   id: string;
@@ -221,6 +225,16 @@ export default function MapaRegional({
   const [lista, setLista] = useState<ImovelProps[]>([]);
   const [mapaPronto, setMapaPronto] = useState<MLMap | null>(null);
   const [carAtivo, setCarAtivo] = useState(true);
+  // 5.10: base do mapa e camada do CAR vêm das preferências da conta (ou do navegador)
+  // e cada troca fica lembrada. Aplicadas uma vez, quando chegam do servidor.
+  const { prefs, carregado: prefsCarregadas, salvar: salvarPrefs } = usePreferencias();
+  const prefsAplicadasRef = useRef(false);
+  useEffect(() => {
+    if (!prefsCarregadas || prefsAplicadasRef.current) return;
+    prefsAplicadasRef.current = true;
+    setBase(prefs.mapa_base === "mapa" ? "ruas" : "satelite");
+    setCarAtivo(prefs.camada_car);
+  }, [prefsCarregadas, prefs.mapa_base, prefs.camada_car]);
   const [carSel, setCarSel] = useState<CarProps | null>(null);
   const [carAviso, setCarAviso] = useState("");
   // lotes urbanos: o lote sob o cursor e o clicado
@@ -232,6 +246,34 @@ export default function MapaRegional({
   // que é limpa por construção e pesa ~1 MB na tela, contra 14 MB da planta.
   const [plantaAtiva, setPlantaAtiva] = useState(false);
   const plantaAtivaRef = useRef(false);
+  // desenho em curso (medir / consultar área): o clique é vértice, não abre cartão
+  const desenhandoRef = useRef(false);
+  const aoDesenhar = useCallback((ativo: boolean) => { desenhandoRef.current = ativo; }, []);
+  // Imagem do ano (roadmap 3.8): satélite histórico no lugar do atual, ou lado a lado
+  const [imagemAno, setImagemAno] = useState<string | null>(null);
+  const [comparar, setComparar] = useState(false);
+  const [seletorAno, setSeletorAno] = useState(false);
+  const [avisoPlano, setAvisoPlano] = useState("");
+  const imagemAnoRef = useRef<string | null>(null);
+  const compararRef = useRef(false);
+
+  /**
+   * Põe (ou tira) a imagem do ano logo acima do satélite atual, abaixo de toda
+   * a cartografia e dos dados. No modo comparar ela sai daqui: quem mostra é o
+   * mapa de cima (ComparaImagens), recortado pela cortina.
+   */
+  const aplicarHistorico = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !map.getLayer("satelite")) return;
+    if (map.getLayer("historico")) map.removeLayer("historico");
+    if (map.getSource("historico")) map.removeSource("historico");
+    const img = imagemHistoricaPorId(imagemAnoRef.current);
+    if (!img || compararRef.current) return;
+    const camadas = map.getStyle().layers;
+    const depois = camadas[camadas.findIndex((l) => l.id === "satelite") + 1]?.id;
+    map.addSource("historico", img.fonte);
+    map.addLayer({ id: "historico", type: "raster", source: "historico" }, depois);
+  }, []);
 
   /**
    * CAR e lotes chegam como TILES VETORIAIS gerados no banco (migration 0031):
@@ -433,6 +475,7 @@ export default function MapaRegional({
         // satélite fica acima da base vetorial e abaixo das camadas de dados
         map.addSource("satelite", SATELITE);
         map.addLayer({ id: "satelite", type: "raster", source: "satelite", layout: { visibility: baseRef.current === "satelite" ? "visible" : "none" } });
+        aplicarHistorico();
 
         // Cartografia urbana. O raster entra agora — tile só é baixado quando
         // aparece na tela, o MapLibre cuida disso. A planta VETORIAL é um
@@ -508,6 +551,22 @@ export default function MapaRegional({
             "text-padding": 1,
           },
           paint: { "text-color": "#FFFFFF", "text-halo-color": "rgba(10,19,16,0.9)", "text-halo-width": 1.4 },
+        });
+        // quadra e número do lote, lidos dos textos da planta (roadmap 2.11). Vem
+        // depois das medidas para ganhar a disputa de espaço: o número importa mais.
+        map.addLayer({
+          id: "lotes-rotulos", type: "symbol", source: "lotes", "source-layer": "rotulos", minzoom: ROTULO_ZOOM_MIN,
+          layout: {
+            "text-field": ["case",
+              ["all", ["has", "numero"], ["has", "quadra"]],
+              ["format", ["get", "numero"], {}, "\nQd ", { "font-scale": 0.72 }, ["get", "quadra"], { "font-scale": 0.72 }],
+              ["has", "numero"], ["get", "numero"],
+              ["concat", "Qd ", ["get", "quadra"]]] as never,
+            "text-font": ["Open Sans Bold"],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 18, 12, 20, 16],
+            "text-padding": 2,
+          },
+          paint: { "text-color": "#FFD45E", "text-halo-color": "rgba(10,19,16,0.92)", "text-halo-width": 1.6 },
         });
 
         // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima)
@@ -596,6 +655,7 @@ export default function MapaRegional({
 
         // interações
         const aoClicar = (e: MapLayerMouseEvent) => {
+          if (desenhandoRef.current) return;
           const f = e.features?.[0];
           if (f) voarPara(f.properties as unknown as ImovelProps);
         };
@@ -609,8 +669,8 @@ export default function MapaRegional({
             .setLngLat(e.lngLat)
             .setHTML(
               `<div style="padding:10px 12px;font-family:inherit">
-                 <p style="font-weight:600;font-size:13px;color:#E9F1EB;margin:0">${p.titulo}</p>
-                 <p style="font-size:12px;color:#3FCF7F;font-weight:600;margin:2px 0 0">${formatBRL(p.valor)}</p>
+                 <p style="font-weight:600;font-size:13px;color:#E9F1EB;margin:0">${escaparHtml(p.titulo)}</p>
+                 <p style="font-size:12px;color:#3FCF7F;font-weight:600;margin:2px 0 0">${escaparHtml(formatBRL(p.valor))}</p>
                </div>`
             )
             .addTo(map);
@@ -629,6 +689,7 @@ export default function MapaRegional({
         // CAR: clique abre o cartão "anunciar esta área" — mas anúncio por
         // cima tem prioridade (o clique nele já abre o imóvel)
         map.on("click", "car-fill", (e: MapLayerMouseEvent) => {
+          if (desenhandoRef.current) return;
           const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"].filter((l) => map.getLayer(l)) });
           if (emAnuncio.length) return;
           const f = e.features?.[0];
@@ -652,6 +713,7 @@ export default function MapaRegional({
 
         // lote urbano: clique abre o cartão com as medidas
         map.on("click", "lotes-fill", async (e: MapLayerMouseEvent) => {
+          if (desenhandoRef.current) return;
           const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"].filter((l) => map.getLayer(l)) });
           const id = String(e.features?.[0]?.properties?.id ?? "");
           if (emAnuncio.length || !id) return;
@@ -712,6 +774,14 @@ export default function MapaRegional({
       }
     }
   }, [base, pronto]);
+
+  // imagem do ano / comparar
+  useEffect(() => {
+    imagemAnoRef.current = imagemAno;
+    compararRef.current = comparar && !!imagemAno;
+    if (!pronto) return;
+    aplicarHistorico();
+  }, [imagemAno, comparar, pronto, mapaPronto, aplicarHistorico]);
 
   // liga/desliga a planta completa do CAD
   useEffect(() => {
@@ -868,11 +938,25 @@ export default function MapaRegional({
             ☰ Camadas e Dados
           </button>
           {(["satelite", "ruas"] as const).map((b) => (
-            <button key={b} onClick={() => setBase(b)} data-ativo={base === b} className={chipBase}>
+            <button key={b} onClick={() => { setBase(b); void salvarPrefs({ mapa_base: b === "ruas" ? "mapa" : "satelite" }); }} data-ativo={base === b} className={chipBase}>
               {b === "ruas" ? "Mapa" : "Satélite"}
             </button>
           ))}
-          <button onClick={() => setCarAtivo(!carAtivo)} data-ativo={carAtivo} className={chipBase}
+          <button
+            onClick={() => {
+              if (!liberado("camadas_oficiais")) {
+                setAvisoPlano(logado
+                  ? "As imagens históricas fazem parte da consulta profissional e não estão no seu plano."
+                  : "Entre na sua conta para ver as imagens históricas.");
+                return;
+              }
+              setSeletorAno(!seletorAno);
+            }}
+            data-ativo={!!imagemAno || seletorAno} className={chipBase}
+            title="Imagens de satélite de anos anteriores (Esri Wayback e Sentinel-2)">
+            {liberado("camadas_oficiais") ? "🕘" : "🔒"} {imagemAno ? `Imagem de ${imagemHistoricaPorId(imagemAno)?.ano}` : "Imagem do ano"}
+          </button>
+          <button onClick={() => { setCarAtivo(!carAtivo); void salvarPrefs({ camada_car: !carAtivo }); }} data-ativo={carAtivo} className={chipBase}
             title="Imóveis rurais do Cadastro Ambiental Rural (SICAR)">
             Imóveis rurais (CAR)
           </button>
@@ -894,9 +978,62 @@ export default function MapaRegional({
         </div>
 
         {carAtivo && carAviso && !carSel && (
-          <p className="absolute top-14 left-3 rounded-lg bg-superficie/90 border border-linha px-3 py-1.5 text-xs text-texto-2 shadow-lg">
+          <p className="absolute top-14 left-3 right-14 sm:right-auto rounded-lg bg-superficie/90 border border-linha px-3 py-1.5 text-xs text-texto-2 shadow-lg">
             {carAviso}
           </p>
+        )}
+
+        {avisoPlano && (
+          <div className="absolute top-14 left-3 z-10 cartao px-4 py-2.5 flex items-center gap-3 text-sm shadow-xl anima-subir max-w-[calc(100%-1.5rem)]">
+            <span className="text-texto-2">{avisoPlano}</span>
+            <Link href={logado ? "/planos" : "/entrar"} className="text-verde font-medium whitespace-nowrap">
+              {logado ? "Ver planos ›" : "Entrar ›"}
+            </Link>
+            <button onClick={() => setAvisoPlano("")} aria-label="Fechar" className="text-texto-2 hover:text-texto">✕</button>
+          </div>
+        )}
+
+        {seletorAno && (
+          <div className="absolute top-14 left-3 z-20 w-72 cartao p-3 space-y-2 shadow-2xl max-h-[70%] overflow-y-auto anima-subir">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-texto text-sm">Imagem do ano</p>
+              <button onClick={() => setSeletorAno(false)} aria-label="Fechar" className="text-texto-2 hover:text-texto">✕</button>
+            </div>
+            <select value={imagemAno ?? ""} aria-label="Ano da imagem de satélite"
+              onChange={(e) => {
+                const v = e.target.value || null;
+                setImagemAno(v);
+                if (v) setBase("satelite");
+                else setComparar(false);
+              }}
+              className="w-full rounded-xl border border-linha bg-superficie-2 px-3 py-2 text-xs text-texto focus:outline-none focus:ring-2 focus:ring-verde">
+              <option value="">Atual (padrão)</option>
+              <optgroup label="Alta resolução — Esri Wayback (~0,5 m)">
+                {IMAGENS_HISTORICAS.filter((i) => i.familia === "wayback").map((i) => (
+                  <option key={i.id} value={i.id}>{i.rotulo}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Sentinel-2 sem nuvens — EOX (10 m)">
+                {IMAGENS_HISTORICAS.filter((i) => i.familia === "sentinel").map((i) => (
+                  <option key={i.id} value={i.id}>{i.rotulo}</option>
+                ))}
+              </optgroup>
+            </select>
+            <label className={"flex items-center gap-2 text-xs " + (imagemAno ? "text-texto" : "text-texto-2 opacity-60")}>
+              <input type="checkbox" checked={comparar} disabled={!imagemAno}
+                onChange={(e) => setComparar(e.target.checked)} className="accent-verde" />
+              Comparar com a imagem atual (cortina)
+            </label>
+            <p className="text-[11px] text-texto-2 leading-snug">
+              Wayback mostra o mosaico da Esri como estava publicado no fim de cada ano — a foto de um lugar
+              pode ser anterior. Sentinel-2 é um mosaico anual sem nuvens, bom para vegetação e mancha urbana,
+              não para lote. A fonte aparece no canto do mapa.
+            </p>
+          </div>
+        )}
+
+        {comparar && imagemAno && mapaPronto && imagemHistoricaPorId(imagemAno) && (
+          <ComparaImagens mapa={mapaPronto} imagem={imagemHistoricaPorId(imagemAno)!} onFechar={() => setComparar(false)} />
         )}
 
         {carSel && <CartaoCar car={carSel} onFechar={() => setCarSel(null)} />}
@@ -917,6 +1054,7 @@ export default function MapaRegional({
           mapa={mapaPronto}
           recursos={recursos}
           logado={logado}
+          onDesenhando={aoDesenhar}
           onImportarKml={async (arquivo) => {
             const map = mapRef.current;
             if (!map) return;

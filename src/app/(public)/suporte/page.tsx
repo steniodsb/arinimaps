@@ -49,7 +49,7 @@ export default async function Suporte({ searchParams }: PageProps<"/suporte">) {
           <h1 className="text-3xl font-semibold text-texto">Como podemos ajudar?</h1>
           <p className="text-texto-2">
             Escreva para a equipe. Respondemos por e-mail em horário comercial
-            {user ? ", e a conversa fica guardada aqui embaixo." : ". Com uma conta, a conversa também fica guardada nesta página."}
+            {user ? ", e a conversa continua aqui embaixo, ao vivo: quando a equipe responde, a mensagem aparece sem recarregar." : ". Com uma conta, a conversa também acontece nesta página, ao vivo."}
           </p>
         </div>
 

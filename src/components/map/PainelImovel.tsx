@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatArea } from "@/lib/format";
+import { CATEGORIA_POI_ICONE, CATEGORIA_POI_LABEL, formatDistancia, type PoiDistancia } from "@/lib/geo/distancia";
 
 export type ImovelSelecionado = {
   id: string;
@@ -43,6 +44,19 @@ export default function PainelImovel({
   const [aba, setAba] = useState<(typeof ABAS)[number]>("Resumo");
   const [consulta, setConsulta] = useState<Record<string, { quantidade: number; erro: string | null } | null>>({});
   const [carregando, setCarregando] = useState(true);
+  // pontos de referência (roadmap 2.12): distância em linha reta do centro do imóvel
+  // guardado com o código: ao trocar de imóvel, o do anterior não aparece enquanto carrega
+  const [poisDe, setPoisDe] = useState<{ codigo: string; pois: PoiDistancia[]; em: string | null } | null>(null);
+  const pois = poisDe?.codigo === imovel.codigo ? poisDe.pois : null;
+  const poisEm = poisDe?.codigo === imovel.codigo ? poisDe.em : null;
+
+  useEffect(() => {
+    const codigo = imovel.codigo;
+    fetch(`/api/geo/pois?codigo=${encodeURIComponent(codigo)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setPoisDe({ codigo, pois: d?.pois ?? [], em: d?.atualizado_em ?? null }))
+      .catch(() => setPoisDe({ codigo, pois: [], em: null }));
+  }, [imovel.codigo]);
 
   useEffect(() => {
     setCarregando(true);
@@ -159,6 +173,31 @@ export default function PainelImovel({
             Sem consulta territorial ainda. A equipe Arini executa na análise do imóvel.
           </p>
         ) : null}
+
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold text-texto">Pontos de referência</p>
+          {pois === null ? (
+            <p className="text-xs text-texto-2">Carregando…</p>
+          ) : !pois.length ? (
+            <p className="text-xs text-texto-2">Nenhum ponto de interesse vinculado ainda.</p>
+          ) : (
+            <ul className="divide-y divide-linha">
+              {pois.slice(0, 8).map((p, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="min-w-0 truncate text-texto-2">
+                    <span aria-hidden className="mr-1.5">{CATEGORIA_POI_ICONE[p.categoria] ?? "•"}</span>
+                    <span className="text-texto">{p.nome ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>
+                  </span>
+                  <span className="font-semibold tabular-nums text-texto shrink-0">{formatDistancia(p.distancia_m)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-[11px] text-texto-2">
+            Em linha reta, do centro do imóvel · OpenStreetMap
+            {poisEm ? ` · atualizado em ${new Date(poisEm).toLocaleDateString("pt-BR")}` : ""}
+          </p>
+        </div>
 
         <div className="cartao p-4 space-y-2">
           <p className="text-sm font-semibold text-texto">Raio de análise</p>

@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, temSetor } from "@/lib/authz";
 import { sendEmail } from "@/lib/notify";
+import { marcarVisto, usuarioOnline } from "@/lib/suporte";
 
 const STATUS = ["aberto", "em_atendimento", "aguardando_cliente", "resolvido"];
 const PRIORIDADES = ["baixa", "normal", "alta"];
@@ -19,7 +20,7 @@ export async function PATCH(request: Request) {
   const b = await request.json().catch(() => ({}));
   const admin = supabaseAdmin();
   const { data: ticket } = await admin.from("support_tickets")
-    .select("id, codigo, email, assunto, status, responsavel").eq("id", b.id).single();
+    .select("id, codigo, email, assunto, status, responsavel, user_id").eq("id", b.id).single();
   if (!ticket) return NextResponse.json({ error: "Chamado não encontrado." }, { status: 404 });
 
   const patch: Record<string, unknown> = {};
@@ -36,13 +37,19 @@ export async function PATCH(request: Request) {
       // respondeu ao cliente: a bola está com ele, e o chamado ganha dono
       patch.status = "aguardando_cliente";
       if (!ticket.responsavel) patch.responsavel = a.userId;
-      sendEmail(
-        ticket.email,
-        `Resposta ao chamado ${ticket.codigo} — Arini Maps`,
-        `${corpo}\n\n—\nChamado ${ticket.codigo}: ${ticket.assunto}\n` +
-        `Para continuar a conversa, responda em ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/suporte`
-      ).catch(() => undefined);
+      // 10.2: quem está com a conversa aberta vê a resposta na hora; o e-mail
+      // vai só para visitante sem conta ou cliente fora da página (fire-and-forget)
+      usuarioOnline(ticket.user_id).then((online) => {
+        if (online) return;
+        return sendEmail(
+          ticket.email,
+          `Resposta ao chamado ${ticket.codigo} — Arini Maps`,
+          `${corpo}\n\n—\nChamado ${ticket.codigo}: ${ticket.assunto}\n` +
+          `Para continuar a conversa, responda em ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/suporte`
+        );
+      }).catch(() => undefined);
     }
+    void marcarVisto(a.userId);
   }
   if (b.status !== undefined) {
     if (!STATUS.includes(b.status)) return NextResponse.json({ error: "Situação inválida." }, { status: 400 });

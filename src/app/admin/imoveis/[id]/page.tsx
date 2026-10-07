@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { urlArquivo } from "@/lib/seguranca/link-arquivo";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import MiniMapa from "@/components/map/MiniMapa";
@@ -9,6 +10,7 @@ import HistoricoImovel from "@/components/crm/HistoricoImovel";
 import { CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 import ConsultaRural from "@/components/rural/ConsultaRural";
 import { exigirSetor } from "@/lib/setores-servidor";
+import SecaoAvaliacaoAdmin from "@/components/avaliacao/SecaoAvaliacaoAdmin";
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
@@ -46,7 +48,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    admin.from("property_documents").select("tipo, verificado").eq("property_id", id),
+    admin.from("property_documents").select("tipo, verificado").eq("property_id", id).is("substituido_por", null),
     // Fluxograma §9: alteração proposta pelo anunciante, aguardando decisão
     admin.from("property_revisions").select("id, versao, dados, dados_anteriores, created_at, created_by")
       .eq("property_id", id).eq("status", "pendente").maybeSingle(),
@@ -64,7 +66,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
   const temMatricula = docs.some((d) => d.tipo === docChave);
   const lei = (p.leilao ?? {}) as Record<string, string | number | null>;
   const selfieUrl = autorizacao?.selfie_path
-    ? (await admin.storage.from("docs").createSignedUrl(autorizacao.selfie_path, 3600)).data?.signedUrl ?? null
+    ? urlArquivo(autorizacao.selfie_path)
     : null;
   const car = p.car_codigo
     ? ((await admin.rpc("fn_car_imovel", { p_cod: p.car_codigo })).data as { properties?: { area_ha?: number; condicao?: string } } | null)
@@ -237,6 +239,9 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
           <ConsultaRural propertyId={p.id} />
         </section>
       )}
+
+      {/* 5.3/5.4: pré-avaliação e aptidão (a equipe sempre pode testar) */}
+      <SecaoAvaliacaoAdmin propertyId={p.id} tipo={p.tipo as "rural" | "urbano"} />
 
       {/* §1: histórico, versões da divisa, origem dos dados e auditoria */}
       <HistoricoImovel propertyId={p.id} modo="admin" tipoImovel={p.tipo as "urbano" | "rural"} />

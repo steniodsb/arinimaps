@@ -1,4 +1,6 @@
-// Retry de POIs quando o Overpass falhou no momento da publicação.
+// POIs de um imóvel: retry quando o Overpass falhou na publicação (`fetch_pois`)
+// e atualização periódica (`refresh_pois`, roadmap 2.12). Em ambos o vínculo
+// (fn_vincular_pois) carimba properties.pois_atualizados_em.
 const CATEGORIAS = [
   { categoria: "combustivel", seletor: '"amenity"="fuel"' },
   { categoria: "farmacia", seletor: '"amenity"="pharmacy"' },
@@ -50,7 +52,7 @@ export async function fetchPois(payload, db) {
     await db.query(`
       insert into pois (categoria, nome, geom, fonte, osm_id)
       values ($1, $2, st_setsrid(st_point($3, $4), 4326), 'osm', $5)
-      on conflict (fonte, osm_id) do nothing`,
+      on conflict (fonte, osm_id) do update set nome = coalesce(excluded.nome, pois.nome), fetched_at = now()`,
       [categoria, tags.name ?? null, lng, lat, `${el.type}/${el.id}`]);
   }
   await db.query(`select fn_semear_pois_centro()`);

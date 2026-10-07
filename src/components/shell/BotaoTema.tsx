@@ -11,7 +11,9 @@
  * piscaria escura antes de virar clara a cada navegação.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePreferencias } from "@/lib/usePreferencias";
+import type { TemaPreferido } from "@/lib/preferencias";
 
 export type Tema = "escuro" | "claro";
 
@@ -66,20 +68,47 @@ export function useTema(): Tema {
   return tema;
 }
 
+/**
+ * Aplica a preferência de tema da conta (5.10). "sistema" apaga a escolha do
+ * navegador e volta a seguir o aparelho — o script do <head> já deixou o
+ * ouvinte do prefers-color-scheme ligado, que respeita a ausência da chave.
+ */
+export function aplicarTemaPreferido(t: TemaPreferido) {
+  const h = document.documentElement;
+  if (t === "sistema") {
+    try { localStorage.removeItem(CHAVE_TEMA); } catch { /* storage bloqueado */ }
+    const claro = !!window.matchMedia?.("(prefers-color-scheme: light)").matches;
+    if (claro) h.setAttribute("data-tema", "claro"); else h.removeAttribute("data-tema");
+    return;
+  }
+  if (t === "claro") h.setAttribute("data-tema", "claro"); else h.removeAttribute("data-tema");
+  try { localStorage.setItem(CHAVE_TEMA, t); } catch { /* storage bloqueado: vale só nesta aba */ }
+}
+
 export default function BotaoTema({ compacto = false }: { compacto?: boolean }) {
   // começa no escuro no servidor e no primeiro render do cliente para não dar
   // divergência de hidratação; o efeito abaixo corrige com o valor real.
   // acompanha o <html>: o tema pode mudar sozinho quando segue o aparelho
   const tema = useTema();
   const [montado, setMontado] = useState(false);
+  // 5.10: com sessão, o tema salvo na conta vale em qualquer aparelho;
+  // sem sessão, segue valendo o localStorage
+  const { prefs, logado, carregado, salvar } = usePreferencias();
+  const aplicado = useRef(false);
 
   useEffect(() => { setMontado(true); }, []);
 
+  useEffect(() => {
+    if (!carregado || !logado || aplicado.current) return;
+    aplicado.current = true;
+    aplicarTemaPreferido(prefs.tema);
+  }, [carregado, logado, prefs.tema]);
+
   function alternar() {
     const novo: Tema = tema === "claro" ? "escuro" : "claro";
-    if (novo === "claro") document.documentElement.setAttribute("data-tema", "claro");
-    else document.documentElement.removeAttribute("data-tema");
-    try { localStorage.setItem(CHAVE_TEMA, novo); } catch { /* storage bloqueado: vale só nesta aba */ }
+    aplicarTemaPreferido(novo);
+    aplicado.current = true;
+    void salvar({ tema: novo });
   }
 
   const vaiPara = tema === "claro" ? "escuro" : "claro";

@@ -1,0 +1,225 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+const input = "rounded-lg border border-linha bg-superficie-2 px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-verde";
+
+export type DemandaLinha = {
+  id: string; codigo: string; cliente_nome: string; cliente_contato: string | null; opportunity_id: string | null;
+  tipo: string | null; municipios: string[]; area_min: number | null; area_max: number | null;
+  valor_min: number | null; valor_max: number | null; observacoes: string | null; status: string;
+  responsavel: string | null; fechada_em: string | null; motivo_fechamento: string | null; created_at: string;
+  casamentos: { codigo: string; titulo: string; status: string; em: string }[];
+};
+export type Prefill = {
+  opportunity_id: string; opportunity_codigo: string; cliente_nome: string; cliente_contato: string;
+  tipo: string; municipios: string[];
+};
+type Municipio = { id: string; nome: string; uf: string };
+type Membro = { user_id: string; nome: string };
+
+const SITUACAO: Record<string, string> = { aberta: "Aberta", atendida: "Atendida", cancelada: "Cancelada" };
+const brl = (v: number | null) => (v == null ? null : Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }));
+const dataBR = (d: string | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—");
+
+function faixa(min: number | null, max: number | null, fmt: (v: number | null) => string | null) {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `${fmt(min)} a ${fmt(max)}`;
+  return min != null ? `a partir de ${fmt(min)}` : `até ${fmt(max)}`;
+}
+
+const VAZIO = {
+  cliente_nome: "", cliente_contato: "", tipo: "", municipios: [] as string[],
+  area_min: "", area_max: "", valor_min: "", valor_max: "", observacoes: "", responsavel: "",
+};
+
+export default function Demandas({
+  demandas, municipios, equipe, souEu, prefill, destaque,
+}: {
+  demandas: DemandaLinha[]; municipios: Municipio[]; equipe: Membro[]; souEu: string;
+  prefill: Prefill | null; destaque: string | null;
+}) {
+  const router = useRouter();
+  const [form, setForm] = useState<typeof VAZIO | null>(
+    prefill ? { ...VAZIO, ...prefill, responsavel: souEu } : null,
+  );
+  const [erro, setErro] = useState("");
+  const [ok, setOk] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+  const nomeMun = new Map(municipios.map((m) => [m.id, `${m.nome}/${m.uf}`]));
+  const nomeEquipe = new Map(equipe.map((m) => [m.user_id, m.nome]));
+  const unidade = form?.tipo === "rural" ? "ha" : form?.tipo === "urbano" ? "m²" : "";
+
+  async function criar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form) return;
+    setOcupado(true); setErro(""); setOk("");
+    const res = await fetch("/api/demandas", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, opportunity_id: prefill?.opportunity_id ?? null }),
+    });
+    const d = await res.json().catch(() => ({}));
+    setOcupado(false);
+    if (!res.ok) { setErro([d.error, d.motivo].filter(Boolean).join(" — ") || "Não foi possível registrar."); return; }
+    setOk(`Demanda ${d.codigo} registrada. Vamos avisar quando um imóvel publicado casar com ela.`);
+    setForm(null);
+    router.replace("/admin/demandas");
+    router.refresh();
+  }
+
+  async function mudarStatus(id: string, status: string) {
+    const motivo = status === "aberta" ? "" : prompt(status === "atendida" ? "Como foi atendida? (opcional)" : "Motivo do cancelamento (opcional)") ?? null;
+    if (motivo === null) return;
+    const res = await fetch(`/api/demandas/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, motivo }),
+    });
+    if (res.ok) router.refresh(); else setErro((await res.json().catch(() => ({}))).error ?? "Não foi possível alterar.");
+  }
+
+  async function mudarResponsavel(id: string, responsavel: string) {
+    const res = await fetch(`/api/demandas/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ responsavel }),
+    });
+    if (res.ok) router.refresh();
+  }
+
+  return (
+    <div className="space-y-4">
+      {ok && <p className="text-sm text-verde">{ok}</p>}
+      {!form ? (
+        <button type="button" onClick={() => setForm({ ...VAZIO, responsavel: souEu })} className="btn-verde px-4 py-2 text-sm">
+          + Registrar demanda
+        </button>
+      ) : (
+        <form onSubmit={criar} className="cartao p-5 space-y-4">
+          <div>
+            <h2 className="font-semibold text-texto">Nova demanda</h2>
+            {prefill && (
+              <p className="text-xs text-texto-2">Da oportunidade {prefill.opportunity_codigo} — cliente, tipo e município vieram do imóvel que ele não quis. Ajuste ao que ele procura.</p>
+            )}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1">
+              <span className="block text-xs text-texto-2">Cliente *</span>
+              <input required className={input + " w-full"} value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
+            </label>
+            <label className="space-y-1">
+              <span className="block text-xs text-texto-2">Contato (telefone, e-mail)</span>
+              <input className={input + " w-full"} value={form.cliente_contato} onChange={(e) => setForm({ ...form, cliente_contato: e.target.value })} />
+            </label>
+            <label className="space-y-1">
+              <span className="block text-xs text-texto-2">Tipo de imóvel</span>
+              <select className={input + " w-full"} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+                <option value="">Rural ou urbano</option>
+                <option value="rural">Rural</option>
+                <option value="urbano">Urbano</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="block text-xs text-texto-2">Responsável</span>
+              <select className={input + " w-full"} value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })}>
+                <option value="">—</option>
+                {equipe.map((m) => <option key={m.user_id} value={m.user_id}>{m.nome || "—"}</option>)}
+              </select>
+            </label>
+          </div>
+          <fieldset className="space-y-1">
+            <legend className="text-xs text-texto-2">Municípios (nenhum marcado = qualquer um)</legend>
+            <div className="flex flex-wrap gap-2">
+              {municipios.map((m) => {
+                const marcado = form.municipios.includes(m.id);
+                return (
+                  <button key={m.id} type="button"
+                    onClick={() => setForm({ ...form, municipios: marcado ? form.municipios.filter((x) => x !== m.id) : [...form.municipios, m.id] })}
+                    className={"rounded-full border px-3 py-1 text-xs transition " + (marcado ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2 hover:text-texto")}>
+                    {m.nome}/{m.uf}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+            {([["valor_min", "Valor mínimo (R$)"], ["valor_max", "Valor máximo (R$)"], ["area_min", `Área mínima ${unidade && `(${unidade})`}`], ["area_max", `Área máxima ${unidade && `(${unidade})`}`]] as const).map(([k, l]) => (
+              <label key={k} className="space-y-1">
+                <span className="block text-xs text-texto-2">{l}</span>
+                <input inputMode="decimal" className={input + " w-full"} value={form[k]}
+                  disabled={k.startsWith("area") && !form.tipo}
+                  title={k.startsWith("area") && !form.tipo ? "Escolha o tipo: a área é em hectares (rural) ou m² (urbano)" : undefined}
+                  onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
+              </label>
+            ))}
+          </div>
+          <label className="block space-y-1">
+            <span className="block text-xs text-texto-2">O que mais ele procura</span>
+            <textarea rows={3} className={input + " w-full"} placeholder="Ex.: com represa, perto de asfalto, aceita permuta"
+              value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+          </label>
+          {erro && <p className="text-sm text-critico">{erro}</p>}
+          <div className="flex gap-2">
+            <button disabled={ocupado} className="btn-verde px-5 py-2 text-sm disabled:opacity-60">Registrar</button>
+            <button type="button" onClick={() => { setForm(null); setErro(""); }} className="btn-contorno px-5 py-2 text-sm">Cancelar</button>
+          </div>
+        </form>
+      )}
+
+      <div className="cartao divide-y divide-linha">
+        {demandas.map((d) => (
+          <div key={d.id} id={d.codigo}
+            className={"px-4 py-3 text-sm space-y-1.5 " + (destaque === d.codigo ? "bg-ouro/10" : "")}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-mono text-xs text-texto-2">{d.codigo}</span>
+              <span className="flex-1 min-w-52 text-texto">
+                {d.cliente_nome}{d.cliente_contato && <span className="text-texto-2"> · {d.cliente_contato}</span>}
+              </span>
+              <span className={"text-xs rounded-full px-3 py-1 " +
+                (d.status === "aberta" ? "bg-ouro/15 text-ouro" : d.status === "atendida" ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2")}>
+                {SITUACAO[d.status]}
+              </span>
+            </div>
+            <p className="text-xs text-texto-2">
+              {d.tipo ? (d.tipo === "rural" ? "Rural" : "Urbano") : "Rural ou urbano"}
+              {" · "}{d.municipios.length ? d.municipios.map((m) => nomeMun.get(m) ?? "?").join(", ") : "qualquer município"}
+              {faixa(d.valor_min, d.valor_max, brl) && ` · ${faixa(d.valor_min, d.valor_max, brl)}`}
+              {d.tipo && faixa(d.area_min, d.area_max, (v) => `${Number(v).toLocaleString("pt-BR")} ${d.tipo === "rural" ? "ha" : "m²"}`) &&
+                ` · ${faixa(d.area_min, d.area_max, (v) => `${Number(v).toLocaleString("pt-BR")} ${d.tipo === "rural" ? "ha" : "m²"}`)}`}
+              {" · "}registrada em {dataBR(d.created_at)}
+            </p>
+            {d.observacoes && <p className="text-xs text-texto whitespace-pre-wrap">“{d.observacoes}”</p>}
+            {d.casamentos.length > 0 && (
+              <p className="text-xs text-verde">
+                Casou com: {d.casamentos.map((c, i) => (
+                  <span key={c.codigo}>{i > 0 && ", "}<Link href={`/imovel/${c.codigo}`} target="_blank" className="hover:underline">{c.codigo}</Link></span>
+                ))}
+              </p>
+            )}
+            {d.status !== "aberta" && d.motivo_fechamento && (
+              <p className="text-xs text-texto-2">Fechada em {dataBR(d.fechada_em)}: {d.motivo_fechamento}</p>
+            )}
+            <div className="flex items-center gap-3 flex-wrap text-xs">
+              <select className={input + " py-1 text-xs"} value={d.responsavel ?? ""} onChange={(e) => mudarResponsavel(d.id, e.target.value)}
+                aria-label="Responsável">
+                <option value="">Sem responsável</option>
+                {equipe.map((m) => <option key={m.user_id} value={m.user_id}>{m.nome || "—"}</option>)}
+              </select>
+              {d.responsavel && !nomeEquipe.has(d.responsavel) && <span className="text-texto-2">responsável fora da equipe ativa</span>}
+              {d.opportunity_id && <Link href={`/admin/oportunidades/${d.opportunity_id}`} className="text-verde hover:underline">oportunidade</Link>}
+              <span className="ml-auto flex gap-3">
+                {d.status === "aberta" ? (
+                  <>
+                    <button type="button" className="text-verde hover:underline" onClick={() => mudarStatus(d.id, "atendida")}>Marcar atendida</button>
+                    <button type="button" className="text-texto-2 hover:text-critico" onClick={() => mudarStatus(d.id, "cancelada")}>Cancelar</button>
+                  </>
+                ) : (
+                  <button type="button" className="text-texto-2 hover:text-texto" onClick={() => mudarStatus(d.id, "aberta")}>Reabrir</button>
+                )}
+              </span>
+            </div>
+          </div>
+        ))}
+        {!demandas.length && <p className="px-4 py-8 text-center text-sm text-texto-2">Nenhuma demanda neste filtro.</p>}
+      </div>
+    </div>
+  );
+}

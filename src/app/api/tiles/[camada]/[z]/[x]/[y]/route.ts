@@ -1,5 +1,6 @@
 import { gzipSync } from "node:zlib";
 import { NextResponse } from "next/server";
+import { limiteLeituraMapa } from "@/lib/geo/limiteMemoria";
 
 /**
  * Tiles vetoriais (MVT) da malha do CAR e dos lotes urbanos, gerados no banco
@@ -13,6 +14,9 @@ import { NextResponse } from "next/server";
  * O PostgREST do Supabase não devolve bytea cru (406), então a função
  * `fn_tile_*` entrega o tile em base64 e o servidor decodifica. As funções são
  * fechadas para anon: só o servidor pede.
+ *
+ * Limite por IP em memória (3.000 tiles / 5 min, src/lib/geo/limiteMemoria.ts):
+ * contar cada tile no banco poria uma ida ao Postgres na frente de cada tile.
  */
 const CAMADAS: Record<string, { fn: string; minZoom: number; maxZoom: number }> = {
   car: { fn: "fn_tile_car", minZoom: 7, maxZoom: 13 },
@@ -36,6 +40,8 @@ function lembrar(chave: string, raw: Buffer, gz: Buffer) {
 }
 
 export async function GET(request: Request, ctx: RouteContext<"/api/tiles/[camada]/[z]/[x]/[y]">) {
+  const bloqueio = limiteLeituraMapa(request, "tiles");
+  if (bloqueio) return bloqueio;
   const { camada, z: zs, x: xs, y: ys } = await ctx.params;
   const cfg = CAMADAS[camada];
   if (!cfg) return NextResponse.json({ error: "Camada desconhecida." }, { status: 404 });

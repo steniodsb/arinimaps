@@ -21,7 +21,7 @@ export type RecursoId =
   | "mapa" | "ficha_basica" | "interesse" | "camada_car" | "camada_lotes" | "ferramenta_medir"
   | "solicitacao_cartografica"
   | "camadas_oficiais" | "consulta_area" | "relatorio_territorial" | "ferramenta_kml" | "ferramenta_exportar"
-  | "historico_imovel" | "pre_avaliacao"
+  | "historico_imovel" | "pre_avaliacao" | "chat_ia"
   | "anunciar" | "painel_parceiro" | "oportunidades"
   | "multiusuario" | "api_dados" | "territorio";
 
@@ -45,18 +45,19 @@ export const RECURSOS: Recurso[] = [
   { id: "solicitacao_cartografica", nome: "Informar imóvel ausente ou divergente", descricao: "Abrir protocolo para a equipe de cartografia incluir ou corrigir uma área.", grupo: "consulta" },
   // consulta profissional
   { id: "camadas_oficiais", nome: "Camadas oficiais no mapa", descricao: "Terras indígenas, embargos, mineração, desmatamento e demais fontes ao vivo.", grupo: "profissional" },
-  { id: "consulta_area", nome: "Consulta de área", descricao: "Cruzar uma área do CAR com as fontes oficiais (CAR, SIGEF, IBAMA, ANM, INPE, ANA…). Sujeita a cota mensal.", grupo: "profissional" },
+  { id: "consulta_area", nome: "Consulta de área", descricao: "Cruzar com as fontes oficiais (CAR, SIGEF, IBAMA, ANM, INPE, ANA…) uma área do CAR, um lote urbano ou uma área desenhada em qualquer ponto do Brasil. Sujeita a cota mensal.", grupo: "profissional" },
   { id: "relatorio_territorial", nome: "Relatório territorial completo", descricao: "Relatório consolidado do imóvel com todas as fontes e o detalhe de cada item.", grupo: "profissional" },
   { id: "ferramenta_kml", nome: "Importar KML/KMZ", descricao: "Sobrepor um arquivo próprio ao mapa.", grupo: "ferramentas" },
   { id: "ferramenta_exportar", nome: "Imprimir e capturar", descricao: "Imprimir o mapa ou salvar a imagem da tela.", grupo: "ferramentas" },
   { id: "historico_imovel", nome: "Histórico e versões", descricao: "Ver as versões da divisa, a origem dos dados e o histórico do imóvel.", grupo: "profissional" },
-  { id: "pre_avaliacao", nome: "Pré-avaliação de valor", descricao: "Estimativa automatizada e aptidão territorial (em desenvolvimento).", grupo: "profissional", reservado: true },
+  { id: "pre_avaliacao", nome: "Pré-avaliação de valor", descricao: "Estimativa automatizada por comparáveis e aptidão territorial (aparece quando a Diretoria liga a função).", grupo: "profissional" },
+  { id: "chat_ia", nome: "Assistente de IA", descricao: "Perguntas em linguagem natural sobre imóveis publicados, áreas do CAR e a base de conhecimento. Cota mensal nos planos gratuitos.", grupo: "consulta" },
   // anúncios
   { id: "anunciar", nome: "Anunciar imóvel", descricao: "Cadastrar imóvel para análise e publicação pela Matriz.", grupo: "anuncios" },
   { id: "painel_parceiro", nome: "Painel do parceiro", descricao: "Carteira de imóveis de terceiros e atendimento das oportunidades encaminhadas.", grupo: "anuncios" },
   { id: "oportunidades", nome: "Oportunidades", descricao: "Acompanhar visitas, propostas e negociações dos próprios imóveis.", grupo: "anuncios" },
   // organização
-  { id: "multiusuario", nome: "Vários usuários", descricao: "Contas de uma mesma organização compartilhando o plano (reservado).", grupo: "organizacao", reservado: true },
+  { id: "multiusuario", nome: "Vários usuários", descricao: "Contas de uma mesma organização compartilhando o plano: o administrador convida e remove membros em /painel/organizacao.", grupo: "organizacao" },
   { id: "api_dados", nome: "Acesso a dados", descricao: "Exportação e integração de dados (reservado).", grupo: "organizacao", reservado: true },
   { id: "territorio", nome: "Território de franquia", descricao: "Operar dentro da região da franquia.", grupo: "organizacao" },
 ];
@@ -73,6 +74,7 @@ export const GRUPO_RECURSO_LABEL: Record<Recurso["grupo"], string> = {
 export const COTAS: { id: string; nome: string; ajuda: string }[] = [
   { id: "consultas_area_mes", nome: "Consultas de área por mês", ajuda: "Cruzamentos com as fontes oficiais por conta, no mês corrente." },
   { id: "imoveis_ativos", nome: "Imóveis ativos", ajuda: "Anúncios em análise ou publicados ao mesmo tempo." },
+  { id: "mensagens_ia_mes", nome: "Mensagens ao assistente de IA por mês", ajuda: "Perguntas enviadas ao assistente por conta, no mês corrente." },
 ];
 
 export type NichoId =

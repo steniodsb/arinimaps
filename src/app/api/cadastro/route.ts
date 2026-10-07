@@ -7,6 +7,7 @@ import { validarSenha } from "@/lib/seguranca/senha";
 import { PAPEIS_CADASTRO, ehParceiro as papelEhParceiro } from "@/lib/perfis";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 import { nichoPorId } from "@/lib/planos";
+import { colunasCpf, hashesDeBusca } from "@/lib/seguranca/cripto";
 
 const ROLES_PERMITIDOS: readonly string[] = PAPEIS_CADASTRO;
 
@@ -65,10 +66,17 @@ export async function POST(request: Request) {
 
   const admin = supabaseAdmin();
 
-  // documento já usado? erro claro antes de criar o usuário no Auth
-  const { data: jaExiste } = await admin
-    .from("profiles").select("user_id").eq("cpf_cnpj", doc.valor).maybeSingle();
-  if (jaExiste) {
+  // documento já usado? erro claro antes de criar o usuário no Auth.
+  // Com CAMPO_CRIPTO_CHAVE o CPF fica cifrado e a busca é pelo hash (item 6.5);
+  // a busca em claro continua para as contas antigas.
+  const hashes = hashesDeBusca(doc.valor);
+  const [{ data: jaEmClaro }, { data: jaPorHash }] = await Promise.all([
+    admin.from("profiles").select("user_id").eq("cpf_cnpj", doc.valor).limit(1).maybeSingle(),
+    hashes.length
+      ? admin.from("profiles").select("user_id").in("cpf_hash", hashes).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  if (jaEmClaro || jaPorHash) {
     return NextResponse.json(
       { error: "Já existe uma conta com este CPF. Faça login ou recupere a senha." },
       { status: 400 }
@@ -79,7 +87,8 @@ export async function POST(request: Request) {
     email: email.trim().toLowerCase(),
     password: senha,
     email_confirm: true,
-    user_metadata: { nome: nome.trim(), role, cpf_cnpj: doc.valor },
+    // o CPF NÃO vai para o user_metadata: ele viaja dentro do token de sessão
+    user_metadata: { nome: nome.trim(), role },
   });
   if (error) {
     const msg = /already/i.test(error.message) ? "Este e-mail já tem cadastro. Faça login." : error.message;
@@ -89,7 +98,7 @@ export async function POST(request: Request) {
 
   const { error: perfilErro } = await admin.from("profiles").update({
     telefone: telefone?.trim() || null,
-    cpf_cnpj: doc.valor,
+    ...colunasCpf(doc.valor),
     aceite_termos_at: agora,
     aceite_termos_versao: versao,
     aceite_termos_ip: ip,

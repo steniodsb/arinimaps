@@ -4,6 +4,8 @@ import Link from "next/link";
 export const LOTE_ZOOM_MIN = 15;
 /** A partir deste zoom aparecem as metragens dos lados. */
 export const MEDIDA_ZOOM_MIN = 18;
+/** A partir deste zoom aparecem quadra e número de cada lote (camada `rotulos` do tile). */
+export const ROTULO_ZOOM_MIN = 18;
 /** Maior lado do retângulo que /api/geo/lotes aceita, em graus. */
 export const LOTE_LADO_MAX = 0.06;
 
@@ -12,6 +14,9 @@ export type LoteInfo = {
   area_m2: number;
   perimetro_m: number;
   lados: { m: number }[];
+  /** lidos dos textos da planta CAD (scripts/numera-lotes.mjs); null quando a planta não diz */
+  numero?: string | null;
+  quadra?: string | null;
   municipio: string | null;
   anuncio: string | null;
 };
@@ -70,7 +75,10 @@ export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () =>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs text-texto-2">Lote urbano{lote.municipio && ` · ${lote.municipio}`}</p>
-          <p className="font-semibold text-texto">{m2(lote.area_m2)} m²</p>
+          <p className="font-semibold text-texto">
+            {[lote.quadra && `Quadra ${lote.quadra}`, lote.numero && `Lote ${lote.numero}`].filter(Boolean).join(" · ") || `${m2(lote.area_m2)} m²`}
+          </p>
+          {(lote.quadra || lote.numero) && <p className="text-xs text-texto-2">{m2(lote.area_m2)} m²</p>}
         </div>
         <button onClick={onFechar} aria-label="Fechar" className="text-texto-2 hover:text-texto text-lg leading-none">×</button>
       </div>
@@ -92,13 +100,16 @@ export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () =>
           Este lote é meu — anunciar
         </Link>
       )}
+      <Link href={`/consulta/lote/${lote.id}`} className="btn-contorno block w-full text-center py-2.5 text-sm">
+        Consultar informações
+      </Link>
       <Link href={`/cartografia/solicitar?referencia=${encodeURIComponent("lote:" + lote.id)}&tipo=divergencia`}
         className="block text-center text-xs text-texto-2 hover:text-verde transition">
         ⚑ O mapa está divergente deste lote
       </Link>
       <p className="text-[11px] text-texto-2 leading-snug">
-        Medidas calculadas sobre a planta da cidade. São referência: não substituem a matrícula nem o
-        levantamento do lote. Para publicar, a Arini confere a matrícula.
+        Medidas calculadas sobre a planta da cidade; quadra e número lidos dos textos do CAD. São
+        referência: não substituem a matrícula nem o levantamento do lote. Para publicar, a Arini confere a matrícula.
       </p>
     </div>
   );

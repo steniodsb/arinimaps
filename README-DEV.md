@@ -40,6 +40,28 @@ seção "Entre na área de consultas" da home sem vida.
 - Testes: `BASE_URL=… node scripts/testa-tiles.mjs` (CAR de longe, clique no CAR e no lote,
   metragens, cache); `scripts/screenshot-home.mjs` captura a seção.
 
+## 07/10: conta, organizações, suporte ao vivo, versões de documento e demandas (migration 0035)
+
+- **Minha conta** (`/conta`): nome, telefone, foto (reduzida a 512 px WebP no navegador, bucket `media`
+  em `avatars/<user>/<ts>.webp`, a anterior é apagada) e **preferências** em `profiles.preferencias`
+  (`GET/PATCH /api/conta/preferencias`; tipos e hook `usePreferencias` em `src/lib/preferencias.ts`).
+  `BotaoTema` lê/grava o tema da conta (localStorage continua como reserva); também na tela `/acesso`.
+  Foto no cabeçalho (`AppShell`, componente `Avatar`) e no rodapé/cabeçalho da Central.
+- **Organizações** (`organizations`, `organization_members`): `/admin/organizacoes` (Comercial/Diretoria),
+  `/painel/organizacao` (admin da organização convida/remove), convite aceito no login. Precedência do
+  plano em `docs/PLANOS.md` §10.
+- **Suporte ao vivo**: polling de 5 s com `?since=` (`GET /api/suporte/[id]`, `GET /api/admin/suporte/[id]`),
+  selo de chamados esperando a equipe (`/api/admin/suporte/nao-lidos`, `fn_suporte_aguardando_equipe`),
+  presença por `profiles.visto_em` ("atendente online" = Suporte ativo nos últimos 10 min). A resposta
+  da equipe só vai por e-mail se o cliente não estiver com a página aberta. Realtime não foi usado (ver
+  `src/lib/suporte.ts`).
+- **Versões de documento**: reenviar o mesmo tipo (menos "Outro") cria a versão seguinte
+  (`versao`, `substituido_por`, gatilhos `fn_doc_versao`/`fn_doc_substitui`); a conferência e a trava de
+  publicação olham só a versão vigente; `GET …/documentos?versoes=1` traz as anteriores.
+- **Demandas sem imóvel** (`/admin/demandas`, `/api/demandas`): ao publicar, `casarDemandas()` cria tarefa do
+  Comercial + e-mail ao responsável; folga em Configurações (`demandas_tolerancia_pct`, padrão 10%).
+- Teste: `node scripts/testa-conta-suporte.mjs` (com `npm run dev`).
+
 ## 05→06/10: planos por nicho + módulos cartográficos (migrations 0028–0030)
 
 Documentos do Carlos de 05/10 (Fluxograma Mestre e Requisitos cartográficos). Cobertura

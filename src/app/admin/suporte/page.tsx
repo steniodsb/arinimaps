@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { chamadosEsperandoEquipe } from "@/lib/suporte";
 import { CabecalhoSetor, Indicadores, TarefasDoSetor, contar, dataHoraBR, equipeAtiva } from "@/components/admin/Painel";
 
 const CATEGORIA: Record<string, string> = {
@@ -26,13 +27,15 @@ export default async function AdminSuporte({ searchParams }: PageProps<"/admin/s
   else if (filtro !== "todos") q = q.eq("status", filtro);
 
   const semana = new Date(Date.now() - 7 * 86_400_000).toISOString();
-  const [{ data: chamados }, equipe, abertos, aguardando, resolvidos7, semDono] = await Promise.all([
+  const [{ data: chamados }, equipe, abertos, aguardando, resolvidos7, semDono, esperando] = await Promise.all([
     q, equipeAtiva(),
     contar("support_tickets", (x) => x.in("status", ["aberto", "em_atendimento"])),
     contar("support_tickets", (x) => x.eq("status", "aguardando_cliente")),
     contar("support_tickets", (x) => x.eq("status", "resolvido").gte("resolvido_em", semana)),
     contar("support_tickets", (x) => x.is("responsavel", null).neq("status", "resolvido")),
+    chamadosEsperandoEquipe(),
   ]);
+  const novaMsg = new Set(esperando);
   const nome = new Map(equipe.map((m) => [m.user_id, m.nome]));
   const chip = "rounded-full border px-3 py-1 text-xs transition ";
 
@@ -64,6 +67,7 @@ export default async function AdminSuporte({ searchParams }: PageProps<"/admin/s
             <span className="flex-1 min-w-52">
               <span className="text-texto">
                 {c.prioridade === "alta" && <span className="text-critico">● </span>}{c.assunto}
+                {novaMsg.has(c.id) && <span className="ml-2 text-[10px] rounded-full bg-ouro/15 text-ouro px-2 py-0.5">nova mensagem do cliente</span>}
               </span>
               <span className="block text-xs text-texto-2">
                 {c.nome} · {CATEGORIA[c.categoria] ?? c.categoria} · {c.responsavel ? nome.get(c.responsavel) ?? "equipe" : "sem responsável"}

@@ -4,6 +4,7 @@ import AppShell from "@/components/shell/AppShell";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
+import { imoveisDaVitrine } from "@/lib/imovel/vitrine";
 
 export const dynamic = "force-dynamic";
 
@@ -34,14 +35,8 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
 
   const admin = supabaseAdmin();
   const [{ data: bruto }, { data: municipios }, user] = await Promise.all([
-    admin.from("properties")
-      .select(`
-        codigo, titulo, tipo, status, valor, published_at, modalidade,
-        municipality:municipalities(id, nome, uf),
-        geo:property_geometries(area_m2),
-        media:property_media(storage_path, capa)
-      `)
-      .in("status", ["publicado", "em_negociacao", "vendido"]),
+    imoveisDaVitrine(), // mesma consulta que o assistente de IA usa
+
     admin.from("municipalities").select("id, nome").eq("ativo", true).order("nome"),
     currentUser(),
   ]);

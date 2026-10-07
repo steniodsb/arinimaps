@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { sendEmail, emailDoProfile } from "@/lib/notify";
 import { buscarEVincularPois } from "@/lib/overpass";
+import { casarDemandas } from "@/lib/demandas";
 import { setoresDe } from "@/lib/setores";
 import { CAMPOS_REVISAO, CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     // proprietário). Regra do Carlos: o site não publica imóvel sem prova.
     if (["aprovado", "publicado"].includes(acao)) {
       const { data: conferidos } = await admin.from("property_documents")
-        .select("tipo").eq("property_id", id).eq("verificado", true);
+        .select("tipo").eq("property_id", id).eq("verificado", true).is("substituido_por", null); // só a versão vigente (5.8)
       const tipos = new Set((conferidos ?? []).map((d) => d.tipo));
       // leilão se sustenta no edital; venda comum, na matrícula (e na
       // autorização do proprietário quando quem anuncia é parceiro)
@@ -120,6 +121,8 @@ export async function POST(request: Request) {
       ]);
       // POIs: tenta agora (Overpass com cache); se falhar vira job
       buscarEVincularPois(id).catch(() => undefined);
+      // 5.16: demandas abertas que casam com o imóvel viram tarefa do Comercial
+      void casarDemandas(id);
     }
 
     // avisa o anunciante nas decisões que mudam a vida dele

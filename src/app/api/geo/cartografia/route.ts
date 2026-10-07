@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { limiteLeituraMapa } from "@/lib/geo/limiteMemoria";
 
 /**
  * Camadas de cartografia prontas: raster (pirâmide de tiles) e vetorial
@@ -21,6 +22,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  * Perder calibração é pior do que uma consulta a mais ao banco.
  */
 export async function GET(request: Request) {
+  const bloqueio = limiteLeituraMapa(request, "geo");
+  if (bloqueio) return bloqueio;
   const fresco = new URL(request.url).searchParams.get("fresco") === "1";
 
   const { data, error } = await supabaseAdmin()

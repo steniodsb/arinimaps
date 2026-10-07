@@ -20,6 +20,8 @@ export default async function AdminConfiguracoes() {
       dica: "Habilita “Cobrar via Asaas” nas faturas." },
     { nome: "Esri ArcGIS (satélite licenciado)", ligado: !!process.env.NEXT_PUBLIC_ARCGIS_KEY,
       dica: "Sem isso, o satélite usa a fonte de demonstração, sem licença comercial." },
+    { nome: "Anthropic (assistente de IA)", ligado: !!process.env.ANTHROPIC_API_KEY,
+      dica: "Sem isso, o assistente aparece como “em configuração” e a rota responde 503." },
   ];
 
   return (

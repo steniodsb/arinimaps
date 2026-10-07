@@ -3,6 +3,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { setoresDe, type SetorId } from "@/lib/setores";
 import { montarAcesso, type Acesso, type Plano, type RecursoId } from "@/lib/planos";
+import { planoDaOrganizacao } from "@/lib/organizacoes-servidor";
 
 export type Ator = {
   userId: string;
@@ -35,13 +36,18 @@ export async function ator(): Promise<Ator | null> {
   if (!user) return null;
   const admin = supabaseAdmin();
   const { data: profile } = await admin.from("profiles")
-    .select("role, setores, ativo, nicho, plan_id, plan_valido_ate").eq("user_id", user.id).single();
+    .select("role, setores, ativo, nicho, plan_id, plan_valido_ate, plan_origem").eq("user_id", user.id).single();
   if (!profile || profile.ativo === false) return null;
-  const [{ data: partner }, { data: owner }, { data: plano }] = await Promise.all([
+  const equipe = ["admin_central", "analista_arini"].includes(profile.role);
+  const [{ data: partner }, { data: owner }, { data: planoPessoal }, daOrg] = await Promise.all([
     admin.from("partners").select("id").eq("profile_id", user.id).maybeSingle(),
     admin.from("owners").select("id").eq("profile_id", user.id).maybeSingle(),
     profile.plan_id ? admin.from("plans").select("*").eq("id", profile.plan_id).maybeSingle() : Promise.resolve({ data: null }),
+    // 5.9: plano da organização vale quando o pessoal é o padrão do nicho (docs/PLANOS.md §10)
+    !equipe && (profile.plan_origem ?? "padrao") === "padrao" ? planoDaOrganizacao(user.id) : Promise.resolve(null),
   ]);
+  const plano = daOrg?.plano ?? planoPessoal;
+  const validoAte = daOrg ? daOrg.validoAte : (profile.plan_valido_ate as string | null);
   return {
     userId: user.id,
     role: profile.role,
@@ -52,7 +58,7 @@ export async function ator(): Promise<Ator | null> {
     partnerId: partner?.id ?? null,
     ownerId: owner?.id ?? null,
     nicho: (profile.nicho as string | null) ?? null,
-    acesso: montarAcesso(profile.role, (plano as Plano | null) ?? null, profile.nicho as string | null, profile.plan_valido_ate as string | null),
+    acesso: montarAcesso(profile.role, (plano as Plano | null) ?? null, profile.nicho as string | null, validoAte),
   };
 }
 

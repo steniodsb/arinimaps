@@ -18,6 +18,65 @@ type OsmEl = {
 };
 
 /**
+ * Busca no Overpass os pontos de interesse ao redor de um ponto e grava no
+ * cache (`pois`). Devolve quantos vieram. LANÇA em caso de falha — quem chama
+ * decide se vira job do worker (imóvel) ou se segue sem (consulta do lote).
+ * GOTCHA: o Overpass exige User-Agent (406 sem ele).
+ */
+export async function buscarPoisAoRedor(lng: number, lat: number, raio: number, municipalityId?: string | null): Promise<number> {
+  const admin = supabaseAdmin();
+  const blocos = CATEGORIAS
+    .map((c) => `nwr[${c.seletor}](around:${raio},${lat},${lng});`)
+    .join("\n");
+  const query = `[out:json][timeout:20];(${blocos});out center 120;`;
+
+  const res = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    body: "data=" + encodeURIComponent(query),
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "AriniMaps/1.0 (contato@arinimaps.com.br)",
+      Accept: "application/json",
+    },
+    signal: AbortSignal.timeout(22_000),
+  });
+  if (!res.ok) throw new Error(`Overpass ${res.status}`);
+  const json = (await res.json()) as { elements: OsmEl[] };
+
+  const rows = [];
+  for (const el of json.elements ?? []) {
+    const plat = el.lat ?? el.center?.lat;
+    const plng = el.lon ?? el.center?.lon;
+    if (plat == null || plng == null) continue;
+    const tags = el.tags ?? {};
+    const categoria =
+      tags.amenity === "fuel" ? "combustivel" :
+      tags.amenity === "pharmacy" ? "farmacia" :
+      tags.shop === "supermarket" ? "supermercado" :
+      tags.amenity === "hospital" || tags.amenity === "clinic" ? "hospital" :
+      tags.amenity === "school" ? "escola" :
+      tags.highway ? "acesso_rodovia" : null;
+    if (!categoria) continue;
+    rows.push({
+      categoria,
+      nome: tags.name ?? (categoria === "acesso_rodovia" ? `Rodovia ${tags.ref ?? ""}`.trim() : null),
+      geom: `SRID=4326;POINT(${plng} ${plat})`,
+      ...(municipalityId ? { municipality_id: municipalityId } : {}),
+      fonte: "osm",
+      osm_id: `${el.type}/${el.id}`,
+      fetched_at: new Date().toISOString(),
+    });
+  }
+  if (rows.length) {
+    // atualiza nome e data do que já existia: é assim que a fonte "envelhece" e renova
+    await admin.from("pois").upsert(rows, { onConflict: "fonte,osm_id" });
+  }
+  const { error } = await admin.rpc("fn_semear_pois_centro");
+  if (error) console.error("fn_semear_pois_centro:", error.message);
+  return rows.length;
+}
+
+/**
  * Busca POIs no Overpass ao redor do centroide do imóvel, grava no cache (`pois`)
  * e vincula via fn_vincular_pois. Nunca lança — falha vira job para o worker.
  */
@@ -49,55 +108,7 @@ export async function buscarEVincularPois(propertyId: string): Promise<number> {
       .single();
     const raio = Number(raioCfg?.valor ?? 10000);
 
-    const blocos = CATEGORIAS
-      .map((c) => `nwr[${c.seletor}](around:${raio},${lat},${lng});`)
-      .join("\n");
-    const query = `[out:json][timeout:20];(${blocos});out center 120;`;
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 22000);
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: "data=" + encodeURIComponent(query),
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "AriniMaps/1.0 (contato@arinimaps.com.br)",
-        Accept: "application/json",
-      },
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`Overpass ${res.status}`);
-    const json = (await res.json()) as { elements: OsmEl[] };
-
-    const rows = [];
-    for (const el of json.elements ?? []) {
-      const plat = el.lat ?? el.center?.lat;
-      const plng = el.lon ?? el.center?.lon;
-      if (plat == null || plng == null) continue;
-      const tags = el.tags ?? {};
-      const categoria =
-        tags.amenity === "fuel" ? "combustivel" :
-        tags.amenity === "pharmacy" ? "farmacia" :
-        tags.shop === "supermarket" ? "supermercado" :
-        tags.amenity === "hospital" || tags.amenity === "clinic" ? "hospital" :
-        tags.amenity === "school" ? "escola" :
-        tags.highway ? "acesso_rodovia" : null;
-      if (!categoria) continue;
-      rows.push({
-        categoria,
-        nome: tags.name ?? (categoria === "acesso_rodovia" ? `Rodovia ${tags.ref ?? ""}`.trim() : null),
-        geom: `SRID=4326;POINT(${plng} ${plat})`,
-        municipality_id: prop.municipality_id,
-        fonte: "osm",
-        osm_id: `${el.type}/${el.id}`,
-      });
-    }
-    if (rows.length) {
-      await admin.from("pois").upsert(rows, { onConflict: "fonte,osm_id", ignoreDuplicates: true });
-    }
-    const { error: e1 } = await admin.rpc("fn_semear_pois_centro");
-    if (e1) console.error("fn_semear_pois_centro:", e1.message);
+    await buscarPoisAoRedor(lng, lat, raio, prop.municipality_id);
     const { data: n, error: e2 } = await admin.rpc("fn_vincular_pois", { p_property_id: propertyId, p_raio_m: raio });
     if (e2) throw new Error(`fn_vincular_pois: ${e2.message}`);
     return Number(n ?? 0);

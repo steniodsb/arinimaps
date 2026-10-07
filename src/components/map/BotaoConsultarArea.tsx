@@ -5,13 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 /**
- * Dispara o cruzamento da área com as fontes oficiais. Quem decide se pode é o
- * servidor (plano + cota): aqui só mostramos o que ele responder, inclusive a
- * `solucao` quando a consulta é negada (sem plano, cota esgotada).
+ * Dispara o cruzamento da área com as fontes oficiais (CAR, lote ou área
+ * desenhada — muda só a `url`). Quem decide se pode é o servidor (plano +
+ * cota): aqui só mostramos o que ele responder, inclusive a `solucao` quando a
+ * consulta é negada (sem plano, cota esgotada).
  */
-export default function BotaoConsultar({
-  cod, jaConsultou, planNome, cotaRestante,
-}: { cod: string; jaConsultou: boolean; planNome?: string | null; cotaRestante?: number | null }) {
+export default function BotaoConsultarArea({
+  url, corpo, jaConsultou, planNome, cotaRestante,
+}: {
+  url: string;
+  /** corpo JSON do POST, quando a rota precisa (área desenhada: a chave) */
+  corpo?: unknown;
+  jaConsultou: boolean; planNome?: string | null; cotaRestante?: number | null;
+}) {
   const router = useRouter();
   const [rodando, setRodando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -20,7 +26,9 @@ export default function BotaoConsultar({
 
   async function consultar() {
     setRodando(true); setMsg(""); setSolucao(""); setNegado(false);
-    const r = await fetch(`/api/consulta/car/${encodeURIComponent(cod)}`, { method: "POST" }).catch(() => null);
+    const r = await fetch(url, corpo === undefined ? { method: "POST" } : {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo),
+    }).catch(() => null);
     const data = r ? await r.json().catch(() => ({})) : {};
     setRodando(false);
     if (!r?.ok) {

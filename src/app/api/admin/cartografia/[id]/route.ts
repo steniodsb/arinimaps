@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, temSetor } from "@/lib/authz";
+import { conferirOrigem, respostaOrigemNegada } from "@/lib/seguranca/origem";
 import { falha, falhaBanco } from "@/lib/erros";
 import { gerarPlantaPublica } from "@/lib/geo/plantaPublica";
 
@@ -21,6 +22,9 @@ const LIMITES = {
 
 export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cartografia/[id]">) {
   const { id } = await ctx.params;
+  // fora do matcher do proxy (arquivos grandes): a conferência de origem (CSRF) é aqui
+  const origem = conferirOrigem(request);
+  if (!origem.ok) return respostaOrigemNegada(origem.motivo);
   const a = await ator();
   if (!a || !temSetor(a, "cartografia")) {
     return falha(403, "sem_permissao", "Restrito à equipe da Arini.", {
@@ -143,6 +147,9 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cart
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/admin/cartografia/[id]">) {
   const { id } = await ctx.params;
+  // fora do matcher do proxy (arquivos grandes): a conferência de origem (CSRF) é aqui
+  const origem = conferirOrigem(_request);
+  if (!origem.ok) return respostaOrigemNegada(origem.motivo);
   const a = await ator();
   if (a?.role !== "admin_central") {
     return falha(403, "sem_permissao", "Só a diretoria remove camadas do mapa.", {

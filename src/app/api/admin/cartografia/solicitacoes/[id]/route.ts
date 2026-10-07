@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ator, temSetor } from "@/lib/authz";
+import { conferirOrigem, respostaOrigemNegada } from "@/lib/seguranca/origem";
 import { registrarTentativa } from "@/lib/planos-servidor";
 import { falha, falhaBanco } from "@/lib/erros";
 import { logAudit } from "@/lib/audit";
@@ -22,6 +23,9 @@ const AVISA: StatusSolicitacao[] = ["rejeitada", "aprovada", "publicada", "aguar
  */
 export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cartografia/solicitacoes/[id]">) {
   const { id } = await ctx.params;
+  // fora do matcher do proxy (arquivos grandes): a conferência de origem (CSRF) é aqui
+  const origem = conferirOrigem(request);
+  if (!origem.ok) return respostaOrigemNegada(origem.motivo);
   const a = await ator();
   if (!a || !temSetor(a, "cartografia")) {
     await registrarTentativa({ request, userId: a?.userId, role: a?.role, recurso: "setor:cartografia", motivo: a ? "sem_setor" : "sem_sessao" });

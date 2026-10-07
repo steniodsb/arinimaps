@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ipDoPedido } from "@/lib/seguranca/limite";
 import { ACESSO_VISITANTE, montarAcesso, recursoPorId, type Acesso, type Plano, type RecursoId } from "@/lib/planos";
+import { planoDaOrganizacao } from "@/lib/organizacoes-servidor";
 
 /**
  * A trava dos planos, no servidor.
@@ -24,8 +25,15 @@ export async function acessoDe(userId: string | null | undefined): Promise<Acess
   if (!userId) return ACESSO_VISITANTE;
   const admin = supabaseAdmin();
   const { data: p } = await admin.from("profiles")
-    .select("role, nicho, plan_id, plan_valido_ate, ativo").eq("user_id", userId).maybeSingle();
+    .select("role, nicho, plan_id, plan_valido_ate, plan_origem, ativo").eq("user_id", userId).maybeSingle();
   if (!p || p.ativo === false) return ACESSO_VISITANTE;
+  // 5.9: membro de organização com plano usa o plano dela enquanto o pessoal
+  // for o padrão do nicho; plano manual/assinatura da conta vence (docs/PLANOS.md §10)
+  const equipe = ["admin_central", "analista_arini"].includes(p.role);
+  if (!equipe && (p.plan_origem ?? "padrao") === "padrao") {
+    const daOrg = await planoDaOrganizacao(userId);
+    if (daOrg) return montarAcesso(p.role, daOrg.plano, p.nicho, daOrg.validoAte);
+  }
   const plano = await carregarPlano(p.plan_id);
   return montarAcesso(p.role, plano, p.nicho, p.plan_valido_ate);
 }

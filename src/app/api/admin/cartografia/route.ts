@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, temSetor } from "@/lib/authz";
+import { conferirOrigem, respostaOrigemNegada } from "@/lib/seguranca/origem";
 import { converterDxf, ErroDxf } from "@/lib/geo/dxf";
 import { falha, falhaBanco } from "@/lib/erros";
 
@@ -30,6 +31,9 @@ function km(a: [number, number], b: [number, number]) {
  * Toda recusa responde com motivo medido e caminho de saída — ver src/lib/erros.ts.
  */
 export async function POST(request: Request) {
+  // fora do matcher do proxy (arquivos grandes): a conferência de origem (CSRF) é aqui
+  const origem = conferirOrigem(request);
+  if (!origem.ok) return respostaOrigemNegada(origem.motivo);
   const a = await ator();
   if (!a || !temSetor(a, "cartografia")) {
     return falha(403, "sem_permissao", "Restrito à equipe da Arini.", {

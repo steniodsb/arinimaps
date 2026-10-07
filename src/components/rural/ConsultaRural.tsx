@@ -7,15 +7,18 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { LinhaOrigem, SeloClassificacao, SeloSituacao, type OrigemItem } from "./Selos";
 
-type Item = { titulo: string; detalhe?: string; extra?: Record<string, string | number | null> };
+type Item = { titulo: string; detalhe?: string; extra?: Record<string, string | number | null>; origem?: OrigemItem };
 type Consulta = {
   quantidade: number; incide: boolean; raio_m: number;
-  resultado: { itens?: Item[] }; erro: string | null; consultado_em: string;
+  resultado: { itens?: Item[]; origem?: OrigemItem }; erro: string | null; consultado_em: string;
 } | null;
 type Fonte = {
   id: string; nome: string; orgao: string; prioridade: number;
   ativa: boolean; observacao: string | null; consulta: Consulta;
+  /** 3.15/3.16 — vêm de fontes_externas pela fn_consulta_rural */
+  classificacao?: string | null; situacao?: string | null; atualizacao?: string | null;
 };
 type Relatorio = {
   imovel: { codigo: string; titulo: string; tipo: string; area_ha: number | null; perimetro_km: number | null; municipio: string | null } | null;
@@ -36,11 +39,19 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
     if (r.ok) setDados(await r.json());
   }, [propertyId]);
 
-  useEffect(() => { carregar(); }, [carregar]);
+  // primeira carga: o setState fica no retorno do fetch, não no corpo do efeito
+  useEffect(() => {
+    let vivo = true;
+    fetch(`/api/imoveis/${propertyId}/consulta-rural`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (vivo && d) setDados(d); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [propertyId]);
 
   async function consultar() {
     setRodando(true);
-    setMsg("Consultando ANM, FUNAI, INPE e OpenStreetMap…");
+    setMsg("Consultando SICAR, INCRA, IBAMA, ANM, FUNAI, INPE, IPHAN, ANA, ANEEL, DNIT e OpenStreetMap…");
     const r = await fetch(`/api/imoveis/${propertyId}/consulta-rural`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ raio_m: raio }),
@@ -93,17 +104,27 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
       <div className="space-y-2">
         {ativas.map((f) => {
           const c = f.consulta;
-          const estado = !c ? "sem consulta" : c.erro ? "indisponível" : c.quantidade > 0 ? `${c.quantidade} registro(s)` : "nada encontrado";
+          // fonte instável nunca vira "nada encontrado" (3.16)
+          const instavel = f.situacao === "instavel";
+          const estado = !c ? "sem consulta"
+            : c.erro ? (instavel ? "fonte com instabilidade" : "indisponível")
+            : c.quantidade > 0 ? `${c.quantidade} registro(s)`
+            : instavel ? "fonte com instabilidade" : "nada encontrado";
           const cor = !c ? "bg-superficie-2 text-texto-2"
-            : c.erro ? "bg-alerta/15 text-alerta"
+            : c.erro || (instavel && !c.quantidade) ? "bg-alerta/15 text-alerta"
             : c.quantidade > 0 ? "bg-ouro/20 text-ouro-escuro" : "bg-verde/10 text-verde";
           const itens = c?.resultado?.itens ?? [];
+          const origem = c?.resultado?.origem ?? itens.find((i) => i.origem)?.origem ?? null;
           return (
             <div key={f.id} className="cartao overflow-hidden">
               <button onClick={() => setAberta(aberta === f.id ? null : f.id)}
                 className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-superficie-2 transition">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{f.nome}</p>
+                  <p className="font-medium text-sm flex flex-wrap items-center gap-1.5">
+                    {f.nome}
+                    <SeloClassificacao valor={origem?.tipo ?? f.classificacao} />
+                    <SeloSituacao valor={f.situacao} soProblema />
+                  </p>
                   <p className="text-xs text-texto-2">
                     {f.orgao}
                     {c && !c.erro && ` · consultado em ${new Date(c.consultado_em).toLocaleString("pt-BR")}`}
@@ -111,7 +132,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                   </p>
                 </div>
                 <span className={`text-xs rounded-full px-3 py-1 font-medium shrink-0 ${cor}`}>{estado}</span>
-                {!!itens.length && <span className="text-texto-2 text-xs">{aberta === f.id ? "▲" : "▼"}</span>}
+                {!!c && <span className="text-texto-2 text-xs">{aberta === f.id ? "▲" : "▼"}</span>}
               </button>
 
               {aberta === f.id && (
@@ -133,8 +154,17 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                       )}
                     </div>
                   ))}
-                  {!itens.length && !c?.erro && (
+                  {!itens.length && !c?.erro && !instavel && (
                     <p className="text-sm text-texto-2">Nenhuma incidência encontrada nesta fonte para o raio consultado.</p>
+                  )}
+                  {instavel && !c?.erro && (
+                    <p className="text-sm text-alerta">
+                      Esta fonte falhou nas últimas verificações automáticas — refaça a consulta antes de concluir.
+                    </p>
+                  )}
+                  {c && (
+                    <LinhaOrigem origem={origem} orgao={f.orgao} classificacao={f.classificacao}
+                      consultadoEm={c.consultado_em} atualizacao={f.atualizacao} />
                   )}
                 </div>
               )}

@@ -40,7 +40,7 @@ divisão interna dela continua sendo por **setor** (`src/lib/setores.ts`).
 | `recursos` (text[]) | ids do registro `RECURSOS` (`src/lib/planos.ts`) |
 | `cotas` (jsonb) | `{"consultas_area_mes": 2, "imoveis_ativos": 3}`; chave ausente = sem limite |
 | `preco_mensal`, `periodicidade` (`gratis`/`mensal`/`anual`) | preço zero com periodicidade paga = "sob consulta" na página pública |
-| `escopo` (`conta`/`organizacao`) | só informativo por enquanto (ver pendências) |
+| `escopo` (`conta`/`organizacao`) | `organizacao` = vale para todos os membros de uma organização (§10, migration 0035) |
 | `destaque`, `ativo`, `ordem` | exibição; inativo não aparece nem pode ser atribuído |
 
 RLS: leitura pública só dos ativos; escrita só pelo servidor (service role) a
@@ -194,11 +194,10 @@ A migration também preencheu nicho e plano padrão das contas existentes
    proprietário/consulta) e cai na consulta profissional; os outros dois só a
    Matriz atribui. Confirmar se produtor rural deve mesmo nascer no plano
    profissional ou na básica.
-3. **Por conta × por organização** — `escopo = organizacao` existe no plano,
-   mas não há entidade "organização" nem recurso `multiusuario` funcionando:
-   cada conta tem o próprio plano. Decidir se organização = várias contas
-   compartilhando um plano (precisa de tabela de organização e vínculo) ou
-   uma conta-mãe com sub-usuários.
+3. **Por conta × por organização** — implementado como "várias contas
+   compartilhando o plano da organização" (§10). Falta o Carlos confirmar se
+   isso basta ou se quer conta-mãe com sub-usuários, e se os membros devem
+   enxergar a carteira (imóveis/oportunidades) uns dos outros.
 4. **Cota gratuita** — a básica tem 2 consultas de área por mês (degustação) e
    o anunciante 5. Confirmar os números e se a degustação deve existir.
 5. **Assinatura e cobrança** — `plan_subscriptions` está pronta, sem tela nem
@@ -209,4 +208,56 @@ A migration também preencheu nicho e plano padrão das contas existentes
    (`subscriptions` por imóvel e plano por conta). Confirmar se o plano
    Parceiro/Franquia inclui N anúncios na mensalidade.
 7. **Trava de `imoveis_ativos`** no cadastro de imóvel e os recursos
-   `pre_avaliacao`, `multiusuario`, `api_dados` — reservados até existir tela.
+   `api_dados` — reservados até existir tela (`multiusuario` passou a valer em 07/10, §10;
+   `pre_avaliacao` deixou de ser reservado e `chat_ia` + cota `mensagens_ia_mes` entraram na migration 0034 —
+   ver docs/PRE-AVALIACAO.md e docs/SEGURANCA.md §10).
+
+## 10. Organizações e precedência do plano (migration 0035, 07/10/2026)
+
+Roadmap 5.9. Várias contas sob o mesmo plano: imobiliária com corretores,
+empresa, holding, ente público, franquia.
+
+### Tabelas
+- `organizations`: `nome`, `cnpj` (único quando informado), `tipo`
+  (`imobiliaria` · `empresa` · `holding` · `ente_publico` · `franquia`),
+  `plan_id`, `plan_valido_ate`, `region_id`, `ativo`, `observacoes`.
+- `organization_members`: `org_id`, `user_id` (nulo enquanto o convite não
+  foi aceito), `email` (sempre minúsculo), `papel_org` (`admin`/`membro`),
+  `status` (`pendente` · `ativo` · `recusado` · `removido`). Uma conta fica
+  **ativa em uma organização por vez** (índice único) e há no máximo um
+  convite pendente por e-mail em cada organização.
+- RLS: a equipe lê tudo; o membro lê a própria organização e a própria linha.
+  Escrita só pelo servidor.
+
+### Precedência do plano (`acessoDe()` e `ator()`)
+1. Equipe da Matriz → tudo pelo papel (não muda).
+2. Conta com `plan_origem` = `manual` ou `assinatura` → **plano pessoal**,
+   mesmo sendo membro de organização (a Diretoria/cobrança fixou de propósito).
+3. Conta com `plan_origem = padrao` **e** membro ativo de organização ativa
+   cujo plano existe, está ativo, tem `escopo = organizacao` e não venceu
+   (`organizations.plan_valido_ate`) → **plano da organização**.
+4. Senão → plano pessoal (padrão do nicho), como antes.
+
+Plano de escopo `conta` atribuído a uma organização não se aplica aos membros
+(a tela avisa). Organização desativada ou com plano vencido devolve cada
+membro ao próprio plano — não ao acesso de visitante.
+
+### Convites
+- O administrador da organização convida em `/painel/organizacao` (só se o
+  plano da organização tiver `multiusuario`); a Matriz convida em
+  `/admin/organizacoes` (setores Comercial/Diretoria) sem essa exigência.
+- O convite vai por e-mail. No **login** (`/api/auth/entrar`), se a conta não
+  está em nenhuma organização e há convite pendente para o e-mail dela, o mais
+  antigo é aceito sozinho (`vincularConvites`). Os demais aparecem em
+  `/conta` para aceitar ou recusar.
+- O último administrador não pode sair; remover/cancelar marca `removido`.
+
+### Fora do escopo (próximo passo)
+- **Carteira compartilhada**: membros ainda veem só os próprios imóveis e
+  oportunidades. Para o corretor ver os imóveis da imobiliária, as policies de
+  `properties`/`opportunities` (e `podeOperarOportunidade`) precisam
+  considerar o `org_id` — decisão do Carlos sobre o que o membro pode ver e
+  operar.
+- Cota por organização (consultas somadas de todos os membros) — hoje a cota
+  continua sendo contada por conta.
+- Cobrança do plano da organização (`plan_subscriptions` é por conta).

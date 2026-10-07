@@ -54,6 +54,12 @@ Node 18: o Next 16.3.2 exige `>=20.9.0` e o build morre antes de começar.
 | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `ASAAS_BASE_URL` | botão "Cobrar via Asaas" + baixa automática em `/api/asaas/webhook` | cobrança só manual |
 | `NEXT_PUBLIC_ARCGIS_KEY` | satélite Esri **licenciado** (ArcGIS Location Platform, 2 milhões de tiles/mês grátis). Crie a chave com o privilégio *Basemaps* e restrinja aos domínios do site | usa Esri Wayback 20512, sem licença comercial |
 | `NEXT_PUBLIC_WHATSAPP_ARINI` | número do botão de WhatsApp | botão sem número |
+| `ANTHROPIC_API_KEY` | assistente de IA do site (`/api/ia/chat`, botão "Pergunte à Arini"). Só no servidor — **nunca** com prefixo `NEXT_PUBLIC_` | botão mostra "Assistente em configuração"; a rota responde 503 `ia_desligada` |
+| `ARINI_IA_MODELO` | modelo do assistente (padrão `claude-sonnet-5-5`) | usa o padrão |
+| `ARINI_IA_ESFORCO` | `low` / `medium` / `high` — profundidade de raciocínio (padrão `low`, conversa curta) | usa `low` |
+| `CAMPO_CRIPTO_CHAVE` | CPF/CNPJ cifrado no banco + hash para busca (`openssl rand -base64 32`; guardar cópia no cofre — perder a chave = perder os CPFs cifrados). Depois de criar: `node scripts/cifra-cpf.mjs --aplicar`. Rotação: `docs/SEGURANCA.md` §11 | CPF gravado em claro, como antes |
+| `ORIGENS_PERMITIDAS` | outros endereços aceitos como origem de POST/PATCH/DELETE nas APIs (separados por vírgula), além de `NEXT_PUBLIC_SITE_URL` e do próprio host | só o próprio site |
+| `ARINI_IA_COTACAO_USD` | cotação do dólar usada só para estimar o custo em R$ em Conhecimento e IA › Conversas (padrão 5,4) | usa o padrão |
 
 O painel de **Admin › Configurações** mostra o estado de cada uma depois que o
 app subir.

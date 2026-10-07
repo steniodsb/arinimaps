@@ -25,6 +25,13 @@ const nova = async () => {
   const p = await (await b.createBrowserContext()).newPage();
   await p.setViewport({ width: 1440, height: 900 });
   await p.goto(`${BASE}/entrar`, { waitUntil: "networkidle2", timeout: 120000 });
+  // trava do site (fase de testes)
+  if (process.env.SITE_SENHA && p.url().includes("/acesso")) {
+    await p.evaluate(async (senha) => {
+      await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha }) });
+    }, process.env.SITE_SENHA);
+    await p.goto(`${BASE}/entrar`, { waitUntil: "networkidle2", timeout: 120000 });
+  }
   return p;
 };
 const api = (p, url, body, method = "POST") => p.evaluate(async (u, bd, m) => {
@@ -39,7 +46,16 @@ const anunciar = (p, dados, arquivos) => p.evaluate(async (d, arqs) => {
   const fd = new FormData();
   fd.set("dados", JSON.stringify(d));
   fd.set("geometria", JSON.stringify({ fonte: "desenho", geometry: { type: "Polygon", coordinates: [[[-50.21, -19.73], [-50.209, -19.73], [-50.209, -19.729], [-50.21, -19.729], [-50.21, -19.73]]] } }));
-  for (const [campo, nome, tipo] of arqs) fd.append(campo, new File([new Uint8Array(2048)], nome, { type: tipo }));
+  // conteúdo com a assinatura real do formato: o servidor confere os bytes, não o tipo declarado
+  const amostra = (tipo) => {
+    const b = new Uint8Array(2048);
+    const cab = tipo === "application/pdf" ? [...new TextEncoder().encode("%PDF-1.4 ")]
+      : tipo === "image/png" ? [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+      : tipo.startsWith("image/") ? [0xff, 0xd8, 0xff, 0xe0] : [];
+    b.set(cab, 0);
+    return b;
+  };
+  for (const [campo, nome, tipo] of arqs) fd.append(campo, new File([amostra(tipo)], nome, { type: tipo }));
   const r = await fetch("/api/imoveis", { method: "POST", body: fd });
   const t = await r.text();
   let json = null; try { json = JSON.parse(t); } catch {}

@@ -3,6 +3,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 import { registrarEvento } from "@/lib/seguranca/eventos";
+import { analisarEntrada, analisarFalha } from "@/lib/seguranca/alertas";
+import { vincularConvites } from "@/lib/organizacoes-servidor";
 
 /**
  * Login pelo servidor, e não direto do navegador para o Supabase, por três
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
   if (error || !data.user) {
     await registrarEvento(request, "login_falhou", { email });
+    await analisarFalha(request, email); // 6.8: excesso de falhas vira alerta
     // mesma mensagem para e-mail inexistente e senha errada: não revela quem tem conta
     return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
   }
@@ -54,6 +57,11 @@ export async function POST(request: Request) {
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   const precisaMfa = aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2";
 
+  // 6.8: aparelho ou local novo, ou entrada logo após várias falhas — compara
+  // com os logins anteriores, por isso roda antes de gravar este
+  await analisarEntrada(request, data.user.id, email);
   await registrarEvento(request, "login_ok", { userId: data.user.id, email, detalhe: { mfa_pendente: precisaMfa } });
+  // 5.9: convite pendente de organização para este e-mail vira vínculo (não atrasa o login)
+  void vincularConvites(data.user.id, email);
   return NextResponse.json({ ok: true, role: profile?.role ?? "comprador", mfa: precisaMfa });
 }

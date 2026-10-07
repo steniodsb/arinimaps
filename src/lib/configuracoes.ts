@@ -87,6 +87,8 @@ export const GRUPOS: Grupo[] = [
       { chave: "regra_comissao_texto", rotulo: "Regra contratual da comissão", tipo: "textarea",
         padrao: "1% sobre o valor da operação, conforme contrato de intermediação.",
         ajuda: "Texto gravado junto de cada comissão registrada." },
+      { chave: "demandas_tolerancia_pct", rotulo: "Folga ao casar demandas", tipo: "percentual", padrao: 10, min: 0, max: 100, sufixo: "%",
+        ajuda: "Quando um imóvel é publicado, ele casa com uma demanda aberta se o valor e a área estiverem na faixa pedida, com esta folga para cada lado." },
     ],
   },
   {
@@ -124,6 +126,34 @@ export const GRUPOS: Grupo[] = [
         ajuda: "Com “Sim”, ninguém da equipe entra na Central sem o código do aplicativo autenticador. Ative o seu próprio em Minha segurança antes de ligar." },
       { chave: "seguranca_sessao_equipe_horas", rotulo: "Sessão da equipe expira em", tipo: "numero", padrao: 12, min: 1, max: 720, sufixo: "horas", somenteDiretoria: true,
         ajuda: "Depois desse tempo desde o login, a Central pede a senha de novo. Evita sessão administrativa aberta para sempre num computador." },
+      // Retenção e descarte (item 6.4). Os prazos dependem da decisão 8.9 (Carlos + jurídico):
+      // até lá ficam em 0 = não descartar, e a rotina só simula.
+      { chave: "retencao_selfie_dias", rotulo: "Guardar a selfie do aceite por", tipo: "numero", padrao: 0, min: 0, max: 3650, sufixo: "dias", somenteDiretoria: true,
+        ajuda: "Contados a partir do fim da autorização de venda. 0 = não descartar. Aguarda a decisão 8.9 (Carlos e jurídico) sobre finalidade e prazo de guarda." },
+      { chave: "retencao_docs_reprovados_dias", rotulo: "Guardar documentos de anúncio reprovado por", tipo: "numero", padrao: 0, min: 0, max: 3650, sufixo: "dias", somenteDiretoria: true,
+        ajuda: "Matrícula, edital e demais documentos de anúncios reprovados, contados da reprovação. 0 = não descartar. Aguarda a decisão 8.9." },
+      { chave: "retencao_logs_acesso_dias", rotulo: "Guardar registros de acesso por", tipo: "numero", padrao: 0, min: 0, max: 3650, sufixo: "dias", somenteDiretoria: true,
+        ajuda: "Entradas e tentativas de login, aberturas de documentos, tentativas bloqueadas, consultas de área e alertas. O Marco Civil da Internet (art. 15) exige no mínimo 6 meses (180 dias). 0 = não descartar. Aguarda a decisão 8.9." },
+      { chave: "retencao_executar", rotulo: "Descartar de verdade", tipo: "sim_nao", padrao: false, somenteDiretoria: true,
+        ajuda: "Com “Não”, a rotina diária só simula e registra o que seria apagado (Segurança › Retenção). Ligue só depois de conferir a simulação: arquivo descartado não volta." },
+    ],
+  },
+  {
+    id: "inteligencia",
+    titulo: "Inteligência (IA e avaliação)",
+    descricao: "Assistente de IA, pré-avaliação de valor e aptidão territorial. A metodologia está em docs/PRE-AVALIACAO.md e depende da aprovação da Arini (decisão 8.4).",
+    icone: "✦",
+    campos: [
+      { chave: "ia_chat_ativo", rotulo: "Assistente de IA no site", tipo: "sim_nao", padrao: true, somenteDiretoria: true,
+        ajuda: "Liga o botão do assistente nas páginas públicas e no painel. Ele só funciona com a chave ANTHROPIC_API_KEY no servidor; sem ela aparece “Assistente em configuração”." },
+      { chave: "pre_avaliacao_ativa", rotulo: "Pré-avaliação de valor para clientes", tipo: "sim_nao", padrao: false, somenteDiretoria: true,
+        ajuda: "Com “Sim”, contas cujo plano tem “Pré-avaliação” veem a estimativa na ficha do imóvel. A equipe da Matriz sempre pode testar na ficha da Central." },
+      { chave: "aptidao_ativa", rotulo: "Aptidão territorial para clientes", tipo: "sim_nao", padrao: false, somenteDiretoria: true,
+        ajuda: "Indicação qualitativa (lavoura / pecuária / restrições) para imóveis rurais, com os fatores e os dados que faltam. Sem números de rentabilidade." },
+      { chave: "pre_avaliacao_min_comparaveis", rotulo: "Mínimo de comparáveis", tipo: "numero", padrao: 5, min: 3, max: 30, sufixo: "imóveis", somenteDiretoria: true,
+        ajuda: "Abaixo disso a pré-avaliação responde “dados insuficientes” em vez de estimar." },
+      { chave: "pre_avaliacao_raio_km", rotulo: "Raio para comparáveis de municípios vizinhos", tipo: "numero", padrao: 60, min: 10, max: 200, sufixo: "km", somenteDiretoria: true,
+        ajuda: "Distância entre as sedes municipais. Os do mesmo município têm prioridade." },
     ],
   },
   {
@@ -143,6 +173,8 @@ export const GRUPOS: Grupo[] = [
       { chave: "poi_categorias", rotulo: "Categorias de ponto de interesse", tipo: "lista",
         padrao: ["combustivel", "farmacia", "supermercado", "hospital", "escola", "centro", "acesso_rodovia"],
         ajuda: "Uma por linha. Vale para os próximos imóveis publicados." },
+      { chave: "poi_atualizar_dias", rotulo: "Atualizar pontos de interesse a cada", tipo: "numero", padrao: 90, min: 7, max: 730, sufixo: "dias",
+        ajuda: "Anúncios ativos com pontos de interesse mais antigos que isso voltam para a fila de atualização (OpenStreetMap)." },
     ],
   },
 ];

@@ -1,0 +1,54 @@
+# Dimensionamento de banco e armazenamento
+
+Medido em 07/10/2026 no projeto Supabase `qtpjryvqifcmmabebccf` (roadmap 1.9).
+
+## Hoje
+
+| Item | Volume | Observação |
+|---|---|---|
+| Banco inteiro | 90 MB | inclui 7 MB do PostGIS (`spatial_ref_sys`) |
+| `urban_lots` | 40 MB · 31 245 lotes | 3 cidades; ~1,3 KB por lote com geometria em 4326 e 3857 |
+| `car_imoveis` | 26 MB · 10 196 áreas | 6 municípios; ~2,7 KB por área |
+| Tabelas de negócio | < 2 MB | 3 imóveis de demonstração |
+| Storage `media` | 46 MB · 6 arquivos | plantas das cidades (GeoJSON) |
+| Storage `docs` | ~0 | documentos, selfies e anexos entram com o uso real |
+
+## Projeção por item
+
+| Item | Por unidade | Premissa |
+|---|---|---|
+| Lotes urbanos | 1,3 MB por 1 000 lotes | cidade de 30 mil habitantes ≈ 10 mil lotes ≈ 13 MB |
+| CAR | 2,7 MB por 1 000 áreas | um município rural do Pontal tem 1 500 a 2 500 áreas |
+| Planta da cidade (storage) | 2 a 20 MB | depende do CAD; a versão pública é menor |
+| Anúncio | ~8 MB | 10 fotos de 600 KB + documentos em PDF |
+| Vídeo do anúncio | até 50 MB | limite da rota de envio |
+| Vídeo automático (worker) | 15 a 30 MB | 1080p, 40 s |
+| Eventos e auditoria | ~0,5 KB por evento | ficha aberta, tour, consulta, login |
+
+## Cenários
+
+| Cenário | Banco | Storage |
+|---|---|---|
+| Piloto atual: 6 municípios, 200 anúncios, 5 mil usuários | ~250 MB | ~3 GB (com vídeo em metade dos anúncios: ~8 GB) |
+| Região ampliada: 30 municípios, 2 mil anúncios, 50 mil usuários | ~1,5 GB | ~30 a 70 GB |
+| Estado de MG inteiro no CAR (~1 milhão de áreas, sem anúncios) | +2,7 GB só do CAR | — |
+
+## Conclusões
+
+- **Plano gratuito do Supabase não serve para produção**: 500 MB de banco e 1 GB de storage
+  estouram no primeiro mês de anúncios reais, e não há backup com retenção (item 1.6).
+- **Plano Pro** (cerca de US$ 25/mês, decisão 8.8 do Carlos) cobre o piloto e a região ampliada:
+  8 GB de banco e 100 GB de storage incluídos, backup diário.
+- **Vídeos** são o que mais cresce. Se passarem de 50 GB, mover para o Cloudflare R2
+  (sem custo de saída) já previsto na arquitetura.
+- **CAR do estado inteiro** cabe, mas os tiles vetoriais (migration 0031) é que tornam isso viável;
+  o índice espacial em `geom_3857` mantém o tempo do tile estável.
+- **Eventos** (`property_events`, `audit_log`, `auth_events`) crescem com o tráfego, não com os
+  anúncios. Com 50 mil usuários ativos, estimar ~1 GB por ano; a retenção configurável (item 6.4)
+  controla isso.
+
+## Como medir de novo
+
+```bash
+node scripts/sql.mjs "select relname, pg_size_pretty(pg_total_relation_size(c.oid)) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' order by pg_total_relation_size(c.oid) desc limit 15"
+```

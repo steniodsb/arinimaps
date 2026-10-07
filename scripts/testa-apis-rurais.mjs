@@ -1,64 +1,47 @@
-// Sonda as fontes oficiais do módulo de Consulta Rural.
-// Objetivo: descobrir o que responde HOJE, antes de escrever adaptador.
-// Uso: node scripts/testa-apis-rurais.mjs
+// Roda os adaptadores REAIS de src/lib/rural/adaptadores.ts contra a região de
+// Iturama e imprime a tabela: quantidade, tempo, erro e a origem carimbada.
+//
+// Uso: node scripts/testa-apis-rurais.mjs              (todas)
+//      node scripts/testa-apis-rurais.mjs sigef dnit   (só essas)
+//      BBOX=-50.25,-19.75,-50.15,-19.65 node scripts/testa-apis-rurais.mjs
+//
+// Usa o jiti (já vem com o Next) para carregar o TypeScript; o "server-only"
+// é trocado por um módulo vazio porque aqui não há React Server Components.
+import { createJiti } from "jiti";
+import { fileURLToPath } from "node:url";
 
-const FONTES = [
-  { nome: "SICAR / CAR (WFS)", prio: 1, url: "https://geoserver.car.gov.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities" },
-  { nome: "SICAR / CAR (site)", prio: 1, url: "https://consultapublica.car.gov.br/publico/imoveis/index" },
-  { nome: "INCRA acervo fundiário (WFS)", prio: 2, url: "https://acervofundiario.incra.gov.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities" },
-  { nome: "INCRA certificação SIGEF", prio: 2, url: "https://certificacao.incra.gov.br/csv_shp/export_shp.py" },
-  { nome: "IBAMA SISCOM (WFS)", prio: 4, url: "https://siscom.ibama.gov.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities" },
-  { nome: "INPE Queimadas (dados abertos)", prio: 5, url: "https://queimadas.dgi.inpe.br/queimadas/dados-abertos/" },
-  { nome: "INPE TerraBrasilis (WFS PRODES/DETER)", prio: 5, url: "http://terrabrasilis.dpi.inpe.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities" },
-  { nome: "MapBiomas (WMS)", prio: 6, url: "https://brasil.mapbiomas.org/" },
-  { nome: "ANM SIGMINE (ArcGIS REST)", prio: 7, url: "https://geo.anm.gov.br/arcgis/rest/services?f=json" },
-  { nome: "FUNAI (WFS)", prio: 8, url: "https://geoserver.funai.gov.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities" },
-  { nome: "ICMBio (WFS)", prio: 9, url: "https://mapas.icmbio.gov.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities" },
-  { nome: "IBGE malhas (já em uso)", prio: 9, url: "https://servicodados.ibge.gov.br/api/v1/localidades/estados/MG/municipios" },
-  { nome: "INDE / geoservicos IBGE (WMS)", prio: 9, url: "https://geoservicos.ibge.gov.br/geoserver/ows?service=WMS&request=GetCapabilities" },
-  { nome: "ANA SNIRH (ArcGIS REST)", prio: 10, url: "https://www.snirh.gov.br/arcgis/rest/services?f=json" },
-  { nome: "ANEEL SIGEL (ArcGIS REST)", prio: 10, url: "https://sigel.aneel.gov.br/arcgis/rest/services?f=json" },
-  { nome: "DNIT VGeo (ArcGIS REST)", prio: 10, url: "https://servicos.dnit.gov.br/vgeo/api/publico/rotas" },
-  { nome: "Overpass / OSM (já em uso)", prio: 10, url: "https://overpass-api.de/api/status" },
-];
+const jiti = createJiti(import.meta.url, {
+  alias: { "server-only": fileURLToPath(new URL("../node_modules/server-only/empty.js", import.meta.url)) },
+});
+const { ADAPTADORES } = await jiti.import(fileURLToPath(new URL("../src/lib/rural/adaptadores.ts", import.meta.url)));
 
-const UA = "AriniMaps/1.0 (contato@arinimaps.com.br)";
+const [xmin, ymin, xmax, ymax] = (process.env.BBOX ?? "-50.6,-20.0,-49.8,-19.4").split(",").map(Number);
+const bbox = { xmin, ymin, xmax, ymax, lng: (xmin + xmax) / 2, lat: (ymin + ymax) / 2 };
+const filtro = process.argv.slice(2);
+const detalhar = process.env.DETALHE === "1";
 
-async function sonda(f) {
+console.log(`Envelope: ${xmin},${ymin},${xmax},${ymax}\n`);
+const linhas = await Promise.all(ADAPTADORES.filter((a) => !filtro.length || filtro.includes(a.id)).map(async (a) => {
   const t0 = Date.now();
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 25000);
-    const r = await fetch(f.url, { headers: { "User-Agent": UA }, signal: ctrl.signal, redirect: "follow" });
-    clearTimeout(timer);
-    const texto = await r.text();
-    const ms = Date.now() - t0;
-    const ct = (r.headers.get("content-type") ?? "").split(";")[0];
+  const r = await a.fn(bbox);
+  return { a, r, ms: Date.now() - t0 };
+}));
 
-    // em GetCapabilities, conta as camadas publicadas
-    let extra = "";
-    const camadas = texto.match(/<(?:wfs:)?FeatureType>|<Layer[ >]/g);
-    if (camadas) extra = ` · ~${camadas.length} camadas`;
-    else if (ct.includes("json")) {
-      try {
-        const j = JSON.parse(texto);
-        if (Array.isArray(j)) extra = ` · ${j.length} itens`;
-        else if (j.services) extra = ` · ${j.services.length} services / ${(j.folders ?? []).length} pastas`;
-      } catch { /* ignora */ }
-    }
-    return { ...f, ok: r.ok, status: r.status, ms, ct, extra, tamanho: texto.length };
-  } catch (e) {
-    return { ...f, ok: false, status: 0, ms: Date.now() - t0, erro: e.name === "AbortError" ? "timeout 25s" : e.message };
-  }
+console.log("FONTE".padEnd(16), "QTD".padStart(6), "TEMPO".padStart(8), " ORIGEM / ERRO");
+console.log("-".repeat(110));
+for (const { a, r, ms } of linhas) {
+  const o = r.origem ?? {};
+  const base = [o.orgao, o.tipo, o.versao, o.atualizado_em && `base atualizada em ${o.atualizado_em.slice(0, 10)}`]
+    .filter(Boolean).join(" · ");
+  console.log(
+    a.id.padEnd(16),
+    String(r.erro ? "—" : r.quantidade).padStart(6),
+    `${(ms / 1000).toFixed(1)}s`.padStart(8),
+    "", r.erro ? `ERRO: ${r.erro}` : base,
+  );
+  if (detalhar) for (const i of r.itens.slice(0, 3)) console.log("".padEnd(33), "·", i.titulo, i.detalhe ? `— ${i.detalhe}` : "");
 }
-
-const resultados = await Promise.all(FONTES.map(sonda));
-resultados.sort((a, b) => a.prio - b.prio);
-
-console.log("FONTE".padEnd(38), "STATUS".padEnd(8), "TEMPO".padEnd(8), "DETALHE");
-console.log("-".repeat(100));
-for (const r of resultados) {
-  const status = r.ok ? `${r.status} OK` : r.erro ? "FALHOU" : `${r.status}`;
-  const detalhe = r.erro ? r.erro : `${r.ct}${r.extra} (${(r.tamanho / 1024).toFixed(0)}KB)`;
-  console.log(r.nome.padEnd(38), status.padEnd(8), `${r.ms}ms`.padEnd(8), detalhe);
-}
+const falhas = linhas.filter((l) => l.r.erro).length;
+const semOrigem = linhas.filter((l) => l.r.itens.some((i) => !i.origem?.consultado_em)).length;
+console.log(`\n${linhas.length - falhas}/${linhas.length} fontes responderam; itens sem origem carimbada: ${semOrigem}.`);
+process.exit(falhas ? 1 : 0);

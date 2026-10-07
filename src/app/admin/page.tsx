@@ -36,7 +36,7 @@ export default async function Matriz({ searchParams }: PageProps<"/admin">) {
       contar("partners", (q) => q.in("status", ["solicitado", "em_analise"])),
       contar("owners", (q) => q.in("status", ["solicitado", "em_analise"])),
     ]).then(([a, b]) => a + b),
-    contar("property_documents", (q) => q.eq("verificado", false)),
+    contar("property_documents", (q) => q.eq("verificado", false).is("substituido_por", null)),
     contar("opportunities", (q) => q.eq("etapa", "novo_lead")),
     contar("opportunities", (q) => q.in("etapa", ["proposta_enviada", "contraproposta", "negociacao", "aceite", "contrato"])),
     admin.from("commissions").select("valor").in("status", ["registrada", "cobrada"])

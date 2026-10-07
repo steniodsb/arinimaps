@@ -11,11 +11,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import { registrarEventoImovel, ORIGEM_DADO_LABEL } from "@/lib/imovel/eventos";
 import { ator, temRecurso } from "@/lib/authz";
-
-const CATEGORIA_LABEL: Record<string, string> = {
-  combustivel: "Posto de combustível", farmacia: "Farmácia", supermercado: "Supermercado",
-  hospital: "Hospital", escola: "Escola", centro: "Centro da cidade", acesso_rodovia: "Acesso à rodovia",
-};
+import CartaoAvaliacaoPublico from "@/components/avaliacao/CartaoAvaliacaoPublico";
+import { CATEGORIA_POI_ICONE, CATEGORIA_POI_LABEL, formatDistancia } from "@/lib/geo/distancia";
 
 type Media = { tipo: string; path: string; capa: boolean };
 
@@ -237,6 +234,9 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
               </section>
             )}
 
+            {/* 5.3/5.4: só com a função ligada pela Diretoria e o recurso no plano */}
+            <CartaoAvaliacaoPublico propertyId={propId?.id} tipo={imovel.tipo} status={imovel.status} />
+
             {!!unidades?.length && (
               <section>
                 <h2 className="text-2xl font-semibold text-texto mb-3">Unidades deste empreendimento</h2>
@@ -260,15 +260,21 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                 <h2 className="text-2xl font-semibold text-texto mb-3">Pontos de interesse próximos</h2>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {pois.map((p, i) => (
-                    <div key={i} className="cartao px-4 py-2.5 text-sm flex justify-between gap-2">
-                      <span>{p.nome ?? CATEGORIA_LABEL[p.categoria] ?? p.categoria}</span>
-                      <span className="text-texto-2 tabular-nums shrink-0">
-                        {(p.distancia_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km
+                    <div key={i} className="cartao px-4 py-2.5 text-sm flex items-center justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block truncate">
+                          <span aria-hidden className="mr-1.5">{CATEGORIA_POI_ICONE[p.categoria] ?? "•"}</span>
+                          {p.nome ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}
+                        </span>
+                        {p.nome && <span className="block text-[11px] text-texto-2">{CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>}
                       </span>
+                      <span className="text-texto font-medium tabular-nums shrink-0">{formatDistancia(p.distancia_m)}</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-texto-2 mt-2">Distâncias em linha reta, do centro do imóvel.</p>
+                <p className="text-xs text-texto-2 mt-2">
+                  Distâncias em linha reta, do centro do imóvel. Fonte: OpenStreetMap, atualizada periodicamente.
+                </p>
               </section>
             )}
 

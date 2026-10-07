@@ -14,6 +14,8 @@ import { useState } from "react";
 import { Logo } from "@/components/shell/AppShell";
 import BotaoTema from "@/components/shell/BotaoTema";
 import { SETORES, type ItemMenu, type SetorId } from "@/lib/setores";
+import Avatar from "@/components/shell/Avatar";
+import { useNaoLidosSuporte } from "@/components/suporte/useNaoLidos";
 
 /** Itens que todo membro da equipe tem, qualquer que seja o setor. */
 const GERAL: ItemMenu[] = [
@@ -22,10 +24,13 @@ const GERAL: ItemMenu[] = [
 ];
 
 export default function AdminShell({
-  children, nome, papel, setores,
-}: { children: React.ReactNode; nome: string; papel: string; setores: SetorId[] }) {
+  children, nome, papel, setores, avatar = null,
+}: { children: React.ReactNode; nome: string; papel: string; setores: SetorId[]; avatar?: string | null }) {
   const caminho = usePathname();
   const [aberto, setAberto] = useState(false);
+  // 10.2: selo de chamados esperando a equipe (só para quem atua no Suporte)
+  const naoLidos = useNaoLidosSuporte(setores.includes("suporte"));
+  const selo: Record<string, number> = { "/admin/suporte": naoLidos };
   // "/admin" só fica ativo na raiz; os demais casam por prefixo
   const ativo = (href: string) => (href === "/admin" ? caminho === "/admin" : caminho.startsWith(href));
 
@@ -60,6 +65,12 @@ export default function AdminShell({
                     : "text-texto-2 hover:text-texto hover:bg-superficie-2")
                 }>
                 <span className="w-4 text-center">{i.icone}</span> {i.rotulo}
+                {!!selo[i.href] && (
+                  <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-ouro text-[#06140D] text-[10px] font-semibold grid place-items-center"
+                    title="Chamados com mensagem nova do cliente">
+                    {selo[i.href] > 99 ? "99+" : selo[i.href]}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -76,9 +87,15 @@ export default function AdminShell({
         </Link>
         <nav className="flex-1 overflow-y-auto p-3">{navegacao}</nav>
         <div className="p-4 border-t border-linha">
-          <p className="text-sm text-texto truncate">{nome}</p>
-          <p className="text-xs text-texto-2">{papel}</p>
-          <div className="mt-2 flex gap-3 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar nome={nome} url={avatar} tamanho={34} />
+            <div className="min-w-0">
+              <p className="text-sm text-texto truncate">{nome}</p>
+              <p className="text-xs text-texto-2">{papel}</p>
+            </div>
+          </div>
+          <div className="mt-2 flex gap-3 text-xs flex-wrap">
+            <Link href="/conta" className="text-verde hover:underline">Minha conta</Link>
             <Link href="/conta/seguranca" className="text-verde hover:underline">Minha segurança</Link>
             <Link href="/" className="text-texto-2 hover:text-texto">Site</Link>
           </div>
@@ -115,9 +132,13 @@ export default function AdminShell({
             <Link href="/mapa" className="hidden sm:inline-block rounded-lg border border-linha px-3 py-1.5 text-xs text-texto-2 hover:text-texto hover:bg-superficie-2 transition">
               Ver mapa público
             </Link>
-            <span className="w-9 h-9 rounded-full bg-verde-escuro border border-verde/30 grid place-items-center text-xs text-verde">
-              {(nome || "A").slice(0, 1).toUpperCase()}
-            </span>
+            <Link href="/conta" aria-label="Minha conta" title="Minha conta">
+              {avatar ? <Avatar nome={nome} url={avatar} tamanho={36} /> : (
+                <span className="w-9 h-9 rounded-full bg-verde-escuro border border-verde/30 grid place-items-center text-xs text-verde">
+                  {(nome || "A").slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </Link>
           </div>
         </header>
         <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>

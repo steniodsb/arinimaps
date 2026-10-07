@@ -1,11 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { bloqueioAtivo, caminhoLivre, cookieValido, COOKIE_BLOQUEIO } from "@/lib/seguranca/bloqueio";
+import { conferirOrigem, respostaOrigemNegada } from "@/lib/seguranca/origem";
+import { opcoesCookieSessao } from "@/lib/seguranca/cookies";
 
 // Trava o site com a senha de bloqueio (SITE_SENHA) e mantém a sessão do
 // Supabase viva (refresh de token via cookies).
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // CSRF: POST/PUT/PATCH/DELETE nas APIs só a partir do próprio site (webhook do Asaas isento)
+  if (pathname.startsWith("/api/")) {
+    const origem = conferirOrigem(request, pathname);
+    if (!origem.ok) return respostaOrigemNegada(origem.motivo);
+  }
   if (bloqueioAtivo() && !caminhoLivre(pathname) &&
       !(await cookieValido(request.cookies.get(COOKIE_BLOQUEIO)?.value))) {
     if (pathname.startsWith("/api/")) {
@@ -23,6 +30,7 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: opcoesCookieSessao(),
       cookies: {
         getAll() {
           return request.cookies.getAll();

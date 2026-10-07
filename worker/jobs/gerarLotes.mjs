@@ -34,7 +34,7 @@ const LADRILHO_M = 400;
 const MARGEM_M = 130;
 
 /** Centro do retângulo da coleção, em graus — o mesmo cálculo de centroDe() no app. */
-function centroDe(fc) {
+export function centroDe(fc) {
   let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
   const olhar = (c) => {
     if (Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number") {
@@ -54,7 +54,7 @@ function centroDe(fc) {
  * centro, em metros locais, depois deslocamento). Tem de ser a MESMA conta, ou
  * o lote clicável fica deslocado da linha da planta que o usuário está vendo.
  */
-function afim(centro, t) {
+export function afim(centro, t) {
   const [cx, cy] = centro;
   const kx = 111_320 * Math.cos((cy * Math.PI) / 180), ky = 110_540;
   const rad = (t.rot * Math.PI) / 180, cos = Math.cos(rad), sen = Math.sin(rad), s = t.esc || 1;

@@ -233,11 +233,16 @@ const norm = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export default function MapaRegional({
-  recursos, logado = false,
+  recursos, logado = false, versaoLotes = "",
 }: {
   /** recursos do plano de quem está olhando (planos por nicho); ausente = tudo liberado */
   recursos?: string[];
   logado?: boolean;
+  /**
+   * Muda quando os lotes de alguma planta são gerados de novo (recalibração):
+   * vai no endereço do tile, então navegador, servidor e Cloudflare buscam o novo.
+   */
+  versaoLotes?: string;
 } = {}) {
   const tema = useTema();
   const router = useRouter();
@@ -623,7 +628,7 @@ export default function MapaRegional({
         // o cursor e quando é clicado.
         const origem = window.location.origin;
         map.addSource("lotes", {
-          type: "vector", tiles: [`${origem}/api/tiles/lotes/{z}/{x}/{y}.pbf`],
+          type: "vector", tiles: [`${origem}/api/tiles/lotes/{z}/{x}/{y}.pbf${versaoLotes ? `?v=${versaoLotes}` : ""}`],
           minzoom: LOTE_ZOOM_MIN, maxzoom: 17, promoteId: { lotes: "id" },
         });
         map.addLayer({

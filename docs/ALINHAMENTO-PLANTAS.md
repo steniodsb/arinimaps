@@ -41,7 +41,7 @@ própria planta mais próximo do centro da célula.
 |---|---|---|---|---|---|
 | Iturama | −25,0 m, +12,4 m | 9.943 | 0,6 m (L −0,2, N +0,6), σ 4,3 m | 3,1 m | **No lugar no geral**; desvios locais de 5–11 m no norte da cidade (abaixo) |
 | Limeira do Oeste | 0, 0 (datum SAD 69 convertido) | 1.242 | 1,0 m (L +0,7, N −0,8), σ 5,2 m | 4,3 m | **No lugar**; nada acima do ruído com amostra suficiente |
-| União de Minas | −10 m, −10 m | 491 | **5,9 m (L +5,8, N −1,0)**, σ 7,0 m | 6,8 m | **Recalibrar**: planta ~6–8 m a leste no centro |
+| União de Minas | ~~−10 m, −10 m~~ → −15,8 m, −9,0 m (08/10) | 491 | **5,9 m (L +5,8, N −1,0)**, σ 7,0 m | 6,8 m | **Recalibrada em 08/10** (planta estava ~6–8 m a leste no centro) |
 
 ## Onde recalibrar
 
@@ -60,7 +60,9 @@ do OSM no centro e no oeste da cidade.
 | −19,53368, −50,33087 | 22 | −0,9 | +5,3 | 5,4 m N | 7,0 |
 | −19,53122, −50,33468 | 138 | +4,1 | −3,1 | 5,2 m SE | 6,7 |
 
-**Ação sugerida:** em Admin › Cartografia, conferir sobre o satélite e, se
+**Aplicado em 08/10/2026:** conferido no satélite (zoom 18,5, centro da cidade: divisas ~6 m a leste das ruas, como medido) e calibração levada de (−10, −10) para **(−15,8, −9,0)**; lotes gerados de novo (1.170). Depois da troca, as ruas do satélite ficam centradas entre as quadras. Falta a numeração (`numera-lotes.mjs`), que depende do DXF.
+
+~~Ação sugerida:~~ em Admin › Cartografia, conferir sobre o satélite e, se
 confirmar, levar a calibração de (−10, −10) para cerca de **(−16, −9)** — e então
 `node scripts/gera-lotes.mjs` e `node scripts/numera-lotes.mjs` (União só tem
 DWG; a numeração depende do DXF). O σ alto (6–7 m) indica que parte do desvio

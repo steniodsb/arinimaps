@@ -15,6 +15,7 @@ const LIVRES = [
   "/acesso",
   "/api/acesso",
   "/api/asaas/webhook", // servidor do Asaas chamando; tem token próprio
+  "/api/saude", // monitor externo (Uptime Kuma etc.); sem token só responde ok/falha
 ];
 
 export function bloqueioAtivo() {

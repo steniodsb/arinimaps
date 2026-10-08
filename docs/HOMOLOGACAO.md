@@ -9,18 +9,15 @@ sensíveis. Tudo abaixo está pronto no código; só faltam as contas e credenci
 2. Num `.env.homolog` local, copiar o `.env.local` trocando:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
    `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`.
-3. Aplicar todas as migrations e os dados de demonstração:
+3. Aplicar todas as migrations e os dados de demonstração — um comando, sem tocar no `.env.local`
+   (recusa se o `.env.homolog` apontar para a produção):
 
 ```bash
-cp .env.homolog .env.local
-node scripts/migrate.mjs
-node scripts/seed.mjs
-node scripts/importa-car.mjs
+node scripts/homologacao.mjs
 ```
 
 4. Subir as plantas pela tela Admin › Cartografia (ou `scripts/converte-dxf.mjs`) e gerar os lotes
    (`scripts/gera-lotes.mjs`).
-5. Voltar o `.env.local` de produção.
 
 **Nunca** copiar a base de produção para a homologação: documentos, selfies e CPFs são dados
 pessoais (LGPD). A homologação usa só a seed e contas de teste.

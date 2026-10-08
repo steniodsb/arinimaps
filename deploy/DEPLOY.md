@@ -65,6 +65,8 @@ Node 18: o Next 16.3.2 exige `>=20.9.0` e o build morre antes de começar.
 | `ARINI_IA_MAX_SIMULTANEAS` | conversas de IA ao mesmo tempo no servidor (padrão 20); acima disso responde `ia_ocupada` | usa 20 |
 | `ARINI_CONSULTAS_MAX_SIMULTANEAS`, `ARINI_CONSULTAS_FILA_MAX`, `ARINI_CONSULTAS_ESPERA_MS` | fila das consultas de área (padrão 8 rodando, 40 na fila, 30 s de espera) | usa o padrão |
 | `ARINI_FONTES_MAX_SIMULTANEOS`, `ARINI_FONTES_ESPERA_MS` | pedidos simultâneos a cada órgão (SICAR, INCRA, IBAMA…; padrão 4, espera 25 s) | usa o padrão |
+| `SAUDE_TOKEN` | detalhe de cada componente em `/api/saude` (monitor do worker e diagnóstico). Gerar com `openssl rand -hex 24`; o mesmo valor no worker | `/api/saude` só responde ok/falha |
+| `BACKUP_CHAVE` | criptografia dos backups (`docs/BACKUP.md`); guardar cópia fora do servidor | o backup não roda |
 
 O painel de **Admin › Configurações** mostra o estado de cada uma depois que o
 app subir.

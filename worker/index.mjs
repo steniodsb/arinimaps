@@ -11,6 +11,7 @@ import { descarteRetencao } from "./jobs/descarteRetencao.mjs";
 import { verificarFontes } from "./jobs/verificarFontes.mjs";
 import { inteligenciaMercado } from "./jobs/inteligenciaMercado.mjs";
 import { otimizarVideo } from "./jobs/otimizarVideo.mjs";
+import { monitorar } from "./jobs/monitorar.mjs";
 
 const INTERVALO_MS = Number(process.env.WORKER_INTERVALO_MS ?? 15000);
 const MAX_TENTATIVAS = 3;
@@ -135,6 +136,11 @@ async function agendarPois() {
 }
 
 console.log("Arini Imóveis Brasil worker iniciado.");
+// monitoramento: confere /api/saude a cada 5 min e alerta (jobs/monitorar.mjs)
+if (!process.env.WORKER_UMA_VEZ) {
+  setInterval(() => void monitorar(db).catch((e) => console.error("[monitor]", e.message)), 5 * 60_000);
+  setTimeout(() => void monitorar(db).catch((e) => console.error("[monitor]", e.message)), 30_000);
+}
 agendarPois();
 setInterval(agendarPois, 24 * 60 * 60 * 1000);
 agendarVerificacaoFontes();

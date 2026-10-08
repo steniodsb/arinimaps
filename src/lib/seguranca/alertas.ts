@@ -23,7 +23,7 @@ import { ipDoPedido } from "./limite";
  *
  * Nada aqui pode derrubar o login: todas as funções engolem o próprio erro.
  */
-export type TipoAlerta = "novo_aparelho" | "novo_local" | "excesso_falhas" | "entrada_apos_falhas" | "recuperacao_equipe";
+export type TipoAlerta = "novo_aparelho" | "novo_local" | "excesso_falhas" | "entrada_apos_falhas" | "recuperacao_equipe" | "sistema_instavel";
 
 export const ALERTA_LABEL: Record<TipoAlerta, string> = {
   novo_aparelho: "Entrada de aparelho novo",
@@ -31,6 +31,7 @@ export const ALERTA_LABEL: Record<TipoAlerta, string> = {
   excesso_falhas: "Excesso de senhas erradas",
   entrada_apos_falhas: "Entrada logo após várias senhas erradas",
   recuperacao_equipe: "Senha da equipe redefinida por recuperação",
+  sistema_instavel: "Parte do sistema fora do ar (monitoramento)",
 };
 
 /** Navegador + sistema, sem versão: "Chrome · Windows". */

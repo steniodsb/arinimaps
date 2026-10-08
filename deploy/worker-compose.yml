@@ -13,6 +13,10 @@ services:
       # cookie de acesso para abrir o tour (vídeo) e a ficha (imagem de compartilhamento)
       SITE_SENHA: ${SITE_SENHA}
       SITE_BLOQUEIO_SEGREDO: ${SITE_BLOQUEIO_SEGREDO}
+      # monitoramento (worker/jobs/monitorar.mjs): mesmo SAUDE_TOKEN do app; e-mails dos responsáveis
+      SAUDE_TOKEN: ${SAUDE_TOKEN}
+      ALERTA_EMAILS: ${ALERTA_EMAILS}
+      RESEND_API_KEY: ${RESEND_API_KEY}
       WORKER_INTERVALO_MS: "15000"
     deploy:
       resources:

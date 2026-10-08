@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CalendarDays, MapPin, Ruler, ShieldCheck } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
 import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
@@ -55,7 +55,7 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
   ];
 
   return (
-    <AppShell usuario={consulta.usuario} semPadding>
+    <Moldura usuario={consulta.usuario}>
       <CabecalhoPagina
         variante="faixa"
         eyebrow="Consulta territorial"
@@ -106,6 +106,6 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
           cotaRestante={consulta.cotaRestante} lista={consulta.lista} pendentes={consulta.pendentes}
           jaConsultou={consulta.jaConsultou} />
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

@@ -16,10 +16,10 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight, Bell, Building2, ChevronRight, CreditCard, FileText, House,
-  LayoutDashboard, Map as Mapa, Menu, Plus, Search, X,
+  LayoutDashboard, Map as Mapa, Menu, Plus, Search, Sparkles, X,
 } from "lucide-react";
 import BotaoTema from "./BotaoTema";
-import ChatIA from "@/components/ia/ChatIA";
+import ChatIA, { abrirAssistente } from "@/components/ia/ChatIA";
 import Avatar from "./Avatar";
 import { usePreferencias } from "@/lib/usePreferencias";
 
@@ -184,6 +184,12 @@ export default function AppShell({
 
           <div className="ml-auto flex items-center gap-2">
             <BotaoTema />
+            <button type="button" onClick={abrirAssistente}
+              className="inline-flex h-10 items-center gap-2 rounded-[10px] px-2.5 text-texto-2 transition hover:bg-superficie-2 hover:text-verde"
+              aria-label="Pergunte à Arini (assistente de IA)" title="Pergunte à Arini">
+              <Sparkles className="size-[18px] text-verde" />
+              <span className="hidden text-sm font-semibold 2xl:inline">Pergunte à Arini</span>
+            </button>
             <button type="button"
               className="relative grid size-10 place-items-center rounded-[10px] text-texto-2 transition hover:bg-superficie-2 hover:text-texto"
               aria-label="Notificações">
@@ -243,7 +249,7 @@ export default function AppShell({
         {NAV_MOBILE.slice(2).map((m) => <ItemInferior key={m.href} item={m} ativo={ativo(m.href)} />)}
       </nav>
 
-      {/* assistente de IA (5.1): inerte sem ANTHROPIC_API_KEY */}
+      {/* assistente de IA (5.1): abre pelo botão do topo; inerte sem ANTHROPIC_API_KEY */}
       <ChatIA />
     </div>
   );

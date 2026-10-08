@@ -15,7 +15,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Map as MLMap, MapMouseEvent, GeoJSONSource } from "maplibre-gl";
 import type { RecursoId } from "@/lib/planos";
-import { ArrowRight, Camera, Lock, MoveHorizontal, Printer, ScanSearch, Triangle, Upload, X } from "lucide-react";
+import { ArrowRight, Camera, Lock, MoveHorizontal, Printer, ScanSearch, Sparkles, Triangle, Upload, X } from "lucide-react";
+import { abrirAssistente } from "@/components/ia/ChatIA";
 import { VIDRO, BotaoFechar } from "@/components/map/UiMapa";
 
 type Modo = null | "area" | "distancia" | "consulta";
@@ -227,7 +228,7 @@ export default function Ferramentas({
   );
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-[min(92%,680px)] space-y-2">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-[min(92%,760px)] space-y-2">
       {bloqueio && (
         <div className={`flex items-center gap-3 px-4 py-3 text-sm ${VIDRO}`}>
           <Lock className="size-4 shrink-0 text-ouro" />
@@ -311,6 +312,12 @@ export default function Ferramentas({
               </button>
             );
           })}
+          {/* assistente de IA: no mapa fica aqui, não flutuando sobre a escala */}
+          <span className="mx-1 h-10 w-px shrink-0 bg-linha" aria-hidden />
+          <button onClick={abrirAssistente}
+            className="flex min-w-[76px] flex-col items-center gap-1.5 rounded-[10px] px-3 py-2 text-[11px] font-semibold text-verde transition hover:bg-verde/10">
+            <Sparkles className="size-[18px]" strokeWidth={1.9} />Perguntar
+          </button>
         </div>
       </div>
     </div>

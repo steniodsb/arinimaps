@@ -7,7 +7,7 @@ import {
   ExternalLink, FileText, Fuel, Gavel, GraduationCap, Hash, Hospital, Landmark, MapPin, Navigation, Rotate3d,
   Route, Ruler, ShieldCheck, ShoppingCart, Sprout,
 } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import { Conteudo, Etiqueta, Secao } from "@/components/ui/Pagina";
 import { currentUser } from "@/lib/supabase/server";
 import MiniMapa from "@/components/map/MiniMapa";
@@ -160,7 +160,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   );
 
   return (
-    <AppShell usuario={usuario} semPadding>
+    <Moldura usuario={usuario}>
       {/* ---------- topo em faixa escura: trilha, selos, título e preço ---------- */}
       <header className="lp-escuro lp-malha-escura relative overflow-hidden">
         <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
@@ -419,6 +419,6 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
           </aside>
         </div>
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

@@ -442,6 +442,10 @@ export default function MapaRegional({
         style: ESTILO_RUAS[tema],
         center: CENTRO_REGIAO,
         zoom: 9,
+        // abaixo do zoom 4 o satélite pede dezenas de tiles do mundo inteiro e
+        // o mapa parece "quebrado" enquanto carrega; o produto é o Brasil
+        minZoom: 4,
+        maxBounds: [[-80, -38], [-28, 9]],
         hash: "pos", // posição na URL → link compartilhável, estilo Google Maps
         fadeDuration: 150,
         // v5 moveu as opções de WebGL para cá; sem isto "Capturar Imagem" sai em branco

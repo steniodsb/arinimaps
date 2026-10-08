@@ -71,7 +71,8 @@ export default function MiniMapa({ geometry, status, className }: Props) {
             const lats = coords.map((c) => c[1]);
             map.fitBounds(
               [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-              { padding: 50, duration: 0 }
+              // lote urbano é pequeno: sem teto o mapa abre em z21 e o satélite (até z17) fica borrado
+              { padding: 50, duration: 0, maxZoom: 18 }
             );
           }
         }

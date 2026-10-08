@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import { currentUser } from "@/lib/supabase/server";
 import { acessoDe } from "@/lib/planos-servidor";
 
@@ -21,8 +21,8 @@ export default async function PaginaMapa() {
     : null;
 
   return (
-    <AppShell usuario={usuario} semPadding>
+    <Moldura usuario={usuario} cheia>
       <MapaRegional recursos={[...acesso.recursos]} logado={!!user} />
-    </AppShell>
+    </Moldura>
   );
 }

@@ -29,7 +29,7 @@ export function Conteudo({ children, className = "", estreito = false }: {
  *  · `simples` — painel e Central: só o título, sem faixa, dentro do conteúdo.
  */
 export function CabecalhoPagina({
-  eyebrow, titulo, destaque, subtitulo, acoes, variante = "simples", children,
+  eyebrow, titulo, destaque, subtitulo, acoes, variante = "simples", compacta = false, children,
 }: {
   eyebrow?: string;
   titulo: string;
@@ -38,6 +38,8 @@ export function CabecalhoPagina({
   subtitulo?: React.ReactNode;
   acoes?: React.ReactNode;
   variante?: "faixa" | "simples";
+  /** faixa mais baixa (páginas de busca: o resultado aparece sem rolar) */
+  compacta?: boolean;
   /** conteúdo extra dentro da faixa (busca, filtros, números) */
   children?: React.ReactNode;
 }) {
@@ -45,11 +47,11 @@ export function CabecalhoPagina({
     <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
       <div className="max-w-3xl min-w-0">
         {eyebrow && <p className="lp-eyebrow">{eyebrow}</p>}
-        <h1 className={`lp-display ${eyebrow ? "mt-3" : ""} ${variante === "faixa" ? "text-4xl md:text-[3.25rem]" : "text-3xl md:text-[2.5rem]"} text-texto text-balance`}>
+        <h1 className={`lp-display ${eyebrow ? "mt-3" : ""} ${variante === "faixa" && !compacta ? "text-4xl md:text-[3.25rem]" : "text-3xl md:text-[2.5rem]"} text-texto text-balance`}>
           {titulo}{destaque && <> <span className="text-verde">{destaque}</span></>}
         </h1>
         {subtitulo && (
-          <p className={`mt-4 leading-relaxed text-texto-2 ${variante === "faixa" ? "text-lg md:text-xl" : "text-base md:text-lg"}`}>
+          <p className={`${compacta ? "mt-2" : "mt-4"} leading-relaxed text-texto-2 ${variante === "faixa" && !compacta ? "text-lg md:text-xl" : "text-base md:text-lg"}`}>
             {subtitulo}
           </p>
         )}
@@ -64,9 +66,9 @@ export function CabecalhoPagina({
   return (
     <header className="lp-escuro lp-malha-escura relative overflow-hidden">
       <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
-      <Conteudo className="relative pt-16 pb-12 md:pt-20 md:pb-16">
+      <Conteudo className={`relative ${compacta ? "pt-9 pb-8 md:pt-11 md:pb-9" : "pt-16 pb-12 md:pt-20 md:pb-16"}`}>
         {corpo}
-        {children && <div className="mt-8">{children}</div>}
+        {children && <div className={compacta ? "mt-6" : "mt-8"}>{children}</div>}
       </Conteudo>
     </header>
   );

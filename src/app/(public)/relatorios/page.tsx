@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ChevronRight, FileText, MapPin, Ruler } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import { BotaoLink, CabecalhoPagina, Conteudo, Etiqueta, Vazio } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
@@ -40,7 +40,7 @@ export default async function Relatorios() {
     : null;
 
   return (
-    <AppShell usuario={usuario} semPadding>
+    <Moldura usuario={usuario}>
       <CabecalhoPagina
         variante="faixa"
         eyebrow="Inteligência territorial"
@@ -106,6 +106,6 @@ export default async function Relatorios() {
           O relatório sempre mostra a data de cada fonte — dado antigo é sinalizado, nunca apresentado como atual.
         </p>
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

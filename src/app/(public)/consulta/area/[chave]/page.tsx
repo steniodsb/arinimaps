@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CalendarDays, Crosshair, MapPin, PenLine } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
 import { CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
@@ -47,7 +47,7 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
   ];
 
   return (
-    <AppShell usuario={consulta.usuario} semPadding>
+    <Moldura usuario={consulta.usuario}>
       <CabecalhoPagina
         variante="faixa"
         eyebrow="Consulta territorial"
@@ -93,6 +93,6 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
           cotaRestante={consulta.cotaRestante} lista={consulta.lista} pendentes={consulta.pendentes}
           jaConsultou={consulta.jaConsultou} />
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

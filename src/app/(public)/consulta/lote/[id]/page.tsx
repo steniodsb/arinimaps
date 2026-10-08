@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Hash, MapPin, Ruler, Square } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
 import { IconePoi } from "@/components/map/UiMapa";
@@ -61,7 +61,7 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
   ];
 
   return (
-    <AppShell usuario={consulta.usuario} semPadding>
+    <Moldura usuario={consulta.usuario}>
       <CabecalhoPagina
         variante="faixa"
         eyebrow="Consulta territorial"
@@ -141,6 +141,6 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
           cotaRestante={consulta.cotaRestante} lista={consulta.lista} pendentes={consulta.pendentes}
           jaConsultou={consulta.jaConsultou} />
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

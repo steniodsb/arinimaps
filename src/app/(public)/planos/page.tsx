@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, BadgeCheck, Check, CreditCard } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import { CabecalhoPagina, Conteudo, Vazio } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
@@ -43,7 +43,7 @@ export default async function Planos() {
     : null;
 
   return (
-    <AppShell usuario={usuario} semPadding>
+    <Moldura usuario={usuario} site>
       <CabecalhoPagina
         variante="faixa"
         eyebrow="Planos e acesso"
@@ -153,6 +153,6 @@ export default async function Planos() {
           <Link href="/suporte" className="font-semibold text-verde hover:underline">Suporte</Link>.
         </p>
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

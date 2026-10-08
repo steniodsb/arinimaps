@@ -43,6 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* aplica o tema salvo antes da pintura, senão a tela pisca escura
             antes de virar clara a cada navegação */}
         <script dangerouslySetInnerHTML={{ __html: TEMA_SCRIPT }} />
+        {/* servidores dos tiles do satélite: abre a conexão antes do mapa pedir */}
+        <link rel="preconnect" href="https://wayback.maptiles.arcgis.com" crossOrigin="" />
+        <link rel="preconnect" href="https://ibasemaps-api.arcgis.com" crossOrigin="" />
       </head>
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>

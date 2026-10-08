@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, LogIn } from "lucide-react";
-import AppShell from "@/components/shell/AppShell";
+import Moldura from "@/components/shell/Moldura";
 import { BotaoLink, CabecalhoPagina, Conteudo } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser, supabaseServer } from "@/lib/supabase/server";
@@ -42,7 +42,7 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
   if (!user) {
     const volta = `/cartografia/solicitar?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string")).toString()}`;
     return (
-      <AppShell usuario={null} semPadding>
+      <Moldura usuario={null}>
         <CabecalhoPagina variante="faixa" eyebrow="Cartografia" titulo="Informar imóvel ausente ou" destaque="divergente" />
         <Conteudo estreito className="py-12 md:py-16">
           <div className="cartao space-y-4 p-6 text-base leading-relaxed md:p-8">
@@ -64,7 +64,7 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
             </div>
           </div>
         </Conteudo>
-      </AppShell>
+      </Moldura>
     );
   }
 
@@ -83,7 +83,7 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
   ]);
 
   return (
-    <AppShell usuario={usuario} semPadding>
+    <Moldura usuario={usuario}>
       <CabecalhoPagina
         variante="faixa"
         eyebrow="Cartografia"
@@ -108,6 +108,6 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
           imovel={imovel ? { id: imovel.id, codigo: imovel.codigo, titulo: imovel.titulo } : null}
         />
       </Conteudo>
-    </AppShell>
+    </Moldura>
   );
 }

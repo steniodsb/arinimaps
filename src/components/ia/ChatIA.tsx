@@ -1,8 +1,12 @@
 "use client";
 
 /**
- * Botão flutuante do assistente de IA (PENDÊNCIA 5.1), montado no AppShell
- * (páginas públicas e painel; a Central usa outra casca e não mostra).
+ * Assistente de IA (PENDÊNCIA 5.1). Onde fica o botão que abre (08/10/2026):
+ *  · sistema (AppShell): ícone na barra do topo, ao lado do sino;
+ *  · mapa: ferramenta "Perguntar" na barra do mapa;
+ *  · site: botão redondo flutuante só com o ícone (`flutuante`), que mostra
+ *    o texto ao passar o mouse.
+ * Qualquer botão abre o mesmo painel chamando `abrirAssistente()`.
  *
  * Resposta por streaming (SSE) de POST /api/ia/chat; se o navegador não der
  * acesso ao corpo em fluxo, lê tudo de uma vez e mostra no fim. A conversa
@@ -11,7 +15,6 @@
  */
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Database, FileText, Home, LoaderCircle, Lock, SendHorizontal, Sparkles, SquarePen, X } from "lucide-react";
 
@@ -23,6 +26,12 @@ type Estado = {
 };
 
 const CHAVE = "arini:ia:conversa";
+const EVENTO = "arini:ia:abrir";
+
+/** Abre o painel do assistente de qualquer lugar da tela (barra do topo, mapa). */
+export function abrirAssistente() {
+  window.dispatchEvent(new Event(EVENTO));
+}
 const SUGESTOES = [
   "Lotes até R$ 400 mil em Iturama",
   "Fazendas acima de 50 ha na região",
@@ -82,9 +91,7 @@ function eventosDe(bloco: string): Record<string, unknown>[] {
   });
 }
 
-export default function ChatIA() {
-  // no mapa, a barra de ferramentas ocupa o rodapé: o botão sobe para não cobrir "Capturar"
-  const noMapa = usePathname()?.startsWith("/mapa") ?? false;
+export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
   const [aberto, setAberto] = useState(false);
   const [estado, setEstado] = useState<Estado | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -106,6 +113,15 @@ export default function ChatIA() {
     }
     setAberto(true);
   }
+  // os botões de fora (topo, mapa) abrem por evento; a função é recriada a
+  // cada render, então o ouvinte guarda a versão mais recente
+  const abrirRef = useRef(abrir);
+  abrirRef.current = abrir;
+  useEffect(() => {
+    const ouvir = () => abrirRef.current();
+    window.addEventListener(EVENTO, ouvir);
+    return () => window.removeEventListener(EVENTO, ouvir);
+  }, []);
   useEffect(() => {
     if (!restaurado.current) return;
     try { sessionStorage.setItem(CHAVE, JSON.stringify({ conversaId, msgs: msgs.slice(-30) })); } catch { /* ignore */ }
@@ -203,11 +219,14 @@ export default function ChatIA() {
 
   return (
     <>
-      {!aberto && (
-        <button type="button" onClick={abrir} aria-label="Abrir o assistente"
-          className={"fixed z-50 right-4 flex items-center gap-2 rounded-full pl-3.5 pr-4 py-3 text-sm font-bold text-[#06140D] shadow-[0_14px_34px_-12px_rgba(63,207,127,0.75)] ring-1 ring-black/10 hover:-translate-y-0.5 hover:brightness-105 transition " + (noMapa ? "bottom-72 lg:bottom-36" : "bottom-20 lg:bottom-6")}
+      {flutuante && !aberto && (
+        <button type="button" onClick={abrir} aria-label="Pergunte à Arini"
+          className="group fixed bottom-5 right-5 z-50 flex h-14 items-center rounded-full pl-[17px] pr-[17px] text-[#06140D] shadow-[0_14px_34px_-12px_rgba(63,207,127,0.75)] ring-1 ring-black/10 transition-[padding] hover:pr-5 focus-visible:pr-5"
           style={{ background: "linear-gradient(180deg, #45D98A 0%, #2FA866 100%)" }}>
-          <Sparkles aria-hidden className="size-[18px]" /> <span className="hidden sm:inline">Pergunte à Arini</span>
+          <Sparkles aria-hidden className="size-[22px] shrink-0" />
+          <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-bold transition-[max-width,margin] duration-300 group-hover:ml-2 group-hover:max-w-40 group-focus-visible:ml-2 group-focus-visible:max-w-40">
+            Pergunte à Arini
+          </span>
         </button>
       )}
 

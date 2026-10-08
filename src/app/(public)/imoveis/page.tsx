@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  Box, Camera, LayoutGrid, List, Map as MapaIcone, MapPin, Ruler, Search, SearchX, ShieldCheck,
-  SlidersHorizontal, Video, X,
+  Box, Camera, ChevronLeft, ChevronRight, Heart, LayoutGrid, List, Map as MapaIcone, MapPin, Ruler, Search, SearchX,
+  ShieldCheck, SlidersHorizontal, Video, X,
 } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
 import MiniaturaDivisa, { type GeoDivisa } from "@/components/imovel/MiniaturaDivisa";
@@ -11,6 +11,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import { imoveisDaVitrine, STATUS_VITRINE } from "@/lib/imovel/vitrine";
+import { codigosFavoritos } from "@/lib/imovel/favoritos";
+import BotaoFavorito from "@/components/imovel/BotaoFavorito";
+import MapaBuscaCliente from "@/components/map/MapaBuscaCliente";
+import type { ItemMapaBusca } from "@/components/map/MapaBusca";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +49,7 @@ const numero = (v: unknown) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 const milhar = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+const POR_PAGINA = 24;
 
 type Extra = {
   car_codigo: string | null;
@@ -60,7 +65,9 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   const tipo = str("tipo") || "todos";
   const municipio = str("municipio");
   const ordem = str("ordem") || "recentes";
-  const vista = str("vista") === "lista" ? "lista" : "grade";
+  const vista = (["lista", "mapa"] as const).find((v) => v === str("vista")) ?? "grade";
+  const soFavoritos = str("favoritos") === "1";
+  const paginaPedida = Math.max(1, Math.floor(Number(str("pagina")) || 1));
   const precoMin = numero(sp.preco_min), precoMax = numero(sp.preco_max);
   const areaMin = numero(sp.area_min), areaMax = numero(sp.area_max);
   // área digitada em m² na busca de urbanos; nas demais, em hectares
@@ -77,6 +84,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
       .in("status", [...STATUS_VITRINE]),
     currentUser(),
   ]);
+  const favoritos = new Set(await codigosFavoritos(user?.id));
   const extraDe = new Map((extras ?? []).map((e) => [e.codigo, e as unknown as Extra]));
 
   type Linha = NonNullable<typeof bruto>[number];
@@ -84,6 +92,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   const munDe = (p: Linha) => p.municipality as unknown as { id: string; nome: string; uf: string } | null;
 
   const filtrados = (bruto ?? []).filter((p) => {
+    if (soFavoritos && !favoritos.has(p.codigo)) return false;
     if (tipo === "leilao") { if (p.modalidade !== "leilao") return false; }
     else if (tipo !== "todos" && p.tipo !== tipo) return false;
     if (municipio && munDe(p)?.id !== municipio) return false;
@@ -105,6 +114,11 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   // vendidos não se misturam com os disponíveis
   const disponiveis = filtrados.filter((p) => p.status !== "vendido");
   const vendidos = filtrados.filter((p) => p.status === "vendido");
+  // páginas só nos disponíveis; os vendidos aparecem no fim da última página
+  const paginas = Math.max(1, Math.ceil(disponiveis.length / POR_PAGINA));
+  const pagina = Math.min(paginaPedida, paginas);
+  const daPagina = disponiveis.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  const vendidosVisiveis = pagina === paginas ? vendidos : [];
 
   const usuario = user
     ? { nome: user.nome || "Conta", papel: user.role === "admin_central" ? "Administrador" : "Usuário" }
@@ -112,13 +126,16 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
 
   // links que mexem num parâmetro e mantêm os outros
   const atuais: Record<string, string> = {};
-  for (const k of ["q", "tipo", "municipio", "ordem", "vista", "preco_min", "preco_max", "area_min", "area_max"]) {
+  for (const k of ["q", "tipo", "municipio", "ordem", "vista", "favoritos", "preco_min", "preco_max", "area_min", "area_max", "pagina"]) {
     if (str(k)) atuais[k] = str(k);
   }
   const com = (muda: Record<string, string | null>) => {
     const p = new URLSearchParams(atuais);
+    // qualquer mudança de filtro, ordem ou vista volta para a primeira página
+    if (!("pagina" in muda)) p.delete("pagina");
     for (const [k, v] of Object.entries(muda)) {
-      const padrao = (k === "tipo" && v === "todos") || (k === "ordem" && v === "recentes") || (k === "vista" && v === "grade");
+      const padrao = (k === "tipo" && v === "todos") || (k === "ordem" && v === "recentes") || (k === "vista" && v === "grade")
+        || (k === "pagina" && v === "1");
       if (v == null || v === "" || padrao) p.delete(k);
       else p.set(k, v);
     }
@@ -128,6 +145,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
 
   const munNome = (municipios ?? []).find((m) => m.id === municipio)?.nome;
   const ativos: { rotulo: string; remove: Record<string, null> }[] = [
+    ...(soFavoritos ? [{ rotulo: "Favoritos", remove: { favoritos: null } }] : []),
     ...(q ? [{ rotulo: `“${q}”`, remove: { q: null } }] : []),
     ...(tipo !== "todos" ? [{ rotulo: TIPOS.find((t) => t.id === tipo)?.rotulo ?? tipo, remove: { tipo: null, area_min: null, area_max: null } }] : []),
     ...(munNome ? [{ rotulo: munNome, remove: { municipio: null } }] : []),
@@ -138,9 +156,17 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   ];
 
   const cartao = (p: Linha) => (
-    <CartaoImovel key={p.codigo} p={p} extra={extraDe.get(p.codigo)} area={areaDe(p)} mun={munDe(p)} lista={vista === "lista"} />
+    <CartaoImovel key={p.codigo} p={p} extra={extraDe.get(p.codigo)} area={areaDe(p)} mun={munDe(p)} lista={vista === "lista"}
+      favorito={favoritos.has(p.codigo)} />
   );
-  const grade = vista === "lista" ? "grid gap-4" : "grid gap-6 sm:grid-cols-2 xl:grid-cols-3";
+  const grade = vista === "lista" ? "grid gap-4"
+    : vista === "mapa" ? "grid gap-5 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2"
+    : "grid gap-6 sm:grid-cols-2 xl:grid-cols-3";
+  const itensMapa: ItemMapaBusca[] = [...daPagina, ...vendidosVisiveis].map((p) => ({
+    codigo: p.codigo, titulo: p.titulo, preco: formatBRL(p.valor), status: p.status,
+    leilao: p.modalidade === "leilao" && p.status !== "vendido",
+    geom: (extraDe.get(p.codigo)?.geo?.geom as ItemMapaBusca["geom"]) ?? null,
+  }));
   const botaoBarra = (on: boolean) =>
     `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${on ? "bg-verde/15 text-verde" : "text-texto-2 hover:text-texto"}`;
 
@@ -168,6 +194,13 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
               </Link>
             );
           })}
+          <Link href={com({ favoritos: soFavoritos ? null : "1" })} aria-current={soFavoritos ? "true" : undefined}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition ${soFavoritos
+              ? "border-[#FF6B81] bg-[#FF6B81] text-[#2A0A10]"
+              : "border-linha-forte bg-superficie/60 text-texto-3 hover:border-[#FF6B81]/60 hover:text-texto"}`}>
+            <Heart className={`size-4 ${soFavoritos ? "fill-current" : ""}`} /> Favoritos
+            {favoritos.size > 0 && <span className="tabular-nums opacity-80">({favoritos.size})</span>}
+          </Link>
         </nav>
 
         {/* demais filtros (GET, funcionam sem JS) */}
@@ -175,6 +208,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
           {tipo !== "todos" && <input type="hidden" name="tipo" value={tipo} />}
           {ordem !== "recentes" && <input type="hidden" name="ordem" value={ordem} />}
           {vista !== "grade" && <input type="hidden" name="vista" value={vista} />}
+          {soFavoritos && <input type="hidden" name="favoritos" value="1" />}
           <div className="sm:col-span-2 lg:col-span-1">
             <label htmlFor="q" className={ROTULO}>Buscar</label>
             <div className="relative">
@@ -246,7 +280,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
               <Link href={com({ vista: "lista" })} aria-current={vista === "lista" ? "true" : undefined} title="Lista" className={botaoBarra(vista === "lista")}>
                 <List className="size-4" /> <span className="hidden sm:inline">Lista</span>
               </Link>
-              <Link href="/mapa" title="Mapa" className={botaoBarra(false)}>
+              <Link href={com({ vista: "mapa" })} aria-current={vista === "mapa" ? "true" : undefined} title="Lista com mapa" className={botaoBarra(vista === "mapa")}>
                 <MapaIcone className="size-4" /> <span className="hidden sm:inline">Mapa</span>
               </Link>
             </nav>
@@ -254,21 +288,59 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
         </div>
 
         {!filtrados.length ? (
-          <Vazio
-            icone={SearchX}
-            titulo="Nenhum imóvel com esses filtros."
-            texto="Tente ampliar a busca ou veja tudo no mapa."
-            acao={<BotaoLink href="/imoveis" variante="contorno">Limpar filtros</BotaoLink>}
-          />
+          soFavoritos && favoritos.size === 0 ? (
+            <Vazio
+              icone={Heart}
+              titulo="Você ainda não tem favoritos."
+              texto="Toque no coração de um imóvel para guardá-lo aqui. Sem conta, eles ficam salvos neste aparelho; com conta, em qualquer lugar."
+              acao={<BotaoLink href={com({ favoritos: null })} variante="contorno">Ver todos os imóveis</BotaoLink>}
+            />
+          ) : (
+            <Vazio
+              icone={SearchX}
+              titulo="Nenhum imóvel com esses filtros."
+              texto="Tente ampliar a busca ou veja tudo no mapa."
+              acao={<BotaoLink href="/imoveis" variante="contorno">Limpar filtros</BotaoLink>}
+            />
+          )
         ) : (
-          <div className="space-y-14">
-            {disponiveis.length > 0 && <div className={grade}>{disponiveis.map(cartao)}</div>}
-            {vendidos.length > 0 && (
-              <section aria-labelledby="titulo-vendidos" className="space-y-5">
-                <h2 id="titulo-vendidos" className="lp-display text-2xl text-texto">Vendidos recentemente</h2>
-                <div className={grade}>{vendidos.map(cartao)}</div>
-              </section>
+          <div className={vista === "mapa" ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" : ""}>
+            {vista === "mapa" && (
+              // no celular o mapa vem antes da lista; no computador fica fixo ao lado
+              <div className="h-72 sm:h-96 lg:sticky lg:top-24 lg:order-2 lg:h-[calc(100vh-7.5rem)]">
+                <MapaBuscaCliente itens={itensMapa} listaId="lista-busca" />
+              </div>
             )}
+            <div id="lista-busca" className="space-y-14 lg:order-1">
+              {daPagina.length > 0 && <div className={grade}>{daPagina.map(cartao)}</div>}
+              {paginas > 1 && (
+                <nav aria-label="Páginas" className="flex flex-wrap items-center justify-center gap-2">
+                  {pagina > 1 && (
+                    <Link href={com({ pagina: String(pagina - 1) })} rel="prev" className={botaoPagina(false)}>
+                      <ChevronLeft className="size-4" /> Anterior
+                    </Link>
+                  )}
+                  {numerosPagina(pagina, paginas).map((n, i) => n == null
+                    ? <span key={`r${i}`} className="px-1 text-texto-2">…</span>
+                    : (
+                      <Link key={n} href={com({ pagina: String(n) })} aria-current={n === pagina ? "page" : undefined} className={botaoPagina(n === pagina)}>
+                        {n}
+                      </Link>
+                    ))}
+                  {pagina < paginas && (
+                    <Link href={com({ pagina: String(pagina + 1) })} rel="next" className={botaoPagina(false)}>
+                      Próxima <ChevronRight className="size-4" />
+                    </Link>
+                  )}
+                </nav>
+              )}
+              {vendidosVisiveis.length > 0 && (
+                <section aria-labelledby="titulo-vendidos" className="space-y-5">
+                  <h2 id="titulo-vendidos" className="lp-display text-2xl text-texto">Vendidos recentemente</h2>
+                  <div className={grade}>{vendidosVisiveis.map(cartao)}</div>
+                </section>
+              )}
+            </div>
           </div>
         )}
       </Conteudo>
@@ -276,12 +348,26 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
   );
 }
 
-function CartaoImovel({ p, extra, area, mun, lista }: {
+const botaoPagina = (on: boolean) =>
+  `inline-flex min-w-10 items-center justify-center gap-1 rounded-xl border px-3 py-2 text-sm font-semibold tabular-nums transition ${on
+    ? "border-verde bg-verde text-[#06140D]"
+    : "border-linha bg-superficie text-texto-2 hover:border-verde/60 hover:text-texto"}`;
+
+/** 1 … 4 5 [6] 7 8 … 20 */
+function numerosPagina(atual: number, total: number): (number | null)[] {
+  const ordem = [...new Set([1, total, atual - 1, atual, atual + 1])].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const saida: (number | null)[] = [];
+  ordem.forEach((n, i) => { if (i && n - ordem[i - 1] > 1) saida.push(null); saida.push(n); });
+  return saida;
+}
+
+function CartaoImovel({ p, extra, area, mun, lista, favorito }: {
   p: { codigo: string; titulo: string; tipo: string; status: string; valor: number | null; modalidade: string | null; media: unknown };
   extra?: Extra;
   area: number;
   mun: { nome: string; uf: string } | null;
   lista: boolean;
+  favorito: boolean;
 }) {
   const media = (p.media as { storage_path: string; capa: boolean }[] | null) ?? [];
   const capa = media.find((m) => m.capa) ?? media[0];
@@ -307,6 +393,8 @@ function CartaoImovel({ p, extra, area, mun, lista }: {
   ].filter(Boolean) as { icone: typeof ShieldCheck; rotulo: string }[];
 
   return (
+    // o coração fica fora do link (botão dentro de <a> não é HTML válido), por cima da foto
+    <div data-codigo={p.codigo} className="relative h-full">
     <Link href={`/imovel/${p.codigo}`}
       className={`lp-lift group flex h-full overflow-hidden rounded-[20px] bg-superficie ring-1 ring-linha hover:ring-verde/60 ${lista ? "flex-col sm:flex-row" : "flex-col"}`}>
       <div className={`relative shrink-0 overflow-hidden bg-superficie-2 ${lista ? "aspect-[16/10] sm:aspect-auto sm:min-h-52 sm:w-80" : "aspect-[16/10]"}`}>
@@ -331,7 +419,7 @@ function CartaoImovel({ p, extra, area, mun, lista }: {
           </span>
         )}
         {vendido && (
-          <span className="absolute right-4 top-4 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white/85 backdrop-blur">
+          <span className="absolute right-16 top-4 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white/85 backdrop-blur">
             {STATUS_LABEL[p.status]}
           </span>
         )}
@@ -371,5 +459,9 @@ function CartaoImovel({ p, extra, area, mun, lista }: {
         </div>
       </div>
     </Link>
+    <div className="absolute right-3 top-3">
+      <BotaoFavorito codigo={p.codigo} inicial={favorito} />
+    </div>
+    </div>
   );
 }

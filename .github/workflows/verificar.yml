@@ -1,0 +1,51 @@
+# Verificação automática antes de publicar: roda a cada push e pull request.
+# Se falhar, o GitHub marca o commit com ✗ e o deploy não deve ser feito.
+#
+#   1. tipos (TypeScript)      — erro de digitação de campo, prop faltando
+#   2. lint (ESLint)           — erros de React/Next; avisos não barram
+#   3. auditoria das rotas     — rota de escrita sem sessão, SQL montado com texto,
+#                                upload sem limite de tamanho (scripts/audita-rotas.mjs)
+#   4. build de produção       — o mesmo `npm run build` que o Dokploy roda
+#
+# Não precisa de nenhum segredo: o build não depende das envs do Supabase
+# (as páginas buscam dados na hora da requisição). Os testes de ponta a ponta
+# (`npm run testa`) precisam do site e do banco no ar e rodam na homologação.
+name: Verificar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Tipos
+        run: npx next typegen && npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Auditoria das rotas
+        run: npm run audita
+
+      - name: Build de produção
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

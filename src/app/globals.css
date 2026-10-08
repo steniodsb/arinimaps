@@ -496,3 +496,10 @@ button:disabled,
   .lp-btn, .lp-btn svg { transition: none; }
 }
 } /* fim @layer components (landing) */
+
+/* busca com mapa: o cartão clicado no mapa pisca ao chegar na lista */
+.busca-destaque > a {
+  box-shadow: 0 0 0 3px var(--verde);
+  transition: box-shadow 0.3s;
+}
+.popup-busca .maplibregl-popup-content { padding: 8px 12px; }

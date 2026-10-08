@@ -28,7 +28,8 @@ for (const linha of readFileSync(join(root, ".env.local"), "utf8").split("\n")) 
 const tudo = process.argv.includes("--tudo");
 const executar = process.argv.includes("--executar");
 
-const DEMO = ["ARINI-MAP-000001", "ARINI-MAP-000002", "ARINI-MAP-000003"];
+// códigos novos desde a migration 0044; os antigos ficam por garantia
+const DEMO = ["AIB-000001", "AIB-000002", "AIB-000003", "ARINI-MAP-000001", "ARINI-MAP-000002", "ARINI-MAP-000003"];
 const CONTAS_TESTE = ["proprietario.teste@arinimaps.com.br", "corretor.teste@arinimaps.com.br"];
 
 const c = new pg.Client({

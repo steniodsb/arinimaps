@@ -69,12 +69,12 @@ export const FERRAMENTAS: Anthropic.Beta.BetaTool[] = [
   {
     name: "detalhes_imovel",
     description:
-      "Lê a ficha PÚBLICA de um imóvel pelo código (ex.: ARINI-MAP-000002): descrição, valor, área medida e declarada, " +
+      "Lê a ficha PÚBLICA de um imóvel pelo código (ex.: AIB-000002): descrição, valor, área medida e declarada, " +
       "características, condições de venda, dados de leilão e pontos de interesse próximos. Não traz dados do proprietário.",
     eager_input_streaming: true,
     input_schema: {
       type: "object",
-      properties: { codigo: { type: "string", description: "código do anúncio, ex.: ARINI-MAP-000002" } },
+      properties: { codigo: { type: "string", description: "código do anúncio, ex.: AIB-000002" } },
       required: ["codigo"],
       additionalProperties: false,
     },

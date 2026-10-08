@@ -46,7 +46,7 @@ await espera(6000);
 await p.screenshot({ path: ".capturas/rodada-consulta-car.png", fullPage: true });
 console.log("fontes na página   :", await p.evaluate(() => [...document.querySelectorAll("main .cartao p.font-medium")].length));
 
-await p.goto(`${BASE}/imovel/ARINI-MAP-000002/tour`, { waitUntil: "domcontentloaded", timeout: 90000 });
+await p.goto(`${BASE}/imovel/AIB-000002/tour`, { waitUntil: "domcontentloaded", timeout: 90000 });
 await espera(3000);
 console.log("tour, fase inicial :", await p.evaluate(() => document.body.innerText.match(/Carregando[^\n]*|Preparando[^\n]*/)?.[0] ?? "(já tocando)"));
 await espera(30000);

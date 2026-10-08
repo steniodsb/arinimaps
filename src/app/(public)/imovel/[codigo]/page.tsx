@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { LucideIcon } from "lucide-react";
@@ -13,6 +13,8 @@ import { currentUser } from "@/lib/supabase/server";
 import MiniMapa from "@/components/map/MiniMapa";
 import InteresseForm from "@/components/InteresseForm";
 import BotaoCompartilhar from "@/components/BotaoCompartilhar";
+import BotaoFavorito from "@/components/imovel/BotaoFavorito";
+import { codigosFavoritos } from "@/lib/imovel/favoritos";
 import GaleriaImovel, { type Slide } from "@/components/GaleriaImovel";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
@@ -95,6 +97,9 @@ const POI_ICONE: Record<string, LucideIcon> = {
 
 export default async function PaginaImovel({ params }: PageProps<"/imovel/[codigo]">) {
   const { codigo } = await params;
+  // código do nome antigo (ARINI-MAP-000002) → o mesmo imóvel no padrão novo
+  const antigo = codigo.match(/^ARINI-MAP-(\d{6})$/i);
+  if (antigo) redirect(`/imovel/AIB-${antigo[1]}`);
   const imovel = await getImovel(codigo);
   if (!imovel) notFound();
 
@@ -145,6 +150,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   ];
 
   const user = await currentUser();
+  const favorito = (await codigosFavoritos(user?.id)).includes(imovel.codigo);
   const usuario = user
     ? { nome: user.nome || "Conta", papel: user.role === "admin_central" ? "Administrador" : "Usuário" }
     : null;
@@ -381,6 +387,9 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
               <Link href={`/imovel/${imovel.codigo}/relatorio`} className="lp-btn lp-btn-contorno w-full !py-3">
                 <FileText /> Relatório territorial
               </Link>
+            )}
+            {["publicado", "em_negociacao", "vendido"].includes(imovel.status) && (
+              <BotaoFavorito codigo={imovel.codigo} inicial={favorito} variante="ficha" />
             )}
             <BotaoCompartilhar codigo={imovel.codigo} titulo={imovel.titulo} />
             {centroid && (

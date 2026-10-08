@@ -4,7 +4,7 @@ import { limiteLeituraMapa } from "@/lib/geo/limiteMemoria";
 
 /**
  * Pontos de interesse de um anúncio, com a distância em linha reta do centro do
- * imóvel (roadmap 2.12). `GET /api/geo/pois?codigo=ARINI-MAP-000001`.
+ * imóvel (roadmap 2.12). `GET /api/geo/pois?codigo=AIB-000001`.
  *
  * Lê o mesmo payload da página pública (fn_property_tour), que só responde para
  * anúncio publicado, em negociação ou vendido — nada de rascunho por aqui.

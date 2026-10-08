@@ -50,6 +50,8 @@ const EXCECOES_AUTH = {
   "/api/auth/recuperar": "pedido de recuperação (limite por IP e por e-mail)",
   "/api/cadastro": "é o próprio cadastro (limite por IP)",
   "/api/leads": "formulário público de interesse (limite por IP)",
+  "/api/car/janela": "mapa público: só garante o CAR (dado aberto) da janela no Brasil, com limite por IP",
+  "/api/saude": "monitoramento: sem o SAUDE_TOKEN só responde ok/erro, sem detalhe",
 };
 // Leituras públicas por natureza (mapa, anúncios publicados).
 const LEITURA_PUBLICA = [/^\/api\/geo\//, /^\/api\/tiles\//];

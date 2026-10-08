@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
 import { Secao, Estatistica, Vazio, Etiqueta, BotaoLink } from "@/components/ui/Pagina";
+import MiniaturaDivisa, { type GeoDivisa } from "@/components/imovel/MiniaturaDivisa";
 
 type Tom = "verde" | "ouro" | "alerta" | "critico" | "neutro" | "roxo";
 const STATUS_TOM: Record<string, Tom> = {
@@ -19,7 +20,7 @@ const STATUS_TOM: Record<string, Tom> = {
 };
 const EM_ANALISE = ["pendente", "em_analise", "correcao"];
 
-const CAMPOS = "id, codigo, titulo, tipo, status, valor, motivo_correcao, pendencia_tipo, created_at, media:property_media(storage_path, capa, tipo)";
+const CAMPOS = "id, codigo, titulo, tipo, status, valor, motivo_correcao, pendencia_tipo, created_at, media:property_media(storage_path, capa, tipo), geo:property_geometries(geom)";
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
@@ -100,16 +101,24 @@ export default async function MeusImoveis() {
               const fotos = ((p.media ?? []) as { storage_path: string; capa: boolean | null; tipo: string | null }[])
                 .filter((m) => m.tipo !== "video");
               const capa = fotos.find((m) => m.capa) ?? fotos[0];
+              const geo = p.geo as unknown as { geom: GeoDivisa } | { geom: GeoDivisa }[] | null;
+              const geom = (Array.isArray(geo) ? geo[0] : geo)?.geom;
               const complemento = p.status === "correcao" && p.pendencia_tipo === "complemento";
               return (
                 <Link key={p.id} href={`/painel/imoveis/${p.id}`}
                   className="cartao cartao-link group flex flex-col overflow-hidden">
                   <div className="relative h-44 overflow-hidden bg-superficie-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={capa ? mediaUrl(capa.storage_path) : p.tipo === "rural" ? "/img/aerea-campo.jpg" : "/img/casa-urbana.jpg"}
-                      alt={p.titulo}
-                      className={"h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 " + (capa ? "" : "opacity-60") + (p.status === "vendido" ? " grayscale" : "")} />
+                    {!capa && geom ? (
+                      // sem foto: o próprio terreno visto do satélite, com a divisa
+                      <MiniaturaDivisa geom={geom}
+                        className={"h-full w-full transition-transform duration-500 group-hover:scale-105" + (p.status === "vendido" ? " grayscale" : "")} />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={capa ? mediaUrl(capa.storage_path) : p.tipo === "rural" ? "/img/aerea-campo.jpg" : "/img/casa-urbana.jpg"}
+                        alt={p.titulo}
+                        className={"h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 " + (capa ? "" : "opacity-60") + (p.status === "vendido" ? " grayscale" : "")} />
+                    )}
                     <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
                       <Etiqueta tom={STATUS_TOM[p.status] ?? "neutro"} className="bg-fundo/90 backdrop-blur">
                         {complemento ? "Aguardando complemento" : STATUS_LABEL[p.status] ?? p.status}

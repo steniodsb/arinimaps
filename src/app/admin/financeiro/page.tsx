@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { CircleDollarSign, Download, Receipt, Repeat, Wallet } from "lucide-react";
 import { formatBRL } from "@/lib/format";
-import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, dataBR } from "@/components/admin/Painel";
+import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, dataBR, LinkAcao } from "@/components/admin/Painel";
+import { LISTA, LISTA_VAZIA, TABELA, TABELA_CAIXA, TBODY, TH, THEAD, TR } from "@/components/admin/estilos";
 
 type Mes = {
   mes: string; vendas: number; volume_vendido: number;
@@ -38,43 +39,43 @@ export default async function PainelFinanceiro() {
   const brl = (v: number) => (Number(v) ? formatBRL(Number(v)) : "—");
 
   return (
-    <div className="space-y-7 max-w-5xl">
+    <div className="space-y-10 md:space-y-12">
       <CabecalhoSetor setor="financeiro">
-        <a href="/api/admin/financeiro/exportar" className="btn-contorno px-4 py-2 text-sm">Baixar planilha (CSV)</a>
+        <a href="/api/admin/financeiro/exportar" className="btn-contorno inline-flex items-center gap-2 px-4 py-2.5 text-sm"><Download className="size-4" /> Baixar planilha (CSV)</a>
       </CabecalhoSetor>
 
       <Indicadores itens={[
-        { rotulo: "Comissões a receber", valor: formatBRL(aReceber), href: "/admin/comissoes", destaque: aReceber > 0 },
-        { rotulo: "Faturas vencidas", valor: vencidas.length, href: "/admin/mensalidades", destaque: vencidas.length > 0,
+        { rotulo: "Comissões a receber", icone: Wallet, valor: formatBRL(aReceber), href: "/admin/comissoes", destaque: aReceber > 0 },
+        { rotulo: "Faturas vencidas", icone: Receipt, valor: vencidas.length, href: "/admin/mensalidades", destaque: vencidas.length > 0,
           nota: vencidas.length ? formatBRL(vencidas.reduce((s, f) => s + Number(f.valor), 0)) : undefined },
-        { rotulo: "Mensalidade recorrente", valor: formatBRL(recorrente), nota: "por mês, anúncios ativos" },
-        { rotulo: "Recebido em 12 meses", valor: formatBRL(recebido12), nota: atual ? `${atual.vendas} venda(s) neste mês` : undefined },
+        { rotulo: "Mensalidade recorrente", icone: Repeat, valor: formatBRL(recorrente), nota: "por mês, anúncios ativos" },
+        { rotulo: "Recebido em 12 meses", icone: CircleDollarSign, valor: formatBRL(recebido12), nota: atual ? `${atual.vendas} venda(s) neste mês` : undefined },
       ]} />
 
       <Secao titulo="Receita por mês">
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className={TABELA_CAIXA}>
+          <table className={TABELA}>
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Mês</th>
-                <th className="px-4 py-3 text-right">Vendas</th>
-                <th className="px-4 py-3 text-right">Volume vendido</th>
-                <th className="px-4 py-3 text-right">Comissão gerada</th>
-                <th className="px-4 py-3 text-right">Comissão recebida</th>
-                <th className="px-4 py-3 text-right">Mensalidade faturada</th>
-                <th className="px-4 py-3 text-right">Mensalidade recebida</th>
+              <tr className={THEAD}>
+                <th className={TH}>Mês</th>
+                <th className={TH + " text-right"}>Vendas</th>
+                <th className={TH + " text-right"}>Volume vendido</th>
+                <th className={TH + " text-right"}>Comissão gerada</th>
+                <th className={TH + " text-right"}>Comissão recebida</th>
+                <th className={TH + " text-right"}>Mensalidade faturada</th>
+                <th className={TH + " text-right"}>Mensalidade recebida</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-linha tabular-nums">
+            <tbody className={TBODY + " tabular-nums"}>
               {meses.map((m) => (
-                <tr key={m.mes}>
-                  <td className="px-4 py-2.5 text-texto capitalize">{nomeMes(m.mes)}</td>
-                  <td className="px-4 py-2.5 text-right">{m.vendas || "—"}</td>
-                  <td className="px-4 py-2.5 text-right">{brl(m.volume_vendido)}</td>
-                  <td className="px-4 py-2.5 text-right">{brl(m.comissao_registrada)}</td>
-                  <td className="px-4 py-2.5 text-right text-verde">{brl(m.comissao_recebida)}</td>
-                  <td className="px-4 py-2.5 text-right">{brl(m.mensalidade_faturada)}</td>
-                  <td className="px-4 py-2.5 text-right text-verde">{brl(m.mensalidade_recebida)}</td>
+                <tr key={m.mes} className={TR}>
+                  <td className="px-4 py-3.5 font-semibold text-texto capitalize">{nomeMes(m.mes)}</td>
+                  <td className="px-4 py-3.5 text-right">{m.vendas || "—"}</td>
+                  <td className="px-4 py-3.5 text-right">{brl(m.volume_vendido)}</td>
+                  <td className="px-4 py-3.5 text-right">{brl(m.comissao_registrada)}</td>
+                  <td className="px-4 py-3.5 text-right text-verde">{brl(m.comissao_recebida)}</td>
+                  <td className="px-4 py-3.5 text-right">{brl(m.mensalidade_faturada)}</td>
+                  <td className="px-4 py-3.5 text-right text-verde">{brl(m.mensalidade_recebida)}</td>
                 </tr>
               ))}
             </tbody>
@@ -82,42 +83,42 @@ export default async function PainelFinanceiro() {
         </div>
       </Secao>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Secao titulo="Comissões a receber" acao={<Link href="/admin/comissoes" className="text-xs text-verde hover:underline">Abrir comissões</Link>}>
-          <div className="cartao divide-y divide-linha">
+      <div className="grid gap-10 lg:gap-6 lg:grid-cols-2">
+        <Secao titulo="Comissões a receber" acao={<LinkAcao href="/admin/comissoes">Abrir comissões</LinkAcao>}>
+          <div className={LISTA}>
             {(comissoes ?? []).map((c) => {
               const venda = c.sale as unknown as { data_venda: string; property: { codigo: string; titulo: string } | null } | null;
               return (
-                <div key={c.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
-                  <span>
-                    <span className="text-texto">{venda?.property?.titulo ?? "Venda"}</span>
-                    <span className="block text-xs text-texto-2">{venda?.property?.codigo} · venda em {dataBR(venda?.data_venda)} · {c.status}</span>
+                <div key={c.id} className="flex items-center justify-between gap-4 px-5 py-3.5 text-[0.95rem]">
+                  <span className="min-w-0">
+                    <span className="font-medium text-texto">{venda?.property?.titulo ?? "Venda"}</span>
+                    <span className="mt-0.5 block text-sm text-texto-2">{venda?.property?.codigo} · venda em {dataBR(venda?.data_venda)} · {c.status}</span>
                   </span>
-                  <span className="font-semibold tabular-nums">{formatBRL(Number(c.valor))}</span>
+                  <span className="lp-display text-lg tabular-nums whitespace-nowrap text-texto">{formatBRL(Number(c.valor))}</span>
                 </div>
               );
             })}
-            {!comissoes?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma comissão em aberto.</p>}
+            {!comissoes?.length && <p className={LISTA_VAZIA}>Nenhuma comissão em aberto.</p>}
           </div>
         </Secao>
 
-        <Secao titulo="Faturas em aberto" acao={<Link href="/admin/mensalidades" className="text-xs text-verde hover:underline">Abrir mensalidades</Link>}>
-          <div className="cartao divide-y divide-linha">
+        <Secao titulo="Faturas em aberto" acao={<LinkAcao href="/admin/mensalidades">Abrir mensalidades</LinkAcao>}>
+          <div className={LISTA}>
             {(faturas ?? []).map((f) => {
               const p = (f.subscription as unknown as { property: { codigo: string; titulo: string } | null } | null)?.property;
               return (
-                <div key={f.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
-                  <span>
-                    <span className="text-texto">{p?.titulo ?? "Anúncio"}</span>
-                    <span className={"block text-xs " + (f.status === "vencida" ? "text-critico" : "text-texto-2")}>
+                <div key={f.id} className="flex items-center justify-between gap-4 px-5 py-3.5 text-[0.95rem]">
+                  <span className="min-w-0">
+                    <span className="font-medium text-texto">{p?.titulo ?? "Anúncio"}</span>
+                    <span className={"mt-0.5 block text-sm " + (f.status === "vencida" ? "text-critico" : "text-texto-2")}>
                       {p?.codigo} · competência {new Date(f.competencia + "T12:00:00").toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" })} · {f.status}
                     </span>
                   </span>
-                  <span className="font-semibold tabular-nums">{formatBRL(Number(f.valor))}</span>
+                  <span className="lp-display text-lg tabular-nums whitespace-nowrap text-texto">{formatBRL(Number(f.valor))}</span>
                 </div>
               );
             })}
-            {!faturas?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma fatura em aberto.</p>}
+            {!faturas?.length && <p className={LISTA_VAZIA}>Nenhuma fatura em aberto.</p>}
           </div>
         </Secao>
       </div>

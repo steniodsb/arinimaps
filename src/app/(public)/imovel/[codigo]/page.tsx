@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, Bath, BedDouble, Building, CalendarDays, Car, Check, ChevronRight, Cross, DoorOpen,
+  ExternalLink, FileText, Fuel, Gavel, GraduationCap, Hash, Hospital, Landmark, MapPin, Navigation, Rotate3d,
+  Route, Ruler, ShieldCheck, ShoppingCart, Sprout,
+} from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
+import { Conteudo, Etiqueta, Secao } from "@/components/ui/Pagina";
 import { currentUser } from "@/lib/supabase/server";
 import MiniMapa from "@/components/map/MiniMapa";
 import InteresseForm from "@/components/InteresseForm";
@@ -12,7 +19,7 @@ import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import { registrarEventoImovel, ORIGEM_DADO_LABEL } from "@/lib/imovel/eventos";
 import { ator, temRecurso } from "@/lib/authz";
 import CartaoAvaliacaoPublico from "@/components/avaliacao/CartaoAvaliacaoPublico";
-import { CATEGORIA_POI_ICONE, CATEGORIA_POI_LABEL, formatDistancia } from "@/lib/geo/distancia";
+import { CATEGORIA_POI_LABEL, formatDistancia } from "@/lib/geo/distancia";
 
 type Media = { tipo: string; path: string; capa: boolean };
 
@@ -63,22 +70,28 @@ function fichaTecnica(
   c: Record<string, unknown>,
   areaM2: number | null,
   tipo: "urbano" | "rural"
-): { rotulo: string; valor: string; icone: string }[] {
+): { rotulo: string; valor: string; icone: LucideIcon }[] {
   const num = (v: unknown) => (typeof v === "number" ? v : Number(v));
-  const itens: { rotulo: string; valor: string; icone: string }[] = [];
-  const add = (chave: string, rotulo: string, icone: string) => {
+  const itens: { rotulo: string; valor: string; icone: LucideIcon }[] = [];
+  const add = (chave: string, rotulo: string, icone: LucideIcon) => {
     const v = c[chave];
     if (v != null && v !== "" && num(v) > 0) itens.push({ rotulo, valor: String(num(v)), icone });
   };
-  add("quartos", "Quartos", "🛏️");
-  add("suites", "Suítes", "🚪");
-  add("banheiros", "Banheiros", "🛁");
-  add("vagas", "Vagas", "🚗");
-  if (areaM2) itens.push({ rotulo: "Área", valor: formatArea(areaM2, tipo), icone: "📐" });
-  if (typeof c.zoneamento === "string") itens.push({ rotulo: "Zoneamento", valor: c.zoneamento, icone: "🏗️" });
-  if (typeof c.solo === "string") itens.push({ rotulo: "Solo", valor: c.solo, icone: "🌱" });
+  add("quartos", "Quartos", BedDouble);
+  add("suites", "Suítes", DoorOpen);
+  add("banheiros", "Banheiros", Bath);
+  add("vagas", "Vagas", Car);
+  if (areaM2) itens.push({ rotulo: "Área", valor: formatArea(areaM2, tipo), icone: Ruler });
+  if (typeof c.zoneamento === "string") itens.push({ rotulo: "Zoneamento", valor: c.zoneamento, icone: Building });
+  if (typeof c.solo === "string") itens.push({ rotulo: "Solo", valor: c.solo, icone: Sprout });
   return itens;
 }
+
+/** Ícone por categoria de ponto de interesse (os rótulos vêm de lib/geo/distancia). */
+const POI_ICONE: Record<string, LucideIcon> = {
+  combustivel: Fuel, farmacia: Cross, supermercado: ShoppingCart, hospital: Hospital,
+  escola: GraduationCap, centro: Landmark, acesso_rodovia: Route,
+};
 
 export default async function PaginaImovel({ params }: PageProps<"/imovel/[codigo]">) {
   const { codigo } = await params;
@@ -148,219 +161,244 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
 
   return (
     <AppShell usuario={usuario} semPadding>
-      {/* trilha de navegação */}
-      <div className="border-b border-linha bg-superficie">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-sm text-texto-2 flex items-center gap-2 flex-wrap">
-          <Link href="/" className="hover:text-verde">Home</Link>
-          <span>/</span>
-          <Link href="/mapa" className="hover:text-verde">Imóveis</Link>
-          <span>/</span>
-          <span className="text-texto font-medium">{imovel.titulo}</span>
-        </div>
-      </div>
+      {/* ---------- topo em faixa escura: trilha, selos, título e preço ---------- */}
+      <header className="lp-escuro lp-malha-escura relative overflow-hidden">
+        <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+        <Conteudo className="relative pt-8 pb-10 md:pt-10 md:pb-14">
+          <nav aria-label="Trilha" className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-texto-2">
+            <Link href="/" className="transition hover:text-verde">Home</Link>
+            <ChevronRight className="size-3.5 shrink-0 opacity-60" />
+            <Link href="/mapa" className="transition hover:text-verde">Imóveis</Link>
+            <ChevronRight className="size-3.5 shrink-0 opacity-60" />
+            <span className="min-w-0 truncate font-semibold text-texto">{imovel.titulo}</span>
+          </nav>
 
-      <main className="mx-auto max-w-6xl w-full px-4 py-8">
-        <Link href="/mapa" className="inline-flex items-center gap-2 text-sm text-texto-2 hover:text-verde mb-5">
-          ← Voltar para o mapa
-        </Link>
+          <Link href="/mapa" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-texto-2 transition hover:text-verde">
+            <ArrowLeft className="size-4" /> Voltar para o mapa
+          </Link>
 
-        {/* cabeçalho */}
-        <div className="flex flex-wrap items-center gap-3 mb-2">
-          <span className={`text-xs font-semibold rounded-full px-4 py-1.5 text-white ${vendido ? "bg-superficie-2 text-texto-2" : leilao ? "bg-[#B18CFF] !text-[#1b1033]" : "bg-verde"}`}>
-            {vendido ? "VENDIDO" : leilao ? "LEILÃO" : "DISPONÍVEL"}
-          </span>
-          <span className="text-sm text-texto-2">
-            📍 {imovel.municipio ? `${imovel.municipio.nome} / ${imovel.municipio.uf}` : "Região piloto"}
-          </span>
-          <span className="text-sm text-texto-2 font-mono"># {imovel.codigo}</span>
-          <span className="text-xs rounded-full bg-superficie-2 px-3 py-1 capitalize">{imovel.tipo}</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-semibold text-texto leading-tight text-balance">
-          {imovel.titulo}
-        </h1>
-        <p className="mt-1 mb-7">
-          <span className="texto-ouro text-3xl sm:text-4xl font-bold">{formatBRL(imovel.valor)}</span>
-          <span className="text-texto-2 ml-2">{leilao ? "Lance inicial" : "Venda"}</span>
-        </p>
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${vendido ? "bg-white/10 text-texto-2" : leilao ? "bg-[#B18CFF] text-[#160B2E]" : "bg-verde text-[#0A1F14]"}`}>
+              {vendido ? "Vendido" : leilao ? "Leilão" : "Disponível"}
+            </span>
+            <span className="flex items-center gap-1.5 text-[15px] text-texto-2">
+              <MapPin className="size-4 text-verde" />
+              {imovel.municipio ? `${imovel.municipio.nome} / ${imovel.municipio.uf}` : "Região piloto"}
+            </span>
+            <span className="flex items-center gap-1 font-mono text-sm text-texto-2">
+              <Hash className="size-3.5" />{imovel.codigo}
+            </span>
+            <span className="rounded-md border border-linha-forte px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-texto-3">
+              {imovel.tipo}
+            </span>
+          </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px] items-start">
+          <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <h1 className="lp-display max-w-3xl text-balance text-3xl text-texto sm:text-4xl md:text-[3.25rem]">
+              {imovel.titulo}
+            </h1>
+            <div className="shrink-0 md:text-right">
+              <p className="lp-eyebrow !text-xs">{leilao ? "Lance inicial" : "Venda"}</p>
+              <p className="lp-display mt-1.5 text-4xl text-[var(--ouro-claro)] md:text-[2.75rem]">{formatBRL(imovel.valor)}</p>
+            </div>
+          </div>
+        </Conteudo>
+      </header>
+
+      <Conteudo className="py-10 md:py-14">
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
           {/* ---------- coluna principal ---------- */}
-          <div className="space-y-8 min-w-0">
-            {slides.length > 0 && <GaleriaImovel slides={slides} titulo={imovel.titulo} />}
+          <div className="min-w-0 space-y-12 md:space-y-14">
+            {(slides.length > 0 || ficha.length > 0) && (
+              <div className="space-y-6">
+                {slides.length > 0 && <GaleriaImovel slides={slides} titulo={imovel.titulo} />}
 
-            {ficha.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {ficha.map((f) => (
-                  <div key={f.rotulo} className="cartao p-4">
-                    <p className="text-lg">{f.icone}</p>
-                    <p className="text-lg font-semibold text-texto leading-tight mt-1">{f.valor}</p>
-                    <p className="text-[11px] uppercase tracking-wide text-texto-2">{f.rotulo}</p>
+                {ficha.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                    {ficha.map((f) => {
+                      const Icone = f.icone;
+                      return (
+                        <div key={f.rotulo} className="cartao !border-l-4 !border-l-verde p-5">
+                          <span className="grid size-10 place-items-center rounded-xl bg-verde/12 text-verde">
+                            <Icone className="size-5" />
+                          </span>
+                          <p className="lp-display mt-4 break-words text-2xl leading-tight text-texto">{f.valor}</p>
+                          <p className="mt-1.5 text-sm text-texto-2">{f.rotulo}</p>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                )}
               </div>
             )}
 
             {benfeitorias.length > 0 && (
-              <div className="cartao p-5">
-                <p className="text-xs font-semibold tracking-[0.18em] text-ouro-escuro uppercase mb-3">Diferenciais</p>
-                <ul className="grid sm:grid-cols-2 gap-2.5">
+              <Secao eyebrow="Benfeitorias" titulo="Diferenciais">
+                <ul className="grid gap-3 sm:grid-cols-2">
                   {benfeitorias.map((b) => (
-                    <li key={b} className="flex items-center gap-2.5 text-sm">
-                      <span className="w-6 h-6 rounded-full bg-ouro/15 text-ouro-escuro grid place-items-center text-xs shrink-0">✓</span>
-                      <span className="capitalize">{b}</span>
+                    <li key={b} className="cartao flex items-center gap-3 px-5 py-4 text-base">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-ouro/15 text-ouro">
+                        <Check className="size-4" strokeWidth={3} />
+                      </span>
+                      <span className="capitalize text-texto">{b}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Secao>
             )}
 
-            <section>
-              <h2 className="text-2xl font-semibold text-texto mb-3">Sobre o imóvel</h2>
-              <div className="text-texto whitespace-pre-line leading-relaxed max-w-[68ch]">
+            <Secao titulo="Sobre o imóvel">
+              <div className="max-w-[68ch] whitespace-pre-line text-[17px] leading-relaxed text-texto-3">
                 {imovel.descricao || "Descrição não informada."}
               </div>
-            </section>
+            </Secao>
 
             {imovel.geometry && (
-              <section>
-                <h2 className="text-2xl font-semibold text-texto mb-3">Localização e área</h2>
+              <Secao eyebrow="Divisa no mapa" titulo="Localização e área">
                 <MiniMapa geometry={imovel.geometry} status={imovel.status}
-                  className="h-96 w-full rounded-2xl overflow-hidden border border-linha" />
-                <p className="mt-2 text-sm text-texto-2">
-                  Área medida no mapa: <strong>{formatArea(imovel.area_m2, imovel.tipo)}</strong>
+                  className="h-80 w-full overflow-hidden rounded-[20px] border border-linha md:h-[26rem]" />
+                <p className="text-[15px] leading-relaxed text-texto-2">
+                  Área medida no mapa: <strong className="text-texto">{formatArea(imovel.area_m2, imovel.tipo)}</strong>
                   {imovel.perimeter_m ? ` · perímetro ${(imovel.perimeter_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : null}
                   {imovel.area_declarada ? ` · área declarada pelo anunciante: ${imovel.area_declarada.toLocaleString("pt-BR")} ${imovel.tipo === "rural" ? "ha" : "m²"}` : null}
                 </p>
-              </section>
+              </Secao>
             )}
 
             {/* 5.3/5.4: só com a função ligada pela Diretoria e o recurso no plano */}
             <CartaoAvaliacaoPublico propertyId={propId?.id} tipo={imovel.tipo} status={imovel.status} />
 
             {!!unidades?.length && (
-              <section>
-                <h2 className="text-2xl font-semibold text-texto mb-3">Unidades deste empreendimento</h2>
-                <div className="cartao divide-y divide-linha overflow-hidden">
+              <Secao eyebrow="Empreendimento" titulo="Unidades deste empreendimento">
+                <div className="cartao divide-y divide-linha overflow-hidden !p-0">
                   {unidades.map((u) => (
                     <Link key={u.codigo} href={`/imovel/${u.codigo}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-superficie-2 transition">
-                      <span className="font-medium flex-1">{u.titulo}</span>
-                      <span className="text-sm text-verde font-medium">{formatBRL(u.valor)}</span>
-                      <span className={`text-xs rounded-full px-3 py-1 ${u.status === "vendido" ? "bg-superficie-2 text-texto-2" : "bg-verde/10 text-verde"}`}>
-                        {STATUS_LABEL[u.status]}
-                      </span>
+                      className="group flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-4 transition hover:bg-superficie-2">
+                      <span className="min-w-0 flex-1 font-semibold text-texto transition group-hover:text-verde">{u.titulo}</span>
+                      <span className="lp-display text-lg tabular-nums text-verde">{formatBRL(u.valor)}</span>
+                      <Etiqueta tom={u.status === "vendido" ? "neutro" : "verde"}>{STATUS_LABEL[u.status]}</Etiqueta>
                     </Link>
                   ))}
                 </div>
-              </section>
+              </Secao>
             )}
 
             {pois.length > 0 && (
-              <section>
-                <h2 className="text-2xl font-semibold text-texto mb-3">Pontos de interesse próximos</h2>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {pois.map((p, i) => (
-                    <div key={i} className="cartao px-4 py-2.5 text-sm flex items-center justify-between gap-3">
-                      <span className="min-w-0">
-                        <span className="block truncate">
-                          <span aria-hidden className="mr-1.5">{CATEGORIA_POI_ICONE[p.categoria] ?? "•"}</span>
-                          {p.nome ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}
+              <Secao eyebrow="Arredores" titulo="Pontos de interesse próximos"
+                subtitulo="Distâncias em linha reta, do centro do imóvel. Fonte: OpenStreetMap, atualizada periodicamente.">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {pois.map((p, i) => {
+                    const Icone = POI_ICONE[p.categoria] ?? MapPin;
+                    return (
+                      <div key={i} className="cartao flex items-center gap-3.5 px-4 py-3.5">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+                          <Icone className="size-5" />
                         </span>
-                        {p.nome && <span className="block text-[11px] text-texto-2">{CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>}
-                      </span>
-                      <span className="text-texto font-medium tabular-nums shrink-0">{formatDistancia(p.distancia_m)}</span>
-                    </div>
-                  ))}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold text-texto">
+                            {p.nome ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}
+                          </span>
+                          {p.nome && <span className="block text-xs text-texto-2">{CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>}
+                        </span>
+                        <span className="lp-display shrink-0 text-lg tabular-nums text-texto">{formatDistancia(p.distancia_m)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-xs text-texto-2 mt-2">
-                  Distâncias em linha reta, do centro do imóvel. Fonte: OpenStreetMap, atualizada periodicamente.
-                </p>
-              </section>
+              </Secao>
             )}
 
             {leilao && (
-              <section className="cartao p-5 space-y-3 border-[#B18CFF]/40">
-                <h2 className="text-2xl font-semibold text-texto">Leilão</h2>
-                <div className="grid gap-3 sm:grid-cols-2">
+              <section className="cartao space-y-5 !border-[#B18CFF]/40 p-6 md:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-11 place-items-center rounded-xl bg-[#B18CFF]/15 text-[#B18CFF]">
+                    <Gavel className="size-5" />
+                  </span>
+                  <h2 className="lp-display text-2xl text-texto md:text-[1.75rem]">Leilão</h2>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
                   {[1, 2].map((n) => {
                     const data = quandoPraca(n === 1 ? leilao.praca1_data : leilao.praca2_data);
                     const lance = n === 1 ? leilao.praca1_lance : leilao.praca2_lance;
                     if (!data && lance == null) return null;
                     return (
-                      <div key={n} className="rounded-xl bg-superficie-2 p-4">
-                        <p className="text-xs uppercase tracking-wide text-texto-2">{n}ª praça</p>
-                        <p className="font-semibold text-texto mt-0.5">{data ?? "Data a definir"}</p>
-                        {lance != null && <p className="text-sm text-ouro">Lance mínimo {formatBRL(Number(lance))}</p>}
+                      <div key={n} className="rounded-xl border border-linha bg-superficie-2 p-5">
+                        <p className="text-xs font-bold uppercase tracking-wider text-texto-2">{n}ª praça</p>
+                        <p className="mt-1.5 flex items-center gap-2 font-semibold text-texto">
+                          <CalendarDays className="size-4 shrink-0 text-[#B18CFF]" /> {data ?? "Data a definir"}
+                        </p>
+                        {lance != null && <p className="mt-1 text-[15px] font-semibold text-ouro">Lance mínimo {formatBRL(Number(lance))}</p>}
                       </div>
                     );
                   })}
                 </div>
-                <dl className="text-sm space-y-1">
+                <dl className="space-y-1.5 text-[15px]">
                   {leilao.comitente && <div className="flex gap-2"><dt className="text-texto-2">Comitente:</dt><dd className="text-texto">{leilao.comitente}</dd></div>}
                   {leilao.processo && <div className="flex gap-2"><dt className="text-texto-2">Processo:</dt><dd className="text-texto">{leilao.processo}</dd></div>}
                 </dl>
-                {leilao.condicoes && <p className="text-sm text-texto-2 whitespace-pre-line">{leilao.condicoes}</p>}
+                {leilao.condicoes && <p className="whitespace-pre-line text-[15px] leading-relaxed text-texto-2">{leilao.condicoes}</p>}
                 {leilao.site && (
-                  <a href={leilao.site} target="_blank" rel="noreferrer" className="btn-contorno inline-block px-5 py-2.5 text-sm">
-                    Ir para a página do leilão
+                  <a href={leilao.site} target="_blank" rel="noreferrer" className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">
+                    Ir para a página do leilão <ExternalLink />
                   </a>
                 )}
-                <p className="text-xs text-texto-2">
+                <p className="text-sm text-texto-2">
                   Os lances são dados na página do leiloeiro, nas condições do edital. Leia o edital antes de participar.
                 </p>
               </section>
             )}
 
             {imovel.condicoes_venda && (
-              <section>
-                <h2 className="text-2xl font-semibold text-texto mb-2">Condições de venda</h2>
-                <p className="text-texto">{imovel.condicoes_venda}</p>
-                <p className="text-sm text-texto-2 mt-1">
-                  {imovel.aceita_permuta && "Aceita permuta. "}
-                  {imovel.aceita_financiamento && "Aceita financiamento."}
-                </p>
-              </section>
+              <Secao titulo="Condições de venda">
+                <p className="text-[17px] leading-relaxed text-texto-3">{imovel.condicoes_venda}</p>
+                {(imovel.aceita_permuta || imovel.aceita_financiamento) && (
+                  <div className="flex flex-wrap gap-2">
+                    {imovel.aceita_permuta && <Etiqueta tom="verde"><Check className="size-3.5" /> Aceita permuta</Etiqueta>}
+                    {imovel.aceita_financiamento && <Etiqueta tom="verde"><Check className="size-3.5" /> Aceita financiamento</Etiqueta>}
+                  </div>
+                )}
+              </Secao>
             )}
           </div>
 
           {/* ---------- coluna lateral ---------- */}
           <aside className="space-y-4 lg:sticky lg:top-6">
             {vendido ? (
-              <div className="cartao p-6 text-center text-texto-2">
-                Este imóvel já foi vendido pela Arini.
-                <Link href="/mapa" className="btn-ouro block mt-4 py-3">Ver outros imóveis</Link>
+              <div className="cartao p-6 text-center">
+                <p className="text-base text-texto-2">Este imóvel já foi vendido pela Arini.</p>
+                <Link href="/mapa" className="lp-btn lp-btn-ouro mt-5 w-full">Ver outros imóveis <ArrowRight /></Link>
               </div>
             ) : (
               <InteresseForm codigo={imovel.codigo} titulo={imovel.titulo} whatsapp={whatsapp} />
             )}
 
             {imovel.geometry && (
-              <Link href={`/imovel/${imovel.codigo}/tour`}
-                className="block text-center rounded-2xl bg-verde/12 text-verde border border-verde/30 font-semibold py-3.5 hover:bg-verde/20 transition">
-                ▶ Ver tour 3D da propriedade
+              <Link href={`/imovel/${imovel.codigo}/tour`} className="lp-btn lp-btn-verde w-full">
+                <Rotate3d /> Ver tour 3D da propriedade
               </Link>
             )}
             {imovel.tipo === "rural" && (
-              <Link href={`/imovel/${imovel.codigo}/relatorio`}
-                className="block text-center rounded-2xl border border-linha bg-superficie font-medium py-3 hover:border-ouro transition">
-                ▤ Relatório territorial
+              <Link href={`/imovel/${imovel.codigo}/relatorio`} className="lp-btn lp-btn-contorno w-full !py-3">
+                <FileText /> Relatório territorial
               </Link>
             )}
             <BotaoCompartilhar codigo={imovel.codigo} titulo={imovel.titulo} />
             {centroid && (
               <a href={`https://www.google.com/maps/dir/?api=1&destination=${centroid.lat},${centroid.lng}`}
                 target="_blank" rel="noreferrer"
-                className="block text-center cartao font-medium py-3 hover:bg-superficie-2 transition">
-                📍 Como chegar até o imóvel
+                className="flex items-center justify-center gap-2 rounded-[10px] border border-linha-forte bg-superficie py-3 text-sm font-bold text-texto transition hover:border-verde hover:text-verde">
+                <Navigation className="size-4" /> Como chegar até o imóvel
               </a>
             )}
             {(divisa || origemCadastro) && (
-              <div className="cartao p-4 text-sm space-y-1">
-                <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-texto-2">Rastreabilidade</p>
+              <div className="cartao space-y-2 p-5 text-sm">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-texto-2">
+                  <ShieldCheck className="size-4 text-verde" /> Rastreabilidade
+                </p>
                 {divisa && (
-                  <p className={divisa.situacao === "validada" ? "text-verde" : "text-texto-2"}>
+                  <p className={divisa.situacao === "validada" ? "flex items-start gap-1.5 font-semibold text-verde" : "text-texto-2"}>
                     {divisa.situacao === "validada"
-                      ? `✓ Divisa validada pela Arini${divisa.validada_em ? ` em ${new Date(divisa.validada_em).toLocaleDateString("pt-BR")}` : ""}`
+                      ? <><Check className="mt-0.5 size-4 shrink-0" strokeWidth={3} />{`Divisa validada pela Arini${divisa.validada_em ? ` em ${new Date(divisa.validada_em).toLocaleDateString("pt-BR")}` : ""}`}</>
                       : "Divisa informada pelo anunciante (em análise)"}
                   </p>
                 )}
@@ -369,18 +407,18 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                   <p className="text-texto-2">Origem do cadastro: {ORIGEM_DADO_LABEL[origemCadastro.origem] ?? origemCadastro.origem}</p>
                 )}
                 {podeVerHistorico && propId && (
-                  <Link href={`/painel/imoveis/${propId.id}`} className="inline-block text-verde hover:underline text-xs">
-                    Ver histórico completo →
+                  <Link href={`/painel/imoveis/${propId.id}`} className="inline-flex items-center gap-1 pt-1 text-sm font-semibold text-verde hover:underline">
+                    Ver histórico completo <ArrowRight className="size-3.5" />
                   </Link>
                 )}
               </div>
             )}
-            <p className="text-xs text-texto-2 text-center">
+            <p className="text-center text-xs text-texto-2">
               Intermediação: Arini Negócios Imobiliários
             </p>
           </aside>
         </div>
-      </main>
+      </Conteudo>
     </AppShell>
   );
 }

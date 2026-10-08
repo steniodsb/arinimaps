@@ -63,18 +63,18 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
 
   return (
     <div className="min-h-screen bg-fundo text-texto print:bg-white print:text-black">
-      <div className="mx-auto max-w-4xl px-5 py-8 print:px-0 print:py-0">
+      <div className="mx-auto max-w-4xl px-5 py-10 md:px-8 md:py-14 print:px-0 print:py-0">
         {/* ---------- cabeçalho ---------- */}
-        <header className="flex items-start justify-between gap-4 border-b border-linha print:border-gray-300 pb-5 mb-6">
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-5 border-b border-linha pb-7 print:mb-6 print:flex-nowrap print:border-gray-300 print:pb-5">
           <div>
-            <p className="text-[10px] tracking-[0.28em] uppercase text-ouro print:text-gray-500">
+            <p className="lp-eyebrow !text-xs print:!text-[10px] print:text-gray-500">
               {texto(cfg, "nome_sistema", "Arini Imóveis Brasil")}
             </p>
-            <h1 className="text-2xl font-semibold mt-1">Relatório Territorial</h1>
-            <p className="text-texto-2 print:text-gray-600">{imovel.titulo}</p>
+            <h1 className="lp-display mt-2 text-3xl md:text-[2.5rem] print:text-2xl">Relatório Territorial</h1>
+            <p className="mt-2 text-lg text-texto-2 print:mt-1 print:text-base print:text-gray-600">{imovel.titulo}</p>
           </div>
-          <div className="text-right text-xs text-texto-2 print:text-gray-600 shrink-0">
-            <p className="font-mono">{imovel.codigo}</p>
+          <div className="shrink-0 space-y-0.5 text-sm text-texto-2 sm:text-right print:text-right print:text-xs print:text-gray-600">
+            <p className="font-mono font-semibold text-texto print:text-black">{imovel.codigo}</p>
             <p>Gerado em {new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
             {consultadoEm && (
               <p>Dados consultados em {new Date(consultadoEm).toLocaleDateString("pt-BR")}</p>
@@ -85,20 +85,20 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
         <BotoesRelatorio codigo={imovel.codigo} />
 
         {/* ---------- resumo ---------- */}
-        <section className="mb-7">
-          <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-verde print:text-gray-700 mb-3">
+        <section className="mb-10 print:mb-7">
+          <h2 className="lp-display mb-4 text-xl text-texto md:text-2xl print:mb-3 print:text-xs print:font-semibold print:uppercase print:tracking-[0.18em] print:text-gray-700">
             Resumo geral
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 print:gap-3">
             {resumo.map((r) => (
-              <div key={r.rotulo} className="cartao p-3.5 print:border print:border-gray-300 print:bg-white">
-                <p className="text-[10px] uppercase tracking-wide text-texto-2 print:text-gray-500">{r.rotulo}</p>
-                <p className="font-semibold mt-0.5">{r.valor}</p>
+              <div key={r.rotulo} className="cartao !border-l-4 !border-l-verde p-5 print:border print:border-gray-300 print:bg-white print:p-3.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-texto-2 print:text-[10px] print:font-normal print:text-gray-500">{r.rotulo}</p>
+                <p className="lp-display mt-2 break-words text-xl leading-tight print:mt-0.5 print:text-base">{r.valor}</p>
               </div>
             ))}
           </div>
           {imovel.area_declarada != null && (
-            <p className="text-xs text-texto-2 print:text-gray-600 mt-2">
+            <p className="mt-3 text-sm text-texto-2 print:mt-2 print:text-xs print:text-gray-600">
               Área declarada pelo anunciante: {Number(imovel.area_declarada).toLocaleString("pt-BR")}{" "}
               {imovel.tipo === "rural" ? "ha" : "m²"}. A área acima é calculada sobre a geometria
               cadastrada ({geo?.fonte ?? "—"}).
@@ -107,17 +107,17 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
         </section>
 
         {/* ---------- incidências ---------- */}
-        <section className="mb-7">
-          <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-verde print:text-gray-700 mb-3">
+        <section className="mb-10 print:mb-7">
+          <h2 className="lp-display mb-4 text-xl text-texto md:text-2xl print:mb-3 print:text-xs print:font-semibold print:uppercase print:tracking-[0.18em] print:text-gray-700">
             Incidências por fonte oficial
           </h2>
 
           {!ativas.some((f) => f.consulta) ? (
-            <p className="cartao p-4 text-sm text-texto-2 print:border print:border-gray-300 print:bg-white print:text-gray-600">
+            <p className="cartao p-6 text-base text-texto-2 print:p-4 print:text-sm print:border print:border-gray-300 print:bg-white print:text-gray-600">
               Nenhuma consulta territorial foi executada para este imóvel até o momento.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4 print:space-y-3">
               {ativas.map((f) => {
                 const c = f.consulta;
                 const itens = c?.resultado?.itens ?? [];
@@ -126,11 +126,11 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
                   : c.quantidade > 0 ? `${c.quantidade} registro(s)`
                   : "nenhuma incidência";
                 return (
-                  <div key={f.id} className="cartao p-4 print:border print:border-gray-300 print:bg-white break-inside-avoid">
+                  <div key={f.id} className="cartao p-5 md:p-6 print:border print:border-gray-300 print:bg-white print:p-4 break-inside-avoid">
                     <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                      <p className="font-medium">{f.nome} <span className="text-texto-2 print:text-gray-500 text-xs">· {f.orgao}</span></p>
+                      <p className="text-base font-semibold">{f.nome} <span className="text-sm font-normal text-texto-2 print:text-xs print:text-gray-500">· {f.orgao}</span></p>
                       <span className={
-                        "text-xs font-medium " +
+                        "rounded-md border border-current/25 px-2.5 py-1 text-xs font-bold print:border-0 print:p-0 print:font-medium " +
                         // verde só quando a fonte respondeu e não achou nada; "sem consulta"
                         // fica neutro para não ser lido como "nada encontrado".
                         (c?.erro ? "text-alerta" : !c ? "text-texto-2" : c.quantidade > 0 ? "text-ouro" : "text-verde") +
@@ -148,7 +148,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
                     )}
 
                     {itens.length > 0 && (
-                      <ul className="mt-2.5 space-y-1.5 text-sm">
+                      <ul className="mt-3 space-y-2 text-[15px] print:mt-2.5 print:space-y-1.5 print:text-sm">
                         {itens.slice(0, 12).map((i, n) => (
                           <li key={n} className="border-b border-linha print:border-gray-200 last:border-0 pb-1.5">
                             <p>{i.titulo}</p>
@@ -186,34 +186,34 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
 
         {/* ---------- entorno ---------- */}
         {pois.length > 0 && (
-          <section className="mb-7 break-inside-avoid">
-            <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-verde print:text-gray-700 mb-3">
+          <section className="mb-10 print:mb-7 break-inside-avoid">
+            <h2 className="lp-display mb-4 text-xl text-texto md:text-2xl print:mb-3 print:text-xs print:font-semibold print:uppercase print:tracking-[0.18em] print:text-gray-700">
               Entorno e acessos
             </h2>
-            <div className="grid sm:grid-cols-2 gap-2">
+            <div className="grid gap-3 sm:grid-cols-2 print:gap-2">
               {pois.slice(0, 12).map((p, i) => (
-                <div key={i} className="cartao px-3.5 py-2 text-sm flex justify-between gap-3 print:border print:border-gray-300 print:bg-white">
+                <div key={i} className="cartao flex justify-between gap-3 px-5 py-3.5 text-[15px] print:border print:border-gray-300 print:bg-white print:px-3.5 print:py-2 print:text-sm">
                   <span>{p.nome ?? CATEGORIA_LABEL[p.categoria] ?? p.categoria}</span>
-                  <span className="text-texto-2 print:text-gray-600 tabular-nums shrink-0">
+                  <span className="shrink-0 font-semibold tabular-nums text-texto-2 print:font-normal print:text-gray-600">
                     {(p.distancia_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km
                   </span>
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-texto-2 print:text-gray-500 mt-2">
+            <p className="mt-3 text-xs text-texto-2 print:mt-2 print:text-[11px] print:text-gray-500">
               Distâncias em linha reta, a partir do centro do imóvel.
             </p>
           </section>
         )}
 
         {/* ---------- imóvel ---------- */}
-        <section className="mb-7 break-inside-avoid">
-          <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-verde print:text-gray-700 mb-3">
+        <section className="mb-10 print:mb-7 break-inside-avoid">
+          <h2 className="lp-display mb-4 text-xl text-texto md:text-2xl print:mb-3 print:text-xs print:font-semibold print:uppercase print:tracking-[0.18em] print:text-gray-700">
             Sobre o imóvel
           </h2>
-          <p className="text-sm whitespace-pre-line leading-relaxed">{imovel.descricao || "Sem descrição cadastrada."}</p>
+          <p className="whitespace-pre-line text-base leading-relaxed text-texto-3 print:text-sm print:text-black">{imovel.descricao || "Sem descrição cadastrada."}</p>
           {benfeitorias.length > 0 && (
-            <p className="text-sm text-texto-2 print:text-gray-600 mt-2">
+            <p className="mt-3 text-[15px] text-texto-2 print:mt-2 print:text-sm print:text-gray-600">
               Benfeitorias declaradas: {benfeitorias.join(", ")}.
             </p>
           )}
@@ -221,11 +221,11 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
 
         {/* ---------- pendentes ---------- */}
         {pendentes.length > 0 && (
-          <section className="mb-7 break-inside-avoid">
-            <h2 className="text-xs font-semibold tracking-[0.18em] uppercase text-verde print:text-gray-700 mb-3">
+          <section className="mb-10 print:mb-7 break-inside-avoid">
+            <h2 className="lp-display mb-4 text-xl text-texto md:text-2xl print:mb-3 print:text-xs print:font-semibold print:uppercase print:tracking-[0.18em] print:text-gray-700">
               Fontes não incluídas nesta análise
             </h2>
-            <ul className="text-sm space-y-1.5">
+            <ul className="space-y-2 text-[15px] print:space-y-1.5 print:text-sm">
               {pendentes.map((f) => (
                 <li key={f.id} className="text-texto-2 print:text-gray-600">
                   <strong className="text-texto print:text-black">{f.nome}</strong> ({f.orgao}) — {f.observacao}
@@ -236,7 +236,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
         )}
 
         {/* ---------- nota ---------- */}
-        <footer className="border-t border-linha print:border-gray-300 pt-4 text-[11px] text-texto-2 print:text-gray-600 space-y-1">
+        <footer className="space-y-1.5 border-t border-linha pt-6 text-xs leading-relaxed text-texto-2 print:space-y-1 print:border-gray-300 print:pt-4 print:text-[11px] print:text-gray-600">
           <p>
             <strong className="text-texto print:text-black">Origem dos dados.</strong> As incidências vêm dos
             órgãos citados, consultadas na data indicada em cada bloco. Área, perímetro e distâncias são

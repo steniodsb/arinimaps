@@ -3,7 +3,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirEquipe } from "@/lib/setores-servidor";
 import { SETORES, setorPorId, type SetorId } from "@/lib/setores";
 import { formatBRL } from "@/lib/format";
-import { contar } from "@/components/admin/Painel";
+import { ArrowRight, CalendarClock, CircleAlert, ListChecks, UsersRound } from "lucide-react";
+import { contar, ICONE_SETOR, LinkAcao, Secao } from "@/components/admin/Painel";
+import { CabecalhoPagina, Etiqueta, Vazio } from "@/components/ui/Pagina";
+import { LISTA, LINHA_LISTA } from "@/components/admin/estilos";
 import { STATUS_ABERTOS } from "@/lib/cartografia/solicitacoes";
 
 type Fila = { rotulo: string; n: number | string; href: string; urgente?: boolean };
@@ -103,86 +106,113 @@ export default async function Matriz({ searchParams }: PageProps<"/admin">) {
 
   const meus = SETORES.filter((s) => user.setores.includes(s.id));
 
+  const urgentes = meus.reduce((n, s) => n + filas[s.id].filter((f) => f.urgente).length, 0);
+
   return (
-    <div className="space-y-7">
-      <div>
-        <p className="text-[10px] tracking-[0.22em] uppercase text-ouro">Matriz</p>
-        <h1 className="text-2xl font-semibold text-texto">Olá, {user.nome?.split(" ")[0] || "equipe"}</h1>
-        <p className="text-sm text-texto-2">
-          {user.role === "admin_central"
-            ? "Visão de todos os setores da empresa. Os números em destaque pedem ação."
-            : "Estes são os setores em que você atua. Os números em destaque pedem ação."}
-        </p>
-      </div>
+    <div className="space-y-10 md:space-y-12">
+      <CabecalhoPagina
+        eyebrow="Matriz"
+        titulo={`Olá, ${user.nome?.split(" ")[0] || "equipe"}`}
+        subtitulo={user.role === "admin_central"
+          ? "Visão de todos os setores da empresa. Os números em destaque pedem ação."
+          : "Estes são os setores em que você atua. Os números em destaque pedem ação."}
+        acoes={urgentes > 0
+          ? <Etiqueta tom="ouro" className="!px-3 !py-1.5 !text-sm"><CircleAlert className="size-4" />{urgentes} fila{urgentes === 1 ? "" : "s"} pedindo ação</Etiqueta>
+          : undefined}
+      />
 
       {semAcesso && (
-        <p className="rounded-xl border border-alerta/40 bg-alerta/10 px-4 py-3 text-sm text-alerta">
-          Você não atua no setor {setorPorId(String(semAcesso))?.nome ?? semAcesso}. Se precisar desse acesso, peça à diretoria
-          em Equipe e usuários.
+        <p className="-mt-4 flex items-start gap-3 rounded-xl border border-alerta/40 bg-alerta/10 px-5 py-4 text-[0.95rem] text-alerta">
+          <CircleAlert className="size-5 shrink-0 mt-0.5" />
+          <span>
+            Você não atua no setor {setorPorId(String(semAcesso))?.nome ?? semAcesso}. Se precisar desse acesso, peça à diretoria
+            em Equipe e usuários.
+          </span>
         </p>
       )}
 
       {!meus.length && (
-        <p className="cartao p-6 text-sm text-texto-2">
-          Sua conta ainda não foi colocada em nenhum setor. Peça à diretoria para definir os seus setores.
-        </p>
+        <Vazio icone={UsersRound} titulo="Nenhum setor ainda"
+          texto="Sua conta ainda não foi colocada em nenhum setor. Peça à diretoria para definir os seus setores." />
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {meus.map((s) => {
-          const tarefas = tarefasPorSetor.get(s.id) ?? 0;
-          return (
-            <div key={s.id} className="cartao p-5 flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-3">
-                <Link href={s.href} className="group">
-                  <p className="font-semibold text-texto group-hover:text-verde transition">
-                    <span className="text-ouro mr-2">{s.icone}</span>{s.nome}
-                  </p>
-                  <p className="text-xs text-texto-2 mt-0.5">{s.descricao}</p>
-                </Link>
-              </div>
-              <div className="space-y-1.5 mt-auto">
-                {filas[s.id].map((f) => (
-                  <Link key={f.rotulo} href={f.href}
-                    className={"flex items-baseline justify-between gap-3 rounded-lg px-3 py-2 text-sm transition " +
-                      (f.urgente ? "bg-ouro/10 border border-ouro/40" : "bg-superficie-2 hover:bg-linha/60")}>
-                    <span className="text-texto-2">{f.rotulo}</span>
-                    <span className="font-semibold text-texto tabular-nums">{f.n}</span>
+      {meus.length > 0 && (
+        <Secao titulo="Setores">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {meus.map((s) => {
+              const tarefas = tarefasPorSetor.get(s.id) ?? 0;
+              const Icone = ICONE_SETOR[s.id];
+              const temUrgente = filas[s.id].some((f) => f.urgente);
+              return (
+                <div key={s.id} className={"cartao flex flex-col p-6 border-t-4 " + (temUrgente ? "border-t-ouro" : "border-t-verde/60")}>
+                  <Link href={s.href} className="group flex items-start gap-4">
+                    <span className={"grid size-11 shrink-0 place-items-center rounded-xl " + (temUrgente ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde")}>
+                      <Icone className="size-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="lp-display text-xl text-texto transition-colors group-hover:text-verde">{s.nome}</span>
+                        <ArrowRight className="size-4 text-texto-2 transition-colors group-hover:text-verde" />
+                      </span>
+                      <span className="mt-1 block text-sm leading-relaxed text-texto-2">{s.descricao}</span>
+                    </span>
                   </Link>
-                ))}
-                {tarefas > 0 && (
-                  <Link href={`/admin/tarefas?setor=${s.id}`} className="block px-3 pt-1 text-xs text-verde hover:underline">
-                    {tarefas} tarefa{tarefas === 1 ? "" : "s"} aberta{tarefas === 1 ? "" : "s"} no setor
-                  </Link>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                  <div className="mt-auto space-y-2 pt-5">
+                    {filas[s.id].map((f) => (
+                      <Link key={f.rotulo} href={f.href}
+                        className={"flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors " +
+                          (f.urgente
+                            ? "border-ouro/45 bg-ouro/10 hover:border-ouro"
+                            : "border-linha bg-superficie-2/60 hover:border-linha-forte hover:bg-superficie-2")}>
+                        <span className={"text-sm " + (f.urgente ? "font-semibold text-texto" : "text-texto-2")}>{f.rotulo}</span>
+                        <span className={"lp-display text-xl leading-none tabular-nums " + (f.urgente ? "text-ouro" : "text-texto")}>
+                          {f.n === "→" ? <ArrowRight className="size-5 text-verde" /> : f.n}
+                        </span>
+                      </Link>
+                    ))}
+                    {tarefas > 0 && (
+                      <Link href={`/admin/tarefas?setor=${s.id}`}
+                        className="inline-flex items-center gap-1.5 px-1 pt-1.5 text-sm font-semibold text-verde hover:underline underline-offset-4">
+                        <ListChecks className="size-4" />
+                        {tarefas} tarefa{tarefas === 1 ? "" : "s"} aberta{tarefas === 1 ? "" : "s"} no setor
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Secao>
+      )}
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-texto">Minhas tarefas</h2>
-          <Link href="/admin/tarefas" className="text-xs text-verde hover:underline">Ver todas</Link>
-        </div>
-        <div className="cartao divide-y divide-linha">
-          {minhasTarefas.map((t) => (
-            <Link key={t.id} href={`/admin/tarefas?setor=${t.setor}`}
-              className="px-4 py-3 flex items-center justify-between gap-3 text-sm hover:bg-superficie-2 transition">
-              <span className="text-texto">
-                {t.prioridade === "alta" && <span className="text-critico">● </span>}{t.titulo}
-              </span>
-              <span className={"text-xs shrink-0 " + (t.prazo && t.prazo < hoje ? "text-critico" : "text-texto-2")}>
-                {setorPorId(t.setor)?.nome}{t.prazo && ` · ${new Date(t.prazo + "T12:00:00").toLocaleDateString("pt-BR")}`}
-              </span>
-            </Link>
-          ))}
+      <Secao titulo="Minhas tarefas" acao={<LinkAcao href="/admin/tarefas">Ver todas</LinkAcao>}>
+        <div className={LISTA}>
+          {minhasTarefas.map((t) => {
+            const atrasada = !!t.prazo && t.prazo < hoje;
+            return (
+              <Link key={t.id} href={`/admin/tarefas?setor=${t.setor}`} className={LINHA_LISTA}>
+                <span className="flex-1 min-w-48 font-medium text-texto">
+                  {t.titulo}
+                  {t.prioridade === "alta" && <Etiqueta tom="critico" className="ml-2 align-middle !py-0.5">Alta</Etiqueta>}
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-[0.1em] text-ouro">{setorPorId(t.setor)?.nome}</span>
+                {t.prazo && (
+                  <span className={"inline-flex items-center gap-1 text-xs tabular-nums " + (atrasada ? "font-semibold text-critico" : "text-texto-2")}>
+                    <CalendarClock className="size-3.5" />
+                    {new Date(t.prazo + "T12:00:00").toLocaleDateString("pt-BR")}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
           {!minhasTarefas.length && (
-            <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma tarefa com você no momento.</p>
+            <div className="flex flex-col items-center gap-2 px-5 py-10 text-center">
+              <ListChecks className="size-6 text-verde" />
+              <p className="text-[0.95rem] text-texto-2">Nenhuma tarefa com você no momento.</p>
+            </div>
           )}
         </div>
-      </section>
+      </Secao>
     </div>
   );
 }

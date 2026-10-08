@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
 import { formatBRL } from "@/lib/format";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { Building2, UserRound } from "lucide-react";
+import { CabecalhoPagina } from "@/components/ui/Pagina";
 
 export default async function AdminFunil() {
   await exigirSetor("comercial");
@@ -21,39 +23,54 @@ export default async function AdminFunil() {
   for (const o of opps ?? []) porEtapa.get(o.etapa)?.push(o);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Funil comercial</h1>
-        <p className="text-sm text-texto-2">Clique no card para abrir a oportunidade completa (timeline, visitas, propostas, contrato, venda).</p>
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-4">
+    <div className="space-y-6">
+      <CabecalhoPagina eyebrow="Comercial" titulo="Funil comercial"
+        subtitulo="Clique no card para abrir a oportunidade completa (timeline, visitas, propostas, contrato, venda)." />
+      <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-4 md:-mx-8 md:px-8">
         {colunas.map((etapa) => {
           const cards = porEtapa.get(etapa) ?? [];
           if (etapa === "perdido" && !cards.length) return null;
+          const perdido = etapa === "perdido";
+          const ganho = etapa === "fechado" || etapa === "pos_venda";
+          const total = cards.reduce((s, o) => s + Number((o.property as unknown as { valor: number | null } | null)?.valor ?? 0), 0);
           return (
-            <div key={etapa} className="w-60 shrink-0">
-              <div className={`rounded-t-lg px-3 py-2 text-xs font-semibold flex justify-between ${etapa === "perdido" ? "bg-critico/15 text-critico" : etapa === "fechado" || etapa === "pos_venda" ? "bg-verde text-white" : "bg-verde-escuro text-white"}`}>
-                {ETAPA_LABEL[etapa]}
-                <span className="tabular-nums">{cards.length}</span>
+            <div key={etapa} className="flex w-[17rem] shrink-0 flex-col rounded-2xl border border-linha bg-superficie-2/50">
+              <div className={"rounded-t-2xl border-t-4 px-4 pt-3 pb-3 " + (perdido ? "border-t-critico" : ganho ? "border-t-verde" : "border-t-ouro")}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-texto">{ETAPA_LABEL[etapa]}</p>
+                  <span className={"grid min-w-7 h-6 place-items-center rounded-md px-1.5 text-xs font-bold tabular-nums " +
+                    (perdido ? "bg-critico/14 text-critico" : ganho ? "bg-verde/14 text-verde" : "bg-superficie text-texto-2 border border-linha")}>
+                    {cards.length}
+                  </span>
+                </div>
+                {total > 0 && <p className="mt-1 text-xs text-texto-2 tabular-nums">{formatBRL(total)}</p>}
               </div>
-              <div className="bg-superficie-2 rounded-b-lg p-2 space-y-2 min-h-24">
+              <div className="flex-1 space-y-2.5 px-2.5 pb-2.5 min-h-24">
                 {cards.map((o) => {
                   const lead = o.lead as unknown as { nome: string } | null;
                   const prop = o.property as unknown as { codigo: string; titulo: string; valor: number | null } | null;
                   const partner = o.partner as unknown as { razao_social: string } | null;
                   return (
                     <Link key={o.id} href={`/admin/oportunidades/${o.id}`}
-                      className="block rounded-lg bg-superficie border border-linha p-3 hover:shadow transition space-y-1">
-                      <p className="font-mono text-[10px] text-texto-2">{o.codigo}</p>
-                      <p className="text-sm font-medium leading-snug">{lead?.nome ?? "—"}</p>
-                      <p className="text-xs text-texto-2 leading-snug">{prop?.titulo}</p>
-                      <p className="text-xs text-verde font-medium">{formatBRL(prop?.valor ?? null)}</p>
-                      <p className="text-[10px] text-texto-2">
-                        {o.responsavel_tipo === "arini" ? "Arini" : o.responsavel_tipo === "proprietario" ? "Proprietário" : partner?.razao_social ?? "Parceiro"}
+                      className="block rounded-xl border border-linha bg-superficie p-3.5 shadow-[0_1px_2px_var(--sombra-botao)] transition-colors hover:border-verde/60">
+                      <p className="font-mono text-[10px] text-texto-2 tabular-nums">{o.codigo}</p>
+                      <p className="mt-1 font-semibold leading-snug text-texto">{lead?.nome ?? "—"}</p>
+                      <p className="mt-1 flex items-start gap-1.5 text-sm leading-snug text-texto-2">
+                        <Building2 className="mt-0.5 size-3.5 shrink-0" /><span className="line-clamp-2">{prop?.titulo}</span>
                       </p>
+                      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-linha pt-2.5">
+                        <span className="text-sm font-bold text-verde tabular-nums">{formatBRL(prop?.valor ?? null)}</span>
+                        <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-texto-2">
+                          <UserRound className="size-3 shrink-0" />
+                          <span className="truncate">
+                            {o.responsavel_tipo === "arini" ? "Arini" : o.responsavel_tipo === "proprietario" ? "Proprietário" : partner?.razao_social ?? "Parceiro"}
+                          </span>
+                        </span>
+                      </div>
                     </Link>
                   );
                 })}
+                {!cards.length && <p className="px-2 py-6 text-center text-xs text-texto-2">Nenhuma oportunidade</p>}
               </div>
             </div>
           );

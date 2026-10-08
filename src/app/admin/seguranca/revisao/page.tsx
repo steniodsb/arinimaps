@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
-import { Indicadores, Secao, dataHoraBR } from "@/components/admin/Painel";
+import { Indicadores, dataHoraBR } from "@/components/admin/Painel";
+import { Secao } from "@/components/ui/Pagina";
+import { ArrowLeft, ShieldAlert, ShieldCheck } from "lucide-react";
 import { PAPEL_LABEL } from "@/lib/perfis";
 import { SETORES } from "@/lib/setores";
 import { PLAN_ORIGEM_LABEL } from "@/lib/planos";
@@ -38,15 +40,20 @@ export default async function RevisaoAcessos() {
   const parados = r.equipe.filter((m) => m.ativo && (!m.ultimo || m.ultimo < ha90)).length;
 
   return (
-    <div className="space-y-7 max-w-5xl">
-      <div>
-        <Link href="/admin/seguranca" className="text-xs text-texto-2 hover:text-verde">← Segurança</Link>
-        <h1 className="text-2xl font-semibold text-texto mt-1">Revisão de acessos</h1>
-        <p className="text-sm text-texto-2 max-w-2xl">
+    <div className="mx-auto max-w-[1280px] space-y-10">
+      <header className="space-y-4">
+        <Link href="/admin/seguranca" className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline">
+          <ArrowLeft className="size-4" /> Segurança
+        </Link>
+        <div className="max-w-3xl">
+        <p className="lp-eyebrow text-xs">Central · Segurança</p>
+        <h1 className="lp-display mt-3 text-3xl md:text-[2.5rem] text-texto text-balance">Revisão de acessos</h1>
+        <p className="mt-4 text-base md:text-lg leading-relaxed text-texto-2">
           A cada {REVISAO_DIAS} dias, confira quem acessa o quê. Ajustes de papel, setor e plano são feitos em{" "}
-          <Link href="/admin/usuarios" className="text-verde hover:underline">Equipe e usuários</Link>; depois marque a revisão como concluída.
+          <Link href="/admin/usuarios" className="font-semibold text-verde hover:underline">Equipe e usuários</Link>; depois marque a revisão como concluída.
         </p>
-      </div>
+        </div>
+      </header>
 
       <Indicadores itens={[
         { rotulo: "Última revisão", valor: ultima ? dataHoraBR(ultima.created_at).split(" ")[0] : "nunca", nota: ultima?.nome ?? undefined },
@@ -55,24 +62,26 @@ export default async function RevisaoAcessos() {
         { rotulo: "Equipe sem entrar há 90 dias", valor: parados, destaque: parados > 0, nota: "candidatas a desativar" },
       ]} />
 
-      <Secao titulo={`Equipe da Matriz (${r.equipe.length})`}>
+      <Secao eyebrow="Lista 1" titulo={`Equipe da Matriz (${r.equipe.length})`}>
         <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-[0.95rem]">
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Pessoa</th><th className="px-4 py-3">Papel</th><th className="px-4 py-3">Setores</th>
-                <th className="px-4 py-3">Último acesso</th><th className="px-4 py-3">Segundo fator</th>
+              <tr className="bg-superficie-2 text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2">
+                <th className="px-5 py-3 whitespace-nowrap">Pessoa</th><th className="px-5 py-3 whitespace-nowrap">Papel</th><th className="px-5 py-3 whitespace-nowrap">Setores</th>
+                <th className="px-5 py-3 whitespace-nowrap">Último acesso</th><th className="px-5 py-3 whitespace-nowrap">Segundo fator</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-linha">
               {r.equipe.map((m) => (
-                <tr key={m.user_id} className={m.ativo ? "" : "opacity-60"}>
-                  <td className="px-4 py-2"><span className="text-texto">{m.nome || "—"}</span>
-                    <span className="block text-xs text-texto-2">{m.email}{!m.ativo && " · desativada"}</span></td>
-                  <td className="px-4 py-2 text-xs">{m.role === "admin_central" ? "Diretoria" : "Equipe"}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{m.role === "admin_central" ? "todos" : m.setores.map(nomeSetor).join(", ") || "nenhum"}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(m.ultimo)}</td>
-                  <td className={"px-4 py-2 text-xs " + (m.mfa ? "text-verde" : "text-alerta")}>{m.mfa ? "ativo" : "sem"}</td>
+                <tr key={m.user_id} className={"transition-colors hover:bg-superficie-2/60 " + (m.ativo ? "" : "opacity-60")}>
+                  <td className="px-5 py-3.5"><span className="font-semibold text-texto">{m.nome || "—"}</span>
+                    <span className="mt-0.5 block text-sm text-texto-2">{m.email}{!m.ativo && " · desativada"}</span></td>
+                  <td className="px-5 py-3.5 text-sm">{m.role === "admin_central" ? "Diretoria" : "Equipe"}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2">{m.role === "admin_central" ? "todos" : m.setores.map(nomeSetor).join(", ") || "nenhum"}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(m.ultimo)}</td>
+                  <td className={"px-5 py-3.5 text-sm font-semibold " + (m.mfa ? "text-verde" : "text-alerta")}>
+                    <span className="inline-flex items-center gap-1.5">{m.mfa ? <ShieldCheck className="size-4" /> : <ShieldAlert className="size-4" />}{m.mfa ? "ativo" : "sem"}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -80,71 +89,71 @@ export default async function RevisaoAcessos() {
         </div>
       </Secao>
 
-      <Secao titulo={`Contas externas com plano fora do padrão (${r.planosEspeciais.length})`}>
+      <Secao eyebrow="Lista 2" titulo={`Contas externas com plano fora do padrão (${r.planosEspeciais.length})`}>
         <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-[0.95rem]">
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Conta</th><th className="px-4 py-3">Perfil</th><th className="px-4 py-3">Plano</th>
-                <th className="px-4 py-3">Origem</th><th className="px-4 py-3">Válido até</th><th className="px-4 py-3">Último acesso</th>
+              <tr className="bg-superficie-2 text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2">
+                <th className="px-5 py-3 whitespace-nowrap">Conta</th><th className="px-5 py-3 whitespace-nowrap">Perfil</th><th className="px-5 py-3 whitespace-nowrap">Plano</th>
+                <th className="px-5 py-3 whitespace-nowrap">Origem</th><th className="px-5 py-3 whitespace-nowrap">Válido até</th><th className="px-5 py-3 whitespace-nowrap">Último acesso</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-linha">
               {r.planosEspeciais.map((p) => (
-                <tr key={p.user_id}>
-                  <td className="px-4 py-2"><span className="text-texto">{p.nome || "—"}</span><span className="block text-xs text-texto-2">{p.email}</span></td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{PAPEL_LABEL[p.role] ?? p.role}</td>
-                  <td className="px-4 py-2 text-xs">{p.plan_id ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{PLAN_ORIGEM_LABEL[p.plan_origem] ?? p.plan_origem}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{p.plan_valido_ate ? new Date(p.plan_valido_ate).toLocaleDateString("pt-BR") : "sem prazo"}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(p.ultimo)}</td>
+                <tr key={p.user_id} className="transition-colors hover:bg-superficie-2/60">
+                  <td className="px-5 py-3.5"><span className="font-semibold text-texto">{p.nome || "—"}</span><span className="mt-0.5 block text-sm text-texto-2">{p.email}</span></td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2">{PAPEL_LABEL[p.role] ?? p.role}</td>
+                  <td className="px-5 py-3.5 text-sm">{p.plan_id ?? "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2">{PLAN_ORIGEM_LABEL[p.plan_origem] ?? p.plan_origem}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2">{p.plan_valido_ate ? new Date(p.plan_valido_ate).toLocaleDateString("pt-BR") : "sem prazo"}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(p.ultimo)}</td>
                 </tr>
               ))}
-              {!r.planosEspeciais.length && <tr><td colSpan={6} className="px-4 py-6 text-center text-texto-2">Todas as contas externas estão no plano padrão do nicho.</td></tr>}
+              {!r.planosEspeciais.length && <tr><td colSpan={6} className="px-5 py-10 text-center text-base text-texto-2">Todas as contas externas estão no plano padrão do nicho.</td></tr>}
             </tbody>
           </table>
         </div>
       </Secao>
 
-      <Secao titulo={`Parceiros com território (${r.parceiros.length})`}>
+      <Secao eyebrow="Lista 3" titulo={`Parceiros com território (${r.parceiros.length})`}>
         <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[760px] text-[0.95rem]">
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Parceiro</th><th className="px-4 py-3">Tipo</th><th className="px-4 py-3">Território</th>
-                <th className="px-4 py-3">Situação</th><th className="px-4 py-3">Último acesso</th>
+              <tr className="bg-superficie-2 text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2">
+                <th className="px-5 py-3 whitespace-nowrap">Parceiro</th><th className="px-5 py-3 whitespace-nowrap">Tipo</th><th className="px-5 py-3 whitespace-nowrap">Território</th>
+                <th className="px-5 py-3 whitespace-nowrap">Situação</th><th className="px-5 py-3 whitespace-nowrap">Último acesso</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-linha">
               {r.parceiros.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-2"><span className="text-texto">{p.razao_social || p.nome || "—"}</span><span className="block text-xs text-texto-2">{p.email}</span></td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{PAPEL_LABEL[p.tipo] ?? p.tipo}</td>
-                  <td className="px-4 py-2 text-xs">{p.regiao ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{p.status}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(p.ultimo)}</td>
+                <tr key={p.id} className="transition-colors hover:bg-superficie-2/60">
+                  <td className="px-5 py-3.5"><span className="font-semibold text-texto">{p.razao_social || p.nome || "—"}</span><span className="mt-0.5 block text-sm text-texto-2">{p.email}</span></td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2">{PAPEL_LABEL[p.tipo] ?? p.tipo}</td>
+                  <td className="px-5 py-3.5 text-sm">{p.regiao ?? "—"}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2">{p.status}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(p.ultimo)}</td>
                 </tr>
               ))}
-              {!r.parceiros.length && <tr><td colSpan={5} className="px-4 py-6 text-center text-texto-2">Nenhum parceiro com território definido.</td></tr>}
+              {!r.parceiros.length && <tr><td colSpan={5} className="px-5 py-10 text-center text-base text-texto-2">Nenhum parceiro com território definido.</td></tr>}
             </tbody>
           </table>
         </div>
       </Secao>
 
-      <Secao titulo="Concluir a revisão">
+      <Secao eyebrow="Registro" titulo="Concluir a revisão">
         <ConcluirRevisao />
         {!!historico?.length && (
-          <div className="cartao divide-y divide-linha">
+          <div className="cartao overflow-hidden divide-y divide-linha">
             {historico.map((h) => (
-              <div key={h.id} className="px-4 py-2.5 text-sm">
-                <span className="text-texto">{dataHoraBR(h.created_at)}</span>
-                <span className="text-xs text-texto-2"> · {nomePorId.get(h.revisado_por) || "—"}</span>
-                {h.observacoes && <p className="text-xs text-texto-2 mt-0.5 whitespace-pre-line">{h.observacoes}</p>}
+              <div key={h.id} className="px-5 py-3.5 text-[0.95rem]">
+                <span className="font-semibold text-texto tabular-nums">{dataHoraBR(h.created_at)}</span>
+                <span className="text-sm text-texto-2"> · {nomePorId.get(h.revisado_por) || "—"}</span>
+                {h.observacoes && <p className="text-sm leading-relaxed text-texto-2 mt-1 whitespace-pre-line">{h.observacoes}</p>}
               </div>
             ))}
           </div>
         )}
-        <p className="text-xs text-texto-2">As revisões ficam registradas e não podem ser alteradas nem apagadas.</p>
+        <p className="text-sm text-texto-2">As revisões ficam registradas e não podem ser alteradas nem apagadas.</p>
       </Secao>
     </div>
   );

@@ -7,7 +7,9 @@ import { normalizar } from "@/lib/preferencias";
 import { TIPO_ORG_LABEL, PAPEL_ORG_LABEL, type TipoOrg } from "@/lib/organizacoes";
 import { convitesPendentes, organizacaoDoUsuario } from "@/lib/organizacoes-servidor";
 import { acessoDe } from "@/lib/planos-servidor";
-import BotaoTema from "@/components/shell/BotaoTema";
+import { ShieldCheck, Users, BadgeCheck, LifeBuoy, ChevronRight } from "lucide-react";
+import { CabecalhoPagina, Secao } from "@/components/ui/Pagina";
+import TopoConta from "@/components/painel/TopoConta";
 import Conta from "./Conta";
 
 export const dynamic = "force-dynamic";
@@ -31,25 +33,28 @@ export default async function MinhaConta() {
     acessoDe(user.id),
   ]);
 
+  const mais = [
+    { href: "/conta/seguranca", rotulo: "Segurança da conta", texto: "senha, segundo fator e histórico de acessos", icone: ShieldCheck },
+    ...(!daEquipe ? [{
+      href: "/painel/organizacao", rotulo: "Organização", icone: Users,
+      texto: vinculo ? `${vinculo.org.nome} (${PAPEL_ORG_LABEL[vinculo.membro.papel_org]})` : "você ainda não faz parte de uma",
+    }] : []),
+    { href: "/planos", rotulo: "Planos", texto: "o que o seu plano libera", icone: BadgeCheck },
+    { href: "/suporte", rotulo: "Suporte", texto: "fale com a equipe; dados pessoais (LGPD) também por lá", icone: LifeBuoy },
+  ];
+
   return (
     <div className="min-h-screen bg-fundo">
-      <div className="px-4 py-3 border-b border-linha flex items-center justify-between gap-3">
-        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Imóveis Brasil</span></Link>
-        <div className="flex items-center gap-2">
-          <BotaoTema />
-          <Link href={daEquipe ? "/admin" : "/painel"} className="text-sm text-verde hover:underline">
-            ← Voltar {daEquipe ? "à Central" : "ao painel"}
-          </Link>
-        </div>
-      </div>
-      <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-texto">Minha conta</h1>
-          <p className="text-sm text-texto-2">
-            {user.email} · plano {acesso.planNome ?? "—"}
+      <TopoConta daEquipe={daEquipe} />
+      <main className="mx-auto w-full max-w-3xl space-y-10 px-5 pb-16 pt-10 md:px-8 md:pt-14">
+        <CabecalhoPagina
+          eyebrow="Minha conta"
+          titulo="Minha conta"
+          subtitulo={<>
+            {user.email} · plano <strong className="font-semibold text-texto">{acesso.planNome ?? "—"}</strong>
             {vinculo && ` · ${vinculo.org.nome}`}
-          </p>
-        </div>
+          </>}
+        />
 
         <Conta
           inicial={{
@@ -64,21 +69,23 @@ export default async function MinhaConta() {
           }))}
         />
 
-        <section className="cartao p-5 space-y-2 text-sm">
-          <h2 className="font-semibold text-texto">Mais da conta</h2>
-          <ul className="space-y-1.5">
-            <li><Link href="/conta/seguranca" className="text-verde hover:underline">Segurança da conta</Link>
-              <span className="text-texto-2"> — senha, segundo fator e histórico de acessos</span></li>
-            {!daEquipe && (
-              <li><Link href="/painel/organizacao" className="text-verde hover:underline">Organização</Link>
-                <span className="text-texto-2"> — {vinculo ? `${vinculo.org.nome} (${PAPEL_ORG_LABEL[vinculo.membro.papel_org]})` : "você ainda não faz parte de uma"}</span></li>
-            )}
-            <li><Link href="/planos" className="text-verde hover:underline">Planos</Link>
-              <span className="text-texto-2"> — o que o seu plano libera</span></li>
-            <li><Link href="/suporte" className="text-verde hover:underline">Suporte</Link>
-              <span className="text-texto-2"> — fale com a equipe; dados pessoais (LGPD) também por lá</span></li>
-          </ul>
-        </section>
+        <Secao titulo="Mais da conta">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {mais.map(({ href, rotulo, texto, icone: Icone }) => (
+              <Link key={href} href={href} className="cartao cartao-link group flex items-start gap-4 p-5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+                  <Icone className="size-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1 text-base font-semibold text-texto group-hover:text-verde transition-colors">
+                    {rotulo} <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                  <span className="mt-0.5 block text-sm text-texto-2">{texto}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Secao>
       </main>
     </div>
   );

@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
+import { Check, CheckCheck, CheckCircle2, FlaskConical, Play } from "lucide-react";
 
-const BOTAO = "rounded-lg bg-superficie-2 text-texto btn-contorno text-xs font-medium px-3 py-1.5 hover:bg-linha disabled:opacity-50";
-const BOTAO_VERDE = "rounded-lg bg-verde text-white text-xs font-medium px-3 py-1.5 hover:bg-verde-escuro disabled:opacity-50";
+const BOTAO = "btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2 text-sm disabled:opacity-50";
+const BOTAO_VERDE = "btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-50";
 
 /** "Visto" em um alerta, ou em todos os abertos. */
 export function MarcarAlerta({ id, todos }: { id?: string; todos?: boolean }) {
@@ -22,7 +24,7 @@ export function MarcarAlerta({ id, todos }: { id?: string; todos?: boolean }) {
   }
   return (
     <span className="inline-flex flex-col gap-1">
-      <button disabled={ocupado} onClick={marcar} className={BOTAO}>{todos ? "Marcar todos como vistos" : "Visto"}</button>
+      <button disabled={ocupado} onClick={marcar} className={BOTAO}>{todos ? <CheckCheck className="size-4" /> : <Check className="size-4" />}{todos ? "Marcar todos como vistos" : "Visto"}</button>
       {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
     </span>
   );
@@ -55,12 +57,13 @@ export function BotoesRetencao({ executar }: { executar: boolean }) {
   return (
     <div className="space-y-2">
       <div className="flex gap-2 flex-wrap">
-        <button disabled={ocupado} onClick={() => acionar("simular")} className={BOTAO}>Simular agora</button>
+        <button disabled={ocupado} onClick={() => acionar("simular")} className={BOTAO}><FlaskConical className="size-4" /> Simular agora</button>
         <button disabled={ocupado} onClick={() => acionar("agendar")} className={BOTAO}>
+          <Play className="size-4" />
           {executar ? "Rodar o descarte agora" : "Rodar a rotina agora (simulação)"}
         </button>
       </div>
-      {resultado && <p className="text-xs text-verde">{resultado}</p>}
+      {resultado && <p className="max-w-md text-sm font-semibold text-verde">{resultado}</p>}
       {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
     </div>
   );
@@ -85,14 +88,14 @@ export function ConcluirRevisao() {
     router.refresh();
   }
   return (
-    <div className="cartao p-4 space-y-3">
-      <label className="block text-sm font-medium text-texto" htmlFor="obs-revisao">Observações da revisão</label>
-      <textarea id="obs-revisao" rows={3} value={obs} onChange={(e) => setObs(e.target.value)}
+    <div className="cartao p-6 space-y-4">
+      <label className={ROTULO} htmlFor="obs-revisao">Observações da revisão</label>
+      <textarea id="obs-revisao" rows={4} value={obs} onChange={(e) => setObs(e.target.value)}
         placeholder="Ex.: removido o setor Financeiro da Ana; conta do estagiário desativada; plano manual do cliente X confirmado."
-        className="w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde" />
+        className={CAMPO} />
       <div className="flex items-center gap-3 flex-wrap">
-        <button disabled={ocupado} onClick={concluir} className={BOTAO_VERDE}>Marcar revisão concluída</button>
-        {feito && <span className="text-xs text-verde">Revisão registrada.</span>}
+        <button disabled={ocupado} onClick={concluir} className={BOTAO_VERDE}><CheckCircle2 className="size-4" /> Marcar revisão concluída</button>
+        {feito && <span className="text-sm font-semibold text-verde">Revisão registrada.</span>}
       </div>
       {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
     </div>

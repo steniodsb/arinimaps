@@ -21,7 +21,7 @@ export default function ComissaoBotoes({ id, status }: { id: string; status: str
   return (
     <div className="space-y-2">
       <button disabled={ocupado}
-        className="text-xs rounded-lg bg-verde text-white px-3 py-1.5 hover:bg-verde-escuro disabled:opacity-50"
+        className="btn-verde whitespace-nowrap px-3.5 py-2 text-sm disabled:opacity-50"
         onClick={async () => {
           setOcupado(true);
           setErro(null);

@@ -16,7 +16,8 @@ import { transformarGeoJSON, centroDe, TRANSFORM_ZERO, type Transform } from "@/
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PainelImovel from "@/components/map/PainelImovel";
-import { PainelCamadas, Legenda } from "@/components/map/UiMapa";
+import { PainelCamadas, Legenda, VIDRO, BotaoFechar } from "@/components/map/UiMapa";
+import { ArrowRight, ChevronLeft, ChevronRight, Flag, History, Layers, Lock, ScanSearch, Search } from "lucide-react";
 import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
 import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, ROTULO_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
@@ -88,37 +89,39 @@ const CAR_TIPO: Record<string, string> = {
 function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
   const area = Number(car.area_ha);
   return (
-    <div className="absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] cartao p-4 space-y-3 shadow-2xl">
+    <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-4 ${VIDRO}`}>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs text-texto-2">{CAR_TIPO[car.tipo ?? ""] ?? "Imóvel rural"} · CAR</p>
-          <p className="font-semibold text-texto">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">{CAR_TIPO[car.tipo ?? ""] ?? "Imóvel rural"} · CAR</p>
+          <p className="font-display text-xl font-bold leading-tight text-texto mt-1">
             {Number.isFinite(area) && area > 0 ? formatArea(area * 10_000, "rural") : "Área não informada"}
           </p>
         </div>
-        <button onClick={onFechar} aria-label="Fechar" className="text-texto-2 hover:text-texto text-lg leading-none">×</button>
+        <BotaoFechar onClick={onFechar} />
       </div>
-      <dl className="text-xs space-y-1">
-        <div className="flex justify-between gap-2"><dt className="text-texto-2">Município</dt><dd className="text-texto">{car.municipio ?? "—"}</dd></div>
-        <div className="flex justify-between gap-2"><dt className="text-texto-2">Situação no CAR</dt><dd className="text-texto text-right">{car.condicao ?? "—"}</dd></div>
-        <div>
+      <dl className="text-sm divide-y divide-linha rounded-xl border border-linha bg-superficie-2/60 px-3.5">
+        <div className="flex justify-between gap-2 py-2.5"><dt className="text-texto-2">Município</dt><dd className="text-texto font-medium">{car.municipio ?? "—"}</dd></div>
+        <div className="flex justify-between gap-2 py-2.5"><dt className="text-texto-2 shrink-0">Situação no CAR</dt><dd className="text-texto text-right">{car.condicao ?? "—"}</dd></div>
+        <div className="py-2.5">
           <dt className="text-texto-2">Código do CAR</dt>
-          <dd className="font-mono text-[11px] text-texto break-all">{car.cod}</dd>
+          <dd className="mt-0.5 font-mono text-[11px] text-texto break-all">{car.cod}</dd>
         </div>
       </dl>
-      <Link href={`/painel/novo?car=${encodeURIComponent(car.cod)}`} onClick={() => guardarCarPendente(car.cod)}
-        className="btn-ouro w-full text-center py-2.5 text-sm">
-        Esta área é minha — anunciar
-      </Link>
-      <Link href={`/consulta/car/${encodeURIComponent(car.cod)}`}
-        className="btn-contorno block w-full text-center py-2.5 text-sm">
-        Consultar informações
-      </Link>
+      <div className="space-y-2">
+        <Link href={`/painel/novo?car=${encodeURIComponent(car.cod)}`} onClick={() => guardarCarPendente(car.cod)}
+          className="btn-ouro flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+          Esta área é minha — anunciar <ArrowRight className="size-4" />
+        </Link>
+        <Link href={`/consulta/car/${encodeURIComponent(car.cod)}`}
+          className="btn-contorno flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+          <ScanSearch className="size-4" /> Consultar informações
+        </Link>
+      </div>
       <Link href={`/cartografia/solicitar?referencia=${encodeURIComponent("car:" + car.cod)}&tipo=divergencia`}
-        className="block text-center text-xs text-texto-2 hover:text-verde transition">
-        ⚑ O mapa está divergente desta área
+        className="flex items-center justify-center gap-1.5 text-xs text-texto-2 hover:text-verde transition">
+        <Flag className="size-3.5" /> O mapa está divergente desta área
       </Link>
-      <p className="text-[11px] text-texto-2 leading-snug">
+      <p className="text-[11px] text-texto-2 leading-relaxed border-t border-linha pt-3">
         A divisa vem pronta do CAR. Para publicar, a Arini confere a matrícula do imóvel — o CAR é
         autodeclarado e não comprova propriedade.
       </p>
@@ -839,7 +842,8 @@ export default function MapaRegional({
 
   const ativos = lista.filter((p) => p.status !== "vendido").length;
 
-  const chipBase = "chip px-4 py-2 text-xs whitespace-nowrap shadow-lg";
+  // chips sobre o satélite: vidro do tema com desfoque (o ativo continua verde pelo data-ativo do .chip)
+  const chipBase = "chip inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium whitespace-nowrap shadow-[0_8px_24px_-12px_rgb(0_0_0/0.7)] backdrop-blur-md";
 
   return (
     <div className="relative flex-1 min-h-0 flex bg-fundo">
@@ -848,18 +852,19 @@ export default function MapaRegional({
         "absolute lg:relative z-20 h-full bg-superficie border-r border-linha transition-all duration-300 flex flex-col " +
         (painelAberto ? "w-[85%] sm:w-[320px]" : "w-0 overflow-hidden")
       }>
-        <div className="p-3 space-y-2.5 border-b border-linha">
+        <div className="p-4 space-y-3 border-b border-linha">
           <div className="relative">
             <input value={busca} onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por imóvel, município ou código"
-              className="w-full rounded-xl border border-linha bg-superficie-2 pl-9 pr-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde transition" />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-2 text-sm">⌕</span>
+              className="w-full rounded-xl border border-linha-forte bg-superficie-2 pl-10 pr-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30" />
+            <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-texto-2" />
           </div>
 
           {municipioSugerido && (
             <button onClick={irParaMunicipio}
-              className="w-full text-left text-sm rounded-xl bg-verde/12 text-verde px-3 py-2 hover:bg-verde/20 transition">
-              Ir para <strong>{municipioSugerido.nome}</strong>
+              className="flex w-full items-center justify-between gap-2 text-left text-sm rounded-[10px] border border-verde/25 bg-verde/12 text-verde px-3.5 py-2.5 hover:bg-verde/20 transition">
+              <span>Ir para <strong>{municipioSugerido.nome}</strong></span>
+              <ArrowRight className="size-4 shrink-0" />
             </button>
           )}
 
@@ -873,12 +878,13 @@ export default function MapaRegional({
           </div>
 
           <select value={faixaPreco} onChange={(e) => setFaixaPreco(Number(e.target.value))}
-            className="w-full rounded-xl border border-linha bg-superficie-2 px-3 py-2 text-xs text-texto focus:outline-none focus:ring-2 focus:ring-verde">
+            className="w-full rounded-xl border border-linha-forte bg-superficie-2 px-3.5 py-2.5 text-sm text-texto transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30">
             {FAIXAS_PRECO.map((f, i) => <option key={f.label} value={i}>{f.label}</option>)}
           </select>
 
-          <p className="text-xs text-texto-2">
-            {ativos} {ativos === 1 ? "imóvel disponível" : "imóveis disponíveis"}
+          <p className="text-sm text-texto-2">
+            <span className="font-display text-base font-bold text-texto tabular-nums">{ativos}</span>{" "}
+            {ativos === 1 ? "imóvel disponível" : "imóveis disponíveis"}
           </p>
         </div>
 
@@ -889,19 +895,19 @@ export default function MapaRegional({
               onMouseEnter={() => destacar(p.id)}
               onMouseLeave={() => destacar(null)}
               className={
-                "w-full text-left flex gap-3 p-3 transition hover:bg-superficie-2 " +
-                (selecionado?.id === p.id ? "bg-superficie-2" : "")
+                "w-full text-left flex gap-3.5 px-4 py-3.5 transition hover:bg-superficie-2 border-l-2 " +
+                (selecionado?.id === p.id ? "bg-superficie-2 border-l-verde" : "border-l-transparent")
               }>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={p.capa ? mediaUrl(p.capa) : p.tipo === "rural" ? "/img/aerea-campo.jpg" : "/img/fazenda-gado.jpg"}
-                alt="" className="w-20 h-16 rounded-lg object-cover shrink-0" />
+                alt="" className="w-24 h-[72px] rounded-xl object-cover shrink-0" />
               <span className="min-w-0 flex-1">
-                <span className="block font-medium text-sm text-texto truncate">{p.titulo}</span>
-                <span className="block text-xs text-texto-2">
+                <span className="block font-display font-bold text-[0.95rem] leading-snug text-texto truncate">{p.titulo}</span>
+                <span className="block text-xs text-texto-2 mt-0.5">
                   {p.municipio ?? "—"} · {formatArea(p.area_m2, p.tipo)}
                 </span>
-                <span className="block text-sm font-semibold text-verde mt-0.5">
+                <span className="block text-[0.95rem] font-bold text-verde mt-1 tabular-nums">
                   {p.status === "vendido"
                     ? <s className="text-texto-2">{formatBRL(p.valor)}</s>
                     : formatBRL(p.valor)}
@@ -912,7 +918,10 @@ export default function MapaRegional({
             </button>
           ))}
           {!lista.length && pronto && (
-            <p className="p-6 text-sm text-texto-2 text-center">Nada encontrado com esses filtros.</p>
+            <div className="flex flex-col items-center px-6 py-12 text-center">
+              <span className="grid size-12 place-items-center rounded-2xl bg-verde/10 text-verde"><Search className="size-6" /></span>
+              <p className="mt-3 text-sm text-texto-2">Nada encontrado com esses filtros.</p>
+            </div>
           )}
         </div>
       </aside>
@@ -921,10 +930,10 @@ export default function MapaRegional({
         onClick={() => setPainelAberto(!painelAberto)}
         title={painelAberto ? "Recolher lista" : "Mostrar lista"}
         className={
-          "absolute z-30 top-1/2 -translate-y-1/2 bg-superficie btn-contorno shadow-lg rounded-r-lg w-6 h-14 flex items-center justify-center text-texto-2 hover:text-verde transition-all duration-300 " +
+          "absolute z-30 top-1/2 -translate-y-1/2 bg-superficie border border-l-0 border-linha-forte shadow-lg rounded-r-[10px] w-7 h-14 flex items-center justify-center text-texto-2 hover:text-verde transition-all duration-300 " +
           (painelAberto ? "left-[85%] sm:left-[320px]" : "left-0")
         }>
-        {painelAberto ? "‹" : "›"}
+        {painelAberto ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
       </button>
 
       {/* ---------- mapa ---------- */}
@@ -935,7 +944,7 @@ export default function MapaRegional({
         <div className="absolute top-3 left-3 right-14 flex gap-2 overflow-x-auto pb-1">
           <button onClick={() => setCamadasAbertas(!camadasAbertas)} data-ativo={camadasAbertas}
             className={chipBase}>
-            ☰ Camadas e Dados
+            <Layers className="size-3.5" /> Camadas e Dados
           </button>
           {(["satelite", "ruas"] as const).map((b) => (
             <button key={b} onClick={() => { setBase(b); void salvarPrefs({ mapa_base: b === "ruas" ? "mapa" : "satelite" }); }} data-ativo={base === b} className={chipBase}>
@@ -954,7 +963,7 @@ export default function MapaRegional({
             }}
             data-ativo={!!imagemAno || seletorAno} className={chipBase}
             title="Imagens de satélite de anos anteriores (Esri Wayback e Sentinel-2)">
-            {liberado("camadas_oficiais") ? "🕘" : "🔒"} {imagemAno ? `Imagem de ${imagemHistoricaPorId(imagemAno)?.ano}` : "Imagem do ano"}
+            {liberado("camadas_oficiais") ? <History className="size-3.5" /> : <Lock className="size-3.5" />} {imagemAno ? `Imagem de ${imagemHistoricaPorId(imagemAno)?.ano}` : "Imagem do ano"}
           </button>
           <button onClick={() => { setCarAtivo(!carAtivo); void salvarPrefs({ camada_car: !carAtivo }); }} data-ativo={carAtivo} className={chipBase}
             title="Imóveis rurais do Cadastro Ambiental Rural (SICAR)">
@@ -973,31 +982,35 @@ export default function MapaRegional({
               router.push(`/cartografia/solicitar${qs}`);
             }}
             className={chipBase} title="Informar um imóvel ausente ou uma divergência do mapa à equipe de cartografia">
-            ⚑ Não encontrei meu imóvel
+            <Flag className="size-3.5" /> Não encontrei meu imóvel
           </button>
         </div>
 
         {carAtivo && carAviso && !carSel && (
-          <p className="absolute top-14 left-3 right-14 sm:right-auto rounded-lg bg-superficie/90 border border-linha px-3 py-1.5 text-xs text-texto-2 shadow-lg">
+          <p className={`absolute top-14 left-3 right-14 sm:right-auto px-3.5 py-2 text-xs text-texto-3 ${VIDRO} rounded-[10px]!`}>
             {carAviso}
           </p>
         )}
 
         {avisoPlano && (
-          <div className="absolute top-14 left-3 z-10 cartao px-4 py-2.5 flex items-center gap-3 text-sm shadow-xl anima-subir max-w-[calc(100%-1.5rem)]">
-            <span className="text-texto-2">{avisoPlano}</span>
-            <Link href={logado ? "/planos" : "/entrar"} className="text-verde font-medium whitespace-nowrap">
-              {logado ? "Ver planos ›" : "Entrar ›"}
+          <div className={`absolute top-14 left-3 z-10 px-4 py-3 flex items-center gap-3 text-sm max-w-[calc(100%-1.5rem)] ${VIDRO}`}>
+            <Lock className="size-4 shrink-0 text-ouro" />
+            <span className="text-texto-3">{avisoPlano}</span>
+            <Link href={logado ? "/planos" : "/entrar"} className="inline-flex items-center gap-1 text-verde font-semibold whitespace-nowrap hover:underline">
+              {logado ? "Ver planos" : "Entrar"} <ArrowRight className="size-3.5" />
             </Link>
-            <button onClick={() => setAvisoPlano("")} aria-label="Fechar" className="text-texto-2 hover:text-texto">✕</button>
+            <BotaoFechar onClick={() => setAvisoPlano("")} />
           </div>
         )}
 
         {seletorAno && (
-          <div className="absolute top-14 left-3 z-20 w-72 cartao p-3 space-y-2 shadow-2xl max-h-[70%] overflow-y-auto anima-subir">
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-texto text-sm">Imagem do ano</p>
-              <button onClick={() => setSeletorAno(false)} aria-label="Fechar" className="text-texto-2 hover:text-texto">✕</button>
+          <div className={`absolute top-14 left-3 z-20 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-3.5 max-h-[70%] overflow-y-auto ${VIDRO}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-9 place-items-center rounded-xl bg-verde/12 text-verde"><History className="size-[18px]" /></span>
+                <p className="font-display text-lg font-bold text-texto">Imagem do ano</p>
+              </div>
+              <BotaoFechar onClick={() => setSeletorAno(false)} />
             </div>
             <select value={imagemAno ?? ""} aria-label="Ano da imagem de satélite"
               onChange={(e) => {
@@ -1006,7 +1019,7 @@ export default function MapaRegional({
                 if (v) setBase("satelite");
                 else setComparar(false);
               }}
-              className="w-full rounded-xl border border-linha bg-superficie-2 px-3 py-2 text-xs text-texto focus:outline-none focus:ring-2 focus:ring-verde">
+              className="w-full rounded-xl border border-linha-forte bg-superficie-2 px-3.5 py-2.5 text-sm text-texto transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30">
               <option value="">Atual (padrão)</option>
               <optgroup label="Alta resolução — Esri Wayback (~0,5 m)">
                 {IMAGENS_HISTORICAS.filter((i) => i.familia === "wayback").map((i) => (
@@ -1019,12 +1032,12 @@ export default function MapaRegional({
                 ))}
               </optgroup>
             </select>
-            <label className={"flex items-center gap-2 text-xs " + (imagemAno ? "text-texto" : "text-texto-2 opacity-60")}>
+            <label className={"flex items-center gap-2.5 text-sm " + (imagemAno ? "text-texto" : "text-texto-2 opacity-60")}>
               <input type="checkbox" checked={comparar} disabled={!imagemAno}
-                onChange={(e) => setComparar(e.target.checked)} className="accent-verde" />
+                onChange={(e) => setComparar(e.target.checked)} className="size-4 accent-verde" />
               Comparar com a imagem atual (cortina)
             </label>
-            <p className="text-[11px] text-texto-2 leading-snug">
+            <p className="text-xs text-texto-2 leading-relaxed border-t border-linha pt-3">
               Wayback mostra o mosaico da Esri como estava publicado no fim de cada ano — a foto de um lugar
               pode ser anterior. Sentinel-2 é um mosaico anual sem nuvens, bom para vegetação e mancha urbana,
               não para lote. A fonte aparece no canto do mapa.

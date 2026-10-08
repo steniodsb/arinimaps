@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Urbanist } from "next/font/google";
 import { ArrowRight, Database, Grid3x3, House, MapPin, MapPinned, Ruler } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import VitrineConsultas, { type Consulta } from "@/components/home/VitrineConsultas";
@@ -33,7 +32,6 @@ import { formatBRL, formatArea } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 // fonte de display só dos títulos da landing (o resto do sistema segue em Geist)
-const urbanist = Urbanist({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-display", display: "swap" });
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
@@ -208,7 +206,7 @@ export default async function Home() {
   ].filter(Boolean) as { valor: string; rotulo: string }[];
 
   return (
-    <div className={`${urbanist.variable} flex min-h-screen flex-col bg-fundo text-texto`}>
+    <div className={`flex min-h-screen flex-col bg-fundo text-texto`}>
       <RolagemSuave />
       <SpotlightTracker />
       <SiteHeader sobreHero />

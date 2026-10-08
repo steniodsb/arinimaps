@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Move, Save, Undo2, X } from "lucide-react";
 import type { Map as MLMap, GeoJSONSource, MapMouseEvent } from "maplibre-gl";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { SATELITE } from "@/lib/map/config";
@@ -472,18 +473,19 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
     return atuais.length !== salvo.ocultos.length || atuais.some((n, i) => n !== salvo.ocultos[i]);
   }, [salvo, t, ocultos, opacidade]);
 
-  const btn = "w-11 h-11 rounded-lg bg-superficie border border-linha hover:bg-verde hover:text-white transition text-lg font-semibold";
+  const btn = "grid w-11 h-11 place-items-center rounded-xl bg-superficie border border-linha-forte hover:bg-verde hover:border-verde hover:text-white transition-colors text-base font-semibold";
   const chip = (ativo: boolean) =>
-    `rounded-lg px-3 py-1.5 text-sm border transition ${ativo ? "bg-verde text-white border-verde" : "border-linha hover:bg-superficie-2"}`;
+    `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${ativo ? "bg-verde text-white border-verde" : "border-linha-forte text-texto-2 hover:text-texto hover:bg-superficie-2"}`;
   const deslocamentoTotal = Math.hypot(t.offsetLesteM, t.offsetNorteM);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onFechar}>
-      <div className="bg-superficie rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 py-3 border-b border-linha flex items-center justify-between gap-4">
-          <div>
-            <p className="font-semibold text-texto">Calibrar: {camada.nome}</p>
-            <p className="text-xs text-texto-2">
+      <div className="bg-superficie border border-linha rounded-[1.25rem] w-full max-w-6xl max-h-[95vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-linha flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="lp-eyebrow text-xs">Calibrar sobre o satélite</p>
+            <p className="lp-display mt-1 text-xl text-texto">{camada.nome}</p>
+            <p className="mt-1 text-sm leading-relaxed text-texto-2">
               {modo === "mover" && "Arraste a planta com o mouse até bater no satélite. Segure Shift enquanto arrasta para andar devagar; setas do teclado para o ajuste fino (Shift = 1 m). Ctrl+Z desfaz."}
               {modo === "navegar" && "Arraste para navegar no mapa. Volte para “mover planta” quando quiser ajustar."}
               {modo === "pontos" && (pendente
@@ -491,7 +493,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                 : "Clique num ponto da planta (um cruzamento, um canto de quadra).")}
             </p>
           </div>
-          <button onClick={onFechar} className="w-9 h-9 rounded-full hover:bg-superficie-2 text-lg shrink-0">✕</button>
+          <button onClick={onFechar} aria-label="Fechar" className="grid w-9 h-9 place-items-center rounded-lg text-texto-2 hover:bg-superficie-2 hover:text-texto shrink-0"><X className="size-5" /></button>
         </div>
 
         {/*
@@ -506,18 +508,18 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           escolher a ferramenta, mexer, desfazer se errou, gravar quando bateu.
           `sticky top-0` mantém a barra à vista durante a rolagem do modal.
         */}
-        <div className="sticky top-0 z-10 bg-superficie/95 backdrop-blur border-b border-linha px-5 py-2.5 space-y-2">
+        <div className="sticky top-0 z-10 bg-superficie/95 backdrop-blur border-b border-linha px-6 py-3 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <button className={chip(modo === "mover")} onClick={() => setModo("mover")}>✥ Mover planta</button>
-            <button className={chip(modo === "navegar")} onClick={() => setModo("navegar")}>🖐 Navegar</button>
-            <button className={chip(modo === "pontos")} onClick={() => setModo("pontos")}>◎ Pontos de controle</button>
+            <button className={chip(modo === "mover")} onClick={() => setModo("mover")}><Move className="size-4" /> Mover planta</button>
+            <button className={chip(modo === "navegar")} onClick={() => setModo("navegar")}><Hand className="size-4" /> Navegar</button>
+            <button className={chip(modo === "pontos")} onClick={() => setModo("pontos")}><Crosshair className="size-4" /> Pontos de controle</button>
 
             <span className="w-px self-stretch bg-linha mx-1" aria-hidden />
 
             <button onClick={desfazer} disabled={!historico.length}
-              className="rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
               title="Volta o último movimento (Ctrl+Z)">
-              ↩ Desfazer
+              <Undo2 className="size-4" /> Desfazer
             </button>
             <button onClick={() => aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 })}
               disabled={ehIgualAoSalvo(TRANSFORM_ZERO, t)}
@@ -527,20 +529,21 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
             </button>
 
             <button onClick={salvar} disabled={salvando || !haMudancaNaoSalva}
-              className="btn-ouro px-5 py-1.5 text-sm disabled:opacity-60 ml-auto">
+              className="btn-ouro inline-flex items-center gap-1.5 px-5 py-2 text-sm disabled:opacity-60 ml-auto">
+              <Save className="size-4" />
               {salvando ? "Salvando…" : "Salvar calibração"}
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-[13px]">
             {/* a pendência vem antes do "salvo com sucesso": mexer na planta
                 depois de salvar não pode continuar mostrando confirmação */}
             {haMudancaNaoSalva
-              ? <span className="text-ouro">● Alterações não salvas</span>
+              ? <span className="inline-flex items-center gap-1.5 font-semibold text-ouro"><span className="size-2 rounded-full bg-ouro" aria-hidden /> Alterações não salvas</span>
               : msg
                 ? <span className="text-verde">{msg}</span>
                 : <span className="text-texto-2">Nada para salvar — a planta está como está gravada.</span>}
-            <span className="ml-auto text-texto-2">
+            <span className="ml-auto text-texto-2 tabular-nums">
               {carregando ? "carregando a planta…" : `${fmt(linhasVisiveis)} de ${fmt(totalLinhas)} linhas no mapa`}
             </span>
           </div>
@@ -549,7 +552,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         <div ref={containerRef} style={{ height: "50vh", minHeight: 340, position: "relative" }} />
 
         <div className="border-t border-linha">
-          <div className="flex gap-1 px-5 pt-3">
+          <div className="flex gap-1.5 px-6 pt-4">
             <button className={chip(aba === "posicao")} onClick={() => setAba("posicao")}>Posição</button>
             <button className={chip(aba === "camadas")} onClick={() => setAba("camadas")}>
               Camadas do CAD {ocultos.size > 0 && `(${ocultos.size} ocultas)`}
@@ -557,23 +560,23 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           </div>
 
           {aba === "posicao" && (
-            <div className="p-5 flex flex-wrap items-start gap-6">
+            <div className="p-6 flex flex-wrap items-start gap-8">
               <div className="grid grid-cols-3 gap-1.5 w-fit">
                 <span />
-                <button className={btn} onClick={() => mover(0, passo)} title="Norte">↑</button>
+                <button className={btn} onClick={() => mover(0, passo)} title="Norte" aria-label="Norte"><ArrowUp className="size-5" /></button>
                 <span />
-                <button className={btn} onClick={() => mover(-passo, 0)} title="Oeste">←</button>
+                <button className={btn} onClick={() => mover(-passo, 0)} title="Oeste" aria-label="Oeste"><ArrowLeft className="size-5" /></button>
                 <button className={btn + " text-xs"} title="Zerar tudo"
                   onClick={() => aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 })}>0</button>
-                <button className={btn} onClick={() => mover(passo, 0)} title="Leste">→</button>
+                <button className={btn} onClick={() => mover(passo, 0)} title="Leste" aria-label="Leste"><ArrowRight className="size-5" /></button>
                 <span />
-                <button className={btn} onClick={() => mover(0, -passo)} title="Sul">↓</button>
+                <button className={btn} onClick={() => mover(0, -passo)} title="Sul" aria-label="Sul"><ArrowDown className="size-5" /></button>
                 <span />
               </div>
 
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <p className="text-xs text-texto-2">Passo do ajuste</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-texto-2">Passo do ajuste</p>
                   <div className="flex gap-1.5">
                     {[1, 5, 10, 50].map((p) => (
                       <button key={p} onClick={() => setPasso(p)} className={chip(passo === p)}>{p} m</button>
@@ -581,7 +584,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <p className="text-xs text-texto-2">Ponto de partida por datum da planta</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-texto-2">Ponto de partida por datum da planta</p>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(DESLOCAMENTO_DATUM).map(([k, d]) => (
                       <button key={k} onClick={() => aplicarDatum(k)}
@@ -595,17 +598,17 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
 
               <div className="space-y-3 min-w-56">
                 <label className="block space-y-1">
-                  <span className="text-xs text-texto-2">Giro: <strong className="text-texto">{t.rotacaoGraus.toFixed(3)}°</strong></span>
+                  <span className="text-sm text-texto-2">Giro: <strong className="text-texto">{t.rotacaoGraus.toFixed(3)}°</strong></span>
                   <input type="range" min={-2} max={2} step={0.001} value={t.rotacaoGraus} className="w-full"
                     onChange={(e) => aplicar({ ...t, rotacaoGraus: Number(e.target.value) }, false)} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-texto-2">Escala: <strong className="text-texto">{(t.escala * 100).toFixed(2)}%</strong></span>
+                  <span className="text-sm text-texto-2">Escala: <strong className="text-texto">{(t.escala * 100).toFixed(2)}%</strong></span>
                   <input type="range" min={0.98} max={1.02} step={0.0001} value={t.escala} className="w-full"
                     onChange={(e) => aplicar({ ...t, escala: Number(e.target.value) }, false)} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs text-texto-2">Opacidade da planta: <strong className="text-texto">{Math.round(opacidade * 100)}%</strong></span>
+                  <span className="text-sm text-texto-2">Opacidade da planta: <strong className="text-texto">{Math.round(opacidade * 100)}%</strong></span>
                   <input type="range" min={0.15} max={1} step={0.05} value={opacidade} className="w-full"
                     onChange={(e) => {
                       const v = Number(e.target.value);
@@ -616,8 +619,8 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
               </div>
 
               <div className="text-sm tabular-nums space-y-1">
-                <p className="text-xs text-texto-2">Ajuste aplicado</p>
-                <p className="font-medium">
+                <p className="text-xs font-semibold uppercase tracking-wider text-texto-2">Ajuste aplicado</p>
+                <p className="lp-display text-lg text-texto">
                   leste {t.offsetLesteM.toFixed(1)} m · norte {t.offsetNorteM.toFixed(1)} m
                 </p>
                 <p className="text-xs text-texto-2">
@@ -642,9 +645,9 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
               </div>
 
               {modo === "pontos" && (
-                <div className="w-full rounded-xl border border-linha bg-superficie-2 p-4 text-sm space-y-2">
-                  <p className="font-medium text-texto">Como calibrar por pontos de controle</p>
-                  <ol className="list-decimal ml-5 text-texto-2 space-y-0.5 text-[13px]">
+                <div className="w-full rounded-2xl border border-linha bg-superficie-2 p-5 text-sm space-y-3">
+                  <p className="font-semibold text-texto">Como calibrar por pontos de controle</p>
+                  <ol className="list-decimal ml-5 text-texto-2 space-y-1 text-sm leading-relaxed">
                     <li>Clique num cruzamento bem visível <strong>na planta</strong> (linha amarela).</li>
                     <li>Clique no <strong>mesmo cruzamento no satélite</strong>. Isso fecha um par.</li>
                     <li>Repita num ponto distante — o segundo par é o que corrige giro e escala.</li>
@@ -660,7 +663,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           )}
 
           {aba === "camadas" && (
-            <div className="p-5 space-y-3">
+            <div className="p-6 space-y-4">
               {layersCad.length === 0 ? (
                 <p className="text-sm text-texto-2">
                   Esta planta foi publicada antes do diagnóstico por camada. Reenvie o DXF para poder
@@ -700,7 +703,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           )}
         </div>
 
-        {erro && <div className="px-5 pb-3"><AvisoErro erro={erro} aoFechar={() => setErro(null)} /></div>}
+        {erro && <div className="px-6 pb-4"><AvisoErro erro={erro} aoFechar={() => setErro(null)} /></div>}
 
       </div>
     </div>

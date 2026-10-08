@@ -4,6 +4,8 @@ import GestaoUsuarios from "./GestaoUsuarios";
 import PlanoConta, { type PlanoOpcao } from "./PlanoConta";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { PAPEL_LABEL, PAPEIS_EQUIPE } from "@/lib/perfis";
+import { CabecalhoPagina, Secao, Vazio } from "@/components/ui/Pagina";
+import { UserRound } from "lucide-react";
 
 /** plan_valido_ate já passou? (fora do componente: o linter do React não quer Date.now() em render) */
 const estaVencido = (d: string | null) => !!d && new Date(d).getTime() < Date.now();
@@ -26,13 +28,13 @@ export default async function AdminUsuarios() {
   const ehDiretoria = user?.role === "admin_central";
 
   return (
-    <div className="space-y-7 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Usuários e acessos</h1>
-        <p className="text-sm text-texto-2">
-          A equipe da Arini opera o sistema por setor; proprietários, parceiros e compradores usam os portais.
-        </p>
-      </div>
+    <div className="mx-auto max-w-[1280px] space-y-12">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Central · Diretoria"
+        titulo="Usuários e acessos"
+        subtitulo="A equipe da Arini opera o sistema por setor; proprietários, parceiros e compradores usam os portais."
+      />
 
       <GestaoUsuarios
         equipe={equipe.map((p) => ({
@@ -44,13 +46,16 @@ export default async function AdminUsuarios() {
         ehDiretoria={ehDiretoria}
       />
 
-      <section className="space-y-2">
-        <h2 className="font-semibold text-texto">Contas externas ({externos.length})</h2>
-        <p className="text-sm text-texto-2">
-          Aprovação de proprietários e parceiros acontece em <strong>Cadastros</strong>. O nicho e o plano de
-          cada conta são editados aqui; o que cada plano libera, em <strong>Planos e nichos</strong>.
-        </p>
-        <div className="cartao divide-y divide-linha max-h-[32rem] overflow-y-auto">
+      <Secao
+        eyebrow="Portais"
+        titulo={`Contas externas (${externos.length})`}
+        subtitulo={<>
+          Aprovação de proprietários e parceiros acontece em <strong className="text-texto">Cadastros</strong>. O nicho e o plano de
+          cada conta são editados aqui; o que cada plano libera, em <strong className="text-texto">Planos e nichos</strong>.
+        </>}
+      >
+        {externos.length ? (
+        <div className="cartao divide-y divide-linha max-h-[36rem] overflow-y-auto">
           {externos.map((p) => (
             <PlanoConta key={p.user_id}
               conta={{
@@ -64,9 +69,11 @@ export default async function AdminUsuarios() {
               papelLabel={PAPEL_LABEL[p.role] ?? p.role}
             />
           ))}
-          {!externos.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma conta externa ainda.</p>}
         </div>
-      </section>
+        ) : (
+          <Vazio icone={UserRound} titulo="Nenhuma conta externa ainda." />
+        )}
+      </Secao>
     </div>
   );
 }

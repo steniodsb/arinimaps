@@ -6,10 +6,13 @@ import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import {
   COTAS, GRUPO_RECURSO_LABEL, NICHOS, RECURSOS, type Plano, type Recurso,
 } from "@/lib/planos";
+import { AvisoErro } from "@/components/ui/Aviso";
+import { CAMPO, Etiqueta, ROTULO, Vazio } from "@/components/ui/Pagina";
+import { ChevronDown, Layers, Plus, Save, Star, Users, X } from "lucide-react";
 
 const GRUPOS = Object.keys(GRUPO_RECURSO_LABEL) as Recurso["grupo"][];
-const input = "w-full rounded-lg cartao px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-verde transition disabled:opacity-60";
-const rotulo = "block text-xs font-medium text-texto mb-1";
+const input = CAMPO + " disabled:opacity-60";
+const rotulo = ROTULO;
 
 type Form = {
   id: string; nome: string; descricao: string; preco_mensal: string; periodicidade: string; escopo: string;
@@ -42,13 +45,7 @@ function corpoDe(f: Form) {
 }
 
 function Erro({ erro }: { erro: ErroApi }) {
-  return (
-    <div className="rounded-lg border border-critico/40 bg-critico/10 p-3 text-sm space-y-0.5">
-      <p className="text-critico font-medium">{erro.mensagem}</p>
-      {erro.motivo && <p className="text-xs text-texto-2">{erro.motivo}</p>}
-      {erro.solucao && <p className="text-xs text-texto">{erro.solucao}</p>}
-    </div>
-  );
+  return <AvisoErro erro={erro} />;
 }
 
 /** Formulário de um plano (existente ou novo). */
@@ -83,37 +80,40 @@ function FormPlano({
   }
 
   return (
-    <div className={"cartao " + (f.ativo ? "" : "opacity-80")}>
+    <div className={"cartao overflow-hidden " + (f.ativo ? "" : "opacity-80")}>
       <button type="button" onClick={() => setAberto(!aberto)}
-        className="w-full px-5 py-4 flex items-center gap-3 flex-wrap text-left">
+        className="w-full px-6 py-5 flex items-center gap-4 flex-wrap text-left transition-colors hover:bg-superficie-2/50">
+        <span className={"hidden sm:grid size-11 shrink-0 place-items-center rounded-xl " + (f.destaque ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde")}>
+          {novo ? <Plus className="size-5" /> : <Layers className="size-5" />}
+        </span>
         <div className="flex-1 min-w-48">
-          <p className="font-medium text-texto">
+          <p className="lp-display text-lg text-texto">
             {novo ? "Novo plano" : f.nome || f.id}
-            {!novo && <span className="ml-2 font-mono text-[11px] text-texto-2">{f.id}</span>}
+            {!novo && <span className="ml-2 font-mono text-xs font-normal text-texto-2">{f.id}</span>}
           </p>
-          {!novo && <p className="text-xs text-texto-2">{f.recursos.length} recurso(s) · ordem {f.ordem}</p>}
+          {!novo && <p className="mt-0.5 text-sm text-texto-2 tabular-nums">{f.recursos.length} recurso(s) · ordem {f.ordem}</p>}
         </div>
         {!novo && (
           <>
-            {f.destaque && <span className="text-[10px] uppercase tracking-wide rounded-full bg-ouro/15 text-ouro-escuro px-2.5 py-1">destaque</span>}
-            <span className={"text-xs rounded-full px-3 py-1 " + (f.ativo ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2")}>
+            {f.destaque && <Etiqueta tom="ouro"><Star className="size-3.5" /> destaque</Etiqueta>}
+            <Etiqueta tom={f.ativo ? "verde" : "neutro"}>
               {f.ativo ? "ativo" : "inativo"}
-            </span>
-            <span className="text-xs rounded-full bg-superficie-2 px-3 py-1 tabular-nums">{contas} conta(s)</span>
+            </Etiqueta>
+            <Etiqueta tom="neutro" className="tabular-nums"><Users className="size-3.5" /> {contas} conta(s)</Etiqueta>
           </>
         )}
-        <span className="text-texto-2">{aberto ? "▴" : "▾"}</span>
+        <ChevronDown className={"size-5 text-texto-2 transition-transform " + (aberto ? "rotate-180" : "")} aria-hidden />
       </button>
 
       {aberto && (
-        <div className="px-5 pb-5 space-y-5 border-t border-linha pt-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="px-6 pb-6 space-y-7 border-t border-linha pt-6">
+          <div className="grid gap-5 sm:grid-cols-2">
             {novo && (
               <div>
                 <label className={rotulo} htmlFor={`id-${f.id || "novo"}`}>Identificador (slug) *</label>
                 <input id={`id-${f.id || "novo"}`} className={input + " font-mono"} placeholder="ex.: consulta_avancada"
                   value={f.id} onChange={(e) => mudar({ id: e.target.value.toLowerCase() })} />
-                <p className="text-xs text-texto-2 mt-1">Letras minúsculas, números e _; não muda depois.</p>
+                <p className="text-sm text-texto-2 mt-1.5">Letras minúsculas, números e _; não muda depois.</p>
               </div>
             )}
             <div>
@@ -130,7 +130,7 @@ function FormPlano({
               <label className={rotulo} htmlFor={`preco-${f.id}`}>Preço (R$)</label>
               <input id={`preco-${f.id}`} className={input} inputMode="decimal" disabled={!ehDiretoria}
                 value={f.preco_mensal} onChange={(e) => mudar({ preco_mensal: e.target.value })} />
-              <p className="text-xs text-texto-2 mt-1">Zero com periodicidade paga = “sob consulta” na página pública.</p>
+              <p className="text-sm text-texto-2 mt-1.5">Zero com periodicidade paga = “sob consulta” na página pública.</p>
             </div>
             <div>
               <label className={rotulo} htmlFor={`per-${f.id}`}>Periodicidade</label>
@@ -154,12 +154,12 @@ function FormPlano({
               <input id={`ordem-${f.id}`} className={input} inputMode="numeric" disabled={!ehDiretoria}
                 value={f.ordem} onChange={(e) => mudar({ ordem: e.target.value })} />
             </div>
-            <div className="flex items-center gap-5 sm:col-span-2">
-              <label className="flex items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:col-span-2">
+              <label className="flex items-center gap-2 text-[0.95rem] text-texto">
                 <input type="checkbox" checked={f.destaque} disabled={!ehDiretoria} onChange={(e) => mudar({ destaque: e.target.checked })} />
                 Em destaque
               </label>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2 text-[0.95rem] text-texto">
                 <input type="checkbox" checked={f.ativo} disabled={!ehDiretoria} onChange={(e) => mudar({ ativo: e.target.checked })} />
                 Ativo (aparece na página e pode ser atribuído)
               </label>
@@ -173,8 +173,8 @@ function FormPlano({
                 const marcado = f.nichos_padrao.includes(n.id);
                 return (
                   <label key={n.id} title={n.descricao}
-                    className={"rounded-full border px-3 py-1 text-xs cursor-pointer transition " +
-                      (marcado ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2")}>
+                    className={"rounded-lg border px-3 py-1.5 text-sm font-semibold cursor-pointer transition-colors " +
+                      (marcado ? "border-verde bg-verde/10 text-verde" : "border-linha-forte text-texto-2 hover:text-texto")}>
                     <input type="checkbox" className="hidden" checked={marcado} disabled={!ehDiretoria}
                       onChange={() => alternar("nichos_padrao", n.id)} />
                     {n.nome}{n.reservado ? " ·" : ""}
@@ -182,23 +182,23 @@ function FormPlano({
                 );
               })}
             </div>
-            <p className="text-xs text-texto-2 mt-1">Se dois planos ativos marcam o mesmo nicho, vale o de menor ordem.</p>
+            <p className="text-sm text-texto-2 mt-2">Se dois planos ativos marcam o mesmo nicho, vale o de menor ordem.</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className={rotulo}>Recursos liberados</p>
             {GRUPOS.map((g) => (
-              <div key={g}>
-                <p className="text-[10px] uppercase tracking-wide text-texto-2 font-semibold mb-1">{GRUPO_RECURSO_LABEL[g]}</p>
-                <div className="grid gap-1.5 sm:grid-cols-2">
+              <div key={g} className="rounded-xl border border-linha p-4">
+                <p className="text-[11px] uppercase tracking-wider text-texto-2 font-semibold mb-3">{GRUPO_RECURSO_LABEL[g]}</p>
+                <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
                   {RECURSOS.filter((r) => r.grupo === g).map((r) => (
-                    <label key={r.id} className="flex items-start gap-2 text-sm cursor-pointer" title={r.descricao}>
+                    <label key={r.id} className="flex items-start gap-2.5 text-[0.95rem] text-texto cursor-pointer" title={r.descricao}>
                       <input type="checkbox" className="mt-1" checked={f.recursos.includes(r.id)} disabled={!ehDiretoria}
                         onChange={() => alternar("recursos", r.id)} />
                       <span>
                         {r.nome}
-                        {r.reservado && <span className="ml-1.5 text-[10px] uppercase tracking-wide text-ouro-escuro">reservado</span>}
-                        <span className="block text-xs text-texto-2">{r.descricao}</span>
+                        {r.reservado && <Etiqueta tom="ouro" className="ml-1.5 !py-0.5">reservado</Etiqueta>}
+                        <span className="mt-0.5 block text-sm text-texto-2">{r.descricao}</span>
                       </span>
                     </label>
                   ))}
@@ -209,28 +209,29 @@ function FormPlano({
 
           <div>
             <p className={rotulo}>Limites (vazio = sem limite)</p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {COTAS.map((c) => (
                 <div key={c.id}>
-                  <label className="block text-xs text-texto-2 mb-1" htmlFor={`cota-${f.id}-${c.id}`}>{c.nome}</label>
+                  <label className="mb-1.5 block text-sm text-texto-2" htmlFor={`cota-${f.id}-${c.id}`}>{c.nome}</label>
                   <input id={`cota-${f.id}-${c.id}`} className={input} inputMode="numeric" placeholder="sem limite" disabled={!ehDiretoria}
                     value={f.cotas[c.id] ?? ""} onChange={(e) => mudar({ cotas: { ...f.cotas, [c.id]: e.target.value } })} />
-                  <p className="text-[11px] text-texto-2 mt-1">{c.ajuda}</p>
+                  <p className="text-xs text-texto-2 mt-1.5">{c.ajuda}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {erro && <Erro erro={erro} />}
-          {msg && <p className="text-sm text-verde">{msg}</p>}
+          {msg && <p className="text-sm font-semibold text-verde">{msg}</p>}
 
           {ehDiretoria && (
-            <div className="flex items-center gap-3 flex-wrap">
-              <button onClick={salvar} disabled={salvando || !sujo} className="btn-ouro px-6 py-2.5 disabled:opacity-45">
+            <div className="flex items-center gap-3 flex-wrap border-t border-linha pt-5">
+              <button onClick={salvar} disabled={salvando || !sujo} className="btn-ouro inline-flex items-center gap-2 px-6 py-3 disabled:opacity-45">
+                <Save className="size-4" />
                 {salvando ? "Salvando…" : novo ? "Criar plano" : sujo ? "Salvar alterações" : "Nada alterado"}
               </button>
               {aoCancelar && (
-                <button type="button" onClick={aoCancelar} className="rounded-lg btn-contorno px-4 py-2 text-sm">Cancelar</button>
+                <button type="button" onClick={aoCancelar} className="btn-contorno px-5 py-3 text-sm">Cancelar</button>
               )}
             </div>
           )}
@@ -253,19 +254,23 @@ export default function PlanosAdmin({
   }
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="font-semibold text-texto">Planos ({planos.length})</h2>
+    <section className="space-y-5">
+      <div className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p className="lp-eyebrow text-xs">Catálogo</p>
+          <h2 className="lp-display mt-2 text-2xl md:text-[1.75rem] text-texto">Planos ({planos.length})</h2>
+          {!ehDiretoria && <p className="mt-1.5 text-base text-texto-2">Só a diretoria altera planos; aqui você consulta.</p>}
+        </div>
         {ehDiretoria && (
           <button onClick={() => setCriando(!criando)}
-            className="rounded-lg btn-contorno px-4 py-2 text-sm font-medium hover:bg-superficie-2 transition">
-            {criando ? "Cancelar" : "+ Novo plano"}
+            className={(criando ? "btn-contorno" : "btn-verde") + " inline-flex items-center gap-2 px-5 py-3 text-sm"}>
+            {criando ? <X className="size-4" /> : <Plus className="size-4" />}
+            {criando ? "Cancelar" : "Novo plano"}
           </button>
         )}
       </div>
-      {!ehDiretoria && <p className="text-xs text-texto-2">Só a diretoria altera planos; aqui você consulta.</p>}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {criando && (
           <FormPlano key="novo" inicial={NOVO} novo contas={0} ehDiretoria={ehDiretoria}
             aoSalvar={async (f) => { await salvar("POST", f); setCriando(false); }}
@@ -277,7 +282,7 @@ export default function PlanosAdmin({
             aoSalvar={(f) => salvar("PATCH", f)} />
         ))}
         {!planos.length && !criando && (
-          <p className="cartao px-4 py-6 text-center text-sm text-texto-2">Nenhum plano cadastrado.</p>
+          <Vazio icone={Layers} titulo="Nenhum plano cadastrado." />
         )}
       </div>
     </section>

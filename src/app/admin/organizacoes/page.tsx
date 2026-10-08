@@ -2,6 +2,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { Indicadores } from "@/components/admin/Painel";
 import Organizacoes, { type OrgLinha } from "./Organizacoes";
+import { CircleCheck, Landmark, MailPlus, Users } from "lucide-react";
+import { CabecalhoPagina } from "@/components/ui/Pagina";
 
 export const dynamic = "force-dynamic";
 
@@ -39,20 +41,17 @@ export default async function AdminOrganizacoes() {
   const pendentes = (membros ?? []).filter((m) => m.status === "pendente").length;
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div>
-        <p className="text-[10px] tracking-[0.22em] uppercase text-ouro">Comercial</p>
-        <h1 className="text-2xl font-semibold text-texto">Organizações</h1>
-        <p className="text-sm text-texto-2 max-w-2xl">
+    <div className="space-y-8 max-w-5xl">
+      <CabecalhoPagina eyebrow="Comercial" titulo="Organizações"
+        subtitulo={<>
           Várias contas sob o mesmo plano: imobiliária com corretores, empresa, holding, ente público ou franquia.
           Quem é membro usa o plano da organização enquanto o plano pessoal for o padrão do nicho.
-        </p>
-      </div>
+        </>} />
       <Indicadores itens={[
-        { rotulo: "Organizações", valor: linhas.length },
-        { rotulo: "Ativas", valor: linhas.filter((o) => o.ativo).length },
-        { rotulo: "Membros ativos", valor: ativos },
-        { rotulo: "Convites pendentes", valor: pendentes, destaque: pendentes > 0 },
+        { rotulo: "Organizações", icone: Landmark, valor: linhas.length },
+        { rotulo: "Ativas", icone: CircleCheck, valor: linhas.filter((o) => o.ativo).length },
+        { rotulo: "Membros ativos", icone: Users, valor: ativos },
+        { rotulo: "Convites pendentes", icone: MailPlus, valor: pendentes, destaque: pendentes > 0 },
       ]} />
       <Organizacoes orgs={linhas} planos={planos ?? []} regioes={regioes ?? []} />
     </div>

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, Lock } from "lucide-react";
+import { CAMPO } from "@/components/ui/Pagina";
 
-const INPUT = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
+const INPUT = CAMPO;
 
 export default function FormAcesso() {
   const [senha, setSenha] = useState("");
@@ -29,19 +31,22 @@ export default function FormAcesso() {
   }
 
   return (
-    <form onSubmit={entrar} className="w-full max-w-sm cartao p-6 space-y-4">
-      <div className="space-y-1">
-        <h1 className="text-lg font-semibold text-texto">Acesso restrito</h1>
-        <p className="text-sm text-texto-2">
+    <form onSubmit={entrar} className="space-y-5">
+      <div>
+        <span className="grid size-12 place-items-center rounded-2xl bg-verde/12 text-verde">
+          <Lock className="size-6" />
+        </span>
+        <h1 className="lp-display mt-5 text-3xl text-texto md:text-[2.25rem]">Acesso restrito</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-texto-2">
           O Arini Imóveis Brasil está em fase de testes. Digite a senha de acesso para continuar.
         </p>
       </div>
       <input type="password" autoFocus required autoComplete="current-password"
         aria-label="Senha de acesso" placeholder="Senha de acesso" className={INPUT}
         value={senha} onChange={(e) => setSenha(e.target.value)} />
-      {erro && <p className="text-sm text-critico" role="alert">{erro}</p>}
-      <button type="submit" disabled={ocupado} className="btn-verde w-full text-center">
-        {ocupado ? "Conferindo…" : "Entrar"}
+      {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico" role="alert">{erro}</p>}
+      <button type="submit" disabled={ocupado} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
+        {ocupado ? "Conferindo…" : <>Entrar <ArrowRight /></>}
       </button>
     </form>
   );

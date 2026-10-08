@@ -2,6 +2,9 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { ArrowRight, Building2, GitCompareArrows } from "lucide-react";
+import { CabecalhoPagina, Etiqueta, Vazio } from "@/components/ui/Pagina";
+import { aba, CODIGO, TABELA, TABELA_CAIXA, TBODY, TH, THEAD, TR } from "@/components/admin/estilos";
 
 const FILTROS: Record<string, string[]> = {
   analise: ["pendente", "em_analise", "correcao"],
@@ -29,54 +32,54 @@ export default async function AdminImoveis({ searchParams }: PageProps<"/admin/i
   const { data: imoveis } = await consulta.order("created_at", { ascending: false });
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-2xl font-semibold text-texto">Imóveis</h1>
-      <div className="flex gap-2 text-sm flex-wrap">
+    <div className="space-y-6">
+      <CabecalhoPagina eyebrow="Operações" titulo="Imóveis"
+        subtitulo="Fila de análise, anúncios ativos e o histórico de cada imóvel." />
+      <div className="flex gap-2 flex-wrap">
         {Object.keys(FILTROS).map((f) => (
-          <Link key={f} href={`/admin/imoveis?filtro=${f}`}
-            className={`rounded-full px-4 py-1.5 border capitalize ${f === chave ? "bg-verde text-white border-verde" : "border-linha bg-superficie hover:bg-superficie-2"}`}>
+          <Link key={f} href={`/admin/imoveis?filtro=${f}`} className={aba(f === chave) + " capitalize"}>
             {f === "analise" ? "Para analisar" : f}
           </Link>
         ))}
-        <Link href="/admin/imoveis?revisao=1"
-          className={`rounded-full px-4 py-1.5 border ${chave === "revisao" ? "bg-verde text-white border-verde" : "border-linha bg-superficie hover:bg-superficie-2"}`}>
+        <Link href="/admin/imoveis?revisao=1" className={aba(chave === "revisao")}>
+          <GitCompareArrows className="size-4" />
           Alterações propostas{comRevisao.size ? ` (${comRevisao.size})` : ""}
         </Link>
       </div>
 
       {!imoveis?.length ? (
-        <div className="cartao p-10 text-center text-texto-2">
-          Nada aqui neste filtro.
-        </div>
+        <Vazio icone={Building2} titulo="Nada aqui neste filtro" />
       ) : (
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className={TABELA_CAIXA}>
+          <table className={TABELA}>
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Código</th>
-                <th className="px-4 py-3">Imóvel</th>
-                <th className="px-4 py-3">Município</th>
-                <th className="px-4 py-3">Valor</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3"></th>
+              <tr className={THEAD}>
+                <th className={TH}>Código</th>
+                <th className={TH}>Imóvel</th>
+                <th className={TH}>Município</th>
+                <th className={TH}>Valor</th>
+                <th className={TH}>Status</th>
+                <th className={TH}></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-linha">
+            <tbody className={TBODY}>
               {imoveis.map((p) => (
-                <tr key={p.id} className="hover:bg-superficie-2">
-                  <td className="px-4 py-3 font-mono text-xs">{p.codigo}</td>
-                  <td className="px-4 py-3 font-medium">{p.titulo}<span className="ml-2 text-xs text-texto-2 capitalize">({p.tipo})</span></td>
-                  <td className="px-4 py-3">{(p.municipality as unknown as { nome: string } | null)?.nome ?? "—"}</td>
-                  <td className="px-4 py-3">{formatBRL(p.valor)}</td>
-                  <td className="px-4 py-3">
-                    {STATUS_LABEL[p.status]}
-                    {comRevisao.has(p.id) && (
-                      <span className="ml-2 text-xs rounded-full bg-alerta/15 text-alerta px-2.5 py-0.5">alteração pendente</span>
-                    )}
+                <tr key={p.id} className={TR}>
+                  <td className={"px-4 py-3.5 whitespace-nowrap " + CODIGO}>{p.codigo}</td>
+                  <td className="px-4 py-3.5 font-medium text-texto">{p.titulo}<span className="ml-2 text-xs font-normal text-texto-2 capitalize">({p.tipo})</span></td>
+                  <td className="px-4 py-3.5">{(p.municipality as unknown as { nome: string } | null)?.nome ?? "—"}</td>
+                  <td className="px-4 py-3.5 tabular-nums whitespace-nowrap">{formatBRL(p.valor)}</td>
+                  <td className="px-4 py-3.5">
+                    <span className="flex flex-wrap gap-1.5">
+                      <Etiqueta tom={["publicado", "aprovado", "em_negociacao"].includes(p.status) ? "verde" : ["pendente", "em_analise"].includes(p.status) ? "ouro" : p.status === "correcao" ? "alerta" : p.status === "reprovado" ? "critico" : "neutro"}>
+                        {STATUS_LABEL[p.status]}
+                      </Etiqueta>
+                      {comRevisao.has(p.id) && <Etiqueta tom="alerta">alteração pendente</Etiqueta>}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/admin/imoveis/${p.id}`} className="text-verde font-medium hover:underline">
-                      Analisar →
+                  <td className="px-4 py-3.5 text-right">
+                    <Link href={`/admin/imoveis/${p.id}`} className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-verde hover:underline underline-offset-4">
+                      Analisar <ArrowRight className="size-4" />
                     </Link>
                   </td>
                 </tr>

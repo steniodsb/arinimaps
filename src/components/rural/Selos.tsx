@@ -9,31 +9,31 @@ export type Classificacao = "oficial" | "terceiro" | "derivado" | "usuario";
 export type Situacao = "ok" | "instavel" | "sem_verificacao";
 
 const CLASSIFICACAO: Record<Classificacao, { rotulo: string; dica: string; cor: string }> = {
-  oficial: { rotulo: "oficial", dica: "Dado publicado pelo órgão responsável (ou republicado por outro órgão público).", cor: "bg-verde/10 text-verde" },
-  terceiro: { rotulo: "terceiro", dica: "Base não governamental (ex.: OpenStreetMap, MapBiomas).", cor: "bg-ouro/15 text-ouro-escuro" },
-  derivado: { rotulo: "derivado", dica: "Cálculo do Arini Imóveis Brasil sobre outra base (área, distância, índice).", cor: "bg-superficie-2 text-texto-2" },
-  usuario: { rotulo: "informado pelo usuário", dica: "Declarado por quem cadastrou o imóvel; não conferido em base oficial.", cor: "bg-alerta/15 text-alerta" },
+  oficial: { rotulo: "oficial", dica: "Dado publicado pelo órgão responsável (ou republicado por outro órgão público).", cor: "bg-verde/12 text-verde border-verde/25" },
+  terceiro: { rotulo: "terceiro", dica: "Base não governamental (ex.: OpenStreetMap, MapBiomas).", cor: "bg-ouro/14 text-ouro border-ouro/30" },
+  derivado: { rotulo: "derivado", dica: "Cálculo do Arini Imóveis Brasil sobre outra base (área, distância, índice).", cor: "bg-superficie-2 text-texto-2 border-linha" },
+  usuario: { rotulo: "informado pelo usuário", dica: "Declarado por quem cadastrou o imóvel; não conferido em base oficial.", cor: "bg-alerta/14 text-alerta border-alerta/30" },
 };
 
 export function SeloClassificacao({ valor }: { valor?: string | null }) {
   const c = CLASSIFICACAO[(valor as Classificacao) ?? "oficial"] ?? CLASSIFICACAO.oficial;
   return (
-    <span title={c.dica} className={`inline-block text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 font-medium ${c.cor}`}>
+    <span title={c.dica} className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${c.cor}`}>
       {c.rotulo}
     </span>
   );
 }
 
 const SITUACAO: Record<Situacao, { rotulo: string; cor: string }> = {
-  ok: { rotulo: "no ar", cor: "bg-verde/10 text-verde" },
-  instavel: { rotulo: "fonte com instabilidade", cor: "bg-critico/15 text-critico" },
-  sem_verificacao: { rotulo: "sem verificação", cor: "bg-superficie-2 text-texto-2" },
+  ok: { rotulo: "no ar", cor: "bg-verde/12 text-verde border-verde/25" },
+  instavel: { rotulo: "fonte com instabilidade", cor: "bg-critico/12 text-critico border-critico/30" },
+  sem_verificacao: { rotulo: "sem verificação", cor: "bg-superficie-2 text-texto-2 border-linha" },
 };
 
 export function SeloSituacao({ valor, soProblema = false }: { valor?: string | null; soProblema?: boolean }) {
   const s = SITUACAO[(valor as Situacao) ?? "sem_verificacao"] ?? SITUACAO.sem_verificacao;
   if (soProblema && valor !== "instavel") return null;
-  return <span className={`inline-block text-[10px] rounded-full px-2 py-0.5 font-medium ${s.cor}`}>{s.rotulo}</span>;
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${s.cor}`}>{s.rotulo}</span>;
 }
 
 /** Origem carimbada pelo adaptador em cada item (src/lib/rural/adaptadores.ts). */
@@ -67,8 +67,8 @@ export function LinhaOrigem({ origem, orgao, classificacao, consultadoEm, atuali
     !origem?.atualizado_em && atualizacao ? `atualização da base: ${atualizacao}` : "",
   ].filter(Boolean);
   return (
-    <p className="text-[11px] text-texto-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-      <span>Fonte:</span>
+    <p className="text-xs leading-relaxed text-texto-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+      <span className="font-semibold text-texto-3">Fonte:</span>
       <SeloClassificacao valor={origem?.tipo ?? classificacao} />
       <span>{partes.join(" · ")}</span>
     </p>

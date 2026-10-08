@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { Filter, Handshake, Home, X } from "lucide-react";
+import { CAMPO, CabecalhoPagina, Etiqueta, ROTULO } from "@/components/ui/Pagina";
 
 const ENTIDADES = ["properties", "opportunities", "leads", "proposals", "visits", "contracts", "sales", "commissions", "invoices", "subscriptions", "partners", "owners", "settings", "profiles", "property_documents", "cartography_layers", "municipalities"];
 
@@ -20,52 +22,65 @@ export default async function AdminAuditoria({ searchParams }: PageProps<"/admin
   const { data: logs } = await q;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Auditoria</h1>
-        <p className="text-sm text-texto-2">Registro imutável de todas as ações: quem fez, o quê, quando e sobre qual imóvel/oportunidade.</p>
-      </div>
+    <div className="mx-auto max-w-[1280px] space-y-8">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Central · Segurança"
+        titulo="Auditoria"
+        subtitulo="Registro imutável de todas as ações: quem fez, o quê, quando e sobre qual imóvel/oportunidade."
+      />
 
-      <form className="flex gap-2 flex-wrap text-sm" method="get">
-        <select name="entidade" defaultValue={entidade ?? ""} className="rounded-lg cartao px-3 py-2">
-          <option value="">Todas as entidades</option>
-          {ENTIDADES.map((e) => <option key={e} value={e}>{e}</option>)}
-        </select>
-        <input name="acao" defaultValue={acao ?? ""} placeholder="Filtrar por ação (ex.: publicado)"
-          className="rounded-lg cartao px-3 py-2" />
-        <button className="rounded-lg bg-verde text-white px-4 py-2 font-medium hover:bg-verde-escuro">Filtrar</button>
-        {(entidade || acao) && <Link href="/admin/auditoria" className="px-3 py-2 text-verde hover:underline">limpar</Link>}
+      <form className="cartao flex flex-wrap items-end gap-4 p-5" method="get">
+        <label className="block w-full sm:w-64">
+          <span className={ROTULO}>Entidade</span>
+          <select name="entidade" defaultValue={entidade ?? ""} className={CAMPO}>
+            <option value="">Todas as entidades</option>
+            {ENTIDADES.map((e) => <option key={e} value={e}>{e}</option>)}
+          </select>
+        </label>
+        <label className="block min-w-0 flex-1 sm:min-w-64">
+          <span className={ROTULO}>Ação</span>
+          <input name="acao" defaultValue={acao ?? ""} placeholder="Filtrar por ação (ex.: publicado)" className={CAMPO} />
+        </label>
+        <div className="flex items-center gap-3">
+          <button className="btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm"><Filter className="size-4" /> Filtrar</button>
+          {(entidade || acao) && <Link href="/admin/auditoria" className="inline-flex items-center gap-1.5 px-2 py-3 text-sm font-semibold text-verde hover:underline"><X className="size-4" /> limpar</Link>}
+        </div>
       </form>
 
-      <div className="cartao overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-              <th className="px-4 py-3">Quando</th>
-              <th className="px-4 py-3">Quem</th>
-              <th className="px-4 py-3">Ação</th>
-              <th className="px-4 py-3">Entidade</th>
-              <th className="px-4 py-3">Vínculos</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-linha">
-            {(logs ?? []).map((l) => (
-              <tr key={l.id}>
-                <td className="px-4 py-2.5 text-xs tabular-nums text-texto-2 whitespace-nowrap">
-                  {new Date(l.created_at).toLocaleString("pt-BR")}
-                </td>
-                <td className="px-4 py-2.5">{(l.usuario as unknown as { nome: string } | null)?.nome ?? "sistema"}</td>
-                <td className="px-4 py-2.5 font-mono text-xs">{l.acao}</td>
-                <td className="px-4 py-2.5 text-xs">{l.entidade}</td>
-                <td className="px-4 py-2.5 text-xs space-x-2">
-                  {l.property_id && <Link className="text-verde hover:underline" href={`/admin/imoveis/${l.property_id}`}>imóvel</Link>}
-                  {l.opportunity_id && <Link className="text-verde hover:underline" href={`/admin/oportunidades/${l.opportunity_id}`}>oportunidade</Link>}
-                </td>
+      <div className="cartao overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-[0.95rem]">
+            <thead className="bg-superficie-2">
+              <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2">
+                <th className="px-5 py-3">Quando</th>
+                <th className="px-5 py-3">Quem</th>
+                <th className="px-5 py-3">Ação</th>
+                <th className="px-5 py-3">Entidade</th>
+                <th className="px-5 py-3">Vínculos</th>
               </tr>
-            ))}
-            {!logs?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-texto-2">Nada encontrado com esse filtro.</td></tr>}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-linha">
+              {(logs ?? []).map((l) => (
+                <tr key={l.id} className="transition-colors hover:bg-superficie-2/60">
+                  <td className="px-5 py-3.5 text-sm tabular-nums text-texto-2 whitespace-nowrap">
+                    {new Date(l.created_at).toLocaleString("pt-BR")}
+                  </td>
+                  <td className="px-5 py-3.5 font-semibold text-texto">{(l.usuario as unknown as { nome: string } | null)?.nome ?? "sistema"}</td>
+                  <td className="px-5 py-3.5 font-mono text-sm text-texto">{l.acao}</td>
+                  <td className="px-5 py-3.5"><Etiqueta tom="neutro" className="font-mono">{l.entidade}</Etiqueta></td>
+                  <td className="px-5 py-3.5 text-sm">
+                    <span className="flex flex-wrap gap-3">
+                      {l.property_id && <Link className="inline-flex items-center gap-1 font-semibold text-verde hover:underline" href={`/admin/imoveis/${l.property_id}`}><Home className="size-3.5" /> imóvel</Link>}
+                      {l.opportunity_id && <Link className="inline-flex items-center gap-1 font-semibold text-verde hover:underline" href={`/admin/oportunidades/${l.opportunity_id}`}><Handshake className="size-3.5" /> oportunidade</Link>}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {!logs?.length && <tr><td colSpan={5} className="px-5 py-12 text-center text-base text-texto-2">Nada encontrado com esse filtro.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

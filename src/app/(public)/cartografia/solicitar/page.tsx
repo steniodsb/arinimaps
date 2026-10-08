@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight, LogIn } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
+import { BotaoLink, CabecalhoPagina, Conteudo } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser, supabaseServer } from "@/lib/supabase/server";
 import { acessoDe } from "@/lib/planos-servidor";
@@ -40,13 +42,13 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
   if (!user) {
     const volta = `/cartografia/solicitar?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string")).toString()}`;
     return (
-      <AppShell usuario={null}>
-        <div className="max-w-2xl space-y-5">
-          <div>
-            <p className="text-sm text-verde font-medium">Cartografia</p>
-            <h1 className="text-2xl font-semibold text-texto">Informar imóvel ausente ou divergente</h1>
-          </div>
-          <div className="cartao p-6 space-y-3 text-sm">
+      <AppShell usuario={null} semPadding>
+        <CabecalhoPagina variante="faixa" eyebrow="Cartografia" titulo="Informar imóvel ausente ou" destaque="divergente" />
+        <Conteudo estreito className="py-12 md:py-16">
+          <div className="cartao space-y-4 p-6 text-base leading-relaxed md:p-8">
+            <span className="grid size-12 place-items-center rounded-2xl bg-verde/12 text-verde">
+              <LogIn className="size-6" />
+            </span>
             <p className="text-texto">
               Para abrir a solicitação é preciso entrar na sua conta: ela ganha um número de protocolo e você
               acompanha cada etapa da análise da equipe de cartografia.
@@ -55,13 +57,13 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
               A conta é gratuita. Depois de entrar, volte a esta página — se veio do mapa, a posição que você estava vendo
               é guardada no endereço.
             </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Link href="/entrar" className="btn-verde px-5 py-2.5 text-sm">Entrar ou criar conta</Link>
-              <Link href={volta} className="btn-contorno px-5 py-2.5 text-sm">Voltar a esta página depois</Link>
-              <Link href="/mapa" className="btn-contorno px-5 py-2.5 text-sm">Voltar ao mapa</Link>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <BotaoLink href="/entrar">Entrar ou criar conta</BotaoLink>
+              <BotaoLink href={volta} variante="contorno" seta={false}>Voltar a esta página depois</BotaoLink>
+              <BotaoLink href="/mapa" variante="contorno" seta={false}>Voltar ao mapa</BotaoLink>
             </div>
           </div>
-        </div>
+        </Conteudo>
       </AppShell>
     );
   }
@@ -81,17 +83,21 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
   ]);
 
   return (
-    <AppShell usuario={usuario}>
-      <div className="max-w-3xl space-y-6">
-        <div>
-          <p className="text-sm text-verde font-medium">Cartografia</p>
-          <h1 className="text-2xl font-semibold text-texto">Informar imóvel ausente ou divergente</h1>
-          <p className="text-sm text-texto-2 mt-1">
+    <AppShell usuario={usuario} semPadding>
+      <CabecalhoPagina
+        variante="faixa"
+        eyebrow="Cartografia"
+        titulo="Informar imóvel ausente ou"
+        destaque="divergente"
+        subtitulo={
+          <>
             Não encontrou seu imóvel no mapa, ou a divisa, a área ou a posição estão erradas? Conte para a equipe de
             cartografia. A solicitação ganha um protocolo e você acompanha a análise em{" "}
-            <Link href="/painel/cartografia" className="text-verde hover:underline">Mapa: solicitações</Link>.
-          </p>
-        </div>
+            <Link href="/painel/cartografia" className="inline-flex items-center gap-1 font-semibold text-verde hover:underline">Mapa: solicitações <ArrowRight className="size-4" /></Link>.
+          </>
+        }
+      />
+      <Conteudo estreito className="py-12 md:py-16">
 
         <FormSolicitacao
           tipoInicial={tipoInicial}
@@ -101,7 +107,7 @@ export default async function SolicitarCartografia({ searchParams }: PageProps<"
           municipioInicial={referencia?.municipality_id ?? imovel?.municipality_id ?? ""}
           imovel={imovel ? { id: imovel.id, codigo: imovel.codigo, titulo: imovel.titulo } : null}
         />
-      </div>
+      </Conteudo>
     </AppShell>
   );
 }

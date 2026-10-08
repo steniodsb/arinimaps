@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft, CalendarClock, Mail, Phone, UserCheck, UserX } from "lucide-react";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
@@ -24,16 +25,25 @@ export default async function ChamadoAdmin({ params }: PageProps<"/admin/suporte
   if (!c) notFound();
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <div>
-        <Link href="/admin/suporte" className="text-xs text-verde hover:underline">← Chamados</Link>
-        <p className="font-mono text-xs text-texto-2 mt-2">{c.codigo} · {CATEGORIA[c.categoria] ?? c.categoria}</p>
-        <h1 className="text-2xl font-semibold text-texto">{c.assunto}</h1>
-        <p className="text-sm text-texto-2">
-          {c.nome} · {c.email}{c.telefone && ` · ${c.telefone}`} · aberto em {dataHoraBR(c.created_at)}
-          {c.user_id ? " · tem conta no sistema" : " · visitante sem conta"}
-        </p>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-8">
+      <header className="space-y-4">
+        <Link href="/admin/suporte" className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline">
+          <ArrowLeft className="size-4" /> Chamados
+        </Link>
+        <div>
+          <p className="lp-eyebrow text-xs"><span className="font-mono">{c.codigo}</span> · {CATEGORIA[c.categoria] ?? c.categoria}</p>
+          <h1 className="lp-display mt-2 text-3xl md:text-[2.5rem] text-texto text-balance">{c.assunto}</h1>
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.95rem] text-texto-2">
+            <span className="font-semibold text-texto">{c.nome}</span>
+            <span className="inline-flex items-center gap-1.5"><Mail className="size-4" /> {c.email}</span>
+            {c.telefone && <span className="inline-flex items-center gap-1.5"><Phone className="size-4" /> {c.telefone}</span>}
+            <span className="inline-flex items-center gap-1.5 tabular-nums"><CalendarClock className="size-4" /> aberto em {dataHoraBR(c.created_at)}</span>
+            {c.user_id
+              ? <span className="inline-flex items-center gap-1.5"><UserCheck className="size-4 text-verde" /> tem conta no sistema</span>
+              : <span className="inline-flex items-center gap-1.5"><UserX className="size-4" /> visitante sem conta</span>}
+          </div>
+        </div>
+      </header>
 
       {/* 10.2: a conversa atualiza sozinha (polling de 5 s) */}
       <Conversa id={c.id} inicial={mensagens ?? []} temConta={!!c.user_id} />

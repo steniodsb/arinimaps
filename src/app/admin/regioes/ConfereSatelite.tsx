@@ -18,6 +18,7 @@ import { medirNuvem, LIMITE_NUVEM, type MedidaNuvem } from "@/lib/map/nuvem";
 import { SATELITE_RELEASE, PROVEDOR_SATELITE } from "@/lib/map/config";
 import { AvisoErro } from "@/components/ui/Aviso";
 import type { ErroApi } from "@/lib/api/enviar";
+import { CheckCircle2, CloudSun } from "lucide-react";
 
 type Linha = { nome: string; medida: MedidaNuvem | null };
 
@@ -74,11 +75,12 @@ export default function ConfereSatelite() {
   const comProblema = linhas.filter((l) => (l.medida?.acimaDoLimite ?? 0) > 0);
 
   return (
-    <section className="cartao p-5 space-y-3">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="font-semibold text-texto">Nuvem na imagem de satélite</h2>
-          <p className="text-sm text-texto-2">
+    <section className="space-y-5">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="min-w-0 max-w-3xl">
+          <p className="lp-eyebrow text-xs">Satélite</p>
+          <h2 className="lp-display mt-2 text-2xl md:text-[1.75rem] text-texto">Nuvem na imagem de satélite</h2>
+          <p className="mt-1.5 text-base text-texto-2">
             {PROVEDOR_SATELITE === "esri"
               ? "A imagem é o mosaico licenciado da Esri, que a Esri atualiza sem aviso — uma atualização pode trazer nuvem. Rode isto depois de ligar a chave, ao incluir um município novo e de tempos em tempos."
               : PROVEDOR_SATELITE === "maptiler"
@@ -87,13 +89,18 @@ export default function ConfereSatelite() {
           </p>
         </div>
         <button onClick={conferir} disabled={!!medindo}
-          className="rounded-lg btn-contorno px-4 py-2 text-sm font-medium hover:bg-superficie-2 transition disabled:opacity-50 shrink-0">
+          className="btn-contorno inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-50 shrink-0">
+          <CloudSun className="size-4" />
           {medindo ? "Medindo…" : "Conferir os municípios"}
         </button>
       </div>
 
+      <div className="cartao p-6 space-y-4">
+      {!medindo && !linhas.length && !pronto && !erro && (
+        <p className="text-base text-texto-2">Nenhuma conferência rodada nesta sessão.</p>
+      )}
       {medindo && (
-        <p className="text-sm text-texto-2">
+        <p className="text-base text-texto-2">
           Medindo <strong className="text-texto">{medindo}</strong> — 36 tiles no zoom do lote, direto da fonte de satélite em uso.
         </p>
       )}
@@ -101,17 +108,17 @@ export default function ConfereSatelite() {
       {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
 
       {!!linhas.length && (
-        <div className="divide-y divide-linha text-sm">
+        <div className="divide-y divide-linha text-[0.95rem]">
           {linhas.map((l) => {
             const m = l.medida;
             const ruim = (m?.acimaDoLimite ?? 0) > 0;
             return (
-              <div key={l.nome} className="py-2 flex items-center justify-between gap-3">
-                <span>{l.nome}</span>
+              <div key={l.nome} className="py-3 flex items-center justify-between gap-3">
+                <span className="font-semibold text-texto">{l.nome}</span>
                 {!m ? (
-                  <span className="text-xs text-texto-2">sem limites cadastrados</span>
+                  <span className="text-sm text-texto-2">sem limites cadastrados</span>
                 ) : (
-                  <span className={`text-xs tabular-nums ${ruim ? "text-alerta" : "text-verde"}`}>
+                  <span className={`text-sm font-semibold tabular-nums ${ruim ? "text-alerta" : "text-verde"}`}>
                     {ruim
                       ? `${m.acimaDoLimite} de ${m.tiles} tiles com nuvem · pior ${m.pior.toFixed(1)}%`
                       : `limpo · pior ${m.pior.toFixed(1)}%`}
@@ -125,11 +132,12 @@ export default function ConfereSatelite() {
 
       {pronto && (
         comProblema.length === 0 ? (
-          <p className="text-sm text-verde">
+          <p className="flex items-center gap-2 text-base font-semibold text-verde">
+            <CheckCircle2 className="size-5 shrink-0" />
             Nenhum município com nuvem acima de {LIMITE_NUVEM}% em nenhum tile. Não há o que fazer.
           </p>
         ) : (
-          <div className="rounded-xl border border-alerta/40 bg-alerta/10 p-4 text-sm space-y-1">
+          <div className="rounded-xl border border-alerta/40 bg-alerta/10 p-5 text-[0.95rem] leading-relaxed space-y-2">
             <p className="font-semibold text-alerta">
               {comProblema.map((l) => l.nome).join(", ")} {comProblema.length > 1 ? "estão" : "está"} com nuvem.
             </p>
@@ -151,6 +159,7 @@ export default function ConfereSatelite() {
           </div>
         )
       )}
+      </div>
     </section>
   );
 }

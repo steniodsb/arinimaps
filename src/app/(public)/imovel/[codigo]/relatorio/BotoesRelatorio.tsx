@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ArrowRight, Check, Download, Share2 } from "lucide-react";
 
 /**
  * O PDF sai pela impressão do navegador (Salvar como PDF). É o caminho que
@@ -13,9 +14,9 @@ export default function BotoesRelatorio({ codigo }: { codigo: string }) {
   const [copiado, setCopiado] = useState(false);
 
   return (
-    <div className="flex flex-wrap gap-2 mb-7 print:hidden">
-      <button onClick={() => window.print()} className="btn-ouro px-5 py-2.5 text-sm">
-        Baixar relatório (PDF)
+    <div className="mb-10 flex flex-wrap gap-3 print:hidden">
+      <button onClick={() => window.print()} className="lp-btn lp-btn-ouro !px-5 !py-3 text-[0.95rem]">
+        <Download /> Baixar relatório (PDF)
       </button>
       <button
         onClick={async () => {
@@ -27,11 +28,11 @@ export default function BotoesRelatorio({ codigo }: { codigo: string }) {
           setCopiado(true);
           setTimeout(() => setCopiado(false), 2000);
         }}
-        className="btn-contorno px-5 py-2.5 text-sm">
-        {copiado ? "Link copiado ✓" : "Compartilhar"}
+        className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">
+        {copiado ? <><Check /> Link copiado</> : <><Share2 /> Compartilhar</>}
       </button>
-      <Link href={`/imovel/${codigo}`} className="btn-contorno px-5 py-2.5 text-sm">
-        Ver anúncio
+      <Link href={`/imovel/${codigo}`} className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">
+        Ver anúncio <ArrowRight />
       </Link>
     </div>
   );

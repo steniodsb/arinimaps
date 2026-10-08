@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { ArrowRight, CircleCheck, Info, Paperclip, Send, X } from "lucide-react";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 import type { GeometriaEscolhida } from "@/components/map/DesenhoMapa";
 import type { ErroApi } from "@/lib/api/enviar";
 import {
@@ -57,8 +59,8 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
     return null;
   }, [referencia, centro]);
 
-  const input = "w-full rounded-lg cartao px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde";
-  const label = "block text-sm font-medium text-texto mb-1";
+  const input = CAMPO;
+  const label = ROTULO;
   const totalBytes = arquivos.reduce((s, f) => s + f.size, 0);
 
   function escolherArquivos(lista: FileList | null) {
@@ -128,37 +130,40 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
 
   if (resultado) {
     return (
-      <div className="cartao p-6 space-y-4">
-        <p className="text-[10px] tracking-[0.22em] uppercase text-ouro">Solicitação aberta</p>
-        <p className="text-3xl font-semibold font-mono text-texto">{resultado.protocolo}</p>
-        <p className="text-sm text-texto-2">
+      <div className="cartao space-y-5 p-6 md:p-8">
+        <span className="grid size-12 place-items-center rounded-2xl bg-verde/12 text-verde">
+          <CircleCheck className="size-6" />
+        </span>
+        <p className="lp-eyebrow !text-xs">Solicitação aberta</p>
+        <p className="font-mono text-3xl font-bold text-texto md:text-4xl">{resultado.protocolo}</p>
+        <p className="text-base leading-relaxed text-texto-2">
           Guarde este protocolo. A equipe de cartografia faz a triagem, analisa e, se for o caso, vetoriza ou
           corrige o mapa. Você recebe um e-mail a cada etapa importante e acompanha tudo em Mapa: solicitações.
         </p>
         {resultado.falharam.length > 0 && (
-          <p className="text-sm rounded-lg border border-alerta/40 bg-alerta/10 px-3 py-2 text-alerta">
+          <p className="rounded-xl border border-alerta/40 bg-alerta/10 px-4 py-3 text-sm text-alerta">
             Não conseguimos salvar: {resultado.falharam.join(", ")}. Você pode reenviar pela página da solicitação quando
             a equipe pedir documentação.
           </p>
         )}
-        <div className="flex flex-wrap gap-2">
-          <Link href={`/painel/cartografia/${resultado.id}`} className="btn-verde px-5 py-2.5 text-sm">Ver a solicitação</Link>
-          <Link href="/painel/cartografia" className="btn-contorno px-5 py-2.5 text-sm">Minhas solicitações</Link>
-          <Link href="/mapa" className="btn-contorno px-5 py-2.5 text-sm">Voltar ao mapa</Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href={`/painel/cartografia/${resultado.id}`} className="lp-btn lp-btn-verde !px-5 !py-3 text-[0.95rem]">Ver a solicitação <ArrowRight /></Link>
+          <Link href="/painel/cartografia" className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">Minhas solicitações</Link>
+          <Link href="/mapa" className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">Voltar ao mapa</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-6">
+    <form onSubmit={enviar} className="cartao space-y-6 p-6 md:p-8">
       {imovel && (
-        <p className="text-xs rounded-lg bg-ouro/10 border border-ouro/30 px-3 py-2 text-texto">
+        <p className="rounded-xl border border-ouro/30 bg-ouro/10 px-4 py-3 text-sm text-texto">
           Sobre o imóvel <span className="font-mono">{imovel.codigo}</span> · {imovel.titulo}
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className={label}>O que está acontecendo? *</label>
           <select className={input} value={tipo} onChange={(e) => setTipo(e.target.value as TipoSolicitacao)}>
@@ -185,17 +190,21 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
       <div>
         <label className={label}>Indique a área</label>
         {referencia && (
-          <p className="text-xs rounded-lg bg-ouro/10 border border-ouro/30 px-3 py-2 mb-2 text-texto">{referencia.rotulo}</p>
+          <p className="mb-3 rounded-xl border border-ouro/30 bg-ouro/10 px-4 py-3 text-sm text-texto">{referencia.rotulo}</p>
         )}
         {!referencia && centro && (
-          <p className="text-xs text-texto-2 mb-2">
+          <p className="mb-3 flex gap-2 text-sm leading-relaxed text-texto-2">
+            <Info className="mt-0.5 size-4 shrink-0 text-verde" />
             O mapa abre onde você estava. Marque o ponto do imóvel ou desenhe a divisa; se não marcar nada, enviamos a
             posição aproximada da sua vista.
           </p>
         )}
-        <DesenhoMapa onChange={setGeometria} inicial={inicial} />
+        <div className="overflow-hidden rounded-[20px] border border-linha">
+          <DesenhoMapa onChange={setGeometria} inicial={inicial} />
+        </div>
         {geometria && (
-          <p className="text-xs text-verde font-medium mt-1">
+          <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-verde">
+            <CircleCheck className="size-4" />
             {geometria.fonte === "ponto" ? "Ponto marcado." : geometria.fonte === "car" ? "Área do CAR selecionada."
               : geometria.fonte === "lote" ? "Lote da planta selecionado." : geometria.fonte === "desenho" ? "Área desenhada."
               : `Área importada do arquivo ${geometria.fonte.toUpperCase()}.`}
@@ -205,24 +214,24 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
 
       <div>
         <label className={label}>Anexos (opcional)</label>
-        <input type="file" multiple accept={ARQUIVOS_ACEITOS.accept} className={input} onChange={(e) => { escolherArquivos(e.target.files); e.target.value = ""; }} />
-        <p className="text-xs text-texto-2 mt-1">{ARQUIVOS_ACEITOS.descricao} Matrícula, planta, croqui ou foto da placa ajudam na análise.</p>
+        <input type="file" multiple accept={ARQUIVOS_ACEITOS.accept} className={input + " file:mr-3 file:rounded-lg file:border-0 file:bg-verde/15 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-verde"} onChange={(e) => { escolherArquivos(e.target.files); e.target.value = ""; }} />
+        <p className="mt-1.5 text-xs text-texto-2">{ARQUIVOS_ACEITOS.descricao} Matrícula, planta, croqui ou foto da placa ajudam na análise.</p>
         {arquivos.length > 0 && (
-          <ul className="mt-2 space-y-1 text-xs">
+          <ul className="mt-3 space-y-1.5 text-sm">
             {arquivos.map((f, i) => (
-              <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 rounded-lg bg-superficie-2 px-3 py-1.5">
-                <span className="text-texto truncate">{f.name} <span className="text-texto-2">· {tamanhoLegivel(f.size)}</span></span>
-                <button type="button" className="text-critico hover:underline shrink-0"
-                  onClick={() => setArquivos((atuais) => atuais.filter((_, j) => j !== i))}>remover</button>
+              <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 rounded-xl border border-linha bg-superficie-2 px-4 py-2.5">
+                <span className="flex min-w-0 items-center gap-2 truncate text-texto"><Paperclip className="size-4 shrink-0 text-texto-2" />{f.name} <span className="text-texto-2">· {tamanhoLegivel(f.size)}</span></span>
+                <button type="button" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-critico hover:underline"
+                  onClick={() => setArquivos((atuais) => atuais.filter((_, j) => j !== i))}><X className="size-3.5" /> remover</button>
               </li>
             ))}
-            <li className="text-texto-2 px-3">{arquivos.length} arquivo(s) · {tamanhoLegivel(totalBytes)}</li>
+            <li className="px-4 text-xs text-texto-2">{arquivos.length} arquivo(s) · {tamanhoLegivel(totalBytes)}</li>
           </ul>
         )}
       </div>
 
-      <label className="flex items-start gap-2 text-xs text-texto-2 cartao p-4">
-        <input type="checkbox" required checked={aceite} onChange={(e) => setAceite(e.target.checked)} className="mt-0.5" />
+      <label className="flex items-start gap-3 rounded-xl border border-linha bg-superficie-2 p-4 text-sm leading-relaxed text-texto-2">
+        <input type="checkbox" required checked={aceite} onChange={(e) => setAceite(e.target.checked)} className="mt-1 size-4 shrink-0 accent-[var(--verde)]" />
         <span>
           Entendo que <strong className="text-texto">a geometria informada não é oficial até a validação da Matriz</strong>:
           o ponto, a área ou os arquivos que envio servem de indicação para a equipe de cartografia, que confere nas fontes
@@ -231,7 +240,7 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
       </label>
 
       {erro && (
-        <div className="rounded-lg border border-critico/40 bg-critico/10 px-4 py-3 text-sm space-y-0.5">
+        <div className="space-y-0.5 rounded-xl border border-critico/40 bg-critico/10 px-4 py-3 text-sm">
           <p className="text-critico font-medium">{erro.mensagem}</p>
           {erro.motivo && <p className="text-texto-2">{erro.motivo}</p>}
           {erro.solucao && <p className="text-texto">{erro.solucao}</p>}
@@ -239,8 +248,8 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
         </div>
       )}
 
-      <button disabled={enviando} className="btn-verde px-6 py-2.5 text-sm disabled:opacity-60">
-        {enviando ? "Enviando…" : "Abrir solicitação"}
+      <button disabled={enviando} className="lp-btn lp-btn-verde disabled:opacity-60">
+        {enviando ? "Enviando…" : <>Abrir solicitação <Send /></>}
       </button>
     </form>
   );

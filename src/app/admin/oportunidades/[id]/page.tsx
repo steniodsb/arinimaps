@@ -5,6 +5,8 @@ import { formatBRL, STATUS_LABEL } from "@/lib/format";
 import { ETAPA_LABEL } from "@/lib/funil";
 import OportunidadeClient from "@/components/crm/OportunidadeClient";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { ArrowRight, Building2, Mail, Phone, Radio } from "lucide-react";
+import { Etiqueta } from "@/components/ui/Pagina";
 
 export default async function OportunidadeAdmin({ params }: PageProps<"/admin/oportunidades/[id]">) {
   await exigirSetor("comercial");
@@ -38,38 +40,38 @@ export default async function OportunidadeAdmin({ params }: PageProps<"/admin/op
   const prop = opp.property as unknown as { id: string; codigo: string; titulo: string; tipo: string; status: string; valor: number | null; municipality: { nome: string } | null } | null;
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs text-texto-2">{opp.codigo}</p>
-          <h1 className="text-2xl font-semibold text-texto">{lead?.nome ?? "Oportunidade"}</h1>
-          <p className="text-sm text-texto-2">
-            {lead?.telefone && <span className="mr-3">📞 {lead.telefone}</span>}
-            {lead?.email && <span className="mr-3">✉️ {lead.email}</span>}
-            <span className="text-texto-2">origem: {lead?.origem}</span>
+    <div className="space-y-8 max-w-5xl">
+      <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          <p className="lp-eyebrow text-xs">Oportunidade <span className="font-mono tracking-normal">{opp.codigo}</span></p>
+          <h1 className="lp-display mt-2 text-3xl md:text-[2.5rem] text-texto text-balance">{lead?.nome ?? "Oportunidade"}</h1>
+          <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[0.95rem] text-texto-2">
+            {lead?.telefone && <span className="inline-flex items-center gap-1.5"><Phone className="size-4" />{lead.telefone}</span>}
+            {lead?.email && <span className="inline-flex items-center gap-1.5"><Mail className="size-4" />{lead.email}</span>}
+            <span className="inline-flex items-center gap-1.5"><Radio className="size-4" />origem: {lead?.origem}</span>
           </p>
-          {lead?.mensagem && <p className="text-sm text-texto-2 mt-1">“{lead.mensagem}”</p>}
+          {lead?.mensagem && <p className="mt-3 text-base leading-relaxed text-texto-2">“{lead.mensagem}”</p>}
         </div>
-        <div className="text-right space-y-1">
-          <span className="inline-block rounded-full bg-ouro/20 text-ouro-escuro text-sm font-medium px-4 py-1.5">
+        <div className="flex flex-col items-start gap-2.5 md:items-end">
+          <Etiqueta tom="ouro" className="!px-3 !py-1.5 !text-sm">
             {ETAPA_LABEL[opp.etapa] ?? opp.etapa}
-          </span>
+          </Etiqueta>
           {prop && (
-            <p className="text-xs text-texto-2">
-              <Link className="text-verde hover:underline" href={`/admin/imoveis/${prop.id}`}>
-                {prop.codigo} — {prop.titulo}
+            <p className="text-sm text-texto-2 md:text-right">
+              <Link className="inline-flex items-center gap-1.5 font-semibold text-verde hover:underline underline-offset-4" href={`/admin/imoveis/${prop.id}`}>
+                <Building2 className="size-4" />{prop.codigo} — {prop.titulo}
               </Link>
               <br />
-              {prop.municipality?.nome} · {formatBRL(prop.valor)} · {STATUS_LABEL[prop.status]}
+              {prop.municipality?.nome} · <span className="tabular-nums">{formatBRL(prop.valor)}</span> · {STATUS_LABEL[prop.status]}
             </p>
           )}
           {/* 5.16: o cliente não gostou do imóvel — guarda o que ele procura para casar com os próximos */}
-          <Link href={`/admin/demandas?opp=${opp.id}`} className="inline-block text-xs text-verde hover:underline"
+          <Link href={`/admin/demandas?opp=${opp.id}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline underline-offset-4"
             title="O cliente não gostou deste imóvel? Registre o que ele procura e o sistema avisa quando um imóvel novo casar.">
-            Registrar demanda do cliente →
+            Registrar demanda do cliente <ArrowRight className="size-4" />
           </Link>
         </div>
-      </div>
+      </header>
 
       <OportunidadeClient
         modo="arini"

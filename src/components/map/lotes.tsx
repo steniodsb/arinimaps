@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ArrowRight, Flag, ScanSearch } from "lucide-react";
+import { VIDRO, BotaoFechar } from "@/components/map/UiMapa";
 
 /** A partir deste zoom os lotes urbanos aparecem e ficam clicáveis. */
 export const LOTE_ZOOM_MIN = 15;
@@ -71,43 +73,47 @@ export function medidasDe(fc: GeoJSON.FeatureCollection, tela: { w: number; s: n
 /** Cartão do lote clicado: medidas e o atalho para o dono anunciar. */
 export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () => void }) {
   return (
-    <div className="absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] cartao p-4 space-y-3 shadow-2xl">
+    <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-4 ${VIDRO}`}>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs text-texto-2">Lote urbano{lote.municipio && ` · ${lote.municipio}`}</p>
-          <p className="font-semibold text-texto">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Lote urbano</p>
+          <p className="font-display text-xl font-bold leading-tight text-texto mt-1">
             {[lote.quadra && `Quadra ${lote.quadra}`, lote.numero && `Lote ${lote.numero}`].filter(Boolean).join(" · ") || `${m2(lote.area_m2)} m²`}
           </p>
-          {(lote.quadra || lote.numero) && <p className="text-xs text-texto-2">{m2(lote.area_m2)} m²</p>}
+          <p className="text-xs text-texto-2 mt-1">
+            {[(lote.quadra || lote.numero) && `${m2(lote.area_m2)} m²`, lote.municipio].filter(Boolean).join(" · ")}
+          </p>
         </div>
-        <button onClick={onFechar} aria-label="Fechar" className="text-texto-2 hover:text-texto text-lg leading-none">×</button>
+        <BotaoFechar onClick={onFechar} />
       </div>
-      <dl className="text-xs space-y-1">
-        <div className="flex justify-between gap-2">
-          <dt className="text-texto-2">Perímetro</dt><dd className="text-texto">{metros(lote.perimetro_m)} m</dd>
+      <dl className="text-sm divide-y divide-linha rounded-xl border border-linha bg-superficie-2/60 px-3.5">
+        <div className="flex justify-between gap-2 py-2.5">
+          <dt className="text-texto-2">Perímetro</dt><dd className="font-semibold text-texto tabular-nums">{metros(lote.perimetro_m)} m</dd>
         </div>
-        <div>
+        <div className="py-2.5">
           <dt className="text-texto-2">Lados</dt>
-          <dd className="text-texto">{lote.lados.filter((l) => l.m >= 1).map((l) => metros(l.m)).join(" · ")} m</dd>
+          <dd className="mt-0.5 text-texto tabular-nums">{lote.lados.filter((l) => l.m >= 1).map((l) => metros(l.m)).join(" · ")} m</dd>
         </div>
       </dl>
-      {lote.anuncio ? (
-        <Link href={`/imovel/${lote.anuncio}`} className="btn-verde w-full text-center py-2.5 text-sm">
-          Este lote está à venda — ver o anúncio
+      <div className="space-y-2">
+        {lote.anuncio ? (
+          <Link href={`/imovel/${lote.anuncio}`} className="btn-verde flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+            Este lote está à venda — ver o anúncio <ArrowRight className="size-4" />
+          </Link>
+        ) : (
+          <Link href={`/painel/novo?lote=${lote.id}`} className="btn-ouro flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+            Este lote é meu — anunciar <ArrowRight className="size-4" />
+          </Link>
+        )}
+        <Link href={`/consulta/lote/${lote.id}`} className="btn-contorno flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+          <ScanSearch className="size-4" /> Consultar informações
         </Link>
-      ) : (
-        <Link href={`/painel/novo?lote=${lote.id}`} className="btn-ouro w-full text-center py-2.5 text-sm">
-          Este lote é meu — anunciar
-        </Link>
-      )}
-      <Link href={`/consulta/lote/${lote.id}`} className="btn-contorno block w-full text-center py-2.5 text-sm">
-        Consultar informações
-      </Link>
+      </div>
       <Link href={`/cartografia/solicitar?referencia=${encodeURIComponent("lote:" + lote.id)}&tipo=divergencia`}
-        className="block text-center text-xs text-texto-2 hover:text-verde transition">
-        ⚑ O mapa está divergente deste lote
+        className="flex items-center justify-center gap-1.5 text-xs text-texto-2 hover:text-verde transition">
+        <Flag className="size-3.5" /> O mapa está divergente deste lote
       </Link>
-      <p className="text-[11px] text-texto-2 leading-snug">
+      <p className="text-[11px] text-texto-2 leading-relaxed border-t border-linha pt-3">
         Medidas calculadas sobre a planta da cidade; quadra e número lidos dos textos do CAD. São
         referência: não substituem a matrícula nem o levantamento do lote. Para publicar, a Arini confere a matrícula.
       </p>

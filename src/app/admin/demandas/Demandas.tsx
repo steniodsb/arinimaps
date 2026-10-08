@@ -3,8 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CircleCheck, Link2, Plus, SearchX } from "lucide-react";
+import { CAMPO, Etiqueta, ROTULO } from "@/components/ui/Pagina";
+import { CAMPO_COMPACTO, CODIGO, LISTA } from "@/components/admin/estilos";
 
-const input = "rounded-lg border border-linha bg-superficie-2 px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-verde";
+const input = CAMPO;
 
 export type DemandaLinha = {
   id: string; codigo: string; cliente_nome: string; cliente_contato: string | null; opportunity_id: string | null;
@@ -87,63 +90,63 @@ export default function Demandas({
 
   return (
     <div className="space-y-4">
-      {ok && <p className="text-sm text-verde">{ok}</p>}
+      {ok && <p className="flex items-center gap-2 rounded-xl border border-verde/40 bg-verde/10 px-4 py-3 text-[0.95rem] text-verde"><CircleCheck className="size-5 shrink-0" />{ok}</p>}
       {!form ? (
-        <button type="button" onClick={() => setForm({ ...VAZIO, responsavel: souEu })} className="btn-verde px-4 py-2 text-sm">
-          + Registrar demanda
+        <button type="button" onClick={() => setForm({ ...VAZIO, responsavel: souEu })} className="btn-verde inline-flex items-center gap-2 px-5 py-2.5 text-sm">
+          <Plus className="size-4" /> Registrar demanda
         </button>
       ) : (
-        <form onSubmit={criar} className="cartao p-5 space-y-4">
+        <form onSubmit={criar} className="cartao p-6 space-y-5">
           <div>
-            <h2 className="font-semibold text-texto">Nova demanda</h2>
+            <h2 className="lp-display text-xl md:text-2xl text-texto">Nova demanda</h2>
             {prefill && (
-              <p className="text-xs text-texto-2">Da oportunidade {prefill.opportunity_codigo} — cliente, tipo e município vieram do imóvel que ele não quis. Ajuste ao que ele procura.</p>
+              <p className="mt-1.5 text-[0.95rem] text-texto-2">Da oportunidade {prefill.opportunity_codigo} — cliente, tipo e município vieram do imóvel que ele não quis. Ajuste ao que ele procura.</p>
             )}
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1">
-              <span className="block text-xs text-texto-2">Cliente *</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className={ROTULO}>Cliente *</span>
               <input required className={input + " w-full"} value={form.cliente_nome} onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })} />
             </label>
-            <label className="space-y-1">
-              <span className="block text-xs text-texto-2">Contato (telefone, e-mail)</span>
+            <label className="block">
+              <span className={ROTULO}>Contato (telefone, e-mail)</span>
               <input className={input + " w-full"} value={form.cliente_contato} onChange={(e) => setForm({ ...form, cliente_contato: e.target.value })} />
             </label>
-            <label className="space-y-1">
-              <span className="block text-xs text-texto-2">Tipo de imóvel</span>
+            <label className="block">
+              <span className={ROTULO}>Tipo de imóvel</span>
               <select className={input + " w-full"} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
                 <option value="">Rural ou urbano</option>
                 <option value="rural">Rural</option>
                 <option value="urbano">Urbano</option>
               </select>
             </label>
-            <label className="space-y-1">
-              <span className="block text-xs text-texto-2">Responsável</span>
+            <label className="block">
+              <span className={ROTULO}>Responsável</span>
               <select className={input + " w-full"} value={form.responsavel} onChange={(e) => setForm({ ...form, responsavel: e.target.value })}>
                 <option value="">—</option>
                 {equipe.map((m) => <option key={m.user_id} value={m.user_id}>{m.nome || "—"}</option>)}
               </select>
             </label>
           </div>
-          <fieldset className="space-y-1">
-            <legend className="text-xs text-texto-2">Municípios (nenhum marcado = qualquer um)</legend>
+          <fieldset>
+            <legend className={ROTULO}>Municípios (nenhum marcado = qualquer um)</legend>
             <div className="flex flex-wrap gap-2">
               {municipios.map((m) => {
                 const marcado = form.municipios.includes(m.id);
                 return (
                   <button key={m.id} type="button"
                     onClick={() => setForm({ ...form, municipios: marcado ? form.municipios.filter((x) => x !== m.id) : [...form.municipios, m.id] })}
-                    className={"rounded-full border px-3 py-1 text-xs transition " + (marcado ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2 hover:text-texto")}>
+                    className={"rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors " + (marcado ? "border-verde bg-verde/12 text-verde" : "border-linha-forte text-texto-2 hover:border-verde hover:text-texto")}>
                     {m.nome}/{m.uf}
                   </button>
                 );
               })}
             </div>
           </fieldset>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
             {([["valor_min", "Valor mínimo (R$)"], ["valor_max", "Valor máximo (R$)"], ["area_min", `Área mínima ${unidade && `(${unidade})`}`], ["area_max", `Área máxima ${unidade && `(${unidade})`}`]] as const).map(([k, l]) => (
-              <label key={k} className="space-y-1">
-                <span className="block text-xs text-texto-2">{l}</span>
+              <label key={k} className="block">
+                <span className={ROTULO}>{l}</span>
                 <input inputMode="decimal" className={input + " w-full"} value={form[k]}
                   disabled={k.startsWith("area") && !form.tipo}
                   title={k.startsWith("area") && !form.tipo ? "Escolha o tipo: a área é em hectares (rural) ou m² (urbano)" : undefined}
@@ -151,34 +154,33 @@ export default function Demandas({
               </label>
             ))}
           </div>
-          <label className="block space-y-1">
-            <span className="block text-xs text-texto-2">O que mais ele procura</span>
+          <label className="block">
+            <span className={ROTULO}>O que mais ele procura</span>
             <textarea rows={3} className={input + " w-full"} placeholder="Ex.: com represa, perto de asfalto, aceita permuta"
               value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
           </label>
           {erro && <p className="text-sm text-critico">{erro}</p>}
-          <div className="flex gap-2">
-            <button disabled={ocupado} className="btn-verde px-5 py-2 text-sm disabled:opacity-60">Registrar</button>
-            <button type="button" onClick={() => { setForm(null); setErro(""); }} className="btn-contorno px-5 py-2 text-sm">Cancelar</button>
+          <div className="flex gap-2.5">
+            <button disabled={ocupado} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">Registrar</button>
+            <button type="button" onClick={() => { setForm(null); setErro(""); }} className="btn-contorno px-5 py-2.5 text-sm">Cancelar</button>
           </div>
         </form>
       )}
 
-      <div className="cartao divide-y divide-linha">
+      <div className={LISTA}>
         {demandas.map((d) => (
           <div key={d.id} id={d.codigo}
-            className={"px-4 py-3 text-sm space-y-1.5 " + (destaque === d.codigo ? "bg-ouro/10" : "")}>
+            className={"px-5 py-4 space-y-2 " + (destaque === d.codigo ? "bg-ouro/10" : "")}>
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-mono text-xs text-texto-2">{d.codigo}</span>
-              <span className="flex-1 min-w-52 text-texto">
-                {d.cliente_nome}{d.cliente_contato && <span className="text-texto-2"> · {d.cliente_contato}</span>}
+              <span className={CODIGO}>{d.codigo}</span>
+              <span className="flex-1 min-w-52 font-semibold text-texto">
+                {d.cliente_nome}{d.cliente_contato && <span className="font-normal text-sm text-texto-2"> · {d.cliente_contato}</span>}
               </span>
-              <span className={"text-xs rounded-full px-3 py-1 " +
-                (d.status === "aberta" ? "bg-ouro/15 text-ouro" : d.status === "atendida" ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2")}>
+              <Etiqueta tom={d.status === "aberta" ? "ouro" : d.status === "atendida" ? "verde" : "neutro"}>
                 {SITUACAO[d.status]}
-              </span>
+              </Etiqueta>
             </div>
-            <p className="text-xs text-texto-2">
+            <p className="text-sm text-texto-2">
               {d.tipo ? (d.tipo === "rural" ? "Rural" : "Urbano") : "Rural ou urbano"}
               {" · "}{d.municipios.length ? d.municipios.map((m) => nomeMun.get(m) ?? "?").join(", ") : "qualquer município"}
               {faixa(d.valor_min, d.valor_max, brl) && ` · ${faixa(d.valor_min, d.valor_max, brl)}`}
@@ -186,26 +188,26 @@ export default function Demandas({
                 ` · ${faixa(d.area_min, d.area_max, (v) => `${Number(v).toLocaleString("pt-BR")} ${d.tipo === "rural" ? "ha" : "m²"}`)}`}
               {" · "}registrada em {dataBR(d.created_at)}
             </p>
-            {d.observacoes && <p className="text-xs text-texto whitespace-pre-wrap">“{d.observacoes}”</p>}
+            {d.observacoes && <p className="text-[0.95rem] leading-relaxed text-texto whitespace-pre-wrap">“{d.observacoes}”</p>}
             {d.casamentos.length > 0 && (
-              <p className="text-xs text-verde">
-                Casou com: {d.casamentos.map((c, i) => (
+              <p className="inline-flex flex-wrap items-center gap-1.5 text-sm font-semibold text-verde">
+                <Link2 className="size-4" /> Casou com: {d.casamentos.map((c, i) => (
                   <span key={c.codigo}>{i > 0 && ", "}<Link href={`/imovel/${c.codigo}`} target="_blank" className="hover:underline">{c.codigo}</Link></span>
                 ))}
               </p>
             )}
             {d.status !== "aberta" && d.motivo_fechamento && (
-              <p className="text-xs text-texto-2">Fechada em {dataBR(d.fechada_em)}: {d.motivo_fechamento}</p>
+              <p className="text-sm text-texto-2">Fechada em {dataBR(d.fechada_em)}: {d.motivo_fechamento}</p>
             )}
-            <div className="flex items-center gap-3 flex-wrap text-xs">
-              <select className={input + " py-1 text-xs"} value={d.responsavel ?? ""} onChange={(e) => mudarResponsavel(d.id, e.target.value)}
+            <div className="flex items-center gap-3 flex-wrap pt-1 text-sm">
+              <select className={CAMPO_COMPACTO + " !py-1.5 text-xs"} value={d.responsavel ?? ""} onChange={(e) => mudarResponsavel(d.id, e.target.value)}
                 aria-label="Responsável">
                 <option value="">Sem responsável</option>
                 {equipe.map((m) => <option key={m.user_id} value={m.user_id}>{m.nome || "—"}</option>)}
               </select>
               {d.responsavel && !nomeEquipe.has(d.responsavel) && <span className="text-texto-2">responsável fora da equipe ativa</span>}
-              {d.opportunity_id && <Link href={`/admin/oportunidades/${d.opportunity_id}`} className="text-verde hover:underline">oportunidade</Link>}
-              <span className="ml-auto flex gap-3">
+              {d.opportunity_id && <Link href={`/admin/oportunidades/${d.opportunity_id}`} className="font-semibold text-verde hover:underline underline-offset-4">oportunidade</Link>}
+              <span className="ml-auto flex gap-4 font-semibold">
                 {d.status === "aberta" ? (
                   <>
                     <button type="button" className="text-verde hover:underline" onClick={() => mudarStatus(d.id, "atendida")}>Marcar atendida</button>
@@ -218,7 +220,12 @@ export default function Demandas({
             </div>
           </div>
         ))}
-        {!demandas.length && <p className="px-4 py-8 text-center text-sm text-texto-2">Nenhuma demanda neste filtro.</p>}
+        {!demandas.length && (
+          <div className="flex flex-col items-center gap-2 px-5 py-12 text-center">
+            <SearchX className="size-6 text-verde" />
+            <p className="text-[0.95rem] text-texto-2">Nenhuma demanda neste filtro.</p>
+          </div>
+        )}
       </div>
     </div>
   );

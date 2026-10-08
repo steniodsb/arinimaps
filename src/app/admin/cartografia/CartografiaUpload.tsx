@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarArquivo, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro, AvisoOk } from "@/components/ui/Aviso";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
+import { UploadCloud } from "lucide-react";
 
 type Resposta = {
   mensagem?: string;
@@ -40,7 +42,6 @@ export default function CartografiaUpload({ municipios }: { municipios: { id: st
   const [ok, setOk] = useState<Resposta | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
 
-  const input = "rounded-lg cartao px-3 py-2 text-sm";
   const ocupado = fase !== "parado";
   const grande = arquivo && arquivo.size > 50 * MB;
 
@@ -66,27 +67,42 @@ export default function CartografiaUpload({ municipios }: { municipios: { id: st
   }
 
   return (
-    <div className="cartao p-5 space-y-3">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input className={input} placeholder="Nome da camada (ex.: Planta urbana — Iturama)"
-          value={nome} onChange={(e) => setNome(e.target.value)} />
-        <select className={input} value={municipio} onChange={(e) => setMunicipio(e.target.value)}>
-          <option value="">Município…</option>
-          {municipios.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
-        </select>
+    <div className="cartao p-6 space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className={ROTULO}>Nome da camada</span>
+          <input className={CAMPO} placeholder="Ex.: Planta urbana — Iturama"
+            value={nome} onChange={(e) => setNome(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className={ROTULO}>Município</span>
+          <select className={CAMPO} value={municipio} onChange={(e) => setMunicipio(e.target.value)}>
+            <option value="">Município…</option>
+            {municipios.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
+          </select>
+        </label>
       </div>
 
-      <input type="file" accept=".dxf,.tif,.tiff,.png,.jpg,.jpeg" className={input + " w-full"}
-        disabled={ocupado}
-        onChange={(e) => { setArquivo(e.target.files?.[0] ?? null); setErro(null); setOk(null); }} />
+      <label className="block">
+        <span className={ROTULO}>Arquivo da planta</span>
+        <span className="flex items-center gap-4 rounded-xl border border-dashed border-linha-forte bg-superficie-2 px-4 py-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+            <UploadCloud className="size-5" />
+          </span>
+          <input type="file" accept=".dxf,.tif,.tiff,.png,.jpg,.jpeg"
+            className="min-w-0 flex-1 text-sm text-texto-2 file:mr-3 file:rounded-lg file:border-0 file:bg-superficie file:px-3 file:py-2 file:text-sm file:font-semibold file:text-texto"
+            disabled={ocupado}
+            onChange={(e) => { setArquivo(e.target.files?.[0] ?? null); setErro(null); setOk(null); }} />
+        </span>
+      </label>
 
-      <p className="text-xs text-texto-2">
+      <p className="text-sm text-texto-2">
         DXF (planta CAD) publica na hora · GeoTIFF/PNG/JPG georreferenciado vira tiles pelo worker.
         {arquivo && <> · <strong className="text-texto">{(arquivo.size / MB).toFixed(1)} MB</strong> selecionados</>}
       </p>
 
       {grande && !ocupado && (
-        <p className="text-xs text-alerta">
+        <p className="text-sm text-alerta">
           Arquivo grande: o envio leva alguns minutos e a conversão mais alguns segundos.
           Não feche a aba — a barra abaixo mostra o andamento real.
         </p>
@@ -100,7 +116,7 @@ export default function CartografiaUpload({ municipios }: { municipios: { id: st
               style={{ width: fase === "convertendo" ? "100%" : `${pct}%` }}
             />
           </div>
-          <p className="text-xs text-texto-2">
+          <p className="text-sm text-texto-2 tabular-nums">
             {fase === "enviando"
               ? `Enviando… ${pct}%${arquivo ? ` de ${(arquivo.size / MB).toFixed(1)} MB` : ""}`
               : "Convertendo a planta no servidor — lendo entidades do CAD e projetando para o mapa."}
@@ -151,8 +167,9 @@ export default function CartografiaUpload({ municipios }: { municipios: { id: st
       )}
 
       <button disabled={ocupado || !nome || !municipio || !arquivo}
-        className="btn-ouro px-6 py-2.5 disabled:opacity-50"
+        className="btn-ouro inline-flex items-center gap-2 px-6 py-3 disabled:opacity-50"
         onClick={publicar}>
+        <UploadCloud className="size-4" />
         {fase === "enviando" ? `Enviando ${pct}%…` : fase === "convertendo" ? "Convertendo…" : "Publicar camada"}
       </button>
     </div>

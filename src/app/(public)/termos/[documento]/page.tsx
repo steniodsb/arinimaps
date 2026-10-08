@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { ArrowRight, ChevronRight, ScrollText } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
+import { CabecalhoPagina, Conteudo, Etiqueta } from "@/components/ui/Pagina";
 import { lerConfiguracoes } from "@/lib/settings";
 import { documento, documentos } from "@/lib/juridico";
 import BotaoImprimir from "./BotaoImprimir";
@@ -22,50 +24,71 @@ export default async function DocumentoJuridico({ params }: PageProps<"/termos/[
   const outros = documentos(cfg).filter((d) => d.id !== doc.id);
 
   return (
-    <div className="min-h-screen bg-fundo">
+    <div className="min-h-screen bg-fundo print:bg-white">
       <div className="print:hidden"><SiteHeader /></div>
-      <main className="mx-auto max-w-3xl px-4 py-10 space-y-8">
-        <nav className="text-sm text-texto-2 print:hidden">
-          <Link href="/termos" className="hover:text-verde">Termos e políticas</Link> › {doc.titulo}
-        </nav>
 
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold text-texto">{doc.titulo}</h1>
-          <p className="text-texto-2">{doc.resumo}</p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-texto-2">
-            <span className="rounded-full bg-superficie-2 px-3 py-1">Versão {doc.versao}</span>
-            <span className="rounded-full bg-superficie-2 px-3 py-1">Vigente desde {doc.vigencia}</span>
-            <span className="rounded-full bg-superficie-2 px-3 py-1">{doc.paraQuem}</span>
+      {/* faixa escura na tela; no papel, só o título em preto */}
+      <div className="print:hidden">
+        <CabecalhoPagina
+          variante="faixa"
+          eyebrow={doc.paraQuem}
+          titulo={doc.titulo}
+          subtitulo={doc.resumo}
+        >
+          <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-sm text-texto-2">
+            <Link href="/termos" className="transition hover:text-verde">Termos e políticas</Link>
+            <ChevronRight className="size-3.5 opacity-60" />
+            <span className="text-texto">{doc.titulo}</span>
+          </nav>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Etiqueta tom="neutro">Versão {doc.versao}</Etiqueta>
+            <Etiqueta tom="neutro">Vigente desde {doc.vigencia}</Etiqueta>
             <BotaoImprimir />
           </div>
-        </header>
+        </CabecalhoPagina>
+      </div>
 
-        <article className="cartao p-6 sm:p-8 space-y-7">
-          {doc.secoes.map((s, i) => (
-            <section key={s.titulo} className="space-y-3">
-              <h2 className="font-semibold text-texto text-lg">{i + 1}. {s.titulo}</h2>
-              <ol className="space-y-2.5">
-                {s.itens.map((item, j) => (
-                  <li key={j} className="flex gap-3 text-sm leading-relaxed text-texto-2">
-                    <span className="shrink-0 tabular-nums text-texto font-medium">{i + 1}.{j + 1}</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ))}
-        </article>
+      <main>
+        <Conteudo estreito className="space-y-12 py-12 md:py-16 print:space-y-6 print:px-0 print:py-0">
+          <header className="hidden space-y-2 print:block">
+            <h1 className="text-2xl font-bold text-black">{doc.titulo}</h1>
+            <p className="text-gray-700">{doc.resumo}</p>
+            <p className="text-xs text-gray-600">Versão {doc.versao} · vigente desde {doc.vigencia} · {doc.paraQuem}</p>
+          </header>
 
-        <section className="space-y-3 print:hidden">
-          <h2 className="font-semibold text-texto">Outros documentos</h2>
-          <div className="flex flex-wrap gap-2">
-            {outros.map((d) => (
-              <Link key={d.id} href={`/termos/${d.id}`} className="btn-contorno px-4 py-2 text-sm">
-                {d.titulo}
-              </Link>
+          <article className="cartao space-y-10 p-6 sm:p-10 print:space-y-6 print:p-6">
+            {doc.secoes.map((s, i) => (
+              <section key={s.titulo} className="space-y-4">
+                <h2 className="lp-display text-xl text-texto md:text-2xl print:text-lg print:text-black">
+                  <span className="text-verde print:text-black">{i + 1}.</span> {s.titulo}
+                </h2>
+                <ol className="space-y-3">
+                  {s.itens.map((item, j) => (
+                    <li key={j} className="flex gap-3.5 text-base leading-relaxed text-texto-2 print:text-sm print:text-gray-800">
+                      <span className="shrink-0 pt-px text-sm font-semibold tabular-nums text-texto print:text-black">{i + 1}.{j + 1}</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
             ))}
-          </div>
-        </section>
+          </article>
+
+          <section className="space-y-5 print:hidden">
+            <h2 className="lp-display text-2xl text-texto">Outros documentos</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {outros.map((d) => (
+                <Link key={d.id} href={`/termos/${d.id}`}
+                  className="cartao cartao-link group flex items-center justify-between gap-3 px-5 py-4">
+                  <span className="flex items-center gap-3 font-semibold text-texto transition group-hover:text-verde">
+                    <ScrollText className="size-4 shrink-0 text-verde" /> {d.titulo}
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-texto-2 transition group-hover:text-verde" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        </Conteudo>
       </main>
     </div>
   );

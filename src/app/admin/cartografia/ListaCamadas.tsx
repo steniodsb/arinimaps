@@ -5,6 +5,8 @@ import CalibrarPlanta from "./CalibrarPlanta";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
 import type { Transform } from "@/lib/geo/deslocar";
+import { Etiqueta, Vazio } from "@/components/ui/Pagina";
+import { Crosshair, Layers, Loader2, Trash2 } from "lucide-react";
 
 type Camada = {
   id: string; nome: string; municipio: string | null; tipo: string;
@@ -68,14 +70,18 @@ export default function ListaCamadas() {
   }
 
   if (carregando) {
-    return <p className="cartao px-4 py-8 text-center text-sm text-texto-2">Carregando camadas…</p>;
+    return (
+      <p className="cartao flex items-center justify-center gap-2 px-6 py-10 text-base text-texto-2">
+        <Loader2 className="size-4" /> Carregando camadas…
+      </p>
+    );
   }
 
   if (!camadas.length) {
     return (
       <div className="space-y-3">
         {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
-        <p className="cartao px-4 py-8 text-center text-sm text-texto-2">Nenhuma camada publicada ainda.</p>
+        <Vazio icone={Layers} titulo="Nenhuma camada publicada ainda." texto="Publique a primeira planta no formulário acima." />
       </div>
     );
   }
@@ -91,10 +97,13 @@ export default function ListaCamadas() {
           const totalLinhas = (c.layers_cad ?? []).reduce((s, l) => s + l.linhas, 0);
           const ocultas = c.layers_ocultos?.length ?? 0;
           return (
-            <div key={c.id} className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm">
-              <div className="flex-1 min-w-48 space-y-0.5">
-                <p className="font-medium">{c.nome}</p>
-                <p className="text-xs text-texto-2">
+            <div key={c.id} className="px-5 py-4 flex items-center gap-4 flex-wrap transition-colors hover:bg-superficie-2/60">
+              <span className="hidden sm:grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+                <Layers className="size-5" />
+              </span>
+              <div className="flex-1 min-w-48 space-y-1">
+                <p className="font-semibold text-texto">{c.nome}</p>
+                <p className="text-sm text-texto-2 tabular-nums">
                   {c.municipio} · {c.tipo === "vector" ? "planta vetorial" : "imagem em tiles"}
                   {c.zona ? ` · ${c.zona === "graus" ? "graus" : `UTM ${c.zona}S`}` : ""}
                   {c.datum && ` · ${DATUM_LABEL[c.datum] ?? c.datum}`}
@@ -105,14 +114,14 @@ export default function ListaCamadas() {
                   {t && Math.abs(t.escala - 1) > 0.0001 && ` · escala ${(t.escala * 100).toFixed(2)}%`}
                 </p>
                 {(totalLinhas > 0 || c.bytes) && (
-                  <p className="text-xs text-texto-2">
+                  <p className="text-sm text-texto-2 tabular-nums">
                     {totalLinhas > 0 && `${fmt(totalLinhas)} linhas em ${c.layers_cad!.length} camadas do CAD`}
                     {ocultas > 0 && ` · ${ocultas} ocultas no mapa`}
                     {c.bytes ? ` · ${(c.bytes / 1048576).toFixed(1)} MB` : ""}
                   </p>
                 )}
                 {c.tipo === "vector" && (
-                  <p className={"text-xs " + (c.lotes?.defasados || c.lotes?.total == null ? "text-alerta" : "text-texto-2")}>
+                  <p className={"text-sm " + (c.lotes?.defasados || c.lotes?.total == null ? "text-alerta" : "text-texto-2")}>
                     {c.lotes?.total == null
                       ? "Lotes clicáveis ainda não gerados — entram na fila do serviço do servidor."
                       : c.lotes.defasados
@@ -123,14 +132,14 @@ export default function ListaCamadas() {
               </div>
               {/* selo de estado, não botão: sem borda e sem relevo, para não
                   disputar com as duas ações que estão ao lado */}
-              <span className="text-xs rounded-full bg-verde/10 text-verde px-3 py-1 select-none">no ar</span>
+              <Etiqueta tom="verde" className="select-none">no ar</Etiqueta>
               {c.tipo === "vector" && (
-                <button onClick={() => setCalibrando(c)} className="btn-contorno px-3 py-1.5 text-xs">
-                  Calibrar sobre o satélite
+                <button onClick={() => setCalibrando(c)} className="btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2 text-sm">
+                  <Crosshair className="size-4" /> Calibrar sobre o satélite
                 </button>
               )}
-              <button onClick={() => remover(c)} className="btn-perigo px-3 py-1.5 text-xs">
-                Remover
+              <button onClick={() => remover(c)} className="btn-perigo inline-flex items-center gap-1.5 px-3.5 py-2 text-sm">
+                <Trash2 className="size-4" /> Remover
               </button>
             </div>
           );

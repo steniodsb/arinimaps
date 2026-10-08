@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Casca da aplicação, igual aos mockups:
- *  - desktop: sidebar fixa à esquerda + topbar com busca e navegação
+ * Casca da aplicação, com a cara da página inicial:
+ *  - desktop: sidebar fixa à esquerda (logo, navegação em Urbanist, atalhos
+ *    e um convite em faixa escura) + topbar com busca, tema e avatar
  *  - mobile: conteúdo em tela cheia + barra inferior com botão de ação central
  *
  * Todas as telas do produto passam por aqui, então a navegação é a mesma
@@ -12,6 +13,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowRight, Bell, Building2, ChevronRight, CreditCard, FileText, House,
+  LayoutDashboard, Map as Mapa, Menu, Plus, Search, X,
+} from "lucide-react";
 import BotaoTema from "./BotaoTema";
 import ChatIA from "@/components/ia/ChatIA";
 import Avatar from "./Avatar";
@@ -20,13 +26,15 @@ import { usePreferencias } from "@/lib/usePreferencias";
 /** avatar: foto do perfil (4.6); ausente = o cabeçalho busca na conta */
 export type Usuario = { nome: string; papel: string; avatar?: string | null } | null;
 
-const MENU = [
-  { href: "/", rotulo: "Início", icone: "⌂" },
-  { href: "/mapa", rotulo: "Mapa Interativo", icone: "🗺" },
-  { href: "/imoveis", rotulo: "Buscar Imóveis", icone: "⌕" },
-  { href: "/relatorios", rotulo: "Relatórios", icone: "▤" },
-  { href: "/planos", rotulo: "Planos", icone: "◧" },
-  { href: "/painel", rotulo: "Meu Painel", icone: "◫" },
+type ItemMenu = { href: string; rotulo: string; icone: LucideIcon };
+
+const MENU: ItemMenu[] = [
+  { href: "/", rotulo: "Início", icone: House },
+  { href: "/mapa", rotulo: "Mapa Interativo", icone: Mapa },
+  { href: "/imoveis", rotulo: "Buscar Imóveis", icone: Search },
+  { href: "/relatorios", rotulo: "Relatórios", icone: FileText },
+  { href: "/planos", rotulo: "Planos", icone: CreditCard },
+  { href: "/painel", rotulo: "Meu Painel", icone: LayoutDashboard },
 ];
 
 const ATALHOS = [
@@ -36,23 +44,27 @@ const ATALHOS = [
   { rotulo: "Processos Minerários", href: "/mapa?camada=anm" },
 ];
 
-const NAV_MOBILE = [
-  { href: "/", rotulo: "Início", icone: "⌂" },
-  { href: "/mapa", rotulo: "Mapas", icone: "🗺" },
-  { href: "/imoveis", rotulo: "Imóveis", icone: "▦" },
-  { href: "/painel", rotulo: "Menu", icone: "☰" },
+const NAV_MOBILE: ItemMenu[] = [
+  { href: "/", rotulo: "Início", icone: House },
+  { href: "/mapa", rotulo: "Mapas", icone: Mapa },
+  { href: "/imoveis", rotulo: "Imóveis", icone: Building2 },
+  { href: "/painel", rotulo: "Menu", icone: Menu },
 ];
 
+/** Marca: losango com miolo (o ◈ de sempre, agora desenhado) + nome em Urbanist. */
 export function Logo({ compacto = false }: { compacto?: boolean }) {
   return (
-    <span className="flex items-center gap-2">
-      <span className="w-8 h-8 rounded-lg bg-verde-escuro border border-verde/30 grid place-items-center text-ouro text-sm">
-        ◈
+    <span className="flex items-center gap-2.5">
+      <span className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-verde/30 bg-verde-escuro text-ouro shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
+        <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden>
+          <path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M12 8.2 15.8 12 12 15.8 8.2 12Z" fill="currentColor" />
+        </svg>
       </span>
       {!compacto && (
         <span className="leading-none">
-          <span className="block font-semibold tracking-wide text-texto text-sm">ARINI</span>
-          <span className="block text-[8px] tracking-[0.22em] text-texto-2 whitespace-nowrap">IMÓVEIS BRASIL</span>
+          <span className="block font-display text-[1.05rem] font-extrabold tracking-[0.06em] text-texto">ARINI</span>
+          <span className="mt-1 block whitespace-nowrap text-[9px] font-semibold tracking-[0.24em] text-texto-2">IMÓVEIS BRASIL</span>
         </span>
       )}
     </span>
@@ -78,111 +90,137 @@ export default function AppShell({
   return (
     <div className="min-h-screen bg-fundo flex">
       {/* ---------- sidebar (desktop) ---------- */}
-      <aside className="hidden lg:flex w-60 shrink-0 flex-col bg-superficie border-r border-linha">
-        <Link href="/" className="px-5 h-16 flex items-center border-b border-linha">
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-linha bg-superficie">
+        <Link href="/" aria-label="Arini Imóveis Brasil — início" className="flex h-[4.5rem] items-center border-b border-linha px-6">
           <Logo />
         </Link>
 
-        <nav className="p-3 space-y-1">
-          {MENU.map((m) => (
-            <Link key={m.href} href={m.href}
-              className={
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition " +
-                (ativo(m.href)
-                  ? "bg-verde/12 text-verde font-medium"
-                  : "text-texto-2 hover:text-texto hover:bg-superficie-2")
-              }>
-              <span className="w-4 text-center">{m.icone}</span> {m.rotulo}
-            </Link>
-          ))}
+        <nav aria-label="Principal" className="space-y-1 px-3 pt-5">
+          {MENU.map((m) => {
+            const on = ativo(m.href);
+            const Icone = m.icone;
+            return (
+              <Link key={m.href} href={m.href} aria-current={on ? "page" : undefined}
+                className={
+                  "relative flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 font-display text-[15px] font-semibold transition " +
+                  (on
+                    ? "bg-verde/12 text-verde"
+                    : "text-texto-3 hover:bg-superficie-2 hover:text-texto")
+                }>
+                {on && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-verde" aria-hidden />}
+                <Icone className="size-[18px] shrink-0" />
+                {m.rotulo}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="px-3 pt-4">
-          <p className="px-3 text-[10px] font-semibold tracking-[0.18em] text-texto-2 uppercase mb-2">
-            Acesso rápido
-          </p>
-          <div className="space-y-1">
+        <div className="px-3 pt-8">
+          <p className="lp-eyebrow mb-2 px-3.5 !text-[11px]">Acesso rápido</p>
+          <div className="space-y-0.5">
             {ATALHOS.map((a) => (
               <Link key={a.rotulo} href={a.href}
-                className="flex items-center justify-between rounded-xl border border-linha bg-superficie-2 px-3 py-2.5 text-xs text-texto-2 hover:text-texto hover:border-verde/40 transition">
-                {a.rotulo} <span>›</span>
+                className="group flex items-center justify-between rounded-[10px] px-3.5 py-2 text-sm text-texto-2 transition hover:bg-superficie-2 hover:text-texto">
+                {a.rotulo}
+                <ChevronRight className="size-4 text-texto-2/60 transition group-hover:text-verde" />
               </Link>
             ))}
           </div>
         </div>
 
         <div className="mt-auto p-4">
-          <div className="rounded-xl bg-verde-escuro/70 border border-linha p-4">
-            <p className="text-sm font-semibold text-texto leading-snug">
-              Transforme dados em <span className="texto-verde">boas decisões</span>.
-            </p>
-            <p className="text-xs text-texto-2 mt-1">Inteligência territorial para o seu negócio.</p>
-            <Link href="/entrar" className="btn-ouro inline-block mt-3 px-4 py-2 text-xs">Saiba mais</Link>
+          <div className="lp-escuro lp-malha-escura relative overflow-hidden rounded-2xl p-5">
+            <div className="lp-grade pointer-events-none absolute inset-0 opacity-70" aria-hidden />
+            <div className="relative">
+              <p className="lp-display text-lg leading-snug text-texto">
+                Transforme dados em <span className="text-verde">boas decisões</span>.
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-texto-2">Inteligência territorial para o seu negócio.</p>
+              <Link href="/entrar" className="lp-btn lp-btn-ouro mt-4 !px-4 !py-2.5 text-sm">
+                Saiba mais <ArrowRight />
+              </Link>
+            </div>
           </div>
         </div>
       </aside>
 
       {/* ---------- coluna principal ---------- */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 shrink-0 border-b border-linha bg-superficie flex items-center gap-3 px-4">
-          <button onClick={() => setMenuAberto(!menuAberto)}
-            className="lg:hidden w-9 h-9 rounded-lg text-texto-2 hover:text-texto hover:bg-superficie-2 transition"
-            aria-label="Abrir menu">☰</button>
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-linha bg-superficie px-4 lg:h-[4.5rem] lg:px-6">
+          <button onClick={() => setMenuAberto(!menuAberto)} type="button"
+            className="lg:hidden grid size-10 place-items-center rounded-[10px] border border-linha text-texto transition hover:border-verde"
+            aria-label={menuAberto ? "Fechar menu" : "Abrir menu"} aria-expanded={menuAberto}>
+            {menuAberto ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
 
-          <Link href="/" className="lg:hidden"><Logo compacto /></Link>
+          <Link href="/" className="lg:hidden" aria-label="Início"><Logo compacto /></Link>
 
           {busca && (
-            <div className="relative flex-1 max-w-xl hidden sm:block">
+            <div className="relative hidden max-w-xl flex-1 sm:block">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-texto-2" aria-hidden />
               <input
                 placeholder="Buscar por imóvel, município, estado ou coordenada"
-                className="w-full rounded-xl border border-linha bg-superficie-2 pl-10 pr-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde transition"
+                aria-label="Buscar"
+                className="w-full rounded-xl border border-linha-forte bg-superficie-2 py-2.5 pl-10 pr-3 text-[15px] text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30"
               />
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-2">⌕</span>
             </div>
           )}
 
-          <nav className="hidden xl:flex items-center gap-5 text-sm ml-2">
-            {MENU.slice(0, 4).map((m) => (
-              <Link key={m.href} href={m.href}
-                className={ativo(m.href) ? "text-verde font-medium" : "text-texto-2 hover:text-texto transition"}>
-                {m.rotulo.replace("Mapa Interativo", "Mapas").replace("Buscar Imóveis", "Imóveis")}
-              </Link>
-            ))}
+          <nav aria-label="Atalhos" className="ml-2 hidden items-center gap-1 xl:flex">
+            {MENU.slice(0, 4).map((m) => {
+              const on = ativo(m.href);
+              return (
+                <Link key={m.href} href={m.href}
+                  className={
+                    "relative px-3 py-2 font-display text-[15px] font-semibold transition " +
+                    (on ? "text-verde" : "text-texto-3 hover:text-texto")
+                  }>
+                  {m.rotulo.replace("Mapa Interativo", "Mapas").replace("Buscar Imóveis", "Imóveis")}
+                  {on && <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded bg-verde" aria-hidden />}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
             <BotaoTema />
-            <button className="w-9 h-9 rounded-lg text-texto-2 hover:text-texto hover:bg-superficie-2 transition relative"
+            <button type="button"
+              className="relative grid size-10 place-items-center rounded-[10px] text-texto-2 transition hover:bg-superficie-2 hover:text-texto"
               aria-label="Notificações">
-              ◔<span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-ouro" />
+              <Bell className="size-[18px]" />
+              <span className="absolute right-2 top-2 size-2 rounded-full bg-ouro ring-2 ring-superficie" />
             </button>
             {usuario ? (
-              <Link href="/painel" className="flex items-center gap-2 rounded-xl hover:bg-superficie-2 px-2 py-1.5 transition">
-                <Avatar nome={usuario.nome} url={avatar} tamanho={32} />
-                <span className="hidden md:block leading-tight text-left">
-                  <span className="block text-xs font-medium text-texto">{usuario.nome.split(" ")[0]}</span>
-                  <span className="block text-[10px] text-texto-2">{usuario.papel}</span>
+              <Link href="/painel" className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-superficie-2">
+                <Avatar nome={usuario.nome} url={avatar} tamanho={36} />
+                <span className="hidden text-left leading-tight md:block">
+                  <span className="block text-sm font-semibold text-texto">{usuario.nome.split(" ")[0]}</span>
+                  <span className="block text-xs text-texto-2">{usuario.papel}</span>
                 </span>
               </Link>
             ) : (
-              <Link href="/entrar" className="btn-ouro px-4 py-2 text-sm">Entrar</Link>
+              <Link href="/entrar" className="lp-btn lp-btn-ouro !px-4 !py-2.5 text-sm">Entrar</Link>
             )}
           </div>
         </header>
 
         {/* menu mobile */}
         {menuAberto && (
-          <div className="lg:hidden border-b border-linha bg-superficie p-3 space-y-1 anima-subir">
-            {MENU.map((m) => (
-              <Link key={m.href} href={m.href} onClick={() => setMenuAberto(false)}
-                className={
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm " +
-                  (ativo(m.href) ? "bg-verde/12 text-verde font-medium" : "text-texto-2")
-                }>
-                <span className="w-4 text-center">{m.icone}</span> {m.rotulo}
-              </Link>
-            ))}
-          </div>
+          <nav aria-label="Menu" className="lg:hidden border-b border-linha bg-superficie px-3 py-3">
+            {MENU.map((m) => {
+              const on = ativo(m.href);
+              const Icone = m.icone;
+              return (
+                <Link key={m.href} href={m.href} onClick={() => setMenuAberto(false)}
+                  className={
+                    "flex items-center gap-3 rounded-[10px] px-3.5 py-3 font-display text-base font-semibold " +
+                    (on ? "bg-verde/12 text-verde" : "text-texto")
+                  }>
+                  <Icone className={"size-5 " + (on ? "" : "text-verde")} /> {m.rotulo}
+                </Link>
+              );
+            })}
+          </nav>
         )}
 
         <main className={"flex-1 min-h-0 flex flex-col pb-16 lg:pb-0 " + (semPadding ? "" : "p-4 lg:p-6")}>
@@ -191,32 +229,32 @@ export default function AppShell({
       </div>
 
       {/* ---------- barra inferior (mobile) ---------- */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 h-16 bg-superficie border-t border-linha flex items-center justify-around px-2">
-        {NAV_MOBILE.slice(0, 2).map((m) => (
-          <Link key={m.href} href={m.href}
-            className={"flex flex-col items-center gap-0.5 text-[10px] " + (ativo(m.href) ? "text-verde" : "text-texto-2")}>
-            <span className="text-lg leading-none">{m.icone}</span>{m.rotulo}
-          </Link>
-        ))}
+      <nav aria-label="Navegação" className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex h-16 items-center justify-around border-t border-linha bg-superficie px-2">
+        {NAV_MOBILE.slice(0, 2).map((m) => <ItemInferior key={m.href} item={m} ativo={ativo(m.href)} />)}
 
         {/* círculo: não usa .btn-verde porque o raio daquela classe venceria o rounded-full */}
         <Link href="/painel/novo"
           aria-label="Anunciar imóvel"
-          className="shrink-0 w-14 h-14 -mt-7 rounded-full grid place-items-center text-2xl font-light text-[#06140D] shadow-xl border-4 border-superficie"
+          className="-mt-7 grid size-14 shrink-0 place-items-center rounded-full border-4 border-superficie text-[#06140D] shadow-xl"
           style={{ background: "linear-gradient(180deg, #45D98A 0%, #2FA866 100%)" }}>
-          +
+          <Plus className="size-6" strokeWidth={2.5} />
         </Link>
 
-        {NAV_MOBILE.slice(2).map((m) => (
-          <Link key={m.href} href={m.href}
-            className={"flex flex-col items-center gap-0.5 text-[10px] " + (ativo(m.href) ? "text-verde" : "text-texto-2")}>
-            <span className="text-lg leading-none">{m.icone}</span>{m.rotulo}
-          </Link>
-        ))}
+        {NAV_MOBILE.slice(2).map((m) => <ItemInferior key={m.href} item={m} ativo={ativo(m.href)} />)}
       </nav>
 
       {/* assistente de IA (5.1): inerte sem ANTHROPIC_API_KEY */}
       <ChatIA />
     </div>
+  );
+}
+
+function ItemInferior({ item, ativo }: { item: ItemMenu; ativo: boolean }) {
+  const Icone = item.icone;
+  return (
+    <Link href={item.href}
+      className={"flex min-w-14 flex-col items-center gap-1 text-[11px] font-semibold " + (ativo ? "text-verde" : "text-texto-2")}>
+      <Icone className="size-5" />{item.rotulo}
+    </Link>
   );
 }

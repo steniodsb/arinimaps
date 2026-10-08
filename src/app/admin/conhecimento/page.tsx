@@ -2,15 +2,17 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { cotacaoDolar, custoUsd, iaConfigurada, modeloIa, PRECOS_USD_POR_MTOK } from "@/lib/ia/config";
-import { Indicadores, Secao } from "@/components/admin/Painel";
+import { Indicadores } from "@/components/admin/Painel";
+import { CabecalhoPagina, Etiqueta, Secao, Vazio } from "@/components/ui/Pagina";
+import { Bot, BookOpen, MessagesSquare, Wrench } from "lucide-react";
 import ArtigosAdmin from "./ArtigosAdmin";
 import type { Artigo } from "@/lib/ia/conhecimento";
 
 export const dynamic = "force-dynamic";
 
 const ABAS = [
-  { id: "artigos", rotulo: "Base de conhecimento" },
-  { id: "conversas", rotulo: "Conversas do assistente" },
+  { id: "artigos", rotulo: "Base de conhecimento", icone: BookOpen },
+  { id: "conversas", rotulo: "Conversas do assistente", icone: MessagesSquare },
 ] as const;
 
 const usd = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -31,28 +33,36 @@ export default async function ConhecimentoIA({ searchParams }: PageProps<"/admin
   const admin = supabaseAdmin();
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-[10px] tracking-[0.22em] uppercase text-ouro">Marketing · Diretoria</p>
-          <h1 className="text-2xl font-semibold text-texto">Conhecimento e IA</h1>
-          <p className="text-sm text-texto-2 max-w-2xl">
-            O assistente do site só responde sobre regras e processos a partir dos artigos <strong>publicados</strong> aqui,
-            citando fonte e data. Cada alteração gera uma versão.
-          </p>
-        </div>
-        <span className={"text-xs rounded-full px-3 py-1.5 " + (iaConfigurada() ? "bg-verde/15 text-verde" : "bg-alerta/15 text-alerta")}>
-          {iaConfigurada() ? `Assistente ligado · ${modeloIa()}` : "Assistente em configuração (sem ANTHROPIC_API_KEY)"}
-        </span>
-      </div>
+    <div className="mx-auto max-w-[1280px] space-y-8">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Marketing · Diretoria"
+        titulo="Conhecimento e IA"
+        subtitulo={<>
+          O assistente do site só responde sobre regras e processos a partir dos artigos <strong className="text-texto">publicados</strong> aqui,
+          citando fonte e data. Cada alteração gera uma versão.
+        </>}
+        acoes={
+          <Etiqueta tom={iaConfigurada() ? "verde" : "alerta"} className="!px-3.5 !py-2 !text-sm">
+            <Bot className="size-4" />
+            {iaConfigurada() ? `Assistente ligado · ${modeloIa()}` : "Assistente em configuração (sem ANTHROPIC_API_KEY)"}
+          </Etiqueta>
+        }
+      />
 
-      <nav className="flex gap-1.5">
-        {ABAS.map((a) => (
-          <Link key={a.id} href={`/admin/conhecimento?aba=${a.id}`} data-ativo={aba === a.id}
-            className="chip px-4 py-2 text-sm">
-            {a.rotulo}
-          </Link>
-        ))}
+      <nav className="flex gap-1 overflow-x-auto border-b border-linha" aria-label="Abas">
+        {ABAS.map((a) => {
+          const Icone = a.icone;
+          const ativa = aba === a.id;
+          return (
+            <Link key={a.id} href={`/admin/conhecimento?aba=${a.id}`} aria-current={ativa ? "page" : undefined}
+              className={"-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-[0.95rem] font-semibold transition-colors " +
+                (ativa ? "border-verde text-texto" : "border-transparent text-texto-2 hover:text-texto")}>
+              <Icone className={"size-4 " + (ativa ? "text-verde" : "")} />
+              {a.rotulo}
+            </Link>
+          );
+        })}
       </nav>
 
       {aba === "artigos" ? <AbaArtigos admin={admin} /> : <AbaConversas admin={admin} conversaSel={conversaSel} />}
@@ -107,7 +117,7 @@ async function AbaConversas({ admin, conversaSel }: { admin: ReturnType<typeof s
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12">
       <Indicadores itens={[
         { rotulo: "Perguntas no mês", valor: n(atual.perguntas) },
         { rotulo: "Tokens de entrada / saída", valor: `${n(atual.entrada)} / ${n(atual.saida)}` },
@@ -115,70 +125,73 @@ async function AbaConversas({ admin, conversaSel }: { admin: ReturnType<typeof s
         { rotulo: "Respostas com falha no mês", valor: n(atual.erros) },
       ]} />
 
-      <Secao titulo="Uso e custo por mês">
+      <Secao eyebrow="Consumo" titulo="Uso e custo por mês">
         <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-texto-2 text-xs">
-              <tr className="border-b border-linha">
-                <th className="px-4 py-2.5">Mês</th><th className="px-4 py-2.5 text-right">Perguntas</th>
-                <th className="px-4 py-2.5 text-right">Entrada</th><th className="px-4 py-2.5 text-right">Saída</th>
-                <th className="px-4 py-2.5 text-right">Cache</th><th className="px-4 py-2.5 text-right">Custo estimado</th>
+          <table className="w-full min-w-[720px] text-[0.95rem]">
+            <thead className="bg-superficie-2 text-left text-texto-2">
+              <tr>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider">Mês</th><th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-right">Perguntas</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-right">Entrada</th><th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-right">Saída</th>
+                <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-right">Cache</th><th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-right">Custo estimado</th>
               </tr>
             </thead>
             <tbody>
               {[...meses.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([mes, l]) => (
-                <tr key={mes} className="border-b border-linha last:border-0">
-                  <td className="px-4 py-2.5">{mes.split("-").reverse().join("/")}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{n(l.perguntas)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{n(l.entrada)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{n(l.saida)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{n(l.cache)}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{usd(l.usd)} ≈ {brl(l.usd * cotacao)}</td>
+                <tr key={mes} className="border-b border-linha last:border-0 transition-colors hover:bg-superficie-2/60">
+                  <td className="px-5 py-3.5 font-semibold text-texto tabular-nums">{mes.split("-").reverse().join("/")}</td>
+                  <td className="px-5 py-3.5 text-right tabular-nums text-texto">{n(l.perguntas)}</td>
+                  <td className="px-5 py-3.5 text-right tabular-nums text-texto">{n(l.entrada)}</td>
+                  <td className="px-5 py-3.5 text-right tabular-nums text-texto">{n(l.saida)}</td>
+                  <td className="px-5 py-3.5 text-right tabular-nums text-texto">{n(l.cache)}</td>
+                  <td className="px-5 py-3.5 text-right tabular-nums text-texto">{usd(l.usd)} ≈ {brl(l.usd * cotacao)}</td>
                 </tr>
               ))}
-              {!meses.size && <tr><td colSpan={6} className="px-4 py-6 text-center text-texto-2">Nenhuma conversa ainda.</td></tr>}
+              {!meses.size && <tr><td colSpan={6} className="px-5 py-10 text-center text-base text-texto-2">Nenhuma conversa ainda.</td></tr>}
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-texto-2">
-          Estimativa pela tabela de preços em <code>src/lib/ia/config.ts</code> ({Object.entries(PRECOS_USD_POR_MTOK).map(([m, p]) => `${m}: US$ ${p.entrada}/${p.saida} por milhão de tokens`).join(" · ")})
+        <p className="text-sm leading-relaxed text-texto-2">
+          Estimativa pela tabela de preços em <code className="font-mono text-xs">src/lib/ia/config.ts</code> ({Object.entries(PRECOS_USD_POR_MTOK).map(([m, p]) => `${m}: US$ ${p.entrada}/${p.saida} por milhão de tokens`).join(" · ")})
           e cotação de R$ {cotacao.toLocaleString("pt-BR")} por dólar. Confira com a fatura do provedor.
         </p>
       </Secao>
 
-      <Secao titulo="Conversas recentes">
+      <Secao eyebrow="Histórico" titulo="Conversas recentes">
+        {conversas?.length ? (
         <div className="cartao divide-y divide-linha overflow-hidden">
-          {(conversas ?? []).map((c) => {
+          {conversas.map((c) => {
             const p = c.user_id ? perfil.get(c.user_id) : null;
             const custo = custoUsd(c.modelo, { entrada: Number(c.tokens_entrada), saida: Number(c.tokens_saida), cacheLeitura: Number(c.tokens_cache_leitura), cacheEscrita: Number(c.tokens_cache_escrita) });
             return (
               <Link key={c.id} href={`/admin/conhecimento?aba=conversas&conversa=${c.id}`}
-                className={"flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm hover:bg-superficie-2 transition " + (conversaSel === c.id ? "bg-superficie-2" : "")}>
-                <span className="flex-1 min-w-48 text-texto truncate">{c.titulo || "(sem título)"}</span>
-                <span className="text-texto-2">{p?.nome ?? "conta removida"}{p?.plan_id ? ` · ${p.plan_id}` : ""}</span>
-                <span className="text-texto-2 tabular-nums">{c.mensagens} msg · {n(Number(c.tokens_entrada) + Number(c.tokens_saida))} tokens · {usd(custo)}</span>
-                <span className="text-xs text-texto-2">{quando(c.updated_at)}</span>
+                className={"flex flex-wrap items-center gap-x-5 gap-y-1 px-5 py-3.5 text-[0.95rem] transition-colors hover:bg-superficie-2/70 " + (conversaSel === c.id ? "bg-verde/8 shadow-[inset_3px_0_0_var(--verde)]" : "")}>
+                <span className="flex-1 min-w-48 font-semibold text-texto truncate">{c.titulo || "(sem título)"}</span>
+                <span className="text-sm text-texto-2">{p?.nome ?? "conta removida"}{p?.plan_id ? ` · ${p.plan_id}` : ""}</span>
+                <span className="text-sm text-texto-2 tabular-nums">{c.mensagens} msg · {n(Number(c.tokens_entrada) + Number(c.tokens_saida))} tokens · {usd(custo)}</span>
+                <span className="text-sm text-texto-2 tabular-nums">{quando(c.updated_at)}</span>
               </Link>
             );
           })}
-          {!conversas?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma conversa ainda.</p>}
         </div>
+        ) : (
+          <Vazio icone={MessagesSquare} titulo="Nenhuma conversa ainda." />
+        )}
       </Secao>
 
       {detalhe && (
-        <Secao titulo="Conversa selecionada (auditoria)">
-          <div className="space-y-2">
+        <Secao eyebrow="Auditoria" titulo="Conversa selecionada">
+          <div className="space-y-3">
             {detalhe.map((m) => (
-              <div key={m.id} className={"cartao p-4 text-sm space-y-1 " + (m.papel === "user" ? "" : "border-verde/30")}>
-                <p className="text-xs text-texto-2">
-                  {m.papel === "user" ? "Pergunta" : "Resposta"} · {quando(m.created_at)}
+              <div key={m.id} className={"cartao p-5 space-y-2 " + (m.papel === "user" ? "mr-6 md:mr-12" : "ml-6 md:ml-12 border-verde/30 bg-verde/5")}>
+                <p className="text-sm text-texto-2">
+                  <span className="font-semibold text-texto">{m.papel === "user" ? "Pergunta" : "Resposta"}</span> · {quando(m.created_at)}
                   {m.papel === "assistant" && ` · ${m.modelo ?? "—"} · ${n(Number(m.tokens_entrada))} entrada / ${n(Number(m.tokens_saida))} saída`}
                   {m.erro && <span className="text-critico"> · falhou ({m.erro})</span>}
                 </p>
-                <p className="whitespace-pre-wrap text-texto">{m.conteudo || "—"}</p>
+                <p className="whitespace-pre-wrap text-[0.95rem] leading-relaxed text-texto">{m.conteudo || "—"}</p>
                 {Array.isArray(m.ferramentas) && m.ferramentas.length > 0 && (
-                  <p className="text-xs text-texto-2">
-                    Ferramentas: {(m.ferramentas as { nome: string; ok: boolean }[]).map((f) => `${f.nome}${f.ok ? "" : " (falhou)"}`).join(", ")}
+                  <p className="flex items-center gap-1.5 text-sm text-texto-2">
+                    <Wrench className="size-3.5" /> Ferramentas: {(m.ferramentas as { nome: string; ok: boolean }[]).map((f) => `${f.nome}${f.ok ? "" : " (falhou)"}`).join(", ")}
                   </p>
                 )}
               </div>

@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { CalendarDays, Crosshair, MapPin, PenLine } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
+import { CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
@@ -33,37 +35,50 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
   const area = areaRaw as Area | null;
   if (!area?.geometry) notFound();
 
+  const tamanho = formatArea(Number(area.area_ha) * 10_000, Number(area.area_ha) >= 1 ? "rural" : "urbano");
+  const municipio = area.municipio ?? "fora da região cadastrada";
+  const centro = `${area.lat.toFixed(5)}, ${area.lng.toFixed(5)}`;
+  const desenhadaEm = new Date(area.created_at).toLocaleDateString("pt-BR");
   const dados: [string, string][] = [
-    ["Área desenhada", formatArea(Number(area.area_ha) * 10_000, Number(area.area_ha) >= 1 ? "rural" : "urbano")],
-    ["Município", area.municipio ?? "fora da região cadastrada"],
-    ["Ponto central", `${area.lat.toFixed(5)}, ${area.lng.toFixed(5)}`],
-    ["Desenhada em", new Date(area.created_at).toLocaleDateString("pt-BR")],
+    ["Área desenhada", tamanho],
+    ["Município", municipio],
+    ["Ponto central", centro],
+    ["Desenhada em", desenhadaEm],
   ];
 
   return (
-    <AppShell usuario={consulta.usuario}>
-      <div className="max-w-5xl space-y-6">
-        <div>
-          <p className="text-xs text-texto-2">Área desenhada no mapa · consulta de área</p>
-          <h1 className="text-2xl font-semibold text-texto">
-            {formatArea(Number(area.area_ha) * 10_000, Number(area.area_ha) >= 1 ? "rural" : "urbano")}
-            {area.municipio && <span className="text-texto-2 font-normal"> em {area.municipio}</span>}
-          </h1>
-          <p className="font-mono text-[11px] text-texto-2 break-all mt-1">{chave}</p>
+    <AppShell usuario={consulta.usuario} semPadding>
+      <CabecalhoPagina
+        variante="faixa"
+        eyebrow="Consulta territorial"
+        titulo={tamanho}
+        destaque={area.municipio ? `em ${area.municipio}` : undefined}
+        subtitulo="Área desenhada no mapa · consulta de área"
+      >
+        <p className="font-mono text-[11px] text-texto-2 break-all">{chave}</p>
+      </CabecalhoPagina>
+
+      <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Estatistica icone={PenLine} valor={tamanho} rotulo="Área desenhada" />
+          <Estatistica icone={MapPin} valor={municipio} rotulo="Município" />
+          <Estatistica icone={Crosshair} valor={<span className="text-xl tabular-nums">{centro}</span>} rotulo="Ponto central" />
+          <Estatistica icone={CalendarDays} valor={desenhadaEm} rotulo="Desenhada em" />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <MiniMapa geometry={area.geometry} status="publicado"
-            className="h-80 w-full rounded-xl overflow-hidden border border-linha" />
-          <div className="cartao p-5 space-y-3">
-            <dl className="text-sm space-y-2">
+            className="h-80 lg:h-full lg:min-h-80 w-full rounded-[20px] overflow-hidden border border-linha" />
+          <div className="cartao p-6 space-y-5">
+            <h2 className="lp-display text-xl text-texto">Dados da área</h2>
+            <dl className="text-[0.95rem] divide-y divide-linha">
               {dados.map(([r, v]) => (
-                <div key={r} className="flex justify-between gap-3 border-b border-linha last:border-0 pb-2">
-                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto text-right">{v}</dd>
+                <div key={r} className="flex justify-between gap-4 py-3">
+                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto font-medium text-right">{v}</dd>
                 </div>
               ))}
             </dl>
-            <p className="text-[11px] text-texto-2 leading-snug">
+            <p className="text-xs text-texto-2 leading-relaxed border-t border-linha pt-4">
               A área foi desenhada à mão sobre o satélite: é aproximada. Para uma análise do imóvel, use a divisa
               do CAR ou da matrícula.
             </p>
@@ -77,7 +92,7 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
           logado={!!consulta.user} podeConsultar={consulta.podeConsultar} acesso={consulta.acesso}
           cotaRestante={consulta.cotaRestante} lista={consulta.lista} pendentes={consulta.pendentes}
           jaConsultou={consulta.jaConsultou} />
-      </div>
+      </Conteudo>
     </AppShell>
   );
 }

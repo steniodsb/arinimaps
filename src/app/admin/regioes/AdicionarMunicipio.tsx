@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
+import { CAMPO } from "@/components/ui/Pagina";
+import { Plus } from "lucide-react";
 
 export default function AdicionarMunicipio() {
   const router = useRouter();
@@ -13,13 +15,13 @@ export default function AdicionarMunicipio() {
   const [erro, setErro] = useState<ErroApi | null>(null);
 
   return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input className="rounded-lg cartao px-3 py-2 text-sm w-56"
+    <div className="space-y-2.5">
+      <div className="flex flex-wrap gap-3">
+        <input className={CAMPO.replace("w-full", "w-full sm:w-64")}
           placeholder="Código IBGE (7 dígitos)" value={codigo} inputMode="numeric"
           onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 7))} />
         <button disabled={ocupado || codigo.length !== 7}
-          className="rounded-lg bg-verde text-white text-sm font-medium px-4 py-2 hover:bg-verde-escuro disabled:opacity-50"
+          className="btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-50"
           onClick={async () => {
             setOcupado(true);
             setMsg("");
@@ -32,10 +34,11 @@ export default function AdicionarMunicipio() {
               router.refresh();
             } else setErro(r.erro);
           }}>
+          <Plus className="size-4" />
           {ocupado ? "Importando…" : "Adicionar município"}
         </button>
       </div>
-      <p className="text-xs text-texto-2">
+      <p className={`text-sm ${msg ? "font-semibold text-verde" : "text-texto-2"}`}>
         {msg || "Busca nome e limites direto no IBGE. Consulte o código em cidades.ibge.gov.br."}
       </p>
       {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}

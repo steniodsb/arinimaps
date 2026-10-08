@@ -85,5 +85,5 @@ export default function MiniMapa({ geometry, status, className }: Props) {
     };
   }, [geometry, status]);
 
-  return <div ref={containerRef} className={className ?? "h-80 w-full rounded-xl overflow-hidden"} />;
+  return <div ref={containerRef} className={className ?? "h-80 w-full rounded-2xl overflow-hidden border border-linha"} />;
 }

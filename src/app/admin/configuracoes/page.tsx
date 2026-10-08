@@ -3,6 +3,8 @@ import { comPadroes } from "@/lib/configuracoes";
 import { currentUser } from "@/lib/supabase/server";
 import ConfiguracoesForm from "./ConfiguracoesForm";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { CabecalhoPagina, Etiqueta, Secao } from "@/components/ui/Pagina";
+import { CheckCircle2, CircleDashed, Plug } from "lucide-react";
 
 export default async function AdminConfiguracoes() {
   await exigirSetor("diretoria");
@@ -25,41 +27,44 @@ export default async function AdminConfiguracoes() {
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Configurações do sistema</h1>
-        <p className="text-sm text-texto-2">
-          O que você mudar aqui vale imediatamente no site, no mapa e nas regras comerciais.
-        </p>
-      </div>
+    <div className="mx-auto max-w-[1280px] space-y-12">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Central · Diretoria"
+        titulo="Configurações do sistema"
+        subtitulo="O que você mudar aqui vale imediatamente no site, no mapa e nas regras comerciais."
+      />
 
       <ConfiguracoesForm
         inicial={comPadroes(data ?? [])}
         ehDiretoria={user?.role === "admin_central"}
       />
 
-      <section className="cartao p-6 space-y-3">
-        <div>
-          <h2 className="font-semibold text-texto text-lg">🔌 Integrações</h2>
-          <p className="text-sm text-texto-2">
-            Configuradas no servidor por segurança (as chaves nunca chegam ao navegador).
-            Peça ao desenvolvedor para ligar as que faltam.
-          </p>
-        </div>
-        <div className="divide-y divide-linha">
+      <Secao
+        eyebrow="Servidor"
+        titulo="Integrações"
+        subtitulo="Configuradas no servidor por segurança (as chaves nunca chegam ao navegador). Peça ao desenvolvedor para ligar as que faltam."
+      >
+        <div className="grid gap-5 md:grid-cols-2">
           {integracoes.map((i) => (
-            <div key={i.nome} className="py-3 flex items-center gap-3 flex-wrap">
-              <div className="flex-1 min-w-56">
-                <p className="font-medium text-sm">{i.nome}</p>
-                <p className="text-xs text-texto-2">{i.dica}</p>
-              </div>
-              <span className={`text-xs rounded-full px-3 py-1 font-medium ${i.ligado ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2"}`}>
-                {i.ligado ? "ligada" : "não configurada"}
+            <div key={i.nome} className={"cartao flex items-start gap-4 border-l-4 p-5 " + (i.ligado ? "border-l-verde" : "border-l-linha-forte")}>
+              <span className={"grid size-10 shrink-0 place-items-center rounded-xl " + (i.ligado ? "bg-verde/12 text-verde" : "bg-superficie-2 text-texto-2")}>
+                <Plug className="size-5" />
               </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-texto">{i.nome}</p>
+                  <Etiqueta tom={i.ligado ? "verde" : "neutro"}>
+                    {i.ligado ? <CheckCircle2 className="size-3.5" /> : <CircleDashed className="size-3.5" />}
+                    {i.ligado ? "ligada" : "não configurada"}
+                  </Etiqueta>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-texto-2">{i.dica}</p>
+              </div>
             </div>
           ))}
         </div>
-      </section>
+      </Secao>
     </div>
   );
 }

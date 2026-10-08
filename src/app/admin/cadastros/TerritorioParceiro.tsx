@@ -26,14 +26,14 @@ export default function TerritorioParceiro({
   }
 
   return (
-    <label className="text-xs text-texto-2 flex items-center gap-1.5" title="Região que este parceiro representa como franqueado">
+    <label className="flex items-center gap-2 text-sm font-medium text-texto-2" title="Região que este parceiro representa como franqueado">
       {tipo === "franqueado" ? "Franqueado de" : "Território"}
       <select value={regionId} disabled={ocupado} onChange={(e) => salvar(e.target.value)}
-        className="rounded-lg border border-linha bg-superficie-2 px-2 py-1 text-xs text-texto max-w-44">
+        className="max-w-48 rounded-lg border border-linha-forte bg-superficie-2 px-3 py-2 text-sm text-texto focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30">
         <option value="">— nenhum —</option>
         {regioes.map((r) => <option key={r.id} value={r.id}>{r.nome}</option>)}
       </select>
-      {erro && <span className="text-critico">{erro}</span>}
+      {erro && <span className="text-xs text-critico">{erro}</span>}
     </label>
   );
 }

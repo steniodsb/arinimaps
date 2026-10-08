@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft, FileWarning, PencilLine, FolderLock, Video, type LucideIcon } from "lucide-react";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL, STATUS_LABEL } from "@/lib/format";
@@ -6,6 +8,12 @@ import DocumentosImovel from "@/components/crm/DocumentosImovel";
 import VideosImovel from "@/components/crm/VideosImovel";
 import HistoricoImovel from "@/components/crm/HistoricoImovel";
 import ProporAlteracao from "./ProporAlteracao";
+import { Etiqueta } from "@/components/ui/Pagina";
+
+const TOM: Record<string, "verde" | "ouro" | "alerta" | "critico" | "neutro"> = {
+  rascunho: "neutro", pendente: "alerta", em_analise: "alerta", correcao: "alerta", aprovado: "verde",
+  publicado: "verde", em_negociacao: "ouro", vendido: "neutro", reprovado: "critico",
+};
 
 export default async function MeuImovel({ params }: PageProps<"/painel/imoveis/[id]">) {
   const { id } = await params;
@@ -34,24 +42,28 @@ export default async function MeuImovel({ params }: PageProps<"/painel/imoveis/[
   const publicado = ["publicado", "em_negociacao"].includes(p.status);
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="max-w-4xl space-y-8">
       <div>
-        <p className="font-mono text-xs text-texto-2">{p.codigo}</p>
-        <h1 className="text-2xl font-semibold text-texto">{p.titulo}</h1>
-        <p className="text-sm text-texto-2">
-          {formatBRL(p.valor)} · <strong>{rotuloStatus}</strong>
-          {revisao && <span className="ml-2 text-xs rounded-full bg-alerta/15 text-alerta px-2.5 py-0.5">alteração em análise</span>}
-        </p>
+        <Link href="/painel" className="inline-flex items-center gap-1.5 text-sm font-semibold text-texto-2 hover:text-verde transition-colors">
+          <ArrowLeft className="size-4" /> Meus imóveis
+        </Link>
+        <p className="mt-5 font-mono text-sm text-texto-2">{p.codigo}</p>
+        <h1 className="lp-display mt-1 text-2xl md:text-[2rem] text-texto text-balance">{p.titulo}</h1>
+        <div className="mt-3 flex flex-wrap items-center gap-2.5">
+          <span className="text-lg font-semibold tabular-nums text-texto">{formatBRL(p.valor)}</span>
+          <Etiqueta tom={TOM[p.status] ?? "neutro"}>{rotuloStatus}</Etiqueta>
+          {revisao && <Etiqueta tom="alerta">alteração em análise</Etiqueta>}
+        </div>
         {p.motivo_correcao && (
-          <p className="mt-2 text-sm bg-alerta/10 text-alerta rounded-lg px-3 py-2">
-            {complemento ? "A Arini pediu informações complementares" : "A Arini pediu correção"}: {p.motivo_correcao}
+          <p className="mt-5 flex items-start gap-3 rounded-2xl border border-alerta/40 bg-alerta/10 px-5 py-4 text-base text-alerta">
+            <FileWarning className="mt-0.5 size-5 shrink-0" />
+            <span>{complemento ? "A Arini pediu informações complementares" : "A Arini pediu correção"}: {p.motivo_correcao}</span>
           </p>
         )}
       </div>
 
       {publicado && (
-        <section className="cartao p-5 space-y-3">
-          <h2 className="font-semibold text-texto">Alteração do anúncio</h2>
+        <Bloco icone={PencilLine} titulo="Alteração do anúncio">
           <ProporAlteracao
             propertyId={p.id}
             tipo={p.tipo as "urbano" | "rural"}
@@ -61,28 +73,41 @@ export default async function MeuImovel({ params }: PageProps<"/painel/imoveis/[
             }}
             pendente={revisao ? { id: revisao.id, versao: revisao.versao, dados: (revisao.dados ?? {}) as Record<string, unknown>, created_at: revisao.created_at } : null}
           />
-        </section>
+        </Bloco>
       )}
 
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Documentos do imóvel</h2>
-        <p className="text-sm text-texto-2">
-          Matrícula, CAR, ITR, planta DWG, autorização de venda — quanto mais completo, mais rápida a aprovação.
-          Os arquivos ficam num cofre privado; só você e a Arini acessam.
-        </p>
+      <Bloco icone={FolderLock} titulo="Documentos do imóvel"
+        texto={<>Matrícula, CAR, ITR, planta DWG, autorização de venda — quanto mais completo, mais rápida a aprovação.
+          Os arquivos ficam num cofre privado; só você e a Arini acessam.</>}>
         <DocumentosImovel propertyId={p.id} />
-      </section>
+      </Bloco>
 
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Vídeos do imóvel</h2>
-        <p className="text-sm text-texto-2">
-          Um vídeo curto da sede, do acesso ou das benfeitorias ajuda muito na decisão. Ele entra na galeria do anúncio.
-        </p>
+      <Bloco icone={Video} titulo="Vídeos do imóvel"
+        texto="Um vídeo curto da sede, do acesso ou das benfeitorias ajuda muito na decisão. Ele entra na galeria do anúncio.">
         <VideosImovel propertyId={p.id} videos={videos} />
-      </section>
+      </Bloco>
 
       {/* §1: histórico do imóvel — versões da divisa, origem dos dados, alterações e auditoria */}
       <HistoricoImovel propertyId={p.id} modo="painel" tipoImovel={p.tipo as "urbano" | "rural"} />
     </div>
+  );
+}
+
+function Bloco({ icone: Icone, titulo, texto, children }: {
+  icone: LucideIcon; titulo: string; texto?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <section className="cartao p-5 md:p-7">
+      <header className="mb-5 flex items-start gap-4">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+          <Icone className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="lp-display text-xl md:text-2xl text-texto">{titulo}</h2>
+          {texto && <p className="mt-1.5 text-base leading-relaxed text-texto-2">{texto}</p>}
+        </div>
+      </header>
+      {children}
+    </section>
   );
 }

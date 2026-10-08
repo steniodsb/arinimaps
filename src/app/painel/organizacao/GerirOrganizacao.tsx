@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { UserPlus, Lock, LogOut } from "lucide-react";
+import { CAMPO } from "@/components/ui/Pagina";
 
-const input = "rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde transition";
+const input = CAMPO;
 
 async function enviar(corpo: Record<string, unknown>) {
   const res = await fetch("/api/conta/organizacao", {
@@ -41,32 +43,39 @@ export default function GerirOrganizacao({ souAdmin, podeConvidar }: { souAdmin:
     <div className="space-y-4">
       {souAdmin && (
         podeConvidar ? (
-          <form onSubmit={convidar} className="cartao p-5 space-y-3">
-            <h2 className="font-semibold text-texto">Convidar pessoa</h2>
-            <div className="flex gap-2 flex-wrap">
-              <input type="email" required placeholder="e-mail da pessoa" className={input + " flex-1 min-w-56"}
+          <form onSubmit={convidar} className="cartao space-y-5 p-5 md:p-7">
+            <h2 className="lp-display flex items-center gap-3 text-xl md:text-2xl text-texto">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde"><UserPlus className="size-5" /></span>
+              Convidar pessoa
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <input type="email" required placeholder="e-mail da pessoa" className={input + " min-w-56 flex-1"}
                 value={email} onChange={(e) => setEmail(e.target.value)} />
-              <select className={input} value={papel} onChange={(e) => setPapel(e.target.value as "membro" | "admin")}>
+              <select className={input + " !w-auto"} value={papel} onChange={(e) => setPapel(e.target.value as "membro" | "admin")}>
                 <option value="membro">Membro</option>
                 <option value="admin">Administrador</option>
               </select>
-              <button disabled={ocupado} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">Convidar</button>
+              <button disabled={ocupado} className="btn-verde px-6 py-3 text-sm disabled:opacity-60">Convidar</button>
             </div>
-            <p className="text-xs text-texto-2">
+            <p className="text-sm text-texto-2">
               A pessoa recebe um e-mail. Ao entrar (ou criar a conta) com esse mesmo e-mail, ela passa a fazer parte da
               organização e a usar o plano dela.
             </p>
           </form>
         ) : (
-          <p className="cartao p-4 text-sm text-texto-2">
-            O plano atual da organização não inclui “Vários usuários”. Para convidar pessoas,{" "}
-            <a href="/suporte?assunto=plano:organizacao" className="text-verde hover:underline">fale com a Arini</a>.
+          <p className="cartao flex items-start gap-3 p-5 text-base text-texto-2">
+            <Lock className="mt-1 size-4 shrink-0 text-ouro" />
+            <span>
+              O plano atual da organização não inclui “Vários usuários”. Para convidar pessoas,{" "}
+              <a href="/suporte?assunto=plano:organizacao" className="text-verde hover:underline">fale com a Arini</a>.
+            </span>
           </p>
         )
       )}
-      {msg && <p className={"text-sm " + (msg.ok ? "text-verde" : "text-critico")}>{msg.texto}</p>}
-      <button type="button" onClick={sair} disabled={ocupado} className="text-xs text-texto-2 hover:text-critico">
-        Sair da organização
+      {msg && <p className={"text-sm font-semibold " + (msg.ok ? "text-verde" : "text-critico")}>{msg.texto}</p>}
+      <button type="button" onClick={sair} disabled={ocupado}
+        className="inline-flex items-center gap-1.5 text-sm text-texto-2 hover:text-critico transition-colors">
+        <LogOut className="size-4" /> Sair da organização
       </button>
     </div>
   );
@@ -87,14 +96,14 @@ export function AcoesMembro({ id, papel, pendente }: { id: string; papel: string
   }
 
   return (
-    <span className="flex items-center gap-2 text-xs">
+    <span className="flex flex-wrap items-center gap-2 text-xs">
       {!pendente && (
-        <button type="button" disabled={ocupado} className="text-texto-2 hover:text-texto"
+        <button type="button" disabled={ocupado} className="btn-contorno px-3 py-1.5 text-xs"
           onClick={() => agir({ acao: "papel", papel_org: papel === "admin" ? "membro" : "admin" })}>
           {papel === "admin" ? "Tornar membro" : "Tornar administrador"}
         </button>
       )}
-      <button type="button" disabled={ocupado} className="text-texto-2 hover:text-critico"
+      <button type="button" disabled={ocupado} className="btn-perigo px-3 py-1.5 text-xs"
         onClick={() => agir({ acao: "remover" }, pendente ? "Cancelar este convite?" : "Remover esta pessoa da organização?")}>
         {pendente ? "Cancelar convite" : "Remover"}
       </button>

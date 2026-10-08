@@ -28,26 +28,26 @@ export default function CadastroBotoes({
   const aprovado = ["aprovado", "ativo"].includes(status);
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {!aprovado && (
           <>
             <button disabled={ocupado} onClick={() => decidir("ativo")}
-              className="rounded-lg bg-verde text-white text-xs font-medium px-3 py-1.5 hover:bg-verde-escuro disabled:opacity-50">
+              className="btn-verde px-3.5 py-2 text-sm disabled:opacity-50">
               Aprovar
             </button>
             <button disabled={ocupado} onClick={() => decidir("pendente", true)}
-              className="rounded-lg bg-alerta text-white text-xs font-medium px-3 py-1.5 hover:bg-alerta/80 disabled:opacity-50">
+              className="btn-contorno px-3.5 py-2 text-sm !text-alerta disabled:opacity-50">
               Pedir complemento
             </button>
             <button disabled={ocupado} onClick={() => decidir("reprovado")}
-              className="rounded-lg bg-critico text-white text-xs font-medium px-3 py-1.5 hover:bg-critico/80 disabled:opacity-50">
+              className="btn-perigo px-3.5 py-2 text-sm disabled:opacity-50">
               Reprovar
             </button>
           </>
         )}
         {aprovado && (
           <button disabled={ocupado} onClick={() => decidir("suspenso")}
-            className="rounded-lg bg-superficie-2 text-texto btn-contorno text-xs font-medium px-3 py-1.5 hover:bg-linha disabled:opacity-50">
+            className="btn-contorno px-3.5 py-2 text-sm disabled:opacity-50">
             Suspender
           </button>
         )}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Send } from "lucide-react";
 import { useConversa, type MsgSuporte } from "@/components/suporte/useConversa";
+import { CAMPO, Etiqueta } from "@/components/ui/Pagina";
 
 export type Chamado = {
   id: string; codigo: string; assunto: string; status: string; created_at: string; updated_at: string;
@@ -12,25 +14,31 @@ const SITUACAO: Record<string, string> = {
   aberto: "Recebido", em_atendimento: "Em atendimento", aguardando_cliente: "Aguardando você", resolvido: "Resolvido",
 };
 const quando = (d: string) => new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-const corSituacao = (s: string) =>
-  s === "aguardando_cliente" ? "bg-ouro/15 text-ouro" : s === "resolvido" ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2";
+const tomSituacao = (s: string) =>
+  s === "aguardando_cliente" ? "ouro" as const : s === "resolvido" ? "verde" as const : "neutro" as const;
 
 export default function MeusChamados({ chamados }: { chamados: Chamado[] }) {
   const [aberto, setAberto] = useState<string | null>(chamados.find((c) => c.status === "aguardando_cliente")?.id ?? null);
 
   if (!chamados.length) return null;
   return (
-    <section className="space-y-3">
-      <h2 className="font-semibold text-texto text-lg">Meus chamados</h2>
-      <div className="cartao divide-y divide-linha">
+    <section className="space-y-5">
+      <div>
+        <p className="lp-eyebrow !text-xs">Histórico</p>
+        <h2 className="lp-display mt-2 text-2xl text-texto md:text-[1.75rem]">Meus chamados</h2>
+      </div>
+      <div className="cartao divide-y divide-linha overflow-hidden">
         {chamados.map((c) => (
-          <div key={c.id} className="px-4 py-3 text-sm">
-            <button className="w-full flex items-center gap-3 flex-wrap text-left" onClick={() => setAberto(aberto === c.id ? null : c.id)}>
+          <div key={c.id} className="text-[15px]">
+            <button type="button" aria-expanded={aberto === c.id}
+              className="flex w-full flex-wrap items-center gap-3 px-5 py-4 text-left transition hover:bg-superficie-2"
+              onClick={() => setAberto(aberto === c.id ? null : c.id)}>
               <span className="font-mono text-xs text-texto-2">{c.codigo}</span>
-              <span className="flex-1 min-w-40 text-texto">{c.assunto}</span>
-              <span className={"text-xs rounded-full px-3 py-1 " + corSituacao(c.status)}>{SITUACAO[c.status]}</span>
+              <span className="min-w-40 flex-1 font-semibold text-texto">{c.assunto}</span>
+              <Etiqueta tom={tomSituacao(c.status)}>{SITUACAO[c.status]}</Etiqueta>
+              <ChevronDown className={"size-4 shrink-0 text-texto-2 transition " + (aberto === c.id ? "rotate-180" : "")} />
             </button>
-            {aberto === c.id && <Conversa chamado={c} />}
+            {aberto === c.id && <div className="px-5 pb-5"><Conversa chamado={c} /></div>}
           </div>
         ))}
       </div>
@@ -64,35 +72,35 @@ function Conversa({ chamado }: { chamado: Chamado }) {
   }
 
   return (
-    <div className="mt-3 space-y-3 border-t border-linha pt-3">
-      <p className="flex items-center gap-2 text-xs text-texto-2">
+    <div className="space-y-4 border-t border-linha pt-4">
+      <p className="flex items-center gap-2 text-sm text-texto-2">
         <span className={"w-2 h-2 rounded-full " + (extra.atendente_online ? "bg-verde" : "bg-texto-2/40")} aria-hidden />
         {extra.atendente_online === undefined
           ? "Conectando…"
           : extra.atendente_online
             ? "Atendente online — a resposta aparece aqui sem recarregar."
             : "Equipe fora agora — respondemos aqui e por e-mail assim que possível."}
-        {status !== chamado.status && <span className={"ml-auto rounded-full px-2 py-0.5 " + corSituacao(status)}>{SITUACAO[status]}</span>}
+        {status !== chamado.status && <Etiqueta tom={tomSituacao(status)} className="ml-auto">{SITUACAO[status]}</Etiqueta>}
       </p>
       <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-1">
         {mensagens.map((m) => (
-          <div key={m.id} className={"rounded-xl border p-3 " + (m.da_equipe ? "border-verde/30 bg-verde/5 mr-6" : "border-linha bg-superficie-2 ml-6")}>
-            <p className="text-xs text-texto-2 mb-1">{m.da_equipe ? `${m.autor_nome} · equipe Arini` : "Você"} · {quando(m.created_at)}</p>
-            <p className="whitespace-pre-wrap text-texto">{m.corpo}</p>
+          <div key={m.id} className={"rounded-2xl border p-4 " + (m.da_equipe ? "mr-6 rounded-tl-md border-verde/30 bg-verde/5" : "ml-6 rounded-tr-md border-linha bg-superficie-2")}>
+            <p className="mb-1.5 text-xs font-semibold text-texto-2">{m.da_equipe ? `${m.autor_nome} · equipe Arini` : "Você"} · {quando(m.created_at)}</p>
+            <p className="whitespace-pre-wrap leading-relaxed text-texto">{m.corpo}</p>
           </div>
         ))}
         <div ref={fim} />
       </div>
-      <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); responder(); }}>
+      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); responder(); }}>
         <textarea required rows={3} value={texto} onChange={(e) => setTexto(e.target.value)}
           onKeyDown={(e) => {
             // Enter envia; Shift+Enter quebra a linha
             if (e.key === "Enter" && !e.shiftKey && texto.trim().length >= 2 && !ocupado) { e.preventDefault(); responder(); }
           }}
           placeholder={status === "resolvido" ? "Escreva para reabrir o chamado" : "Sua mensagem (Enter envia, Shift+Enter quebra a linha)"}
-          className="w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-verde" />
+          className={CAMPO} />
         {erro && <p className="text-sm text-critico">{erro}</p>}
-        <button disabled={ocupado} className="btn-contorno px-4 py-2 text-sm disabled:opacity-60">{ocupado ? "Enviando…" : "Enviar"}</button>
+        <button disabled={ocupado} className="lp-btn lp-btn-contorno !px-5 !py-2.5 text-sm disabled:opacity-60">{ocupado ? "Enviando…" : <>Enviar <Send /></>}</button>
       </form>
     </div>
   );

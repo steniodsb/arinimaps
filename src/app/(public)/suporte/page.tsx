@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Clock, MessagesSquare, ShieldCheck } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
+import { CabecalhoPagina, Conteudo } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import FormSuporte from "./FormSuporte";
@@ -43,19 +45,46 @@ export default async function Suporte({ searchParams }: PageProps<"/suporte">) {
   return (
     <div className="min-h-screen bg-fundo">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-12 space-y-8">
-        <div className="space-y-2">
-          <p className="text-sm text-verde font-medium">Suporte</p>
-          <h1 className="text-3xl font-semibold text-texto">Como podemos ajudar?</h1>
-          <p className="text-texto-2">
+      <CabecalhoPagina
+        variante="faixa"
+        eyebrow="Suporte"
+        titulo="Como podemos"
+        destaque="ajudar?"
+        subtitulo={
+          <>
             Escreva para a equipe. Respondemos por e-mail em horário comercial
             {user ? ", e a conversa continua aqui embaixo, ao vivo: quando a equipe responde, a mensagem aparece sem recarregar." : ". Com uma conta, a conversa também acontece nesta página, ao vivo."}
-          </p>
-        </div>
+          </>
+        }
+      />
 
-        <FormSuporte nome={user?.nome ?? ""} email={user?.email ?? ""} logado={!!user} assuntoInicial={assuntoInicial} />
+      <main>
+        <Conteudo className="py-12 md:py-16">
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="min-w-0 space-y-12">
+              <FormSuporte nome={user?.nome ?? ""} email={user?.email ?? ""} logado={!!user} assuntoInicial={assuntoInicial} />
+              {user && <MeusChamados chamados={chamados} />}
+            </div>
 
-        {user && <MeusChamados chamados={chamados} />}
+            <aside className="space-y-4 lg:sticky lg:top-28">
+              {[
+                { icone: Clock, titulo: "Horário comercial", texto: "A equipe responde por e-mail em horário comercial." },
+                { icone: MessagesSquare, titulo: "Conversa ao vivo", texto: "Com uma conta, a conversa continua nesta página e a resposta aparece sem recarregar." },
+                { icone: ShieldCheck, titulo: "Dados pessoais (LGPD)", texto: "Pedidos sobre dados pessoais vão para o encarregado de dados e são respondidos em até 15 dias." },
+              ].map(({ icone: Icone, titulo, texto }) => (
+                <div key={titulo} className="cartao flex gap-4 p-5">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+                    <Icone className="size-5" />
+                  </span>
+                  <div>
+                    <p className="lp-display text-lg text-texto">{titulo}</p>
+                    <p className="mt-1 text-[15px] leading-relaxed text-texto-2">{texto}</p>
+                  </div>
+                </div>
+              ))}
+            </aside>
+          </div>
+        </Conteudo>
       </main>
     </div>
   );

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarClock, ChevronDown, ChevronRight, Plus, Shield, X } from "lucide-react";
+import { CAMPO, Etiqueta } from "@/components/ui/Pagina";
+import { CODIGO, LISTA } from "@/components/admin/estilos";
 
 export type Pedido = {
   id: string; codigo: string; nome: string; email: string; cpf: string | null; tipo: string;
@@ -14,7 +17,7 @@ const TIPO: Record<string, string> = {
   revogacao: "Revogação de consentimento", informacao: "Informação sobre o tratamento", outro: "Outro",
 };
 const STATUS: Record<string, string> = { recebido: "Recebido", em_analise: "Em análise", atendido: "Atendido", negado: "Negado" };
-const input = "w-full rounded-lg border border-linha bg-superficie-2 px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-verde";
+const input = CAMPO;
 
 export default function PedidosLgpd({ pedidos }: { pedidos: Pedido[] }) {
   const router = useRouter();
@@ -37,12 +40,12 @@ export default function PedidosLgpd({ pedidos }: { pedidos: Pedido[] }) {
 
   return (
     <div className="space-y-4">
-      <button onClick={() => setNovo(!novo)} className="btn-contorno px-4 py-2 text-sm">
-        {novo ? "Cancelar" : "+ Registrar pedido recebido por outro canal"}
+      <button onClick={() => setNovo(!novo)} className="btn-contorno inline-flex items-center gap-2 px-4 py-2.5 text-sm">
+        {novo ? <><X className="size-4" /> Cancelar</> : <><Plus className="size-4" /> Registrar pedido recebido por outro canal</>}
       </button>
 
       {novo && (
-        <form className="cartao p-5 grid gap-3 sm:grid-cols-2"
+        <form className="cartao p-6 grid gap-4 sm:grid-cols-2"
           onSubmit={async (e) => {
             e.preventDefault();
             if (await chamar("POST", form)) { setNovo(false); setForm({ nome: "", email: "", cpf: "", tipo: "acesso", descricao: "" }); }
@@ -60,40 +63,42 @@ export default function PedidosLgpd({ pedidos }: { pedidos: Pedido[] }) {
       )}
       {erro && <p className="text-sm text-critico">{erro}</p>}
 
-      <div className="cartao divide-y divide-linha">
+      <div className={LISTA}>
         {pedidos.map((p) => {
           const emAberto = ["recebido", "em_analise"].includes(p.status);
           const atrasado = emAberto && p.prazo < hoje;
           return (
-            <div key={p.id} className="px-4 py-3 text-sm">
-              <button className="w-full flex items-center gap-3 flex-wrap text-left"
+            <div key={p.id} className="px-5 py-3.5 text-[0.95rem]">
+              <button className="w-full flex items-center gap-4 flex-wrap text-left" aria-expanded={aberto === p.id}
                 onClick={() => { setAberto(aberto === p.id ? null : p.id); setResposta(p.resposta ?? ""); }}>
-                <span className="font-mono text-xs text-texto-2">{p.codigo}</span>
-                <span className="flex-1 min-w-48 text-texto">{TIPO[p.tipo] ?? p.tipo}<span className="text-xs text-texto-2"> · {p.nome}</span></span>
-                <span className={"text-xs rounded-full px-3 py-1 " + (emAberto ? "bg-ouro/15 text-ouro" : "bg-superficie-2 text-texto-2")}>{STATUS[p.status]}</span>
-                <span className={"text-xs tabular-nums " + (atrasado ? "text-critico" : "text-texto-2")}>
+                {aberto === p.id ? <ChevronDown className="size-4 shrink-0 text-verde" /> : <ChevronRight className="size-4 shrink-0 text-texto-2" />}
+                <span className={CODIGO}>{p.codigo}</span>
+                <span className="flex-1 min-w-48 font-semibold text-texto">{TIPO[p.tipo] ?? p.tipo}<span className="font-normal text-sm text-texto-2"> · {p.nome}</span></span>
+                <Etiqueta tom={emAberto ? "ouro" : p.status === "atendido" ? "verde" : p.status === "negado" ? "critico" : "neutro"}>{STATUS[p.status]}</Etiqueta>
+                <span className={"inline-flex items-center gap-1 text-xs tabular-nums whitespace-nowrap " + (atrasado ? "font-semibold text-critico" : "text-texto-2")}>
+                  <CalendarClock className="size-3.5" />
                   {emAberto ? `prazo ${new Date(p.prazo + "T12:00:00").toLocaleDateString("pt-BR")}` : `encerrado em ${p.atendido_em ? new Date(p.atendido_em).toLocaleDateString("pt-BR") : "—"}`}
                 </span>
               </button>
 
               {aberto === p.id && (
-                <div className="mt-3 space-y-3 border-t border-linha pt-3">
-                  <p className="text-xs text-texto-2">
+                <div className="mt-4 space-y-4 border-t border-linha pt-4">
+                  <p className="text-sm text-texto-2">
                     {p.email}{p.cpf && ` · CPF ${p.cpf}`} · recebido em {new Date(p.created_at).toLocaleString("pt-BR")}
                   </p>
-                  {p.descricao && <p className="whitespace-pre-wrap text-texto-2">{p.descricao}</p>}
+                  {p.descricao && <p className="whitespace-pre-wrap leading-relaxed text-texto">{p.descricao}</p>}
                   <textarea rows={4} className={input} placeholder="Resposta ao titular (obrigatória para encerrar; é enviada por e-mail)"
                     value={resposta} onChange={(e) => setResposta(e.target.value)} disabled={!emAberto} />
                   {emAberto && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2.5">
                       {p.status === "recebido" && (
                         <button disabled={ocupado} onClick={() => chamar("PATCH", { id: p.id, status: "em_analise", resposta })}
-                          className="btn-contorno px-4 py-2 text-xs">Marcar em análise</button>
+                          className="btn-contorno px-4 py-2 text-sm">Marcar em análise</button>
                       )}
                       <button disabled={ocupado} onClick={() => chamar("PATCH", { id: p.id, status: "atendido", resposta })}
-                        className="btn-verde px-4 py-2 text-xs disabled:opacity-60">Atender e responder</button>
+                        className="btn-verde px-4 py-2 text-sm disabled:opacity-60">Atender e responder</button>
                       <button disabled={ocupado} onClick={() => chamar("PATCH", { id: p.id, status: "negado", resposta })}
-                        className="rounded-lg border border-critico/50 text-critico px-4 py-2 text-xs">Negar com justificativa</button>
+                        className="btn-perigo px-4 py-2 text-sm">Negar com justificativa</button>
                     </div>
                   )}
                 </div>
@@ -101,7 +106,12 @@ export default function PedidosLgpd({ pedidos }: { pedidos: Pedido[] }) {
             </div>
           );
         })}
-        {!pedidos.length && <p className="px-4 py-8 text-center text-sm text-texto-2">Nenhum pedido de titular até agora.</p>}
+        {!pedidos.length && (
+          <div className="flex flex-col items-center gap-2 px-5 py-12 text-center">
+            <Shield className="size-6 text-verde" />
+            <p className="text-[0.95rem] text-texto-2">Nenhum pedido de titular até agora.</p>
+          </div>
+        )}
       </div>
     </div>
   );

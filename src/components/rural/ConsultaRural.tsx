@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { LinhaOrigem, SeloClassificacao, SeloSituacao, type OrigemItem } from "./Selos";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
+import { ChevronDown, FileText, LoaderCircle, Radar } from "lucide-react";
 
 type Item = { titulo: string; detalhe?: string; extra?: Record<string, string | number | null>; origem?: OrigemItem };
 type Consulta = {
@@ -68,40 +70,40 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
   const pendentes = dados?.fontes.filter((f) => !f.ativa) ?? [];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="block text-xs text-texto-2 mb-1">Raio de análise no entorno</label>
-          <select value={raio} onChange={(e) => setRaio(Number(e.target.value))}
-            className="rounded-lg border border-linha bg-superficie-2 text-texto px-3 py-2 text-sm">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="w-full sm:w-64">
+          <label className={ROTULO}>Raio de análise no entorno</label>
+          <select value={raio} onChange={(e) => setRaio(Number(e.target.value))} className={CAMPO}>
             {RAIOS.map((r) => (
               <option key={r} value={r}>{r === 0 ? "Só o imóvel" : `${r / 1000} km ao redor`}</option>
             ))}
           </select>
         </div>
-        <button onClick={consultar} disabled={rodando} className="btn-ouro px-6 py-2.5 disabled:opacity-60">
+        <button onClick={consultar} disabled={rodando} className="btn-ouro inline-flex items-center gap-2 px-6 py-3 disabled:opacity-60">
+          {rodando ? <LoaderCircle className="size-4 animate-spin" /> : <Radar className="size-4" />}
           {rodando ? "Consultando…" : "Executar consulta territorial"}
         </button>
-        {msg && <span className="text-sm text-texto-2">{msg}</span>}
+        {msg && <span className="text-sm text-texto-2 leading-relaxed">{msg}</span>}
       </div>
 
       {dados?.imovel && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             ["Área", dados.imovel.area_ha ? `${dados.imovel.area_ha.toLocaleString("pt-BR")} ha` : "—"],
             ["Perímetro", dados.imovel.perimetro_km ? `${dados.imovel.perimetro_km.toLocaleString("pt-BR")} km` : "—"],
             ["Município", dados.imovel.municipio ?? "—"],
             ["Tipo", dados.imovel.tipo],
           ].map(([r, v]) => (
-            <div key={r} className="cartao p-3">
-              <p className="text-[11px] uppercase tracking-wide text-texto-2">{r}</p>
-              <p className="font-semibold text-texto">{v}</p>
+            <div key={r} className="cartao border-l-4 border-l-verde p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-2">{r}</p>
+              <p className="lp-display mt-2 text-xl leading-tight text-texto capitalize">{v}</p>
             </div>
           ))}
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {ativas.map((f) => {
           const c = f.consulta;
           // fonte instável nunca vira "nada encontrado" (3.16)
@@ -110,41 +112,41 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
             : c.erro ? (instavel ? "fonte com instabilidade" : "indisponível")
             : c.quantidade > 0 ? `${c.quantidade} registro(s)`
             : instavel ? "fonte com instabilidade" : "nada encontrado";
-          const cor = !c ? "bg-superficie-2 text-texto-2"
-            : c.erro || (instavel && !c.quantidade) ? "bg-alerta/15 text-alerta"
-            : c.quantidade > 0 ? "bg-ouro/20 text-ouro-escuro" : "bg-verde/10 text-verde";
+          const cor = !c ? "bg-superficie-2 text-texto-2 border-linha"
+            : c.erro || (instavel && !c.quantidade) ? "bg-alerta/14 text-alerta border-alerta/30"
+            : c.quantidade > 0 ? "bg-ouro/14 text-ouro border-ouro/30" : "bg-verde/14 text-verde border-verde/25";
           const itens = c?.resultado?.itens ?? [];
           const origem = c?.resultado?.origem ?? itens.find((i) => i.origem)?.origem ?? null;
           return (
             <div key={f.id} className="cartao overflow-hidden">
               <button onClick={() => setAberta(aberta === f.id ? null : f.id)}
-                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-superficie-2 transition">
+                className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-superficie-2 transition">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm flex flex-wrap items-center gap-1.5">
+                  <p className="font-display font-bold text-base text-texto flex flex-wrap items-center gap-1.5">
                     {f.nome}
                     <SeloClassificacao valor={origem?.tipo ?? f.classificacao} />
                     <SeloSituacao valor={f.situacao} soProblema />
                   </p>
-                  <p className="text-xs text-texto-2">
+                  <p className="mt-0.5 text-xs text-texto-2">
                     {f.orgao}
                     {c && !c.erro && ` · consultado em ${new Date(c.consultado_em).toLocaleString("pt-BR")}`}
                     {c?.raio_m ? ` · raio ${c.raio_m / 1000} km` : null}
                   </p>
                 </div>
-                <span className={`text-xs rounded-full px-3 py-1 font-medium shrink-0 ${cor}`}>{estado}</span>
-                {!!c && <span className="text-texto-2 text-xs">{aberta === f.id ? "▲" : "▼"}</span>}
+                <span className={`shrink-0 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-semibold ${cor}`}>{estado}</span>
+                {!!c && <ChevronDown aria-hidden className={`size-4 shrink-0 text-texto-2 transition-transform ${aberta === f.id ? "rotate-180" : ""}`} />}
               </button>
 
               {aberta === f.id && (
-                <div className="px-4 pb-3 space-y-1.5 border-t border-linha pt-3">
+                <div className="px-5 pb-4 space-y-2 border-t border-linha pt-4">
                   {c?.erro && (
                     <p className="text-sm text-alerta">
                       Fonte indisponível: {c.erro}. Nada aqui significa ausência de registro — só que o serviço não respondeu.
                     </p>
                   )}
                   {itens.map((i, n) => (
-                    <div key={n} className="text-sm border-b border-linha/60 last:border-0 pb-1.5">
-                      <p className="font-medium">{i.titulo}</p>
+                    <div key={n} className="text-sm border-b border-linha/60 last:border-0 pb-2">
+                      <p className="font-medium text-texto">{i.titulo}</p>
                       {i.detalhe && <p className="text-texto-2 text-xs">{i.detalhe}</p>}
                       {i.extra && (
                         <p className="text-[11px] text-texto-2">
@@ -174,16 +176,18 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
       </div>
 
       {!!pendentes.length && (
-        <div className="rounded-xl border border-linha bg-superficie-2 p-4 space-y-2">
-          <p className="text-sm font-semibold text-texto">Fontes que dependem de importação de arquivo</p>
+        <div className="rounded-2xl border border-linha bg-superficie-2 p-5 space-y-2.5">
+          <p className="flex items-center gap-2 font-display text-base font-bold text-texto">
+            <FileText className="size-4 text-ouro" /> Fontes que dependem de importação de arquivo
+          </p>
           <p className="text-xs text-texto-2">
             Não têm consulta pública por polígono. Os dados precisam ser baixados do órgão e importados —
             enquanto isso, não entram no relatório.
           </p>
-          <ul className="text-sm space-y-1">
+          <ul className="text-sm space-y-1.5">
             {pendentes.map((f) => (
               <li key={f.id} className="flex gap-2">
-                <span className="text-texto-2">•</span>
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-ouro" aria-hidden />
                 <span><strong>{f.nome}</strong> ({f.orgao}) — {f.observacao}</span>
               </li>
             ))}
@@ -191,7 +195,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
         </div>
       )}
 
-      <p className="text-xs text-texto-2">
+      <p className="text-xs leading-relaxed text-texto-2">
         Dados oficiais dos órgãos citados, consultados na data indicada. Distâncias e interseções são
         cálculos do Arini Imóveis Brasil sobre a geometria do imóvel — não substituem certidão oficial.
       </p>

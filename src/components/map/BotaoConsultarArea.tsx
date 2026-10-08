@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LoaderCircle, RefreshCw, ScanSearch } from "lucide-react";
 
 /**
  * Dispara o cruzamento da área com as fontes oficiais (CAR, lote ou área
@@ -48,8 +49,9 @@ export default function BotaoConsultarArea({
   const semCota = cotaRestante != null && cotaRestante <= 0;
 
   return (
-    <div className="text-right space-y-1">
-      <button onClick={consultar} disabled={rodando || semCota} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">
+    <div className="text-right space-y-1.5">
+      <button onClick={consultar} disabled={rodando || semCota} className="btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-60">
+        {rodando ? <LoaderCircle className="size-4 animate-spin" /> : jaConsultou ? <RefreshCw className="size-4" /> : <ScanSearch className="size-4" />}
         {rodando ? "Consultando os órgãos…" : jaConsultou ? "Atualizar consulta" : "Consultar fontes oficiais"}
       </button>
       {cotaRestante != null && (
@@ -58,9 +60,9 @@ export default function BotaoConsultarArea({
           {semCota && <> · <Link href="/planos" className="text-verde underline">ver planos</Link></>}
         </p>
       )}
-      {msg && <p className={"text-xs max-w-64 " + (negado ? "text-alerta" : "text-texto-2")}>{msg}</p>}
+      {msg && <p className={"text-xs max-w-72 ml-auto " + (negado ? "text-alerta" : "text-texto-2")}>{msg}</p>}
       {solucao && (
-        <p className="text-xs text-texto max-w-64">
+        <p className="text-xs text-texto max-w-72 ml-auto">
           {solucao}{negado && <> <Link href="/planos" className="text-verde underline">Ver planos</Link></>}
         </p>
       )}

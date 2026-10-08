@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 import { usePreferencias } from "@/lib/usePreferencias";
 import type { TemaPreferido } from "@/lib/preferencias";
 
@@ -120,16 +121,16 @@ export default function BotaoTema({ compacto = false }: { compacto?: boolean }) 
       aria-label={`Mudar para o tema ${vaiPara}`}
       title={`Mudar para o tema ${vaiPara}`}
       className={
-        "shrink-0 rounded-lg text-texto-2 hover:text-texto hover:bg-superficie-2 transition grid place-items-center " +
-        (compacto ? "w-9 h-9" : "w-9 h-9 sm:w-auto sm:h-9 sm:px-3 sm:gap-2 sm:flex sm:items-center")
+        "shrink-0 rounded-[10px] text-texto-2 hover:text-texto hover:bg-superficie-2 transition grid place-items-center " +
+        (compacto ? "size-10" : "size-10 sm:w-auto sm:px-3 sm:gap-2 sm:flex sm:items-center")
       }
     >
       {/* enquanto não montou, mostra o ícone do tema escuro (o do servidor) */}
-      <span aria-hidden className="text-base leading-none">
-        {montado && tema === "claro" ? "☾" : "☀"}
-      </span>
+      {montado && tema === "claro"
+        ? <Moon aria-hidden className="size-[18px]" />
+        : <Sun aria-hidden className="size-[18px]" />}
       {!compacto && (
-        <span className="hidden sm:inline text-xs">
+        <span className="hidden sm:inline text-sm font-semibold">
           {montado && tema === "claro" ? "Escuro" : "Claro"}
         </span>
       )}

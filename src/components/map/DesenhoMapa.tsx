@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { Map as MLMap, MapMouseEvent, GeoJSONSource } from "maplibre-gl";
 import { ESTILO_BASE, CENTRO_REGIAO } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
+import { Eraser, MapPin, PenLine, Upload } from "lucide-react";
 
 export type GeometriaEscolhida = {
   geometry: GeoJSON.Geometry;
@@ -211,25 +212,25 @@ export default function DesenhoMapa({ onChange, inicial }: Props) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {(["poligono", "ponto"] as const).map((m) => (
           <button key={m} type="button" onClick={() => { setModo(m); limpar(); }}
-            className={`rounded-lg px-3 py-1.5 border ${modo === m ? "bg-verde text-white border-verde" : "border-linha hover:bg-superficie-2"}`}>
-            {m === "poligono" ? "Desenhar área" : "Marcar ponto"}
+            className={`inline-flex items-center gap-1.5 rounded-[10px] px-3.5 py-2 border font-semibold transition ${modo === m ? "bg-verde text-fundo border-verde" : "border-linha-forte text-texto-3 hover:border-verde hover:text-verde"}`}>
+            {m === "poligono" ? <><PenLine className="size-4" /> Desenhar área</> : <><MapPin className="size-4" /> Marcar ponto</>}
           </button>
         ))}
-        <label className="rounded-lg px-3 py-1.5 border border-linha hover:bg-superficie-2 cursor-pointer">
-          Subir KML/KMZ
+        <label className="inline-flex items-center gap-1.5 rounded-[10px] px-3.5 py-2 border border-linha-forte font-semibold text-texto-3 transition hover:border-verde hover:text-verde cursor-pointer">
+          <Upload className="size-4" /> Subir KML/KMZ
           <input type="file" accept=".kml,.kmz" className="hidden"
             onChange={(e) => e.target.files?.[0] && importarArquivo(e.target.files[0])} />
         </label>
-        <button type="button" onClick={limpar} className="rounded-lg px-3 py-1.5 btn-contorno hover:bg-superficie-2">
-          Limpar
+        <button type="button" onClick={limpar} className="btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2">
+          <Eraser className="size-4" /> Limpar
         </button>
       </div>
-      <div ref={containerRef} className="h-96 w-full rounded-xl overflow-hidden border border-linha" />
-      <p className="text-xs text-texto-2 min-h-4">
+      <div ref={containerRef} className="h-96 w-full rounded-2xl overflow-hidden border border-linha shadow-[0_18px_40px_-34px_rgb(0_0_0/0.6)]" />
+      <p className="text-sm text-texto-2 min-h-5 leading-relaxed">
         {msg || (pronto && inicial?.fonte === "car" ? "Divisa trazida do CAR. Se ela não estiver certa, use Limpar e desenhe a área."
           : pronto && inicial?.fonte === "lote" ? "Divisa trazida da planta da cidade. Se ela não estiver certa, use Limpar e desenhe o lote."
           : pronto ? "Clique no mapa para desenhar a divisa do imóvel, ou suba o KML/KMZ da propriedade." : "Carregando mapa…")}

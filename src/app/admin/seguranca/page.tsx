@@ -1,6 +1,11 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
-import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataHoraBR } from "@/components/admin/Painel";
+import { CabecalhoSetor, Indicadores, TarefasDoSetor, contar, dataHoraBR } from "@/components/admin/Painel";
+import { Etiqueta, NavegacaoInterna, Secao, Vazio } from "@/components/ui/Pagina";
+import {
+  Archive, ArrowRight, Ban, BellRing, Camera, FileLock2, FileX2, Globe, LogIn, MailCheck, MailX,
+  ScrollText, ShieldAlert, ShieldCheck, Users,
+} from "lucide-react";
 import { PAPEL_LABEL } from "@/lib/perfis";
 import { recursoPorId } from "@/lib/planos";
 import { SETORES } from "@/lib/setores";
@@ -28,8 +33,8 @@ function motivoLabel(motivo: string | null) {
   return MOTIVO_TENTATIVA[motivo] ?? motivo;
 }
 
-const SEVERIDADE_COR: Record<string, string> = {
-  alta: "bg-critico/10 text-critico", media: "bg-alerta/10 text-alerta", baixa: "bg-superficie-2 text-texto-2",
+const TOM_SEVERIDADE: Record<string, "critico" | "alerta" | "neutro"> = {
+  alta: "critico", media: "alerta", baixa: "neutro",
 };
 const CATEGORIA_DESCARTE: Record<string, string> = {
   selfie: "Selfies", documento_reprovado: "Documentos de anúncio reprovado", documento_reprovado_erro: "Documento (falha)",
@@ -126,8 +131,12 @@ export default async function PainelSeguranca() {
   for (const f of falhasIp ?? []) if (f.ip) ips.set(f.ip, (ips.get(f.ip) ?? 0) + 1);
   const suspeitos = [...ips.entries()].filter(([, n]) => n >= 5).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
+  const TH = "px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2 whitespace-nowrap";
+  const TD = "px-5 py-3.5";
+  const NOTA = "text-sm leading-relaxed text-texto-2 max-w-4xl";
+
   return (
-    <div className="space-y-7 max-w-5xl">
+    <div className="mx-auto max-w-[1280px] space-y-10">
       <CabecalhoSetor setor="seguranca" />
 
       <Indicadores itens={[
@@ -148,215 +157,261 @@ export default async function PainelSeguranca() {
         },
       ]} />
 
-      <Secao titulo="Alertas de acesso anormal" acao={alertasAbertos > 1 ? <MarcarAlerta todos /> : undefined}>
-        <div className="cartao divide-y divide-linha">
-          {(alertas ?? []).map((al) => {
-            const d = (al.detalhe ?? {}) as Record<string, unknown>;
-            return (
-              <div key={al.id} className={"px-4 py-3 flex items-center gap-3 flex-wrap text-sm " + (al.visto_em ? "opacity-60" : "")}>
-                <span className={"text-xs rounded-full px-2.5 py-0.5 " + (SEVERIDADE_COR[al.severidade] ?? "")}>{al.severidade}</span>
-                <span className="flex-1 min-w-56">
-                  <span className="text-texto">{ALERTA_LABEL[al.tipo as TipoAlerta] ?? al.tipo}</span>
-                  <span className="block text-xs text-texto-2">
-                    {al.email ?? "—"}{d.aparelho ? ` · ${String(d.aparelho)}` : ""}{al.ip ? ` · ${al.ip}` : ""}
-                    {d.falhas ? ` · ${String(d.falhas)} falhas` : ""}{d.via ? ` · confirmação: ${String(d.via)}` : ""}
-                  </span>
-                </span>
-                <span className="text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(al.created_at)}</span>
-                <span className="text-[11px] text-texto-2">{al.notificado ? "e-mail enviado" : "sem e-mail"}</span>
-                {!al.visto_em && <MarcarAlerta id={al.id} />}
-              </div>
-            );
-          })}
-          {!alertas?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhum alerta até agora.</p>}
-        </div>
-        <p className="text-xs text-texto-2">
-          Gerados no login: aparelho ou local (faixa de endereço) nunca vistos na conta, 5 senhas erradas em 15 minutos,
-          entrada logo após várias falhas e redefinição de senha da equipe. O dono da conta recebe o aviso por e-mail
-          quando o serviço de e-mail estiver configurado.
-        </p>
-      </Secao>
+      <NavegacaoInterna itens={[
+        { href: "#alertas", rotulo: "Alertas", icone: BellRing, contagem: alertasAbertos || undefined },
+        { href: "#contas", rotulo: "Contas da equipe", icone: Users, contagem: contas.length },
+        ...(suspeitos.length > 0 ? [{ href: "#enderecos", rotulo: "Endereços suspeitos", icone: Globe, contagem: suspeitos.length }] : []),
+        { href: "#eventos", rotulo: "Eventos de acesso", icone: LogIn },
+        { href: "#tentativas", rotulo: "Tentativas bloqueadas", icone: Ban },
+        { href: "#documentos", rotulo: "Acessos a documentos", icone: FileLock2 },
+        { href: "#retencao", rotulo: "Retenção e descarte", icone: Archive },
+      ]} />
 
-      <Secao titulo="Contas da equipe" acao={<Link href="/admin/seguranca/revisao" className="text-xs text-verde hover:underline">Revisão trimestral de acessos →</Link>}>
-        <div className="cartao divide-y divide-linha">
-          {contas.map((c) => (
-            <div key={c.user_id} className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm">
-              <span className="flex-1 min-w-48">
-                <span className="text-texto">{c.nome || "—"}</span>
-                <span className="block text-xs text-texto-2">{c.email} · {c.role === "admin_central" ? "Diretoria" : "Equipe"}</span>
-              </span>
-              <span className="text-xs text-texto-2">último acesso: {dataHoraBR(c.ultimo)}</span>
-              <span className={"text-xs rounded-full px-3 py-1 " + (c.mfa ? "bg-verde/10 text-verde" : "bg-alerta/10 text-alerta")}>
-                {c.mfa ? "segundo fator ativo" : "sem segundo fator"}
-              </span>
-              {!c.ativo && <span className="text-xs rounded-full px-3 py-1 bg-critico/10 text-critico">desativada</span>}
+      <div id="alertas" className="scroll-mt-36">
+        <Secao eyebrow="Detecção" titulo="Alertas de acesso anormal" acao={alertasAbertos > 1 ? <MarcarAlerta todos /> : undefined}
+          subtitulo={<span className="text-sm">
+            Gerados no login: aparelho ou local (faixa de endereço) nunca vistos na conta, 5 senhas erradas em 15 minutos,
+            entrada logo após várias falhas e redefinição de senha da equipe. O dono da conta recebe o aviso por e-mail
+            quando o serviço de e-mail estiver configurado.
+          </span>}>
+          {alertas?.length ? (
+            <div className="cartao overflow-hidden divide-y divide-linha">
+              {alertas.map((al) => {
+                const d = (al.detalhe ?? {}) as Record<string, unknown>;
+                return (
+                  <div key={al.id} className={"px-5 py-3.5 flex items-center gap-4 flex-wrap text-[0.95rem] transition-colors hover:bg-superficie-2/60 " + (al.visto_em ? "opacity-60" : "")}>
+                    <Etiqueta tom={TOM_SEVERIDADE[al.severidade] ?? "neutro"} className="w-16 justify-center">{al.severidade}</Etiqueta>
+                    <span className="flex-1 min-w-56">
+                      <span className="font-semibold text-texto">{ALERTA_LABEL[al.tipo as TipoAlerta] ?? al.tipo}</span>
+                      <span className="mt-0.5 block text-sm text-texto-2">
+                        {al.email ?? "—"}{d.aparelho ? ` · ${String(d.aparelho)}` : ""}{al.ip ? ` · ${al.ip}` : ""}
+                        {d.falhas ? ` · ${String(d.falhas)} falhas` : ""}{d.via ? ` · confirmação: ${String(d.via)}` : ""}
+                      </span>
+                    </span>
+                    <span className="text-sm text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(al.created_at)}</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-texto-2">
+                      {al.notificado ? <MailCheck className="size-3.5" /> : <MailX className="size-3.5" />}
+                      {al.notificado ? "e-mail enviado" : "sem e-mail"}
+                    </span>
+                    {!al.visto_em && <MarcarAlerta id={al.id} />}
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-        <p className="text-xs text-texto-2">
-          Cada pessoa ativa o segundo fator em “Minha segurança”, no rodapé do menu. A diretoria pode torná-lo
-          obrigatório para a equipe em Configurações › Segurança.
-        </p>
-      </Secao>
+          ) : (
+            <Vazio icone={ShieldCheck} titulo="Nenhum alerta até agora." />
+          )}
+        </Secao>
+      </div>
+
+      <div id="contas" className="scroll-mt-36">
+        <Secao eyebrow="Proteção" titulo="Contas da equipe"
+          acao={<Link href="/admin/seguranca/revisao" className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline">Revisão trimestral de acessos <ArrowRight className="size-4" /></Link>}
+          subtitulo={<span className="text-sm">
+            Cada pessoa ativa o segundo fator em “Minha segurança”, no rodapé do menu. A diretoria pode torná-lo
+            obrigatório para a equipe em Configurações › Segurança.
+          </span>}>
+          <div className="cartao overflow-hidden divide-y divide-linha">
+            {contas.map((c) => (
+              <div key={c.user_id} className="px-5 py-3.5 flex items-center gap-4 flex-wrap text-[0.95rem] transition-colors hover:bg-superficie-2/60">
+                <span className="flex-1 min-w-48">
+                  <span className="font-semibold text-texto">{c.nome || "—"}</span>
+                  <span className="mt-0.5 block text-sm text-texto-2">{c.email} · {c.role === "admin_central" ? "Diretoria" : "Equipe"}</span>
+                </span>
+                <span className="text-sm text-texto-2 tabular-nums">último acesso: {dataHoraBR(c.ultimo)}</span>
+                <Etiqueta tom={c.mfa ? "verde" : "alerta"}>
+                  {c.mfa ? <ShieldCheck className="size-3.5" /> : <ShieldAlert className="size-3.5" />}
+                  {c.mfa ? "segundo fator ativo" : "sem segundo fator"}
+                </Etiqueta>
+                {!c.ativo && <Etiqueta tom="critico">desativada</Etiqueta>}
+              </div>
+            ))}
+          </div>
+        </Secao>
+      </div>
 
       {suspeitos.length > 0 && (
-        <Secao titulo="Endereços com muitas tentativas erradas (7 dias)">
-          <div className="cartao divide-y divide-linha">
-            {suspeitos.map(([ip, n]) => (
-              <p key={ip} className="px-4 py-2.5 flex justify-between text-sm">
-                <span className="font-mono text-xs text-texto">{ip}</span>
-                <span className="text-alerta tabular-nums">{n} tentativas</span>
-              </p>
-            ))}
-          </div>
-          <p className="text-xs text-texto-2">
-            O sistema já limita sozinho: 30 tentativas por endereço a cada 10 minutos e 8 por conta a cada 15.
-          </p>
-        </Secao>
+        <div id="enderecos" className="scroll-mt-36">
+          <Secao eyebrow="Força bruta" titulo="Endereços com muitas tentativas erradas (7 dias)"
+            subtitulo={<span className="text-sm">O sistema já limita sozinho: 30 tentativas por endereço a cada 10 minutos e 8 por conta a cada 15.</span>}>
+            <div className="cartao overflow-hidden divide-y divide-linha">
+              {suspeitos.map(([ip, n]) => (
+                <p key={ip} className="px-5 py-3.5 flex justify-between text-[0.95rem]">
+                  <span className="font-mono text-sm text-texto">{ip}</span>
+                  <span className="font-semibold text-alerta tabular-nums">{n} tentativas</span>
+                </p>
+              ))}
+            </div>
+          </Secao>
+        </div>
       )}
 
-      <Secao titulo="Últimos eventos de acesso">
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Quando</th>
-                <th className="px-4 py-3">Evento</th>
-                <th className="px-4 py-3">Conta</th>
-                <th className="px-4 py-3">Endereço</th>
-                <th className="px-4 py-3">Aparelho</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-linha">
-              {(eventos ?? []).map((e) => (
-                <tr key={e.id}>
-                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(e.created_at)}</td>
-                  <td className={"px-4 py-2 " + (EVENTO[e.evento]?.cor ?? "text-texto")}>{EVENTO[e.evento]?.rotulo ?? e.evento}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{e.email ?? "—"}</td>
-                  <td className="px-4 py-2 font-mono text-[11px] text-texto-2">{e.ip ?? "—"}</td>
-                  <td className="px-4 py-2 text-[11px] text-texto-2 max-w-56 truncate" title={e.agente ?? ""}>
-                    {(e.agente ?? "").replace(/Mozilla\/5\.0 \(([^)]*)\).*?(Chrome|Firefox|Safari|Edg)\/([\d]+).*/, "$2 $3 · $1") || "—"}
-                  </td>
-                </tr>
-              ))}
-              {!eventos?.length && <tr><td colSpan={5} className="px-4 py-6 text-center text-texto-2">Nenhum evento registrado ainda.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </Secao>
+      <div id="eventos" className="scroll-mt-36">
+        <Secao eyebrow="Registro" titulo="Últimos eventos de acesso">
+          <div className="cartao overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-[0.95rem]">
+                <thead className="bg-superficie-2">
+                  <tr>
+                    <th className={TH}>Quando</th>
+                    <th className={TH}>Evento</th>
+                    <th className={TH}>Conta</th>
+                    <th className={TH}>Endereço</th>
+                    <th className={TH}>Aparelho</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-linha">
+                  {(eventos ?? []).map((e) => (
+                    <tr key={e.id} className="transition-colors hover:bg-superficie-2/60">
+                      <td className={TD + " text-sm text-texto-2 tabular-nums whitespace-nowrap"}>{dataHoraBR(e.created_at)}</td>
+                      <td className={TD + " font-semibold " + (EVENTO[e.evento]?.cor ?? "text-texto")}>{EVENTO[e.evento]?.rotulo ?? e.evento}</td>
+                      <td className={TD + " text-sm text-texto-2"}>{e.email ?? "—"}</td>
+                      <td className={TD + " font-mono text-xs text-texto-2"}>{e.ip ?? "—"}</td>
+                      <td className={TD + " text-xs text-texto-2 max-w-56 truncate"} title={e.agente ?? ""}>
+                        {(e.agente ?? "").replace(/Mozilla\/5\.0 \(([^)]*)\).*?(Chrome|Firefox|Safari|Edg)\/([\d]+).*/, "$2 $3 · $1") || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                  {!eventos?.length && <tr><td colSpan={5} className="px-5 py-10 text-center text-base text-texto-2">Nenhum evento registrado ainda.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Secao>
+      </div>
 
-      <Secao titulo="Tentativas bloqueadas (planos e setores)">
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Quando</th>
-                <th className="px-4 py-3">Usuário</th>
-                <th className="px-4 py-3">Papel</th>
-                <th className="px-4 py-3">Plano</th>
-                <th className="px-4 py-3">Recurso</th>
-                <th className="px-4 py-3">Motivo</th>
-                <th className="px-4 py-3">Rota</th>
-                <th className="px-4 py-3">Endereço</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-linha">
-              {(tentativas ?? []).map((t) => (
-                <tr key={t.id}>
-                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(t.created_at)}</td>
-                  <td className="px-4 py-2 text-xs">{t.user_id ? (nomePorId.get(t.user_id) || "conta sem nome") : <span className="text-texto-2">visitante</span>}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{t.role ? PAPEL_LABEL[t.role] ?? t.role : "—"}</td>
-                  <td className="px-4 py-2 text-xs text-texto-2">{t.plan_id ?? "—"}</td>
-                  <td className="px-4 py-2 text-xs">{recursoLabel(t.recurso)}</td>
-                  <td className="px-4 py-2 text-xs text-alerta">{motivoLabel(t.motivo)}</td>
-                  <td className="px-4 py-2 font-mono text-[11px] text-texto-2 max-w-48 truncate" title={t.rota ?? ""}>{t.rota ?? "—"}</td>
-                  <td className="px-4 py-2 font-mono text-[11px] text-texto-2">{t.ip ?? "—"}</td>
-                </tr>
-              ))}
-              {!tentativas?.length && <tr><td colSpan={8} className="px-4 py-6 text-center text-texto-2">Nenhuma tentativa bloqueada registrada.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-texto-2">
-          Toda negação do servidor (recurso fora do plano, cota esgotada, setor sem acesso) é registrada aqui e não pode
-          ser apagada pela tela. Muitas tentativas de uma mesma conta podem indicar interesse num plano maior — ou abuso.
-        </p>
-      </Secao>
+      <div id="tentativas" className="scroll-mt-36">
+        <Secao eyebrow="Planos e setores" titulo="Tentativas bloqueadas"
+          subtitulo={<span className="text-sm">
+            Toda negação do servidor (recurso fora do plano, cota esgotada, setor sem acesso) é registrada aqui e não pode
+            ser apagada pela tela. Muitas tentativas de uma mesma conta podem indicar interesse num plano maior — ou abuso.
+          </span>}>
+          <div className="cartao overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[980px] text-[0.95rem]">
+                <thead className="bg-superficie-2">
+                  <tr>
+                    <th className={TH}>Quando</th>
+                    <th className={TH}>Usuário</th>
+                    <th className={TH}>Papel</th>
+                    <th className={TH}>Plano</th>
+                    <th className={TH}>Recurso</th>
+                    <th className={TH}>Motivo</th>
+                    <th className={TH}>Rota</th>
+                    <th className={TH}>Endereço</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-linha">
+                  {(tentativas ?? []).map((t) => (
+                    <tr key={t.id} className="transition-colors hover:bg-superficie-2/60">
+                      <td className={TD + " text-sm text-texto-2 tabular-nums whitespace-nowrap"}>{dataHoraBR(t.created_at)}</td>
+                      <td className={TD + " text-sm font-semibold text-texto"}>{t.user_id ? (nomePorId.get(t.user_id) || "conta sem nome") : <span className="font-normal text-texto-2">visitante</span>}</td>
+                      <td className={TD + " text-sm text-texto-2"}>{t.role ? PAPEL_LABEL[t.role] ?? t.role : "—"}</td>
+                      <td className={TD + " text-sm text-texto-2"}>{t.plan_id ?? "—"}</td>
+                      <td className={TD + " text-sm text-texto"}>{recursoLabel(t.recurso)}</td>
+                      <td className={TD}><Etiqueta tom="alerta">{motivoLabel(t.motivo)}</Etiqueta></td>
+                      <td className={TD + " font-mono text-xs text-texto-2 max-w-48 truncate"} title={t.rota ?? ""}>{t.rota ?? "—"}</td>
+                      <td className={TD + " font-mono text-xs text-texto-2"}>{t.ip ?? "—"}</td>
+                    </tr>
+                  ))}
+                  {!tentativas?.length && <tr><td colSpan={8} className="px-5 py-10 text-center text-base text-texto-2">Nenhuma tentativa bloqueada registrada.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Secao>
+      </div>
 
-      <Secao titulo="Acessos a documentos">
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Quando</th>
-                <th className="px-4 py-3">Quem</th>
-                <th className="px-4 py-3">Arquivo</th>
-                <th className="px-4 py-3">Imóvel</th>
-                <th className="px-4 py-3">Ação</th>
-                <th className="px-4 py-3">Endereço</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-linha">
-              {(acessosDocs ?? []).map((d) => (
-                <tr key={d.id}>
-                  <td className="px-4 py-2 text-xs text-texto-2 tabular-nums whitespace-nowrap">{dataHoraBR(d.created_at)}</td>
-                  <td className="px-4 py-2 text-xs">{d.user_id ? (nomeDoc.get(d.user_id) || "conta sem nome") : "—"}</td>
-                  <td className="px-4 py-2 text-xs">
-                    {CATEGORIA_ARQUIVO_LABEL[d.categoria as CategoriaArquivo] ?? d.categoria}
-                    <span className="block font-mono text-[10px] text-texto-2 max-w-56 truncate" title={d.storage_path}>{d.storage_path.split("/").pop()}</span>
-                  </td>
-                  <td className="px-4 py-2 text-xs">
-                    {d.property_id ? <Link href={`/admin/imoveis/${d.property_id}`} className="text-verde hover:underline">{codigoImovel.get(d.property_id) ?? "abrir"}</Link> : "—"}
-                  </td>
-                  <td className={"px-4 py-2 text-xs " + (d.permitido ? "text-texto" : "text-critico")}>
-                    {d.permitido ? (d.acao === "baixar" ? "baixou" : "abriu") : `negado${d.motivo ? ` (${d.motivo})` : ""}`}
-                  </td>
-                  <td className="px-4 py-2 font-mono text-[11px] text-texto-2">{d.ip ?? "—"}</td>
-                </tr>
-              ))}
-              {!acessosDocs?.length && <tr><td colSpan={6} className="px-4 py-6 text-center text-texto-2">Nenhuma abertura de documento registrada ainda.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-texto-2">
-          Documentos do imóvel, selfies do aceite, autorizações, contratos e anexos cartográficos abrem por um endereço
-          interno que confere a permissão a cada clique e registra aqui — inclusive as tentativas negadas. O link
-          assinado do armazenamento vale só 60 segundos.
-        </p>
-      </Secao>
+      <div id="documentos" className="scroll-mt-36">
+        <Secao eyebrow="Arquivos sensíveis" titulo="Acessos a documentos"
+          subtitulo={<span className="text-sm">
+            Documentos do imóvel, selfies do aceite, autorizações, contratos e anexos cartográficos abrem por um endereço
+            interno que confere a permissão a cada clique e registra aqui — inclusive as tentativas negadas. O link
+            assinado do armazenamento vale só 60 segundos.
+          </span>}>
+          <div className="cartao overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-[0.95rem]">
+                <thead className="bg-superficie-2">
+                  <tr>
+                    <th className={TH}>Quando</th>
+                    <th className={TH}>Quem</th>
+                    <th className={TH}>Arquivo</th>
+                    <th className={TH}>Imóvel</th>
+                    <th className={TH}>Ação</th>
+                    <th className={TH}>Endereço</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-linha">
+                  {(acessosDocs ?? []).map((d) => (
+                    <tr key={d.id} className="transition-colors hover:bg-superficie-2/60">
+                      <td className={TD + " text-sm text-texto-2 tabular-nums whitespace-nowrap"}>{dataHoraBR(d.created_at)}</td>
+                      <td className={TD + " text-sm font-semibold text-texto"}>{d.user_id ? (nomeDoc.get(d.user_id) || "conta sem nome") : "—"}</td>
+                      <td className={TD + " text-sm text-texto"}>
+                        {CATEGORIA_ARQUIVO_LABEL[d.categoria as CategoriaArquivo] ?? d.categoria}
+                        <span className="block font-mono text-[11px] text-texto-2 max-w-56 truncate" title={d.storage_path}>{d.storage_path.split("/").pop()}</span>
+                      </td>
+                      <td className={TD + " text-sm"}>
+                        {d.property_id ? <Link href={`/admin/imoveis/${d.property_id}`} className="font-mono font-semibold text-verde hover:underline">{codigoImovel.get(d.property_id) ?? "abrir"}</Link> : "—"}
+                      </td>
+                      <td className={TD}>
+                        {d.permitido
+                          ? <Etiqueta tom="neutro">{d.acao === "baixar" ? "baixou" : "abriu"}</Etiqueta>
+                          : <Etiqueta tom="critico">{`negado${d.motivo ? ` (${d.motivo})` : ""}`}</Etiqueta>}
+                      </td>
+                      <td className={TD + " font-mono text-xs text-texto-2"}>{d.ip ?? "—"}</td>
+                    </tr>
+                  ))}
+                  {!acessosDocs?.length && <tr><td colSpan={6} className="px-5 py-10 text-center text-base text-texto-2">Nenhuma abertura de documento registrada ainda.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Secao>
+      </div>
 
-      <Secao titulo="Retenção e descarte" acao={souDiretoria && (prazos.selfie || prazos.docs || prazos.logs) ? <BotoesRetencao executar={prazos.executar} /> : undefined}>
-        <div className="cartao p-4 space-y-2 text-sm">
-          <p className="text-texto">
-            Selfies: <b>{prazos.selfie ? `${prazos.selfie} dias após a autorização` : "não descartar"}</b> ·{" "}
-            Documentos de anúncio reprovado: <b>{prazos.docs ? `${prazos.docs} dias` : "não descartar"}</b> ·{" "}
-            Registros de acesso: <b>{prazos.logs ? `${prazos.logs} dias` : "não descartar"}</b>
-          </p>
-          {candidatos && (
-            <p className="text-xs text-texto-2">
-              Hoje passaram do prazo: {candidatos.selfies.length} selfie(s), {candidatos.documentos.length} documento(s) e{" "}
-              {Object.values(candidatos.logs ?? {}).reduce((s, n) => s + Number(n), 0)} registro(s) de acesso.
-              {prazos.executar ? " A rotina diária do worker apaga." : " A rotina diária só simula (“Descartar de verdade” desligado)."}
-            </p>
-          )}
-          <p className="text-xs text-texto-2">
-            Os prazos aguardam a decisão 8.9 (Carlos e jurídico) e ficam em Configurações › Segurança. Enquanto estiverem em 0,
-            nada é descartado. Registros de acesso nunca ficam menos de 180 dias (Marco Civil da Internet, art. 15).
-            A auditoria e o histórico do imóvel não entram no descarte.
-          </p>
-        </div>
-        {!!descartes?.length && (
-          <div className="cartao divide-y divide-linha">
-            {descartes.map((d) => (
-              <p key={d.id} className="px-4 py-2 flex justify-between gap-3 text-xs">
-                <span className="text-texto">{CATEGORIA_DESCARTE[d.categoria] ?? d.categoria}</span>
-                <span className="text-texto-2">{d.simulacao ? "simulação" : "descartado"} · {d.quantidade}</span>
-                <span className="text-texto-2 tabular-nums">{dataHoraBR(d.created_at)}</span>
-              </p>
+      <div id="retencao" className="scroll-mt-36">
+        <Secao eyebrow="LGPD" titulo="Retenção e descarte" acao={souDiretoria && (prazos.selfie || prazos.docs || prazos.logs) ? <BotoesRetencao executar={prazos.executar} /> : undefined}>
+          <div className="grid gap-5 md:grid-cols-3">
+            {([
+              ["Selfies", prazos.selfie ? `${prazos.selfie} dias após a autorização` : "não descartar", Camera],
+              ["Documentos de anúncio reprovado", prazos.docs ? `${prazos.docs} dias` : "não descartar", FileX2],
+              ["Registros de acesso", prazos.logs ? `${prazos.logs} dias` : "não descartar", ScrollText],
+            ] as const).map(([rotulo, valor, Icone]) => (
+              <div key={rotulo} className="cartao p-5">
+                <span className="grid size-10 place-items-center rounded-xl bg-verde/12 text-verde"><Icone className="size-5" /></span>
+                <p className="mt-4 text-sm text-texto-2">{rotulo}</p>
+                <p className="lp-display mt-1 text-lg text-texto">{valor}</p>
+              </div>
             ))}
           </div>
-        )}
-      </Secao>
+          <div className="cartao p-6 space-y-3">
+            {candidatos && (
+              <p className="text-[0.95rem] text-texto">
+                Hoje passaram do prazo: <strong className="tabular-nums">{candidatos.selfies.length}</strong> selfie(s), <strong className="tabular-nums">{candidatos.documentos.length}</strong> documento(s) e{" "}
+                <strong className="tabular-nums">{Object.values(candidatos.logs ?? {}).reduce((s, n) => s + Number(n), 0)}</strong> registro(s) de acesso.
+                {prazos.executar ? " A rotina diária do worker apaga." : " A rotina diária só simula (“Descartar de verdade” desligado)."}
+              </p>
+            )}
+            <p className={NOTA}>
+              Os prazos aguardam a decisão 8.9 (Carlos e jurídico) e ficam em Configurações › Segurança. Enquanto estiverem em 0,
+              nada é descartado. Registros de acesso nunca ficam menos de 180 dias (Marco Civil da Internet, art. 15).
+              A auditoria e o histórico do imóvel não entram no descarte.
+            </p>
+          </div>
+          {!!descartes?.length && (
+            <div className="cartao overflow-hidden divide-y divide-linha">
+              {descartes.map((d) => (
+                <p key={d.id} className="px-5 py-3.5 grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_12rem_10rem] gap-3 text-[0.95rem]">
+                  <span className="font-semibold text-texto">{CATEGORIA_DESCARTE[d.categoria] ?? d.categoria}</span>
+                  <span className="text-texto-2 tabular-nums">{d.simulacao ? "simulação" : "descartado"} · {d.quantidade}</span>
+                  <span className="text-sm text-texto-2 tabular-nums sm:text-right">{dataHoraBR(d.created_at)}</span>
+                </p>
+              ))}
+            </div>
+          )}
+        </Secao>
+      </div>
 
       <TarefasDoSetor setor="seguranca" souEu={user.id} />
     </div>

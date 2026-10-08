@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
+import { Workflow, CalendarDays, HandCoins, FileSignature, BadgeDollarSign, MessagesSquare, Paperclip, Download, type LucideIcon } from "lucide-react";
+import { CAMPO, Etiqueta } from "@/components/ui/Pagina";
 
 type Parceiro = { id: string; razao_social: string; tipo: string };
 type Evento = { id: string; tipo: string; descricao: string; created_at: string; autor: string | null };
@@ -25,8 +27,8 @@ type Props = {
   percentualPadrao: number;
 };
 
-const input = "w-full rounded-lg cartao px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde";
-const btn = "rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50";
+const input = CAMPO;
+const btn = "inline-flex shrink-0 items-center justify-center gap-2 px-5 py-3 text-sm disabled:opacity-50";
 
 export default function OportunidadeClient(props: Props) {
   const { modo, oportunidade: o, parceiros } = props;
@@ -62,18 +64,18 @@ export default function OportunidadeClient(props: Props) {
     v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      {erro && <p className="lg:col-span-2 text-sm text-critico bg-critico/10 rounded-lg px-4 py-2">{erro}</p>}
+    <div className="grid gap-6 lg:grid-cols-2">
+      {erro && <p className="lg:col-span-2 rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
 
       {/* ---------- etapa + encaminhamento ---------- */}
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Etapa do funil</h2>
-        <div className="flex gap-2 flex-wrap">
+      <section className="cartao space-y-4 p-5 md:p-6">
+        <Titulo icone={Workflow}>Etapa do funil</Titulo>
+        <div className="flex flex-wrap gap-3">
           <select className={input + " max-w-56"} value={o.etapa}
             onChange={(e) => chamar("PATCH", { acao: "etapa", etapa: e.target.value })} disabled={ocupado}>
             {[...ETAPAS, "perdido"].map((e) => <option key={e} value={e}>{ETAPA_LABEL[e]}</option>)}
           </select>
-          <button disabled={ocupado} className={`${btn} bg-critico/10 text-critico border border-critico/30 hover:bg-critico/20`}
+          <button disabled={ocupado} className={`${btn} btn-perigo`}
             onClick={() => {
               const motivo = prompt("Motivo da perda:");
               if (motivo !== null) chamar("PATCH", { acao: "etapa", etapa: "perdido", motivo });
@@ -84,9 +86,9 @@ export default function OportunidadeClient(props: Props) {
         {o.motivo_perda && <p className="text-xs text-critico">Perdido: {o.motivo_perda}</p>}
 
         {modo === "arini" && (
-          <div className="pt-2 border-t border-linha space-y-2">
-            <h3 className="text-sm font-semibold text-texto">Encaminhamento (intermediação Arini)</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
+          <div className="space-y-3 border-t border-linha pt-4">
+            <h3 className="text-base font-semibold text-texto">Encaminhamento (intermediação Arini)</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
               <select className={input} value={o.responsavel_tipo} disabled={ocupado}
                 onChange={(e) => chamar("PATCH", { acao: "encaminhar", responsavel_tipo: e.target.value, responsavel_partner_id: o.responsavel_partner_id, partner_comprador_id: o.partner_comprador_id })}>
                 <option value="arini">Arini atende</option>
@@ -109,24 +111,24 @@ export default function OportunidadeClient(props: Props) {
       </section>
 
       {/* ---------- visitas ---------- */}
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Visitas</h2>
-        <div className="flex gap-2">
+      <section className="cartao space-y-4 p-5 md:p-6">
+        <Titulo icone={CalendarDays}>Visitas</Titulo>
+        <div className="flex gap-3">
           <input type="datetime-local" className={input} value={visitaData} onChange={(e) => setVisitaData(e.target.value)} />
-          <button disabled={ocupado || !visitaData} className={`${btn} bg-verde text-white hover:bg-verde-escuro`}
+          <button disabled={ocupado || !visitaData} className={`${btn} btn-verde`}
             onClick={async () => { if (await chamar("POST", { tipo: "visita", data_hora: visitaData })) setVisitaData(""); }}>
             Agendar
           </button>
         </div>
         <div className="space-y-2">
           {props.visitas.map((v) => (
-            <div key={v.id} className="rounded-lg bg-superficie-2 px-3 py-2 text-sm flex flex-wrap items-center gap-2">
+            <div key={v.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-superficie-2 px-4 py-3 text-[0.95rem]">
               <span className="flex-1">{new Date(v.data_hora).toLocaleString("pt-BR")} — <strong>{v.status}</strong>{v.feedback ? ` · ${v.feedback}` : ""}</span>
               {v.status === "agendada" && (
                 <span className="flex gap-1">
                   {(["realizada", "remarcada", "nao_compareceu"] as const).map((s) => (
                     <button key={s} disabled={ocupado}
-                      className="text-xs rounded bg-superficie btn-contorno px-2 py-1 hover:bg-verde hover:text-white"
+                      className="btn-contorno px-2.5 py-1.5 text-xs"
                       onClick={() => {
                         const feedback = s === "realizada" ? prompt("Como foi a visita? (opcional)") ?? "" : "";
                         chamar("POST", { tipo: "visita_status", visita_id: v.id, status: s, feedback });
@@ -143,9 +145,9 @@ export default function OportunidadeClient(props: Props) {
       </section>
 
       {/* ---------- propostas ---------- */}
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Propostas e contrapropostas</h2>
-        <div className="grid gap-2 sm:grid-cols-2">
+      <section className="cartao space-y-4 p-5 md:p-6">
+        <Titulo icone={HandCoins}>Propostas e contrapropostas</Titulo>
+        <div className="grid gap-3 sm:grid-cols-2">
           <select className={input} value={prop.autor_lado} onChange={(e) => setProp({ ...prop, autor_lado: e.target.value })}>
             <option value="comprador">Proposta do comprador</option>
             <option value="vendedor">Contraproposta do vendedor</option>
@@ -159,7 +161,7 @@ export default function OportunidadeClient(props: Props) {
         </div>
         <textarea rows={2} className={input} placeholder="Condições e observações"
           value={prop.condicoes} onChange={(e) => setProp({ ...prop, condicoes: e.target.value })} />
-        <button disabled={ocupado || !prop.valor} className={`${btn} bg-verde text-white hover:bg-verde-escuro`}
+        <button disabled={ocupado || !prop.valor} className={`${btn} btn-verde`}
           onClick={async () => {
             const ok = await chamar("POST", {
               tipo: "proposta", autor_lado: prop.autor_lado,
@@ -173,16 +175,16 @@ export default function OportunidadeClient(props: Props) {
         </button>
         <div className="space-y-2">
           {props.propostas.map((p) => (
-            <div key={p.id} className="rounded-lg bg-superficie-2 px-3 py-2 text-sm space-y-1">
+            <div key={p.id} className="space-y-1.5 rounded-xl bg-superficie-2 px-4 py-3 text-[0.95rem]">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs">R{p.numero_rodada}</span>
                 <span className="flex-1">{p.autor_lado === "comprador" ? "Comprador" : "Vendedor"}: <strong>{brl(p.valor)}</strong>{p.entrada ? ` (entrada ${brl(p.entrada)})` : ""}{p.prazo ? ` · ${p.prazo}` : ""}</span>
-                <span className={`text-xs rounded-full px-2 py-0.5 ${p.status === "aceita" ? "bg-verde text-white" : p.status === "recusada" ? "bg-critico/15 text-critico" : "bg-superficie border border-linha"}`}>{p.status}</span>
+                <Etiqueta tom={p.status === "aceita" ? "verde" : p.status === "recusada" ? "critico" : "neutro"}>{p.status}</Etiqueta>
                 {p.status === "enviada" && (
                   <span className="flex gap-1">
-                    <button disabled={ocupado} className="text-xs rounded bg-verde text-white px-2 py-1"
+                    <button disabled={ocupado} className="btn-verde px-2.5 py-1.5 text-xs"
                       onClick={() => chamar("POST", { tipo: "proposta_status", proposta_id: p.id, status: "aceita" })}>aceitar</button>
-                    <button disabled={ocupado} className="text-xs rounded bg-critico text-white px-2 py-1"
+                    <button disabled={ocupado} className="btn-perigo px-2.5 py-1.5 text-xs"
                       onClick={() => chamar("POST", { tipo: "proposta_status", proposta_id: p.id, status: "recusada" })}>recusar</button>
                   </span>
                 )}
@@ -196,22 +198,22 @@ export default function OportunidadeClient(props: Props) {
 
       {/* ---------- contrato + venda (só Arini) ---------- */}
       {modo === "arini" && (
-        <section className="cartao p-5 space-y-4">
+        <section className="cartao space-y-5 p-5 md:p-6">
           <div className="space-y-2">
-            <h2 className="font-semibold text-texto">Contrato</h2>
+            <Titulo icone={FileSignature}>Contrato</Titulo>
             <div className="flex flex-wrap gap-2 items-center text-sm">
               <span>Status: <strong>{props.contrato?.status ?? "sem contrato"}</strong></span>
               {(["em_elaboracao", "assinado", "registrado"] as const).map((s) => (
                 <button key={s} disabled={ocupado}
-                  className="text-xs rounded bg-superficie-2 btn-contorno px-2 py-1 hover:bg-verde hover:text-white"
+                  className="btn-contorno px-2.5 py-1.5 text-xs"
                   onClick={() => chamar("POST", { tipo: "contrato_status", status: s })}>
                   {s.replace("_", " ")}
                 </button>
               ))}
             </div>
             <div className="flex flex-wrap gap-2 items-center">
-              <label className="text-xs rounded-lg border border-linha px-3 py-1.5 cursor-pointer hover:bg-superficie-2">
-                Anexar documento
+              <label className="btn-contorno inline-flex cursor-pointer items-center gap-1.5 px-3.5 py-2 text-sm">
+                <Paperclip className="size-4" /> Anexar documento
                 <input type="file" className="hidden" onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
@@ -224,28 +226,28 @@ export default function OportunidadeClient(props: Props) {
                 }} />
               </label>
               {props.contrato?.documento_path && (
-                <button className="text-xs text-verde hover:underline"
+                <button className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline"
                   onClick={async () => {
                     const res = await fetch(`${base}/contrato`);
                     const data = await res.json();
                     if (data.url) window.open(data.url, "_blank");
                   }}>
-                  Baixar contrato
+                  <Download className="size-4" /> Baixar contrato
                 </button>
               )}
             </div>
           </div>
 
-          <div className="pt-3 border-t border-linha space-y-2">
-            <h2 className="font-semibold text-texto">Registrar venda</h2>
+          <div className="space-y-3 border-t border-linha pt-5">
+            <Titulo icone={BadgeDollarSign}>Registrar venda</Titulo>
             {props.venda ? (
-              <div className="rounded-lg bg-verde text-white px-4 py-3 text-sm">
+              <div className="rounded-xl border border-verde/40 bg-verde/10 px-4 py-3 text-[0.95rem] text-texto">
                 Venda registrada: <strong>{brl(props.venda.valor_final)}</strong> em {new Date(props.venda.data_venda + "T12:00:00").toLocaleDateString("pt-BR")}
                 {props.venda.comissao && <> · comissão {props.venda.comissao.percentual}% = <strong>{brl(props.venda.comissao.valor)}</strong> ({props.venda.comissao.status})</>}
               </div>
             ) : (
               <>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <input className={input} placeholder="Valor final (R$)" inputMode="numeric"
                     value={venda.valor_final} onChange={(e) => setVenda({ ...venda, valor_final: e.target.value })} />
                   <input className={input} placeholder="Comissão %" inputMode="decimal"
@@ -254,7 +256,7 @@ export default function OportunidadeClient(props: Props) {
                 <input className={input} placeholder="Regra contratual da comissão (opcional)"
                   value={venda.regra} onChange={(e) => setVenda({ ...venda, regra: e.target.value })} />
                 <button disabled={ocupado || !venda.valor_final}
-                  className={`${btn} bg-ouro text-texto font-semibold hover:bg-ouro-escuro hover:text-white`}
+                  className={`${btn} btn-ouro`}
                   onClick={() => {
                     if (!confirm("Registrar a venda? O imóvel vira VENDIDO e sai da oferta.")) return;
                     chamar("POST", {
@@ -273,9 +275,9 @@ export default function OportunidadeClient(props: Props) {
       )}
 
       {/* ---------- timeline ---------- */}
-      <section className="cartao p-5 space-y-3 lg:col-span-2">
-        <h2 className="font-semibold text-texto">Timeline do atendimento</h2>
-        <div className="flex gap-2">
+      <section className="cartao space-y-4 p-5 md:p-6 lg:col-span-2">
+        <Titulo icone={MessagesSquare}>Timeline do atendimento</Titulo>
+        <div className="flex gap-3">
           <input className={input} placeholder="Registrar contato / anotação…" value={nota}
             onChange={(e) => setNota(e.target.value)}
             onKeyDown={async (e) => {
@@ -283,14 +285,14 @@ export default function OportunidadeClient(props: Props) {
                 if (await chamar("POST", { tipo: "evento", categoria: "contato", descricao: nota })) setNota("");
               }
             }} />
-          <button disabled={ocupado || !nota.trim()} className={`${btn} bg-verde text-white hover:bg-verde-escuro`}
+          <button disabled={ocupado || !nota.trim()} className={`${btn} btn-verde`}
             onClick={async () => { if (await chamar("POST", { tipo: "evento", categoria: "contato", descricao: nota })) setNota(""); }}>
             Registrar
           </button>
         </div>
-        <ol className="space-y-1.5 text-sm">
+        <ol className="space-y-0 border-l-2 border-linha pl-5 text-[0.95rem]">
           {props.eventos.map((e) => (
-            <li key={e.id} className="flex gap-3">
+            <li key={e.id} className="relative flex flex-col gap-0.5 py-2 sm:flex-row sm:gap-3 before:absolute before:-left-[27px] before:top-3.5 before:size-3 before:rounded-full before:border-2 before:border-verde before:bg-superficie">
               <span className="text-xs text-texto-2 tabular-nums shrink-0 w-32">
                 {new Date(e.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
               </span>
@@ -301,5 +303,16 @@ export default function OportunidadeClient(props: Props) {
         </ol>
       </section>
     </div>
+  );
+}
+
+function Titulo({ icone: Icone, children }: { icone: LucideIcon; children: React.ReactNode }) {
+  return (
+    <h2 className="lp-display flex items-center gap-3 text-xl text-texto">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-verde/12 text-verde">
+        <Icone className="size-[18px]" />
+      </span>
+      {children}
+    </h2>
   );
 }

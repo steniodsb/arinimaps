@@ -4,6 +4,8 @@ import { exigirEquipe } from "@/lib/setores-servidor";
 import { SETORES, type SetorId } from "@/lib/setores";
 import Tarefas, { type Tarefa } from "@/components/admin/Tarefas";
 import { equipeAtiva } from "@/components/admin/Painel";
+import { CabecalhoPagina } from "@/components/ui/Pagina";
+import { aba } from "@/components/admin/estilos";
 
 /** Tarefas internas de todos os setores em que o membro atua. */
 export default async function AdminTarefas({ searchParams }: PageProps<"/admin/tarefas">) {
@@ -22,27 +24,21 @@ export default async function AdminTarefas({ searchParams }: PageProps<"/admin/t
 
   const nome = new Map(equipe.map((m) => [m.user_id, m.nome]));
   const lista: Tarefa[] = (tarefas ?? []).map((t) => ({ ...t, responsavel_nome: t.responsavel ? nome.get(t.responsavel) ?? null : null }));
-  const chip = "rounded-full border px-3 py-1 text-xs transition ";
-  const ativo = "border-verde bg-verde/10 text-verde";
-  const inativo = "border-linha text-texto-2 hover:text-texto";
   const link = (setor: string | null, minhas: boolean) =>
     "/admin/tarefas" + (setor || minhas ? "?" : "") + [setor && `setor=${setor}`, minhas && "minhas=1"].filter(Boolean).join("&");
 
   return (
-    <div className="space-y-5 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Tarefas</h1>
-        <p className="text-sm text-texto-2">
-          O que cada setor tem para fazer, com responsável e prazo. Escolha um setor para criar uma tarefa nele.
-        </p>
-      </div>
+    <div className="space-y-6 max-w-5xl">
+      <CabecalhoPagina eyebrow="Geral" titulo="Tarefas"
+        subtitulo="O que cada setor tem para fazer, com responsável e prazo. Escolha um setor para criar uma tarefa nele." />
 
-      <div className="flex flex-wrap gap-2">
-        <Link href={link(null, soMinhas)} className={chip + (!filtro ? ativo : inativo)}>Todos os meus setores</Link>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href={link(null, soMinhas)} className={aba(!filtro)}>Todos os meus setores</Link>
         {SETORES.filter((s) => user.setores.includes(s.id)).map((s) => (
-          <Link key={s.id} href={link(s.id, soMinhas)} className={chip + (filtro === s.id ? ativo : inativo)}>{s.nome}</Link>
+          <Link key={s.id} href={link(s.id, soMinhas)} className={aba(filtro === s.id)}>{s.nome}</Link>
         ))}
-        <Link href={link(filtro, !soMinhas)} className={chip + (soMinhas ? ativo : inativo)}>Só as minhas</Link>
+        <span className="mx-1 hidden h-6 w-px bg-linha sm:block" aria-hidden />
+        <Link href={link(filtro, !soMinhas)} className={aba(soMinhas)}>Só as minhas</Link>
       </div>
 
       <Tarefas
@@ -54,7 +50,7 @@ export default async function AdminTarefas({ searchParams }: PageProps<"/admin/t
         setoresNome={Object.fromEntries(SETORES.map((s) => [s.id, s.nome]))}
       />
       {!filtro && (
-        <p className="text-xs text-texto-2">
+        <p className="text-sm text-texto-2">
           Para criar uma tarefa, escolha o setor acima.
         </p>
       )}

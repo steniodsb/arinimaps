@@ -6,9 +6,13 @@ import Avatar from "@/components/shell/Avatar";
 import { aplicarTemaPreferido } from "@/components/shell/BotaoTema";
 import { recarregarPreferencias, usePreferencias } from "@/lib/usePreferencias";
 import type { Preferencias } from "@/lib/preferencias";
+import {
+  MailOpen, Camera, Upload, UserRound, SlidersHorizontal, Sun, Moon, Monitor, Satellite, Map as MapIcon, type LucideIcon,
+} from "lucide-react";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 
-const input = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde transition";
-const rotulo = "block text-sm font-medium text-texto mb-1";
+const input = CAMPO;
+const rotulo = ROTULO;
 
 const TIPOS_FOTO = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FOTO = 3 * 1024 * 1024;
@@ -134,99 +138,122 @@ export default function Conta({
   }
 
   const opcao = (ativo: boolean) =>
-    "rounded-xl border px-3.5 py-2 text-sm transition " +
-    (ativo ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2 hover:text-texto");
+    "inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors " +
+    (ativo ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2 hover:border-linha-forte hover:text-texto");
 
   return (
     <div className="space-y-6">
       {convites.length > 0 && (
-        <section className="cartao p-5 space-y-3 border-ouro/40">
-          <h2 className="font-semibold text-texto">Convites de organização</h2>
-          {convites.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 flex-wrap text-sm">
-              <span className="flex-1 min-w-48 text-texto">
-                {c.org} <span className="text-texto-2">· {c.tipo} · como {c.papel.toLowerCase()}</span>
-              </span>
-              <button type="button" disabled={c.emOutra} onClick={() => responderConvite(c.id, "aceitar")}
-                title={c.emOutra ? "Saia da organização atual antes de aceitar outra." : undefined}
-                className="btn-verde px-4 py-2 text-sm disabled:opacity-50">Aceitar</button>
-              <button type="button" onClick={() => responderConvite(c.id, "recusar")} className="btn-contorno px-4 py-2 text-sm">Recusar</button>
-            </div>
-          ))}
-          <p className="text-xs text-texto-2">Quem entra numa organização passa a usar o plano dela (se o seu plano pessoal não foi definido pela Arini).</p>
-          {conviteMsg && <p className="text-sm text-verde">{conviteMsg}</p>}
-        </section>
+        <Bloco icone={MailOpen} titulo="Convites de organização" destaque>
+          <div className="divide-y divide-linha rounded-xl border border-linha">
+            {convites.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+                <span className="min-w-48 flex-1 text-base text-texto">
+                  <strong className="font-semibold">{c.org}</strong> <span className="text-texto-2">· {c.tipo} · como {c.papel.toLowerCase()}</span>
+                </span>
+                <button type="button" disabled={c.emOutra} onClick={() => responderConvite(c.id, "aceitar")}
+                  title={c.emOutra ? "Saia da organização atual antes de aceitar outra." : undefined}
+                  className="btn-verde px-4 py-2 text-sm disabled:opacity-50">Aceitar</button>
+                <button type="button" onClick={() => responderConvite(c.id, "recusar")} className="btn-contorno px-4 py-2 text-sm">Recusar</button>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-texto-2">Quem entra numa organização passa a usar o plano dela (se o seu plano pessoal não foi definido pela Arini).</p>
+          {conviteMsg && <p className="mt-2 text-sm font-semibold text-verde">{conviteMsg}</p>}
+        </Bloco>
       )}
 
-      <section className="cartao p-5 space-y-4">
-        <h2 className="font-semibold text-texto">Foto do perfil</h2>
-        <div className="flex items-center gap-4 flex-wrap">
+      <Bloco icone={Camera} titulo="Foto do perfil">
+        <div className="flex flex-wrap items-center gap-5">
           <Avatar nome={nome} url={avatar} tamanho={88} />
-          <div className="space-y-2">
-            <div className="flex gap-2 flex-wrap">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap gap-3">
               <button type="button" disabled={enviandoFoto} onClick={() => arquivoRef.current?.click()}
-                className="btn-verde px-4 py-2 text-sm disabled:opacity-60">
+                className="btn-verde inline-flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60">
+                <Upload className="size-4" />
                 {enviandoFoto ? "Enviando…" : avatar ? "Trocar foto" : "Enviar foto"}
               </button>
               {avatar && (
-                <button type="button" disabled={enviandoFoto} onClick={removerFoto} className="btn-contorno px-4 py-2 text-sm">Remover</button>
+                <button type="button" disabled={enviandoFoto} onClick={removerFoto} className="btn-contorno px-5 py-2.5 text-sm">Remover</button>
               )}
             </div>
-            <p className="text-xs text-texto-2">JPG, PNG ou WebP até 3 MB. A foto é recortada em quadrado e aparece no topo do site. Não substitui a selfie da exclusividade.</p>
+            <p className="text-sm text-texto-2">JPG, PNG ou WebP até 3 MB. A foto é recortada em quadrado e aparece no topo do site. Não substitui a selfie da exclusividade.</p>
             <input ref={arquivoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) trocarFoto(f); }} />
           </div>
         </div>
-        {fotoMsg && <p className={"text-sm " + (fotoMsg.ok ? "text-verde" : "text-critico")}>{fotoMsg.texto}</p>}
-      </section>
+        {fotoMsg && <p className={"mt-4 text-sm font-semibold " + (fotoMsg.ok ? "text-verde" : "text-critico")}>{fotoMsg.texto}</p>}
+      </Bloco>
 
-      <form onSubmit={salvarDados} className="cartao p-5 space-y-4">
-        <h2 className="font-semibold text-texto">Seus dados</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={rotulo} htmlFor="c-nome">Nome</label>
-            <input id="c-nome" required minLength={2} maxLength={120} className={input} value={nome} onChange={(e) => setNome(e.target.value)} />
+      <form onSubmit={salvarDados}>
+        <Bloco icone={UserRound} titulo="Seus dados">
+          <div className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className={rotulo} htmlFor="c-nome">Nome</label>
+                <input id="c-nome" required minLength={2} maxLength={120} className={input} value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <div>
+                <label className={rotulo} htmlFor="c-tel">Telefone / WhatsApp</label>
+                <input id="c-tel" className={input} placeholder="(34) 90000-0000" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+              </div>
+            </div>
+            {dadosMsg && <p className={"text-sm font-semibold " + (dadosMsg.ok ? "text-verde" : "text-critico")}>{dadosMsg.texto}</p>}
+            <button disabled={salvandoDados} className="btn-verde px-6 py-3 text-sm disabled:opacity-60">{salvandoDados ? "Salvando…" : "Salvar dados"}</button>
           </div>
-          <div>
-            <label className={rotulo} htmlFor="c-tel">Telefone / WhatsApp</label>
-            <input id="c-tel" className={input} placeholder="(34) 90000-0000" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
-          </div>
-        </div>
-        {dadosMsg && <p className={"text-sm " + (dadosMsg.ok ? "text-verde" : "text-critico")}>{dadosMsg.texto}</p>}
-        <button disabled={salvandoDados} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">{salvandoDados ? "Salvando…" : "Salvar dados"}</button>
+        </Bloco>
       </form>
 
-      <section className="cartao p-5 space-y-4">
-        <div>
-          <h2 className="font-semibold text-texto">Preferências</h2>
-          <p className="text-xs text-texto-2">Ficam guardadas na conta e acompanham você no celular e no computador.</p>
-        </div>
-        <div className="space-y-2">
-          <p className={rotulo}>Tema</p>
-          <div className="flex gap-2 flex-wrap">
-            {([["claro", "Claro"], ["escuro", "Escuro"], ["sistema", "Igual ao aparelho"]] as const).map(([v, l]) => (
-              <button key={v} type="button" className={opcao(prefs.tema === v)} onClick={() => mudar({ tema: v })}>{l}</button>
-            ))}
+      <Bloco icone={SlidersHorizontal} titulo="Preferências" texto="Ficam guardadas na conta e acompanham você no celular e no computador.">
+        <div className="space-y-6">
+          <div>
+            <p className={rotulo}>Tema</p>
+            <div className="flex flex-wrap gap-2.5">
+              {([["claro", "Claro", Sun], ["escuro", "Escuro", Moon], ["sistema", "Igual ao aparelho", Monitor]] as const).map(([v, l, Icone]) => (
+                <button key={v} type="button" className={opcao(prefs.tema === v)} onClick={() => mudar({ tema: v })}><Icone className="size-4" />{l}</button>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="space-y-2">
-          <p className={rotulo}>Mapa abre em</p>
-          <div className="flex gap-2 flex-wrap">
-            {([["satelite", "Satélite"], ["mapa", "Mapa de ruas"]] as const).map(([v, l]) => (
-              <button key={v} type="button" className={opcao(prefs.mapa_base === v)} onClick={() => mudar({ mapa_base: v })}>{l}</button>
-            ))}
+          <div>
+            <p className={rotulo}>Mapa abre em</p>
+            <div className="flex flex-wrap gap-2.5">
+              {([["satelite", "Satélite", Satellite], ["mapa", "Mapa de ruas", MapIcon]] as const).map(([v, l, Icone]) => (
+                <button key={v} type="button" className={opcao(prefs.mapa_base === v)} onClick={() => mudar({ mapa_base: v })}><Icone className="size-4" />{l}</button>
+              ))}
+            </div>
           </div>
+          <div className="divide-y divide-linha rounded-xl border border-linha">
+            <label className="flex cursor-pointer items-start gap-3 px-4 py-4 text-base text-texto">
+              <input type="checkbox" className="mt-1 size-4 shrink-0 accent-[var(--verde)]" checked={prefs.camada_car} onChange={(e) => mudar({ camada_car: e.target.checked })} />
+              <span>Abrir o mapa com a camada do CAR ligada<span className="mt-0.5 block text-sm text-texto-2">Divisas dos imóveis rurais declaradas no Cadastro Ambiental Rural.</span></span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 px-4 py-4 text-base text-texto">
+              <input type="checkbox" className="mt-1 size-4 shrink-0 accent-[var(--verde)]" checked={prefs.emails_novidades} onChange={(e) => mudar({ emails_novidades: e.target.checked })} />
+              <span>Quero receber e-mails de novidades do Arini Imóveis Brasil<span className="mt-0.5 block text-sm text-texto-2">Imóveis novos e recursos do sistema. Você pode desmarcar quando quiser. Avisos da sua conta e dos seus anúncios continuam chegando.</span></span>
+            </label>
+          </div>
+          {prefMsg && <p className="text-sm text-texto-2">{prefMsg}</p>}
         </div>
-        <label className="flex items-start gap-3 text-sm text-texto">
-          <input type="checkbox" className="mt-1" checked={prefs.camada_car} onChange={(e) => mudar({ camada_car: e.target.checked })} />
-          <span>Abrir o mapa com a camada do CAR ligada<span className="block text-xs text-texto-2">Divisas dos imóveis rurais declaradas no Cadastro Ambiental Rural.</span></span>
-        </label>
-        <label className="flex items-start gap-3 text-sm text-texto">
-          <input type="checkbox" className="mt-1" checked={prefs.emails_novidades} onChange={(e) => mudar({ emails_novidades: e.target.checked })} />
-          <span>Quero receber e-mails de novidades do Arini Imóveis Brasil<span className="block text-xs text-texto-2">Imóveis novos e recursos do sistema. Você pode desmarcar quando quiser. Avisos da sua conta e dos seus anúncios continuam chegando.</span></span>
-        </label>
-        {prefMsg && <p className="text-xs text-texto-2">{prefMsg}</p>}
-      </section>
+      </Bloco>
     </div>
+  );
+}
+
+function Bloco({ icone: Icone, titulo, texto, destaque = false, children }: {
+  icone: LucideIcon; titulo: string; texto?: string; destaque?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <section className={`cartao p-5 md:p-7 ${destaque ? "border-l-4 border-l-ouro" : ""}`}>
+      <header className="mb-5 flex items-start gap-4">
+        <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${destaque ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde"}`}>
+          <Icone className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="lp-display text-xl md:text-2xl text-texto">{titulo}</h2>
+          {texto && <p className="mt-1 text-sm text-texto-2 md:text-base">{texto}</p>}
+        </div>
+      </header>
+      {children}
+    </section>
   );
 }

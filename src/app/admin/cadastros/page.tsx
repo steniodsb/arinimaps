@@ -4,6 +4,9 @@ import CadastroBotoes from "./CadastroBotoes";
 import TerritorioParceiro from "./TerritorioParceiro";
 import { PAPEL_LABEL } from "@/lib/perfis";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { LISTA } from "@/components/admin/estilos";
+import { CabecalhoPagina, Etiqueta } from "@/components/ui/Pagina";
+import { Phone } from "lucide-react";
 
 export default async function AdminCadastros() {
   await exigirSetor("operacoes");
@@ -25,19 +28,26 @@ export default async function AdminCadastros() {
     alvo: "partner" | "owner";
     itens: { id: string; status: string; extra?: string; nome: string; telefone: string | null; tipo?: string; region_id?: string | null }[];
   }) => (
-    <section className="space-y-3">
-      <h2 className="font-semibold text-texto">{titulo}</h2>
+    <section className="space-y-4">
+      <h2 className="lp-display text-xl md:text-2xl text-texto">
+        {titulo} <span className="ml-1 align-middle text-base font-semibold text-texto-2 tabular-nums">{itens.length}</span>
+      </h2>
       {!itens.length ? (
-        <p className="text-sm text-texto-2">Nenhum cadastro.</p>
+        <p className="cartao px-5 py-8 text-center text-[0.95rem] text-texto-2">Nenhum cadastro.</p>
       ) : (
-        <div className="cartao divide-y divide-linha">
+        <div className={LISTA}>
           {itens.map((i) => (
-            <div key={i.id} className="px-4 py-3 flex items-center gap-4 flex-wrap">
+            <div key={i.id} className="flex items-center gap-4 flex-wrap px-5 py-4 transition-colors hover:bg-superficie-2/70">
               <div className="flex-1 min-w-48">
-                <p className="font-medium">{i.nome}</p>
-                <p className="text-xs text-texto-2">{i.extra} {i.telefone && `· 📞 ${i.telefone}`}</p>
+                <p className="font-semibold text-texto">{i.nome}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto-2">
+                  <span>{i.extra}</span>
+                  {i.telefone && <span className="inline-flex items-center gap-1"><Phone className="size-3.5" />{i.telefone}</span>}
+                </p>
               </div>
-              <span className="text-xs rounded-full bg-superficie-2 px-3 py-1">{STATUS_LABEL[i.status] ?? i.status}</span>
+              <Etiqueta tom={["aprovado", "ativo"].includes(i.status) ? "verde" : ["solicitado", "em_analise"].includes(i.status) ? "ouro" : ["reprovado", "suspenso"].includes(i.status) ? "critico" : "neutro"}>
+                {STATUS_LABEL[i.status] ?? i.status}
+              </Etiqueta>
               {alvo === "partner" && ["aprovado", "ativo"].includes(i.status) && (
                 <TerritorioParceiro id={i.id} tipo={i.tipo ?? ""} regionId={i.region_id ?? ""} regioes={regioes ?? []} />
               )}
@@ -50,8 +60,9 @@ export default async function AdminCadastros() {
   );
 
   return (
-    <div className="space-y-8 max-w-4xl">
-      <h1 className="text-2xl font-semibold text-texto">Cadastros</h1>
+    <div className="space-y-10 md:space-y-12 max-w-5xl">
+      <CabecalhoPagina eyebrow="Operações" titulo="Cadastros"
+        subtitulo="Aprovação de parceiros e proprietários, e território de cada franqueado." />
       <Bloco
         titulo="Parceiros (imobiliárias, corretores, engenheiros, leiloeiros e franqueados)"
         alvo="partner"

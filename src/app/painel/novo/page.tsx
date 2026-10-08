@@ -9,6 +9,11 @@ import { lerCarPendente, limparCarPendente } from "@/lib/map/carPendente";
 import type { GeometriaEscolhida } from "@/components/map/DesenhoMapa";
 import { ehEquipe as papelEhEquipe, ehParceiro as papelEhParceiro } from "@/lib/perfis";
 import { enviarVideo, VIDEO_ACEITA, VIDEO_MAX_MB } from "@/lib/midia/enviarVideo";
+import {
+  Check, CheckCircle2, Gavel, FileText, MapPin, Trees, LandPlot, Image as ImageIcon, ShieldCheck,
+  Handshake, Camera, AlertTriangle, Send, type LucideIcon,
+} from "lucide-react";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 
 const DesenhoMapa = dynamic(() => import("@/components/map/DesenhoMapa"), { ssr: false });
 
@@ -204,29 +209,57 @@ export default function NovoImovel() {
     router.refresh();
   }
 
-  const input = "w-full rounded-lg cartao px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde";
-  const label = "block text-sm font-medium text-texto mb-1";
+  const input = CAMPO;
+  const label = ROTULO;
+  const ajuda = "mt-1.5 text-sm text-texto-2";
+
+  // trilho de etapas (só leitura): mostra o caminho do cadastro e o que já está pronto
+  const etapas = [
+    ...(emLeilao ? [{ id: "leilao", rotulo: "Leilão", pronto: !!leilao.praca1_data }] : []),
+    { id: "dados", rotulo: "Dados", pronto: !!form.titulo },
+    { id: "localizacao", rotulo: "Localização", pronto: !!geometria },
+    { id: "midia", rotulo: "Fotos e vídeos", pronto: fotos.length > 0 },
+    { id: "documentos", rotulo: "Documentos", pronto: Object.values(docs).some((l) => l.length > 0) },
+    { id: "condicao", rotulo: "Comercialização", pronto: ehEquipe || aceite },
+  ];
+  const numero = (id: string) => etapas.findIndex((e) => e.id === id) + 1;
 
   return (
-    <form onSubmit={enviar} className="space-y-6 max-w-3xl">
+    <form onSubmit={enviar} className="max-w-4xl space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-texto">Anunciar imóvel</h1>
-        <p className="text-sm text-texto-2">
+        <h1 className="lp-display text-2xl md:text-[1.75rem] text-texto">Anunciar imóvel</h1>
+        <p className="mt-1.5 text-base text-texto-2">
           Preencha os dados e marque a localização. O imóvel vai para a análise da Arini antes de publicar.
         </p>
       </div>
 
+      <ol className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {etapas.map((e, i) => (
+          <li key={e.id} className="shrink-0">
+            <a href={`#${e.id}`}
+              className={"flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors " +
+                (e.pronto ? "border-verde/40 bg-verde/8 text-texto" : "border-linha text-texto-2 hover:border-linha-forte hover:text-texto")}>
+              <span className={"grid size-6 place-items-center rounded-full text-xs font-bold " +
+                (e.pronto ? "bg-verde text-[#0A1F14]" : "bg-superficie-2 text-texto-2")}>
+                {e.pronto ? <Check className="size-3.5" /> : i + 1}
+              </span>
+              {e.rotulo}
+            </a>
+          </li>
+        ))}
+      </ol>
+
       {(ehLeiloeiro || ehEquipe) && (
-        <fieldset className="cartao p-4 space-y-3">
-          <legend className="text-sm font-medium text-texto px-1">Leilão</legend>
+        <Etapa id="leilao" numero={emLeilao ? numero("leilao") : null} icone={Gavel} titulo="Leilão"
+          subtitulo={ehEquipe ? "Só se o imóvel for vendido em leilão." : "Praças, lances e onde se dá o lance."}>
           {ehEquipe && (
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={emLeilao} onChange={(e) => setModalidade(e.target.checked ? "leilao" : "venda")} />
+            <label className="flex items-center gap-2.5 text-base text-texto">
+              <input type="checkbox" className="size-4 accent-[var(--verde)]" checked={emLeilao} onChange={(e) => setModalidade(e.target.checked ? "leilao" : "venda")} />
               Este imóvel será vendido em leilão
             </label>
           )}
           {emLeilao && (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className={label}>1ª praça — data e hora *</label>
                 <input type="datetime-local" className={input} value={leilao.praca1_data}
@@ -269,177 +302,189 @@ export default function NovoImovel() {
               </div>
             </div>
           )}
-        </fieldset>
+        </Etapa>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={label}>Tipo</label>
-          <select className={input} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
-            <option value="rural">Rural (fazenda, sítio, chácara)</option>
-            <option value="urbano">Urbano (casa, lote, comercial)</option>
-          </select>
+      <Etapa id="dados" numero={numero("dados")} icone={FileText} titulo="Dados do imóvel"
+        subtitulo="O que o comprador vê primeiro no anúncio.">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={label}>Tipo</label>
+            <select className={input} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+              <option value="rural">Rural (fazenda, sítio, chácara)</option>
+              <option value="urbano">Urbano (casa, lote, comercial)</option>
+            </select>
+          </div>
+          <div>
+            <label className={label}>Município</label>
+            <select className={input} value={form.municipality_id}
+              onChange={(e) => setForm({ ...form, municipality_id: e.target.value })}>
+              <option value="">Detectar pelo mapa</option>
+              {municipios.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
+            </select>
+          </div>
         </div>
+
         <div>
-          <label className={label}>Município</label>
-          <select className={input} value={form.municipality_id}
-            onChange={(e) => setForm({ ...form, municipality_id: e.target.value })}>
-            <option value="">Detectar pelo mapa</option>
-            {municipios.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
-          </select>
+          <label className={label}>Título do anúncio</label>
+          <input required className={input} placeholder='Ex.: "Fazenda dupla aptidão às margens da BR-364"'
+            value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
         </div>
-      </div>
 
-      <div>
-        <label className={label}>Título do anúncio</label>
-        <input required className={input} placeholder='Ex.: "Fazenda dupla aptidão às margens da BR-364"'
-          value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
-      </div>
-
-      <div>
-        <label className={label}>Descrição</label>
-        <textarea rows={5} className={input}
-          placeholder="Benfeitorias, água, acesso, documentação, detalhes que valorizam o imóvel…"
-          value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className={label}>Valor pedido (R$)</label>
-          <input className={input} placeholder="Ex.: 3.800.000" inputMode="numeric"
-            value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+          <label className={label}>Descrição</label>
+          <textarea rows={5} className={input}
+            placeholder="Benfeitorias, água, acesso, documentação, detalhes que valorizam o imóvel…"
+            value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
         </div>
-        <div>
-          <label className={label}>Área declarada ({form.tipo === "rural" ? "hectares" : "m²"})</label>
-          <input className={input} placeholder={form.tipo === "rural" ? "Ex.: 84" : "Ex.: 420"} inputMode="decimal"
-            value={form.area_declarada} onChange={(e) => setForm({ ...form, area_declarada: e.target.value })} />
-        </div>
-      </div>
 
-      <div>
-        <label className={label}>Localização no mapa</label>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className={label}>Valor pedido (R$)</label>
+            <input className={input} placeholder="Ex.: 3.800.000" inputMode="numeric"
+              value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+          </div>
+          <div>
+            <label className={label}>Área declarada ({form.tipo === "rural" ? "hectares" : "m²"})</label>
+            <input className={input} placeholder={form.tipo === "rural" ? "Ex.: 84" : "Ex.: 420"} inputMode="decimal"
+              value={form.area_declarada} onChange={(e) => setForm({ ...form, area_declarada: e.target.value })} />
+          </div>
+        </div>
+
+        {form.tipo === "urbano" && (
+          <div>
+            <label className={label}>Faz parte de um empreendimento? (opcional)</label>
+            <input className={input} placeholder="Código do imóvel principal — ex.: AIB-000010"
+              value={form.parent_codigo} onChange={(e) => setForm({ ...form, parent_codigo: e.target.value })} />
+            <p className={ajuda}>
+              Para apartamentos em bloco ou lotes de um loteamento: cadastre o empreendimento uma vez e
+              aponte cada unidade para ele — a página do empreendimento lista todas as unidades à venda.
+            </p>
+          </div>
+        )}
+
+        <div>
+          <label className={label}>Condições de venda</label>
+          <textarea rows={2} className={input} placeholder="Entrada, parcelamento, prazo…"
+            value={form.condicoes_venda} onChange={(e) => setForm({ ...form, condicoes_venda: e.target.value })} />
+          <div className="mt-3 flex flex-wrap gap-5 text-base text-texto">
+            {([["aceita_permuta", "Aceita permuta"], ["aceita_financiamento", "Aceita financiamento"]] as const).map(([k, l]) => (
+              <label key={k} className="flex items-center gap-2.5">
+                <input type="checkbox" className="size-4 accent-[var(--verde)]" checked={form[k]}
+                  onChange={(e) => setForm({ ...form, [k]: e.target.checked })} />
+                {l}
+              </label>
+            ))}
+          </div>
+        </div>
+      </Etapa>
+
+      <Etapa id="localizacao" numero={numero("localizacao")} icone={MapPin} titulo="Localização no mapa"
+        subtitulo="Desenhe a divisa, marque um ponto ou envie um KML.">
         {car && (
-          <p className="text-xs rounded-lg bg-ouro/10 border border-ouro/30 px-3 py-2 mb-2 text-texto">
-            Área do CAR <span className="font-mono">{car.cod}</span>
-            {car.municipio && <> · {car.municipio}</>}
-            {car.area_ha != null && <> · {Number(car.area_ha).toLocaleString("pt-BR")} ha declarados no CAR</>}
+          <p className="flex items-start gap-2 rounded-xl border border-ouro/30 bg-ouro/10 px-4 py-3 text-sm text-texto">
+            <Trees className="mt-0.5 size-4 shrink-0 text-ouro" />
+            <span>
+              Área do CAR <span className="font-mono">{car.cod}</span>
+              {car.municipio && <> · {car.municipio}</>}
+              {car.area_ha != null && <> · {Number(car.area_ha).toLocaleString("pt-BR")} ha declarados no CAR</>}
+            </span>
           </p>
         )}
         {lote && (
-          <p className="text-xs rounded-lg bg-ouro/10 border border-ouro/30 px-3 py-2 mb-2 text-texto">
-            Lote da planta urbana{lote.municipio && <> de {lote.municipio}</>} · {lote.area_m2.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} m² medidos na planta
+          <p className="flex items-start gap-2 rounded-xl border border-ouro/30 bg-ouro/10 px-4 py-3 text-sm text-texto">
+            <LandPlot className="mt-0.5 size-4 shrink-0 text-ouro" />
+            <span>
+              Lote da planta urbana{lote.municipio && <> de {lote.municipio}</>} · {lote.area_m2.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} m² medidos na planta
+            </span>
           </p>
         )}
         <DesenhoMapa onChange={setGeometria} inicial={inicial} />
         {geometria && (
-          <p className="text-xs text-verde font-medium mt-1">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-verde">
+            <CheckCircle2 className="size-4" />
             Geometria definida ({geometria.fonte === "ponto" ? "ponto" : geometria.fonte === "desenho" ? "desenho" : geometria.fonte === "car" ? "área do CAR" : geometria.fonte === "lote" ? "lote da planta urbana" : "arquivo " + geometria.fonte.toUpperCase()}).
           </p>
         )}
-      </div>
+      </Etapa>
 
-      <div>
-        <label className={label}>Fotos (até 20)</label>
-        <input type="file" accept="image/*" multiple className={input}
-          onChange={(e) => setFotos(Array.from(e.target.files ?? []).slice(0, 20))} />
-        {fotos.length > 0 && <p className="text-xs text-texto-2 mt-1">{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
-      </div>
-
-      <div>
-        <label className={label}>Vídeos (até 3, opcional)</label>
-        <input type="file" accept={VIDEO_ACEITA} multiple className={input}
-          onChange={(e) => setVideos(Array.from(e.target.files ?? []).slice(0, 3))} />
-        <p className="text-xs text-texto-2 mt-1">
-          {videos.length
-            ? `${videos.length} vídeo(s): ${videos.map((v) => `${v.name} (${(v.size / 1048576).toFixed(0)} MB)`).join(", ")}`
-            : `MP4, MOV ou WebM, até ${VIDEO_MAX_MB} MB cada — de 1 a 2 minutos em 1080p.`}
-        </p>
-      </div>
-
-      {form.tipo === "urbano" && (
+      <Etapa id="midia" numero={numero("midia")} icone={ImageIcon} titulo="Fotos e vídeos"
+        subtitulo="Boas imagens fazem o anúncio ser aberto.">
         <div>
-          <label className={label}>Faz parte de um empreendimento? (opcional)</label>
-          <input className={input} placeholder="Código do imóvel principal — ex.: AIB-000010"
-            value={form.parent_codigo} onChange={(e) => setForm({ ...form, parent_codigo: e.target.value })} />
-          <p className="text-xs text-texto-2 mt-0.5">
-            Para apartamentos em bloco ou lotes de um loteamento: cadastre o empreendimento uma vez e
-            aponte cada unidade para ele — a página do empreendimento lista todas as unidades à venda.
+          <label className={label}>Fotos (até 20)</label>
+          <input type="file" accept="image/*" multiple className={input}
+            onChange={(e) => setFotos(Array.from(e.target.files ?? []).slice(0, 20))} />
+          {fotos.length > 0 && <p className={ajuda}>{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
+        </div>
+
+        <div>
+          <label className={label}>Vídeos (até 3, opcional)</label>
+          <input type="file" accept={VIDEO_ACEITA} multiple className={input}
+            onChange={(e) => setVideos(Array.from(e.target.files ?? []).slice(0, 3))} />
+          <p className={ajuda}>
+            {videos.length
+              ? `${videos.length} vídeo(s): ${videos.map((v) => `${v.name} (${(v.size / 1048576).toFixed(0)} MB)`).join(", ")}`
+              : `MP4, MOV ou WebM, até ${VIDEO_MAX_MB} MB cada — de 1 a 2 minutos em 1080p.`}
           </p>
         </div>
-      )}
+      </Etapa>
 
-      <div>
-        <label className={label}>Condições de venda</label>
-        <textarea rows={2} className={input} placeholder="Entrada, parcelamento, prazo…"
-          value={form.condicoes_venda} onChange={(e) => setForm({ ...form, condicoes_venda: e.target.value })} />
-        <div className="flex flex-wrap gap-4 mt-2 text-sm">
-          {([["aceita_permuta", "Aceita permuta"], ["aceita_financiamento", "Aceita financiamento"]] as const).map(([k, l]) => (
-            <label key={k} className="flex items-center gap-2">
-              <input type="checkbox" checked={form[k]}
-                onChange={(e) => setForm({ ...form, [k]: e.target.checked })} />
-              {l}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <fieldset className="cartao p-4 space-y-3">
-        <legend className="text-sm font-medium text-texto px-1">Comprovação de propriedade {ehEquipe ? "" : "*"}</legend>
-        <p className="text-xs text-texto-2">
-          Nenhum imóvel é publicado sem a Arini conferir estes documentos. Eles ficam em área privada:
-          só você e a equipe da Arini veem. PDF ou foto, até 25 MB cada.
-        </p>
+      <Etapa id="documentos" numero={numero("documentos")} icone={ShieldCheck}
+        titulo={`Comprovação de propriedade${ehEquipe ? "" : " *"}`}
+        subtitulo={<>Nenhum imóvel é publicado sem a Arini conferir estes documentos. Eles ficam em área privada:
+          só você e a equipe da Arini veem. PDF ou foto, até 25 MB cada.</>}>
         {([
           ...(emLeilao ? [["edital", "Edital do leilão", "O edital publicado, com a descrição do bem, as praças e as condições.", !ehEquipe] as const] : []),
           ["matricula", "Matrícula atualizada do imóvel", "Ou escritura, contrato de compra e venda registrado, formal de partilha.", !ehEquipe && !emLeilao],
           ...(ehParceiro && !emLeilao ? [["autorizacao", "Autorização de venda assinada pelo proprietário", "Com prazo, preço e condições compatíveis com o anúncio.", true] as const] : []),
           ...(form.tipo === "rural" ? [["ccir_itr", "CCIR e/ou ITR", "Recomendado para imóvel rural — agiliza a análise.", false] as const] : []),
           ["outro", "Outros documentos", "Procuração, certidões, documento do cônjuge…", false],
-        ] as const).map(([tipo, titulo, ajuda, obrigatorio]) => (
-          <div key={tipo} className="space-y-1">
-            <label className="block text-sm text-texto">{titulo}{obrigatorio && " *"}</label>
+        ] as const).map(([tipo, titulo, ajudaDoc, obrigatorio]) => (
+          <div key={tipo}>
+            <label className={label}>{titulo}{obrigatorio && " *"}</label>
             <input type="file" multiple accept={ACEITA_DOC} className={input}
               onChange={(e) => setDocs({ ...docs, [tipo]: Array.from(e.target.files ?? []).slice(0, 10) })} />
-            <p className="text-xs text-texto-2">
-              {docs[tipo].length ? `${docs[tipo].length} arquivo(s): ${docs[tipo].map((f) => f.name).join(", ")}` : ajuda}
+            <p className={ajuda}>
+              {docs[tipo].length ? `${docs[tipo].length} arquivo(s): ${docs[tipo].map((f) => f.name).join(", ")}` : ajudaDoc}
             </p>
           </div>
         ))}
-      </fieldset>
+      </Etapa>
 
-      <fieldset className="cartao p-4 space-y-3">
-        <legend className="text-sm font-medium text-texto px-1">Condição de comercialização *</legend>
+      <Etapa id="condicao" numero={numero("condicao")} icone={Handshake} titulo="Condição de comercialização *">
         {ehParceiro ? (
-          <p className="text-sm text-texto-2">
-            {ehLeiloeiro ? "Imóvel de leilão: a venda segue o edital, e a Arini encaminha os" : "Imóvel de parceiro: a autorização do proprietário é com você, e a Arini intermedia os"}
+          <p className="text-base leading-relaxed text-texto-2">
+            {ehLeiloeiro ? "Imóvel de leilão: a venda segue o edital, e a Arini encaminha os" : "Imóvel de parceiro: a autorização do proprietário é com você, e a Arini intermedia os"}{" "}
             interessados que chegam pela plataforma, conforme o{" "}
             <Link href="/termos/parceiros" target="_blank" className="text-verde underline">Termo de Parceria</Link>.
           </p>
         ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {([
               ["autorizacao", "Autorização de venda", "Sem exclusividade: você pode vender por conta própria a quem a Arini não apresentou."],
               ["exclusividade", "Exclusividade Arini", "Só a Arini (e parceiros indicados por ela) intermedia durante o prazo, com compromissos de prazo de atendimento."],
             ] as const).map(([v, t, d]) => (
               <label key={v}
-                className={"rounded-lg border p-3 text-sm cursor-pointer transition " +
-                  (condicao === v ? "border-verde bg-verde/5" : "border-linha")}>
-                <span className="flex items-center gap-2 font-medium text-texto">
-                  <input type="radio" name="condicao" checked={condicao === v} onChange={() => setCondicao(v)} />
+                className={"cursor-pointer rounded-2xl border-2 p-5 transition-colors " +
+                  (condicao === v ? "border-verde bg-verde/6" : "border-linha hover:border-linha-forte")}>
+                <span className="flex items-center gap-2.5 text-base font-semibold text-texto">
+                  <input type="radio" name="condicao" className="size-4 accent-[var(--verde)]" checked={condicao === v} onChange={() => setCondicao(v)} />
                   {t}
                 </span>
-                <span className="block text-xs text-texto-2 mt-1">{d}</span>
+                <span className="mt-2 block text-sm leading-relaxed text-texto-2">{d}</span>
               </label>
             ))}
           </div>
         )}
 
         {pedeSelfie && (
-          <div className="rounded-lg border border-ouro/40 bg-ouro/5 p-3 space-y-1.5">
-            <label className="block text-sm font-medium text-texto">Selfie de quem está aceitando a exclusividade *</label>
+          <div className="rounded-2xl border border-ouro/40 bg-ouro/5 p-5">
+            <label className={label}>
+              <span className="inline-flex items-center gap-2"><Camera className="size-4 text-ouro" /> Selfie de quem está aceitando a exclusividade *</span>
+            </label>
             <input type="file" accept="image/*" capture="user" className={input}
               onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} />
-            <p className="text-xs text-texto-2">
+            <p className={ajuda}>
               {selfie ? `Foto selecionada: ${selfie.name}. ` : ""}
               A foto fica guardada junto do aceite, em área privada, só para a Arini conferir com o seu
               documento. Não é usada para reconhecimento facial.
@@ -448,14 +493,14 @@ export default function NovoImovel() {
         )}
 
         {ehEquipe ? (
-          <p className="text-xs text-texto-2">
+          <p className="text-sm text-texto-2">
             Cadastro feito pela equipe Arini: não há aceite eletrônico do proprietário. Anexe a
             autorização assinada em Documentos, na análise do imóvel.
           </p>
         ) : (
-          <label className="flex items-start gap-2 text-xs text-texto-2">
+          <label className="flex items-start gap-3 rounded-xl bg-superficie-2 px-4 py-3.5 text-sm leading-relaxed text-texto-2">
             <input type="checkbox" required checked={aceite}
-              onChange={(e) => setAceite(e.target.checked)} className="mt-0.5" />
+              onChange={(e) => setAceite(e.target.checked)} className="mt-1 size-4 shrink-0 accent-[var(--verde)]" />
             <span>
               {ehParceiro ? (
                 <>{ehLeiloeiro
@@ -474,14 +519,38 @@ export default function NovoImovel() {
             </span>
           </label>
         )}
-      </fieldset>
+      </Etapa>
 
-      {erro && <p className="text-sm text-critico">{erro}</p>}
-
-      <button disabled={enviando}
-        className="rounded-lg bg-verde text-white font-semibold px-6 py-2.5 hover:bg-verde-escuro disabled:opacity-60">
-        {enviando ? (progresso || "Enviando…") : "Enviar para análise da Arini"}
-      </button>
+      <div className="flex flex-col gap-4 border-t border-linha pt-6 sm:flex-row sm:items-center sm:justify-between">
+        {erro
+          ? <p role="alert" className="flex items-start gap-2 text-base text-critico"><AlertTriangle className="mt-0.5 size-5 shrink-0" />{erro}</p>
+          : <p className="text-sm text-texto-2">A Arini confere tudo antes de publicar. Você acompanha em Meus imóveis.</p>}
+        <button disabled={enviando}
+          className="lp-btn lp-btn-verde shrink-0 !px-6 !py-3.5 text-[0.95rem] disabled:opacity-60">
+          {enviando ? (progresso || "Enviando…") : <>Enviar para análise da Arini <Send /></>}
+        </button>
+      </div>
     </form>
+  );
+}
+
+/** Bloco numerado do cadastro (cartão com número, ícone e título no padrão do site). */
+function Etapa({ id, numero, icone: Icone, titulo, subtitulo, children }: {
+  id: string; numero: number | null; icone: LucideIcon; titulo: string; subtitulo?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="cartao scroll-mt-24 p-5 md:p-7">
+      <header className="mb-6 flex items-start gap-4">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+          <Icone className="size-5" />
+        </span>
+        <div className="min-w-0">
+          {numero != null && <p className="lp-eyebrow text-xs">Etapa {numero}</p>}
+          <h2 className="lp-display mt-1 text-xl md:text-2xl text-texto">{titulo}</h2>
+          {subtitulo && <p className="mt-1.5 text-sm leading-relaxed text-texto-2 md:text-base">{subtitulo}</p>}
+        </div>
+      </header>
+      <div className="space-y-5">{children}</div>
+    </section>
   );
 }

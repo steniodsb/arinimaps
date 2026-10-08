@@ -2,6 +2,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { SeloClassificacao, SeloSituacao } from "@/components/rural/Selos";
 import VerificarFontes from "./VerificarFontes";
+import { Activity, AlertTriangle, ChevronRight, Clock, Database, FileDown, Table2 } from "lucide-react";
+import { CabecalhoPagina, Estatistica, Etiqueta, NavegacaoInterna, Secao } from "@/components/ui/Pagina";
 
 type Ficha = Partial<Record<
   "endereco_oficial" | "documentacao" | "acesso" | "autenticacao" | "custo" | "limites" | "licenca" |
@@ -41,108 +43,120 @@ export default async function AdminFontes() {
   const ultima = ativas.map((f) => f.ultima_verificacao).filter((v): v is string => !!v).sort().pop() ?? null;
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-texto">Fontes oficiais</h1>
-        <p className="text-sm text-texto-2">
-          De onde vem cada informação do relatório territorial. A verificação automática pergunta a cada fonte
-          ativa, a cada 6 horas, por um quadrado de 2 km em Iturama; três falhas seguidas marcam a fonte como
-          instável, e o relatório passa a avisar em vez de dizer “nada encontrado”.
-        </p>
+    <div className="mx-auto max-w-[1280px] space-y-10">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Central · Cartografia"
+        titulo="Fontes oficiais"
+        subtitulo="De onde vem cada informação do relatório territorial. A verificação automática pergunta a cada fonte ativa, a cada 6 horas, por um quadrado de 2 km em Iturama; três falhas seguidas marcam a fonte como instável, e o relatório passa a avisar em vez de dizer “nada encontrado”."
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <Estatistica icone={Database} valor={ativas.length} rotulo="Ativas" />
+        <Estatistica icone={AlertTriangle} valor={instaveis.length} rotulo="Instáveis" urgente={instaveis.length > 0} />
+        <Estatistica icone={FileDown} valor={fontes.length - ativas.length} rotulo="Dependem de importação" />
+        <Estatistica icone={Clock} valor={<span className="text-xl tabular-nums">{quando(ultima)}</span>} rotulo="Última verificação" />
       </div>
 
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          ["Ativas", String(ativas.length)],
-          ["Instáveis", String(instaveis.length)],
-          ["Dependem de importação", String(fontes.length - ativas.length)],
-          ["Última verificação", quando(ultima)],
-        ].map(([r, v]) => (
-          <div key={r} className="cartao p-3">
-            <p className="text-[11px] uppercase tracking-wide text-texto-2">{r}</p>
-            <p className="font-semibold text-texto">{v}</p>
-          </div>
-        ))}
-      </section>
+      <NavegacaoInterna itens={[
+        { href: "#situacao", rotulo: "Situação das fontes ativas", icone: Activity, contagem: ativas.length },
+        { href: "#matriz", rotulo: "Matriz técnica", icone: Table2, contagem: fontes.length },
+      ]} />
 
-      <section className="cartao p-5 space-y-3">
-        <VerificarFontes />
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-texto-2 border-b border-linha">
-                <th className="py-2 pr-3">Fonte</th>
-                <th className="py-2 pr-3">Tipo</th>
-                <th className="py-2 pr-3">Situação</th>
-                <th className="py-2 pr-3">Última verificação</th>
-                <th className="py-2 pr-3 text-right">Latência 7 d</th>
-                <th className="py-2 text-right">No ar 7 d</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-linha">
-              {ativas.map((f) => (
-                <tr key={f.id} className="align-top">
-                  <td className="py-2 pr-3">
-                    <p className="text-texto">{f.nome}</p>
-                    <p className="text-xs text-texto-2">{f.orgao} · {f.mecanismo ?? f.tipo}</p>
-                    {f.ultimo_ok === false && f.ultimo_erro && (
-                      <p className="text-xs text-alerta">Última falha: {f.ultimo_erro}</p>
-                    )}
-                  </td>
-                  <td className="py-2 pr-3"><SeloClassificacao valor={f.classificacao} /></td>
-                  <td className="py-2 pr-3">
-                    <SeloSituacao valor={f.situacao} />
-                    {f.situacao_desde && <p className="text-[11px] text-texto-2">desde {quando(f.situacao_desde)}</p>}
-                  </td>
-                  <td className="py-2 pr-3 text-xs text-texto-2">{quando(f.ultima_verificacao)}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">
-                    {f.latencia_media_7d != null ? `${f.latencia_media_7d.toLocaleString("pt-BR")} ms` : "—"}
-                  </td>
-                  <td className="py-2 text-right tabular-nums">
-                    {f.disponibilidade_7d != null ? `${f.disponibilidade_7d.toLocaleString("pt-BR")}%` : "—"}
-                    <p className="text-[11px] text-texto-2">{f.verificacoes_7d} verif.</p>
-                  </td>
+      <div id="situacao" className="scroll-mt-36">
+      <Secao
+        eyebrow="Monitoramento"
+        titulo="Situação das fontes ativas"
+        acao={<VerificarFontes />}
+      >
+        <div className="cartao overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-[0.95rem]">
+              <thead className="bg-superficie-2">
+                <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2">
+                  <th className="px-5 py-3">Fonte</th>
+                  <th className="px-3 py-3">Tipo</th>
+                  <th className="px-3 py-3">Situação</th>
+                  <th className="px-3 py-3">Última verificação</th>
+                  <th className="px-3 py-3 text-right">Latência 7 d</th>
+                  <th className="px-5 py-3 text-right">No ar 7 d</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-linha">
+                {ativas.map((f) => (
+                  <tr key={f.id} className="align-top transition-colors hover:bg-superficie-2/60">
+                    <td className="px-5 py-3.5">
+                      <p className="font-semibold text-texto">{f.nome}</p>
+                      <p className="mt-0.5 text-sm text-texto-2">{f.orgao} · {f.mecanismo ?? f.tipo}</p>
+                      {f.ultimo_ok === false && f.ultimo_erro && (
+                        <p className="mt-1 flex items-start gap-1.5 text-sm text-alerta">
+                          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> Última falha: {f.ultimo_erro}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-3 py-3.5"><SeloClassificacao valor={f.classificacao} /></td>
+                    <td className="px-3 py-3.5">
+                      <SeloSituacao valor={f.situacao} />
+                      {f.situacao_desde && <p className="mt-1 text-xs text-texto-2 tabular-nums">desde {quando(f.situacao_desde)}</p>}
+                    </td>
+                    <td className="px-3 py-3.5 text-sm text-texto-2 tabular-nums">{quando(f.ultima_verificacao)}</td>
+                    <td className="px-3 py-3.5 text-right tabular-nums text-texto">
+                      {f.latencia_media_7d != null ? `${f.latencia_media_7d.toLocaleString("pt-BR")} ms` : "—"}
+                    </td>
+                    <td className="px-5 py-3.5 text-right tabular-nums text-texto">
+                      {f.disponibilidade_7d != null ? `${f.disponibilidade_7d.toLocaleString("pt-BR")}%` : "—"}
+                      <p className="text-xs text-texto-2">{f.verificacoes_7d} verif.</p>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </section>
+      </Secao>
+      </div>
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-semibold text-texto">Matriz técnica</h2>
-          <p className="text-sm text-texto-2">
-            Para cada fonte: órgão, endereço, acesso, autenticação, custo, limites, licença, atualização e campos —
-            a mesma tabela de <code>docs/FONTES.md</code>. As inativas não têm consulta pública por área e
-            aparecem no relatório como “dependem de importação”.
-          </p>
+      <div id="matriz" className="scroll-mt-36">
+      <Secao
+        eyebrow="Catálogo"
+        titulo="Matriz técnica"
+        subtitulo={<>
+          Para cada fonte: órgão, endereço, acesso, autenticação, custo, limites, licença, atualização e campos —
+          a mesma tabela de <code className="font-mono text-sm">docs/FONTES.md</code>. As inativas não têm consulta pública por área e
+          aparecem no relatório como “dependem de importação”.
+        </>}
+      >
+        <div className="cartao divide-y divide-linha overflow-hidden">
+          {fontes.map((f) => (
+            <details key={f.id} className="group">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-2 px-5 py-4 transition-colors hover:bg-superficie-2/60 [&::-webkit-details-marker]:hidden">
+                <ChevronRight className="size-4 shrink-0 text-texto-2 transition-transform group-open:rotate-90" />
+                <span className="font-semibold text-texto">{f.nome}</span>
+                <span className="text-sm text-texto-2">{f.orgao}</span>
+                <span className="ml-auto flex flex-wrap items-center gap-2">
+                  <SeloClassificacao valor={f.classificacao} />
+                  {f.ativa ? <SeloSituacao valor={f.situacao} />
+                    : <Etiqueta tom="neutro">depende de importação</Etiqueta>}
+                </span>
+              </summary>
+              <dl className="grid gap-x-6 gap-y-2.5 border-t border-linha bg-superficie-2/40 px-5 py-5 text-[0.95rem] sm:grid-cols-[13rem_1fr] sm:pl-12">
+                {f.observacao && (<><dt className="text-sm font-semibold text-texto-2">Observação</dt><dd className="text-texto">{f.observacao}</dd></>)}
+                {f.endpoint && (<><dt className="text-sm font-semibold text-texto-2">Serviço</dt><dd className="text-texto break-all font-mono text-sm">{f.endpoint}</dd></>)}
+                {f.camada && (<><dt className="text-sm font-semibold text-texto-2">Camadas</dt><dd className="text-texto font-mono text-sm">{f.camada}</dd></>)}
+                {CAMPOS_FICHA.filter(([k]) => f.ficha?.[k]).map(([k, rotulo]) => (
+                  <div key={k} className="contents">
+                    <dt className="text-sm font-semibold text-texto-2">{rotulo}</dt>
+                    <dd className="text-texto break-words">{f.ficha[k]}</dd>
+                  </div>
+                ))}
+                {f.sonda_url && (<><dt className="text-sm font-semibold text-texto-2">Sonda de saúde</dt><dd className="text-texto-2 break-all font-mono text-xs">{f.sonda_url}</dd></>)}
+                <dt className="text-sm font-semibold text-texto-2">Última consulta real</dt><dd className="text-texto tabular-nums">{quando(f.ultima_consulta)}</dd>
+              </dl>
+            </details>
+          ))}
         </div>
-        {fontes.map((f) => (
-          <details key={f.id} className="cartao p-4">
-            <summary className="cursor-pointer flex flex-wrap items-center gap-2">
-              <span className="font-medium text-texto">{f.nome}</span>
-              <span className="text-xs text-texto-2">{f.orgao}</span>
-              <SeloClassificacao valor={f.classificacao} />
-              {f.ativa ? <SeloSituacao valor={f.situacao} />
-                : <span className="text-[10px] rounded-full px-2 py-0.5 bg-superficie-2 text-texto-2">depende de importação</span>}
-            </summary>
-            <dl className="mt-3 grid sm:grid-cols-[12rem_1fr] gap-x-4 gap-y-1.5 text-sm">
-              {f.observacao && (<><dt className="text-texto-2">Observação</dt><dd className="text-texto">{f.observacao}</dd></>)}
-              {f.endpoint && (<><dt className="text-texto-2">Serviço</dt><dd className="text-texto break-all font-mono text-xs">{f.endpoint}</dd></>)}
-              {f.camada && (<><dt className="text-texto-2">Camadas</dt><dd className="text-texto font-mono text-xs">{f.camada}</dd></>)}
-              {CAMPOS_FICHA.filter(([k]) => f.ficha?.[k]).map(([k, rotulo]) => (
-                <div key={k} className="contents">
-                  <dt className="text-texto-2">{rotulo}</dt>
-                  <dd className="text-texto break-words">{f.ficha[k]}</dd>
-                </div>
-              ))}
-              {f.sonda_url && (<><dt className="text-texto-2">Sonda de saúde</dt><dd className="text-texto-2 break-all font-mono text-[11px]">{f.sonda_url}</dd></>)}
-              <dt className="text-texto-2">Última consulta real</dt><dd className="text-texto">{quando(f.ultima_consulta)}</dd>
-            </dl>
-          </details>
-        ))}
-      </section>
+      </Secao>
+      </div>
     </div>
   );
 }

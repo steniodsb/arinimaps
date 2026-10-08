@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { ArrowRight, Database, FileText, Home, LoaderCircle, Lock, SendHorizontal, Sparkles, SquarePen, X } from "lucide-react";
 
 type Fonte = { tipo: "imovel" | "car" | "conhecimento"; rotulo: string; href?: string };
 type Msg = { papel: "user" | "assistant"; texto: string; fontes?: Fonte[]; erro?: boolean; status?: string };
@@ -204,34 +205,45 @@ export default function ChatIA() {
     <>
       {!aberto && (
         <button type="button" onClick={abrir} aria-label="Abrir o assistente"
-          className={"fixed z-50 right-4 flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-[#06140D] shadow-xl border border-verde/40 hover:-translate-y-0.5 transition " + (noMapa ? "bottom-72 lg:bottom-36" : "bottom-20 lg:bottom-6")}
+          className={"fixed z-50 right-4 flex items-center gap-2 rounded-full pl-3.5 pr-4 py-3 text-sm font-bold text-[#06140D] shadow-[0_14px_34px_-12px_rgba(63,207,127,0.75)] ring-1 ring-black/10 hover:-translate-y-0.5 hover:brightness-105 transition " + (noMapa ? "bottom-72 lg:bottom-36" : "bottom-20 lg:bottom-6")}
           style={{ background: "linear-gradient(180deg, #45D98A 0%, #2FA866 100%)" }}>
-          <span aria-hidden>✦</span> <span className="hidden sm:inline">Pergunte à Arini</span>
+          <Sparkles aria-hidden className="size-[18px]" /> <span className="hidden sm:inline">Pergunte à Arini</span>
         </button>
       )}
 
       {aberto && (
         <div role="dialog" aria-label="Assistente Arini"
-          className="fixed z-50 inset-x-2 bottom-20 top-20 sm:inset-x-auto sm:right-4 sm:top-auto sm:w-[400px] sm:h-[600px] sm:max-h-[calc(100vh-7rem)] lg:bottom-6 cartao shadow-2xl flex flex-col overflow-hidden anima-subir">
-          <div className="flex items-center gap-2 px-4 h-14 border-b border-linha bg-superficie-2 shrink-0">
-            <span className="w-8 h-8 rounded-lg bg-verde/15 text-verde grid place-items-center" aria-hidden>✦</span>
-            <div className="flex-1 leading-tight">
-              <p className="text-sm font-semibold text-texto">Assistente Arini</p>
-              <p className="text-[10px] text-texto-2">IA · imóveis publicados, CAR e base de conhecimento</p>
+          className="fixed z-50 inset-x-2 bottom-20 top-20 sm:inset-x-auto sm:right-4 sm:top-auto sm:w-[420px] sm:h-[620px] sm:max-h-[calc(100vh-7rem)] lg:bottom-6 flex flex-col overflow-hidden rounded-[20px] border border-linha bg-superficie shadow-[0_30px_80px_-30px_rgb(0_0_0/0.8)]">
+          <div className="lp-escuro lp-malha-escura relative flex items-center gap-3 px-4 py-3.5 shrink-0">
+            <div className="lp-grade pointer-events-none absolute inset-0 opacity-50" aria-hidden />
+            <span className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-verde/30 bg-verde/15 text-verde" aria-hidden>
+              <Sparkles className="size-5" />
+            </span>
+            <div className="relative flex-1 min-w-0 leading-tight">
+              <p className="font-display text-base font-bold text-texto">Assistente Arini</p>
+              <p className="mt-0.5 truncate text-[11px] text-texto-2">IA · imóveis publicados, CAR e base de conhecimento</p>
             </div>
             {msgs.length > 0 && (
-              <button type="button" onClick={novaConversa} className="text-[11px] text-texto-2 hover:text-texto px-2">Nova</button>
+              <button type="button" onClick={novaConversa} title="Nova conversa"
+                className="relative inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-semibold text-texto-2 transition hover:bg-white/10 hover:text-texto">
+                <SquarePen className="size-3.5" /> Nova
+              </button>
             )}
-            <button type="button" onClick={() => setAberto(false)} aria-label="Fechar" className="w-8 h-8 rounded-lg text-texto-2 hover:text-texto hover:bg-superficie">✕</button>
+            <button type="button" onClick={() => setAberto(false)} aria-label="Fechar"
+              className="relative grid size-9 place-items-center rounded-[10px] text-texto-2 transition hover:bg-white/10 hover:text-texto">
+              <X className="size-[18px]" />
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-sm">
-            {!estado && <p className="text-texto-2">Carregando…</p>}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 text-[0.92rem]">
+            {!estado && (
+              <p className="flex items-center gap-2 text-texto-2"><LoaderCircle className="size-4 animate-spin" /> Carregando…</p>
+            )}
 
             {estado && !estado.ligado && (
-              <div className="rounded-xl bg-superficie-2 p-4 space-y-1">
-                <p className="font-semibold text-texto">{estado.motivo === "desligado" ? "Assistente desligado" : "Assistente em configuração"}</p>
-                <p className="text-texto-2">
+              <div className="rounded-2xl border border-linha bg-superficie-2 p-4 space-y-1.5">
+                <p className="font-display font-bold text-texto">{estado.motivo === "desligado" ? "Assistente desligado" : "Assistente em configuração"}</p>
+                <p className="text-texto-2 leading-relaxed">
                   {estado.motivo === "desligado"
                     ? "A Arini desligou o assistente por enquanto."
                     : "O assistente de IA ainda está sendo configurado."}{" "}
@@ -242,47 +254,70 @@ export default function ChatIA() {
             )}
 
             {estado?.ligado && !estado.permitido && estado.negacao && (
-              <div className="rounded-xl bg-superficie-2 p-4 space-y-2">
-                <p className="font-semibold text-texto">{estado.negacao.mensagem}</p>
-                <p className="text-texto-2">{estado.negacao.solucao}</p>
+              <div className="rounded-2xl border border-ouro/30 bg-ouro/8 p-4 space-y-2">
+                <p className="flex items-start gap-2 font-display font-bold text-texto">
+                  <Lock className="mt-0.5 size-4 shrink-0 text-ouro" /> {estado.negacao.mensagem}
+                </p>
+                <p className="text-texto-2 leading-relaxed">{estado.negacao.solucao}</p>
                 {estado.sessao
-                  ? <Link href="/planos" className="btn-ouro inline-block px-4 py-2 text-xs">Ver planos</Link>
-                  : <Link href="/entrar" className="btn-verde inline-block px-4 py-2 text-xs">Entrar</Link>}
+                  ? <Link href="/planos" className="btn-ouro inline-flex items-center gap-1.5 px-4 py-2 text-xs">Ver planos <ArrowRight className="size-3.5" /></Link>
+                  : <Link href="/entrar" className="btn-verde inline-flex items-center gap-1.5 px-4 py-2 text-xs">Entrar <ArrowRight className="size-3.5" /></Link>}
               </div>
             )}
 
             {estado?.ligado && estado.permitido && msgs.length === 0 && (
-              <div className="space-y-3">
-                <p className="text-texto-2">
-                  Pergunte sobre imóveis publicados, uma área do CAR ou como o Arini Imóveis Brasil funciona.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="space-y-4">
+                <div>
+                  <p className="font-display text-lg font-bold text-texto">Como posso ajudar?</p>
+                  <p className="mt-1 text-texto-2 leading-relaxed">
+                    Pergunte sobre imóveis publicados, uma área do CAR ou como o Arini Imóveis Brasil funciona.
+                  </p>
+                </div>
+                <div className="grid gap-2">
                   {SUGESTOES.map((s) => (
                     <button key={s} type="button" onClick={() => enviar(s)} disabled={!podeConversar}
-                      className="chip px-3 py-1.5 text-xs text-left">{s}</button>
+                      className="group flex items-center justify-between gap-3 rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-left text-sm text-texto-3 transition hover:border-verde/50 hover:text-texto disabled:opacity-50">
+                      {s}
+                      <ArrowRight className="size-4 shrink-0 text-texto-2 transition group-hover:translate-x-0.5 group-hover:text-verde" />
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
             {msgs.map((m, i) => (
-              <div key={i} className={m.papel === "user" ? "flex justify-end" : ""}>
+              <div key={i} className={m.papel === "user" ? "flex justify-end" : "flex gap-2.5"}>
+                {m.papel === "assistant" && (
+                  <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-verde/12 text-verde" aria-hidden>
+                    <Sparkles className="size-3.5" />
+                  </span>
+                )}
                 <div className={
                   m.papel === "user"
-                    ? "max-w-[85%] rounded-2xl rounded-br-md bg-verde/15 text-texto px-3.5 py-2 whitespace-pre-wrap"
-                    : "max-w-[95%] text-texto-2 leading-relaxed " + (m.erro ? "text-critico" : "")
+                    ? "max-w-[85%] rounded-2xl rounded-br-md bg-verde/15 border border-verde/20 text-texto px-3.5 py-2.5 whitespace-pre-wrap"
+                    : "min-w-0 max-w-[92%] text-texto-3 leading-relaxed " + (m.erro ? "text-critico" : "")
                 }>
                   {m.papel === "user" ? m.texto : <Markdown texto={m.texto} />}
-                  {m.status && <p className="text-xs text-texto-2 animate-pulse mt-1">{m.status}</p>}
+                  {m.status && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-texto-2 animate-pulse">
+                      <LoaderCircle className="size-3.5 animate-spin" /> {m.status}
+                    </p>
+                  )}
                   {!!m.fontes?.length && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {m.fontes.slice(0, 8).map((f, j) => f.href ? (
-                        <Link key={j} href={f.href} className="text-[11px] rounded-full border border-linha px-2.5 py-1 hover:border-verde/50 hover:text-texto">
-                          {f.tipo === "car" ? "CAR" : f.tipo === "imovel" ? "Imóvel" : "Base"} · {f.rotulo.length > 42 ? f.rotulo.slice(0, 42) + "…" : f.rotulo}
-                        </Link>
-                      ) : (
-                        <span key={j} className="text-[11px] rounded-full border border-linha px-2.5 py-1">Base · {f.rotulo}</span>
-                      ))}
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {m.fontes.slice(0, 8).map((f, j) => {
+                        const Icone = f.tipo === "imovel" ? Home : f.tipo === "car" ? FileText : Database;
+                        return f.href ? (
+                          <Link key={j} href={f.href} className="inline-flex items-center gap-1 rounded-md border border-linha bg-superficie-2 px-2 py-1 text-[11px] text-texto-2 transition hover:border-verde/50 hover:text-texto">
+                            <Icone className="size-3 shrink-0" />
+                            {f.tipo === "car" ? "CAR" : f.tipo === "imovel" ? "Imóvel" : "Base"} · {f.rotulo.length > 42 ? f.rotulo.slice(0, 42) + "…" : f.rotulo}
+                          </Link>
+                        ) : (
+                          <span key={j} className="inline-flex items-center gap-1 rounded-md border border-linha bg-superficie-2 px-2 py-1 text-[11px] text-texto-2">
+                            <Database className="size-3 shrink-0" /> Base · {f.rotulo}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -292,18 +327,20 @@ export default function ChatIA() {
           </div>
 
           {estado?.ligado && estado.permitido && (
-            <form onSubmit={(e) => { e.preventDefault(); enviar(texto); }} className="border-t border-linha p-3 space-y-1.5 shrink-0">
-              <div className="flex gap-2">
+            <form onSubmit={(e) => { e.preventDefault(); enviar(texto); }} className="border-t border-linha bg-superficie p-3 space-y-2 shrink-0">
+              <div className="flex items-end gap-2 rounded-xl border border-linha-forte bg-superficie-2 p-1.5 transition focus-within:border-verde focus-within:ring-2 focus-within:ring-verde/30">
                 <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={1} maxLength={1500}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(texto); } }}
                   placeholder={restante === 0 ? "Cota do mês esgotada" : "Escreva sua pergunta…"}
                   disabled={!podeConversar}
-                  className="flex-1 resize-none rounded-xl border border-linha bg-superficie-2 px-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde" />
-                <button type="submit" disabled={!podeConversar || enviando || !texto.trim()} className="btn-verde px-4 text-sm disabled:opacity-50">
-                  {enviando ? "…" : "Enviar"}
+                  aria-label="Sua pergunta"
+                  className="flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none" />
+                <button type="submit" disabled={!podeConversar || enviando || !texto.trim()} aria-label="Enviar"
+                  className="btn-verde grid size-10 shrink-0 place-items-center p-0 disabled:opacity-50">
+                  {enviando ? <LoaderCircle className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}
                 </button>
               </div>
-              <p className="text-[10px] text-texto-2 leading-snug">
+              <p className="px-1 text-[10px] text-texto-2 leading-snug">
                 Respostas automáticas: confira na ficha do imóvel. Não envie dados pessoais. Conversas ficam registradas.
                 {restante != null && ` · ${restante} pergunta(s) restante(s) no mês.`}
               </p>

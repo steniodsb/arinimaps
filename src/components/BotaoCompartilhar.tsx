@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, MessageCircle, Share2 } from "lucide-react";
 
 export default function BotaoCompartilhar({ codigo, titulo }: { codigo: string; titulo: string }) {
   const [copiado, setCopiado] = useState(false);
@@ -8,9 +9,10 @@ export default function BotaoCompartilhar({ codigo, titulo }: { codigo: string; 
   const montarUrl = () => `${window.location.origin}/i/${codigo}`;
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2.5">
       <button
-        className="flex-1 rounded-lg cartao text-sm font-medium py-2 hover:bg-superficie-2"
+        type="button"
+        className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-linha-forte bg-superficie py-3 text-sm font-bold text-texto transition hover:border-verde hover:text-verde"
         onClick={async () => {
           const url = montarUrl();
           if (navigator.share) {
@@ -20,15 +22,16 @@ export default function BotaoCompartilhar({ codigo, titulo }: { codigo: string; 
           setCopiado(true);
           setTimeout(() => setCopiado(false), 2000);
         }}>
-        {copiado ? "Link copiado ✓" : "Compartilhar"}
+        {copiado ? <><Check className="size-4" /> Link copiado</> : <><Share2 className="size-4" /> Compartilhar</>}
       </button>
       <button
-        className="flex-1 rounded-lg bg-[#25D366] text-white text-sm font-medium py-2 text-center hover:opacity-90"
+        type="button"
+        className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-[#25D366] py-3 text-sm font-bold text-white transition hover:brightness-95"
         onClick={() => {
           const texto = `${titulo} — veja no mapa da Arini: ${montarUrl()}`;
           window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
         }}>
-        WhatsApp
+        <MessageCircle className="size-4" /> WhatsApp
       </button>
     </div>
   );

@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ArrowLeft, CalendarClock, FileText, History, MapPin, MapPinOff, Paperclip, User } from "lucide-react";
+import { Etiqueta, Vazio } from "@/components/ui/Pagina";
+import { TOM_STATUS } from "../tom-status";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
@@ -6,7 +9,7 @@ import { dataHoraBR } from "@/components/admin/Painel";
 import MiniMapa from "@/components/map/MiniMapa";
 import { PAPEL_LABEL } from "@/lib/perfis";
 import {
-  STATUS_SOLICITACAO_COR, STATUS_SOLICITACAO_LABEL, TIPO_SOLICITACAO_LABEL, tamanhoLegivel,
+  STATUS_SOLICITACAO_LABEL, TIPO_SOLICITACAO_LABEL, tamanhoLegivel,
   type ArquivoSolicitacao, type StatusSolicitacao, type TipoSolicitacao,
 } from "@/lib/cartografia/solicitacoes";
 import { assinarArquivos, geojsonDaSolicitacao, resolverReferencia } from "@/lib/cartografia/servidor";
@@ -54,45 +57,50 @@ export default async function SolicitacaoCartografica({ params }: PageProps<"/ad
   const geometria = geo.geom ?? geo.ponto ?? referencia?.geometry ?? null;
 
   return (
-    <div className="space-y-5 max-w-5xl">
-      <div>
-        <Link href="/admin/cartografia/solicitacoes" className="text-xs text-verde hover:underline">← Solicitações cartográficas</Link>
-        <div className="flex items-center gap-3 flex-wrap mt-2">
-          <h1 className="font-mono text-2xl font-semibold text-texto">{s.protocolo}</h1>
-          <span className={`text-xs rounded-full px-3 py-1 ${STATUS_SOLICITACAO_COR[status]}`}>{STATUS_SOLICITACAO_LABEL[status]}</span>
+    <div className="mx-auto max-w-[1280px] space-y-8">
+      <header className="space-y-4">
+        <Link href="/admin/cartografia/solicitacoes" className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline">
+          <ArrowLeft className="size-4" /> Solicitações cartográficas
+        </Link>
+        <div>
+          <p className="lp-eyebrow text-xs">{TIPO_SOLICITACAO_LABEL[s.tipo as TipoSolicitacao] ?? s.tipo}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="lp-display font-mono text-3xl md:text-[2.5rem] text-texto">{s.protocolo}</h1>
+            <Etiqueta tom={TOM_STATUS[status] ?? "neutro"}>{STATUS_SOLICITACAO_LABEL[status]}</Etiqueta>
+          </div>
+          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-base text-texto-2">
+            <span className="inline-flex items-center gap-1.5"><MapPin className="size-4" /> {municipio?.nome ?? "Município não informado"}</span>
+            <span className="inline-flex items-center gap-1.5 tabular-nums"><CalendarClock className="size-4" /> aberta em {dataHoraBR(s.created_at)} · atualizada em {dataHoraBR(s.updated_at)}</span>
+          </p>
         </div>
-        <p className="text-sm text-texto mt-1">{TIPO_SOLICITACAO_LABEL[s.tipo as TipoSolicitacao] ?? s.tipo}</p>
-        <p className="text-sm text-texto-2">
-          {municipio?.nome ?? "Município não informado"} · aberta em {dataHoraBR(s.created_at)} · atualizada em {dataHoraBR(s.updated_at)}
-        </p>
-      </div>
+      </header>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
-        <div className="space-y-5">
-          <section className="cartao p-5 space-y-2 text-sm">
-            <h2 className="font-semibold text-texto">Solicitante</h2>
-            <p className="text-texto">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="space-y-6 min-w-0">
+          <section className="cartao p-6 space-y-3">
+            <h2 className="flex items-center gap-2 lp-display text-xl text-texto"><User className="size-5 text-verde" /> Solicitante</h2>
+            <p className="text-base text-texto">
               {solicitante?.nome ?? "—"}
               {solicitante?.telefone && <> · {solicitante.telefone}</>}
               {solicitante?.role && <> · <span className="text-texto-2">{PAPEL_LABEL[solicitante.role] ?? solicitante.role}</span></>}
             </p>
-            <p className="text-texto-2">
+            <p className="text-[0.95rem] text-texto-2">
               Imóvel vinculado:{" "}
               {imovel
-                ? <Link href={`/admin/imoveis/${imovel.id}`} className="text-verde hover:underline"><span className="font-mono">{imovel.codigo}</span> · {imovel.titulo}</Link>
+                ? <Link href={`/admin/imoveis/${imovel.id}`} className="font-semibold text-verde hover:underline"><span className="font-mono">{imovel.codigo}</span> · {imovel.titulo}</Link>
                 : "nenhum (vincule pelo código no painel ao lado)"}
             </p>
             {versao && (
-              <p className="text-texto-2">
+              <p className="text-[0.95rem] text-texto-2">
                 Geometria aplicada: versão {versao.versao} ({versao.situacao}){versao.validada_em && `, validada em ${dataHoraBR(versao.validada_em)}`}
               </p>
             )}
           </section>
 
           {geometria ? (
-            <section className="space-y-2">
-              <MiniMapa geometry={geometria} status={geo.geom ? "publicado" : "em_negociacao"} className="h-80 w-full rounded-xl overflow-hidden border border-linha" />
-              <p className="text-xs text-texto-2">
+            <section className="space-y-2.5">
+              <MiniMapa geometry={geometria} status={geo.geom ? "publicado" : "em_negociacao"} className="h-80 w-full rounded-[1.25rem] overflow-hidden border border-linha" />
+              <p className="text-sm text-texto-2">
                 {geo.geom ? "Área desenhada pelo solicitante" : geo.ponto ? "Ponto marcado pelo solicitante" : "Área da referência clicada"}
                 {geo.area_m2 != null && ` · ${(geo.area_m2 / 10000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ha (${geo.area_m2.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} m²)`}
                 {referencia && ` · ${referencia.rotulo}`}
@@ -100,53 +108,64 @@ export default async function SolicitacaoCartografica({ params }: PageProps<"/ad
               </p>
             </section>
           ) : (
-            <p className="cartao p-5 text-sm text-texto-2">Sem ponto nem área: a localização está só na descrição e nos anexos.</p>
+            <div className="cartao flex items-center gap-3 p-6 text-base text-texto-2">
+              <MapPinOff className="size-5 shrink-0 text-texto-3" />
+              Sem ponto nem área: a localização está só na descrição e nos anexos.
+            </div>
           )}
 
-          <section className="cartao p-5 space-y-3">
-            <h2 className="font-semibold text-texto">Descrição</h2>
-            <p className="text-sm whitespace-pre-wrap text-texto">{s.descricao || <span className="text-texto-2">Sem descrição.</span>}</p>
+          <section className="cartao p-6 space-y-4">
+            <h2 className="flex items-center gap-2 lp-display text-xl text-texto"><FileText className="size-5 text-verde" /> Descrição</h2>
+            <p className="text-base leading-relaxed whitespace-pre-wrap text-texto">{s.descricao || <span className="text-texto-2">Sem descrição.</span>}</p>
             {arquivos.length > 0 && (
-              <div>
-                <p className="text-xs text-texto-2 mb-1">Anexos ({arquivos.length})</p>
-                <ul className="text-sm space-y-1">
+              <div className="border-t border-linha pt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-texto-2">Anexos ({arquivos.length})</p>
+                <ul className="divide-y divide-linha text-[0.95rem]">
                   {arquivos.map((a) => (
-                    <li key={a.path} className="flex items-center justify-between gap-2">
-                      {a.url
-                        ? <a href={a.url} target="_blank" className="text-verde hover:underline truncate">{a.nome}</a>
-                        : <span className="text-texto-2 truncate">{a.nome}</span>}
-                      <span className="text-xs text-texto-2 shrink-0">{a.tipo.toUpperCase()} · {tamanhoLegivel(a.bytes)}</span>
+                    <li key={a.path} className="flex items-center justify-between gap-3 py-2.5">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Paperclip className="size-4 shrink-0 text-texto-2" />
+                        {a.url
+                          ? <a href={a.url} target="_blank" className="font-semibold text-verde hover:underline truncate">{a.nome}</a>
+                          : <span className="text-texto-2 truncate">{a.nome}</span>}
+                      </span>
+                      <span className="text-sm text-texto-2 shrink-0 tabular-nums">{a.tipo.toUpperCase()} · {tamanhoLegivel(a.bytes)}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
             {s.resposta && (
-              <div className="rounded-lg border border-verde/30 bg-verde/5 px-3 py-2 text-sm">
-                <p className="text-xs text-texto-2">Devolutiva atual ao solicitante</p>
-                <p className="whitespace-pre-wrap text-texto">{s.resposta}</p>
+              <div className="rounded-xl border border-verde/30 bg-verde/5 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-verde">Devolutiva atual ao solicitante</p>
+                <p className="mt-1.5 text-[0.95rem] leading-relaxed whitespace-pre-wrap text-texto">{s.resposta}</p>
               </div>
             )}
           </section>
 
-          <section className="space-y-3">
-            <h2 className="font-semibold text-texto">Linha do tempo</h2>
-            <div className="space-y-2">
-              {(eventos ?? []).map((e) => (
-                <div key={e.id}
-                  className={"rounded-xl border p-3 text-sm " +
-                    (e.interno ? "border-alerta/40 bg-alerta/10" : e.user_id === s.user_id ? "border-linha bg-superficie" : "border-verde/30 bg-verde/5")}>
-                  <p className="text-xs text-texto-2">
-                    {dataHoraBR(e.created_at)} · {e.user_id ? autores.get(e.user_id) ?? "—" : "sistema"}
-                    {e.user_id === s.user_id && " · solicitante"}
-                    {e.interno && " · nota interna (o solicitante não vê)"}
-                    {e.para_status && <> · <span className="text-texto">{e.de_status ? `${STATUS_SOLICITACAO_LABEL[e.de_status as StatusSolicitacao] ?? e.de_status} → ` : ""}{STATUS_SOLICITACAO_LABEL[e.para_status as StatusSolicitacao] ?? e.para_status}</span></>}
-                  </p>
-                  {e.mensagem && <p className="whitespace-pre-wrap text-texto mt-0.5">{e.mensagem}</p>}
-                </div>
-              ))}
-              {!eventos?.length && <p className="cartao px-4 py-6 text-center text-sm text-texto-2">Sem movimentações.</p>}
-            </div>
+          <section className="space-y-4">
+            <h2 className="lp-display text-2xl text-texto">Linha do tempo</h2>
+            {eventos?.length ? (
+              <ol className="relative space-y-3 border-l-2 border-linha pl-5">
+                {eventos.map((e) => (
+                  <li key={e.id}
+                    className={"relative rounded-2xl border p-4 " +
+                      (e.interno ? "border-alerta/40 bg-alerta/10" : e.user_id === s.user_id ? "border-linha bg-superficie" : "border-verde/30 bg-verde/5")}>
+                    <span aria-hidden className={"absolute -left-[1.6rem] top-5 size-2.5 rounded-full ring-4 ring-fundo " +
+                      (e.interno ? "bg-alerta" : e.user_id === s.user_id ? "bg-texto-2" : "bg-verde")} />
+                    <p className="text-sm text-texto-2">
+                      <span className="tabular-nums">{dataHoraBR(e.created_at)}</span> · <span className="font-semibold text-texto">{e.user_id ? autores.get(e.user_id) ?? "—" : "sistema"}</span>
+                      {e.user_id === s.user_id && " · solicitante"}
+                      {e.interno && " · nota interna (o solicitante não vê)"}
+                      {e.para_status && <> · <span className="text-texto">{e.de_status ? `${STATUS_SOLICITACAO_LABEL[e.de_status as StatusSolicitacao] ?? e.de_status} → ` : ""}{STATUS_SOLICITACAO_LABEL[e.para_status as StatusSolicitacao] ?? e.para_status}</span></>}
+                    </p>
+                    {e.mensagem && <p className="mt-1.5 text-[0.95rem] leading-relaxed whitespace-pre-wrap text-texto">{e.mensagem}</p>}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <Vazio icone={History} titulo="Sem movimentações." />
+            )}
           </section>
         </div>
 

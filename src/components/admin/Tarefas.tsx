@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarClock, CheckCircle2, ListChecks, Plus, UserRound } from "lucide-react";
 import { PRIORIDADE_LABEL } from "@/lib/setores";
+import { Etiqueta } from "@/components/ui/Pagina";
+import { CAMPO_COMPACTO } from "./estilos";
 
 export type Tarefa = {
   id: string; titulo: string; descricao: string | null; setor: string; status: string;
@@ -43,14 +46,14 @@ export default function Tarefas({
     return true;
   }
 
-  const input = "rounded-lg border border-linha bg-superficie-2 px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-verde";
+  const input = CAMPO_COMPACTO;
   const abertas = tarefas.filter((t) => ["aberta", "andamento"].includes(t.status));
   const feitas = tarefas.filter((t) => t.status === "concluida").slice(0, 5);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {setor && (
-        <form className="flex flex-wrap gap-2"
+        <form className="cartao flex flex-wrap items-center gap-2.5 p-3"
           onSubmit={async (e) => {
             e.preventDefault();
             if (await chamar("POST", { ...nova, setor })) setNova({ ...nova, titulo: "", prazo: "" });
@@ -68,29 +71,33 @@ export default function Tarefas({
             onChange={(e) => setNova({ ...nova, prioridade: e.target.value })}>
             {Object.entries(PRIORIDADE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
-          <button disabled={ocupado} className="btn-verde px-4 py-2 text-sm disabled:opacity-60">Adicionar</button>
+          <button disabled={ocupado} className="btn-verde inline-flex items-center gap-1.5 px-4 py-2 text-sm disabled:opacity-60">
+            <Plus className="size-4" /> Adicionar
+          </button>
         </form>
       )}
       {erro && <p className="text-sm text-critico">{erro}</p>}
 
-      <div className="cartao divide-y divide-linha">
+      <div className="cartao overflow-hidden divide-y divide-linha">
         {abertas.map((t) => {
           const atrasada = !!t.prazo && t.prazo < hoje();
           return (
-            <div key={t.id} className="px-4 py-3 flex items-start gap-3 flex-wrap text-sm">
-              <input type="checkbox" className="mt-1" disabled={ocupado} aria-label="Concluir tarefa"
+            <div key={t.id} className="px-5 py-3.5 flex items-start gap-3.5 flex-wrap transition-colors hover:bg-superficie-2/70">
+              <input type="checkbox" className="mt-1 size-4 accent-[var(--verde)] cursor-pointer" disabled={ocupado} aria-label="Concluir tarefa"
                 onChange={() => chamar("PATCH", { id: t.id, status: "concluida" })} />
               <div className="flex-1 min-w-52">
-                <p className="text-texto">
-                  {t.prioridade === "alta" && <span className="text-critico font-medium">● </span>}
+                <p className="text-[0.95rem] font-medium text-texto leading-snug">
                   {t.titulo}
+                  {t.prioridade === "alta" && <Etiqueta tom="critico" className="ml-2 align-middle !py-0.5">Alta</Etiqueta>}
+                  {t.status === "andamento" && <Etiqueta tom="verde" className="ml-2 align-middle !py-0.5">Em andamento</Etiqueta>}
                 </p>
-                <p className="text-xs text-texto-2">
-                  {mostrarSetor && <>{setoresNome[t.setor] ?? t.setor} · </>}
-                  {t.responsavel_nome ?? "sem responsável"}
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-2">
+                  {mostrarSetor && <span className="font-semibold uppercase tracking-[0.1em] text-ouro">{setoresNome[t.setor] ?? t.setor}</span>}
+                  <span className="inline-flex items-center gap-1"><UserRound className="size-3.5" />{t.responsavel_nome ?? "sem responsável"}</span>
                   {t.prazo && (
-                    <span className={atrasada ? "text-critico" : ""}>
-                      {" · "}{atrasada ? "atrasada desde " : "até "}
+                    <span className={"inline-flex items-center gap-1 " + (atrasada ? "font-semibold text-critico" : "")}>
+                      <CalendarClock className="size-3.5" />
+                      {atrasada ? "atrasada desde " : "até "}
                       {new Date(t.prazo + "T12:00:00").toLocaleDateString("pt-BR")}
                     </span>
                   )}
@@ -98,7 +105,7 @@ export default function Tarefas({
               </div>
               <select value={t.status} disabled={ocupado} aria-label="Situação"
                 onChange={(e) => chamar("PATCH", { id: t.id, status: e.target.value })}
-                className="rounded-lg border border-linha bg-superficie-2 px-2 py-1 text-xs">
+                className="rounded-lg border border-linha-forte bg-superficie-2 px-2.5 py-1.5 text-xs font-medium text-texto focus:border-verde focus:outline-none">
                 <option value="aberta">Aberta</option>
                 <option value="andamento">Em andamento</option>
                 <option value="concluida">Concluída</option>
@@ -107,12 +114,18 @@ export default function Tarefas({
             </div>
           );
         })}
-        {!abertas.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma tarefa aberta.</p>}
+        {!abertas.length && (
+          <div className="flex flex-col items-center gap-2 px-5 py-10 text-center">
+            <ListChecks className="size-6 text-verde" />
+            <p className="text-[0.95rem] text-texto-2">Nenhuma tarefa aberta.</p>
+          </div>
+        )}
       </div>
 
       {feitas.length > 0 && (
-        <p className="text-xs text-texto-2">
-          Concluídas recentemente: {feitas.map((t) => t.titulo).join(" · ")}
+        <p className="flex items-start gap-2 text-xs text-texto-2">
+          <CheckCircle2 className="size-3.5 shrink-0 mt-px text-verde" />
+          <span>Concluídas recentemente: {feitas.map((t) => t.titulo).join(" · ")}</span>
         </p>
       )}
     </div>

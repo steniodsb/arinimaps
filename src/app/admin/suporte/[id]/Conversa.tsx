@@ -14,8 +14,8 @@ export default function Conversa({ id, inicial, temConta }: { id: string; inicia
   useEffect(() => { fim.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }, [mensagens.length]);
 
   return (
-    <div className="space-y-3">
-      <p className="flex items-center gap-2 text-xs text-texto-2">
+    <div className="space-y-4">
+      <p className="flex items-center gap-2 text-sm text-texto-2">
         <span className={"w-2 h-2 rounded-full " + (extra.cliente_online ? "bg-verde" : "bg-texto-2/40")} aria-hidden />
         {!temConta
           ? "Visitante sem conta: a resposta vai só por e-mail."
@@ -25,12 +25,12 @@ export default function Conversa({ id, inicial, temConta }: { id: string; inicia
       </p>
       {mensagens.map((m) => (
         <div key={m.id}
-          className={"rounded-xl border p-4 text-sm " +
-            (m.interno ? "border-alerta/40 bg-alerta/10" : m.da_equipe ? "border-verde/30 bg-verde/5 ml-6" : "border-linha bg-superficie mr-6")}>
-          <p className="text-xs text-texto-2 mb-1">
-            {m.autor_nome}{m.da_equipe && " · equipe"}{m.interno && " · nota interna (o cliente não vê)"} · {quando(m.created_at)}
+          className={"rounded-2xl border p-5 " +
+            (m.interno ? "border-alerta/40 bg-alerta/10" : m.da_equipe ? "border-verde/30 bg-verde/5 ml-6 md:ml-12" : "border-linha bg-superficie mr-6 md:mr-12")}>
+          <p className="text-sm text-texto-2 mb-1.5">
+            <span className="font-semibold text-texto">{m.autor_nome}</span>{m.da_equipe && " · equipe"}{m.interno && " · nota interna (o cliente não vê)"} · {quando(m.created_at)}
           </p>
-          <p className="whitespace-pre-wrap text-texto">{m.corpo}</p>
+          <p className="whitespace-pre-wrap text-[0.95rem] leading-relaxed text-texto">{m.corpo}</p>
         </div>
       ))}
       <div ref={fim} />

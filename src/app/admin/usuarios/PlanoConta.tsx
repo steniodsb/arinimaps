@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { NICHOS, NICHO_LABEL, PLAN_ORIGEM_LABEL } from "@/lib/planos";
+import { AvisoErro } from "@/components/ui/Aviso";
+import { Etiqueta } from "@/components/ui/Pagina";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export type ContaExterna = {
   user_id: string; nome: string; email: string; role: string; ativo: boolean;
@@ -13,7 +16,7 @@ export type ContaExterna = {
 };
 export type PlanoOpcao = { id: string; nome: string; ativo: boolean };
 
-const input = "rounded-lg border border-linha bg-superficie px-2.5 py-1.5 text-xs text-texto focus:outline-none focus:ring-2 focus:ring-verde transition";
+const input = "rounded-xl border border-linha-forte bg-superficie px-3 py-2.5 text-sm font-normal text-texto focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30 transition";
 
 /** Linha de uma conta externa: nicho, plano e origem, editáveis pela Diretoria. */
 export default function PlanoConta({
@@ -48,41 +51,43 @@ export default function PlanoConta({
   }
 
   return (
-    <div className="px-4 py-2.5 text-sm space-y-2">
+    <div className="px-5 py-3.5 text-[0.95rem] space-y-3 transition-colors hover:bg-superficie-2/50">
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="flex-1 min-w-40">
+        <span className="flex-1 min-w-40 font-semibold text-texto">
           {conta.nome || "—"}
-          {!conta.ativo && <span className="ml-2 text-[10px] uppercase text-critico">desativada</span>}
+          {!conta.ativo && <Etiqueta tom="critico" className="ml-2 align-middle">desativada</Etiqueta>}
         </span>
-        <span className="text-xs text-texto-2 flex-1 min-w-40 truncate">{conta.email}</span>
-        <span className="text-xs rounded-full bg-superficie-2 px-3 py-1">{papelLabel}</span>
-        <span className="text-xs rounded-full bg-superficie-2 px-3 py-1" title="nicho">
-          {conta.nicho ? NICHO_LABEL[conta.nicho] ?? conta.nicho : "sem nicho"}
+        <span className="text-sm text-texto-2 flex-1 min-w-40 truncate">{conta.email}</span>
+        <Etiqueta tom="neutro">{papelLabel}</Etiqueta>
+        <span title="nicho">
+          <Etiqueta tom="neutro">{conta.nicho ? NICHO_LABEL[conta.nicho] ?? conta.nicho : "sem nicho"}</Etiqueta>
         </span>
-        <span className={"text-xs rounded-full px-3 py-1 " + (vencido ? "bg-alerta/10 text-alerta" : "bg-verde/10 text-verde")}
-          title={PLAN_ORIGEM_LABEL[conta.plan_origem] ?? conta.plan_origem}>
-          {planoNome}{vencido ? " · vencido" : ""}
-          <span className="opacity-70"> · {PLAN_ORIGEM_LABEL[conta.plan_origem] ?? conta.plan_origem}</span>
+        <span title={PLAN_ORIGEM_LABEL[conta.plan_origem] ?? conta.plan_origem}>
+          <Etiqueta tom={vencido ? "alerta" : "verde"}>
+            {planoNome}{vencido ? " · vencido" : ""}
+            <span className="font-normal opacity-75"> · {PLAN_ORIGEM_LABEL[conta.plan_origem] ?? conta.plan_origem}</span>
+          </Etiqueta>
         </span>
         {ehDiretoria && (
           <button type="button" disabled={ocupado} onClick={() => { setEditando(!editando); setErro(null); }}
-            className="rounded-lg btn-contorno px-3 py-1.5 text-xs hover:bg-superficie-2 transition">
+            className="btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2 text-sm">
+            {editando ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             {editando ? "Fechar" : "Plano"}
           </button>
         )}
       </div>
 
       {editando && (
-        <div className="rounded-lg bg-superficie-2 p-3 space-y-2">
-          <div className="flex items-end gap-3 flex-wrap">
-            <label className="text-xs text-texto-2">
+        <div className="rounded-xl border border-linha bg-superficie-2 p-4 space-y-3">
+          <div className="flex items-end gap-4 flex-wrap">
+            <label className="text-sm font-semibold text-texto">
               Nicho
               <select className={input + " block mt-1"} value={form.nicho} onChange={(e) => setForm({ ...form, nicho: e.target.value })}>
                 <option value="">— padrão do papel —</option>
                 {NICHOS.map((n) => <option key={n.id} value={n.id}>{n.nome}{n.reservado ? " (reservado)" : ""}</option>)}
               </select>
             </label>
-            <label className="text-xs text-texto-2">
+            <label className="text-sm font-semibold text-texto">
               Origem do plano
               <select className={input + " block mt-1"} value={form.plan_origem} onChange={(e) => setForm({ ...form, plan_origem: e.target.value })}>
                 <option value="padrao">Padrão do nicho</option>
@@ -92,7 +97,7 @@ export default function PlanoConta({
             </label>
             {form.plan_origem !== "padrao" && (
               <>
-                <label className="text-xs text-texto-2">
+                <label className="text-sm font-semibold text-texto">
                   Plano
                   <select className={input + " block mt-1"} value={form.plan_id} onChange={(e) => setForm({ ...form, plan_id: e.target.value })}>
                     <option value="">— escolha —</option>
@@ -101,27 +106,21 @@ export default function PlanoConta({
                     ))}
                   </select>
                 </label>
-                <label className="text-xs text-texto-2">
+                <label className="text-sm font-semibold text-texto">
                   Válido até (opcional)
                   <input type="date" className={input + " block mt-1"} value={form.plan_valido_ate}
                     onChange={(e) => setForm({ ...form, plan_valido_ate: e.target.value })} />
                 </label>
               </>
             )}
-            <button type="button" disabled={ocupado} onClick={salvar} className="btn-ouro px-4 py-2 text-xs disabled:opacity-50">
+            <button type="button" disabled={ocupado} onClick={salvar} className="btn-ouro px-5 py-2.5 text-sm disabled:opacity-50">
               {ocupado ? "Salvando…" : "Salvar"}
             </button>
           </div>
-          <p className="text-[11px] text-texto-2">
+          <p className="text-sm text-texto-2">
             “Padrão do nicho” volta a conta para o plano do nicho e acompanha mudanças futuras. Plano vencido vale como acesso básico.
           </p>
-          {erro && (
-            <div className="text-xs space-y-0.5">
-              <p className="text-critico font-medium">{erro.mensagem}</p>
-              {erro.motivo && <p className="text-texto-2">{erro.motivo}</p>}
-              {erro.solucao && <p className="text-texto">{erro.solucao}</p>}
-            </div>
-          )}
+          {erro && <AvisoErro erro={erro} aoFechar={() => setErro(null)} />}
         </div>
       )}
     </div>

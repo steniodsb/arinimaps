@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { CalendarDays, MapPin, Ruler, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
+import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
@@ -41,48 +42,56 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
   if (!car?.geometry) notFound();
   const p = car.properties;
 
+  const area = p.area_ha ? formatArea(Number(p.area_ha) * 10_000, "rural") : "—";
+  const situacao = STATUS[p.status ?? ""] ?? p.status ?? "—";
+  const atualizado = p.atualizado_sicar ? new Date(p.atualizado_sicar).toLocaleDateString("pt-BR") : "—";
   const dados = [
-    ["Área declarada", p.area_ha ? formatArea(Number(p.area_ha) * 10_000, "rural") : "—"],
+    ["Área declarada", area],
     ["Município", p.municipio ?? "—"],
     ["Tipo", TIPO[p.tipo ?? ""] ?? p.tipo ?? "—"],
-    ["Situação do cadastro", STATUS[p.status ?? ""] ?? p.status ?? "—"],
+    ["Situação do cadastro", situacao],
     ["Análise do órgão", p.condicao ?? "—"],
-    ["Atualizado no SICAR", p.atualizado_sicar ? new Date(p.atualizado_sicar).toLocaleDateString("pt-BR") : "—"],
+    ["Atualizado no SICAR", atualizado],
   ];
 
   return (
-    <AppShell usuario={consulta.usuario}>
-      <div className="max-w-5xl space-y-6">
-        <div>
-          <p className="text-xs text-texto-2">Cadastro Ambiental Rural · consulta de área</p>
-          <h1 className="text-2xl font-semibold text-texto">
-            {p.area_ha ? formatArea(Number(p.area_ha) * 10_000, "rural") : "Área rural"}
-            {p.municipio && <span className="text-texto-2 font-normal"> em {p.municipio}</span>}
-          </h1>
-          <p className="font-mono text-xs text-texto-2 break-all mt-1">{p.cod}</p>
+    <AppShell usuario={consulta.usuario} semPadding>
+      <CabecalhoPagina
+        variante="faixa"
+        eyebrow="Consulta territorial"
+        titulo={p.area_ha ? formatArea(Number(p.area_ha) * 10_000, "rural") : "Área rural"}
+        destaque={p.municipio ? `em ${p.municipio}` : undefined}
+        subtitulo="Cadastro Ambiental Rural · consulta de área"
+        acoes={anuncio ? (
+          <BotaoLink href={`/imovel/${anuncio.codigo}`}>Esta área está à venda — ver o anúncio</BotaoLink>
+        ) : (
+          <BotaoLink href={`/painel/novo?car=${encodeURIComponent(p.cod)}`} variante="ouro">Esta área é minha — anunciar</BotaoLink>
+        )}
+      >
+        <p className="font-mono text-xs text-texto-2 break-all">{p.cod}</p>
+      </CabecalhoPagina>
+
+      <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Estatistica icone={Ruler} valor={area} rotulo="Área declarada" />
+          <Estatistica icone={MapPin} valor={p.municipio ?? "—"} rotulo="Município" />
+          <Estatistica icone={ShieldCheck} valor={situacao} rotulo="Situação do cadastro" />
+          <Estatistica icone={CalendarDays} valor={atualizado} rotulo="Atualizado no SICAR" />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <MiniMapa geometry={car.geometry} status="publicado"
-            className="h-80 w-full rounded-xl overflow-hidden border border-linha" />
-          <div className="cartao p-5 space-y-3">
-            <dl className="text-sm space-y-2">
+            className="h-80 lg:h-full lg:min-h-96 w-full rounded-[20px] overflow-hidden border border-linha" />
+          <div className="cartao p-6 space-y-5">
+            <h2 className="lp-display text-xl text-texto">Dados do cadastro</h2>
+            <dl className="text-[0.95rem] divide-y divide-linha">
               {dados.map(([r, v]) => (
-                <div key={r} className="flex justify-between gap-3 border-b border-linha last:border-0 pb-2">
-                  <dt className="text-texto-2">{r}</dt><dd className="text-texto text-right">{v}</dd>
+                <div key={r} className="flex justify-between gap-4 py-3">
+                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto font-medium text-right">{v}</dd>
                 </div>
               ))}
             </dl>
-            {anuncio ? (
-              <Link href={`/imovel/${anuncio.codigo}`} className="btn-verde w-full text-center py-2.5 text-sm">
-                Esta área está à venda — ver o anúncio
-              </Link>
-            ) : (
-              <Link href={`/painel/novo?car=${encodeURIComponent(p.cod)}`} className="btn-ouro w-full text-center py-2.5 text-sm">
-                Esta área é minha — anunciar
-              </Link>
-            )}
-            <p className="text-[11px] text-texto-2 leading-snug">
+            <p className="text-xs text-texto-2 leading-relaxed border-t border-linha pt-4">
               Dados públicos do SICAR, copiados em{" "}
               {p.importado_em ? new Date(p.importado_em).toLocaleDateString("pt-BR") : "—"}. O CAR é
               autodeclarado: não comprova propriedade nem substitui a matrícula.
@@ -96,7 +105,7 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
           logado={!!consulta.user} podeConsultar={consulta.podeConsultar} acesso={consulta.acesso}
           cotaRestante={consulta.cotaRestante} lista={consulta.lista} pendentes={consulta.pendentes}
           jaConsultou={consulta.jaConsultou} />
-      </div>
+      </Conteudo>
     </AppShell>
   );
 }

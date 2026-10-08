@@ -4,6 +4,9 @@ import { exigirSetor } from "@/lib/setores-servidor";
 import { Indicadores, contar, equipeAtiva } from "@/components/admin/Painel";
 import { lerConfiguracoes, numero } from "@/lib/settings";
 import Demandas, { type DemandaLinha, type Prefill } from "./Demandas";
+import { CircleCheck, Link2, MapPin, SearchX } from "lucide-react";
+import { CabecalhoPagina } from "@/components/ui/Pagina";
+import { aba } from "@/components/admin/estilos";
 
 export const dynamic = "force-dynamic";
 
@@ -60,29 +63,24 @@ export default async function AdminDemandas({ searchParams }: PageProps<"/admin/
     casamentos.set(m.demanda_id, [...(casamentos.get(m.demanda_id) ?? []), { ...p, em: m.created_at }]);
   }
   const linhas: DemandaLinha[] = (demandas ?? []).map((d) => ({ ...d, casamentos: casamentos.get(d.id) ?? [] }));
-  const chip = "rounded-full border px-3 py-1 text-xs transition ";
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div>
-        <p className="text-[10px] tracking-[0.22em] uppercase text-ouro">Comercial</p>
-        <h1 className="text-2xl font-semibold text-texto">Demandas sem imóvel</h1>
-        <p className="text-sm text-texto-2 max-w-2xl">
+    <div className="space-y-8 max-w-5xl">
+      <CabecalhoPagina eyebrow="Comercial" titulo="Demandas sem imóvel"
+        subtitulo={<>
           O que o cliente procura quando nenhum imóvel serviu. Cada imóvel publicado é conferido contra as demandas
           abertas (tipo, município e faixas de valor e área, com folga de {numero(cfg, "demandas_tolerancia_pct", 10)}% —
           ajuste em Configurações › Regras comerciais); quando casa, vira tarefa do Comercial e e-mail ao responsável.
-        </p>
-      </div>
+        </>} />
       <Indicadores itens={[
-        { rotulo: "Abertas", valor: abertas, destaque: abertas > 0 },
-        { rotulo: "Atendidas", valor: atendidas },
-        { rotulo: "Casamentos encontrados", valor: (matches ?? []).length },
-        { rotulo: "Municípios atendidos", valor: (municipios ?? []).length },
+        { rotulo: "Abertas", icone: SearchX, valor: abertas, destaque: abertas > 0 },
+        { rotulo: "Atendidas", icone: CircleCheck, valor: atendidas },
+        { rotulo: "Casamentos encontrados", icone: Link2, valor: (matches ?? []).length },
+        { rotulo: "Municípios atendidos", icone: MapPin, valor: (municipios ?? []).length },
       ]} />
       <div className="flex flex-wrap gap-2">
         {[["aberta", "Abertas"], ["atendida", "Atendidas"], ["cancelada", "Canceladas"], ["todas", "Todas"]].map(([v, l]) => (
-          <Link key={v} href={`/admin/demandas?situacao=${v}`}
-            className={chip + (filtro === v ? "border-verde bg-verde/10 text-verde" : "border-linha text-texto-2 hover:text-texto")}>{l}</Link>
+          <Link key={v} href={`/admin/demandas?situacao=${v}`} className={aba(filtro === v)}>{l}</Link>
         ))}
       </div>
       <Demandas

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ChevronRight, FileText, MapPin, Ruler } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
+import { BotaoLink, CabecalhoPagina, Conteudo, Etiqueta, Vazio } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { formatArea } from "@/lib/format";
@@ -38,67 +40,72 @@ export default async function Relatorios() {
     : null;
 
   return (
-    <AppShell usuario={usuario}>
-      <div className="mb-5">
-        <h1 className="text-2xl font-semibold text-texto">Relatórios territoriais</h1>
-        <p className="text-sm text-texto-2">
-          Cruzamento da área do imóvel com mineração, terras indígenas, desmatamento e entorno.
-          Cada relatório mostra a origem e a data de cada dado.
+    <AppShell usuario={usuario} semPadding>
+      <CabecalhoPagina
+        variante="faixa"
+        eyebrow="Inteligência territorial"
+        titulo="Relatórios"
+        destaque="territoriais"
+        subtitulo="Cruzamento da área do imóvel com mineração, terras indígenas, desmatamento e entorno. Cada relatório mostra a origem e a data de cada dado."
+        acoes={<BotaoLink href="/mapa" variante="ouro">Abrir o mapa</BotaoLink>}
+      />
+
+      <Conteudo className="space-y-8 py-12 md:py-16">
+        {!imoveis?.length ? (
+          <Vazio
+            icone={FileText}
+            titulo="Nenhum imóvel rural publicado ainda."
+            acao={<BotaoLink href="/mapa" variante="contorno">Abrir o mapa</BotaoLink>}
+          />
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            {imoveis.map((p) => {
+              const info = porImovel.get(p.id);
+              const mun = p.municipality as unknown as { nome: string } | null;
+              const area = (p.geo as unknown as { area_m2: number | null } | null)?.area_m2 ?? null;
+              return (
+                <Link key={p.codigo} href={`/imovel/${p.codigo}/relatorio`}
+                  className="cartao cartao-link group flex items-center gap-5 p-5 md:p-6">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+                    <FileText className="size-6" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="lp-display truncate text-lg text-texto transition group-hover:text-verde">{p.titulo}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto-2">
+                      <span className="inline-flex items-center gap-1"><MapPin className="size-3.5 text-verde" /> {mun?.nome ?? "—"}</span>
+                      <span className="inline-flex items-center gap-1"><Ruler className="size-3.5" /> {formatArea(area, "rural")}</span>
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {info ? (
+                        <>
+                          <Etiqueta tom={info.incidencias ? "ouro" : "verde"} className="!whitespace-normal">
+                            {info.incidencias
+                              ? `${info.incidencias} incidência(s) em ${info.fontes} fonte(s)`
+                              : `sem incidências em ${info.fontes} fonte(s)`}
+                          </Etiqueta>
+                          {info.ultima && (
+                            <span className="text-xs text-texto-2">
+                              {new Date(info.ultima).toLocaleDateString("pt-BR")}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <Etiqueta tom="neutro" className="!whitespace-normal">consulta territorial ainda não executada</Etiqueta>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="size-5 shrink-0 text-texto-2 transition group-hover:translate-x-0.5 group-hover:text-verde" />
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="max-w-3xl text-sm leading-relaxed text-texto-2">
+          A consulta territorial é executada pela equipe Arini na análise do imóvel.
+          O relatório sempre mostra a data de cada fonte — dado antigo é sinalizado, nunca apresentado como atual.
         </p>
-      </div>
-
-      {!imoveis?.length ? (
-        <div className="cartao p-10 text-center">
-          <p className="text-texto">Nenhum imóvel rural publicado ainda.</p>
-          <Link href="/mapa" className="btn-contorno inline-block mt-4 px-5 py-2.5 text-sm">Abrir o mapa</Link>
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {imoveis.map((p) => {
-            const info = porImovel.get(p.id);
-            const mun = p.municipality as unknown as { nome: string } | null;
-            const area = (p.geo as unknown as { area_m2: number | null } | null)?.area_m2 ?? null;
-            return (
-              <Link key={p.codigo} href={`/imovel/${p.codigo}/relatorio`}
-                className="cartao p-4 hover:border-verde/50 transition flex items-center gap-4">
-                <span className="w-11 h-11 rounded-xl bg-critico/12 text-critico grid place-items-center text-lg shrink-0">
-                  ▤
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-texto truncate">{p.titulo}</p>
-                  <p className="text-xs text-texto-2">
-                    {mun?.nome ?? "—"} · {formatArea(area, "rural")}
-                  </p>
-                  <p className="text-[11px] mt-1">
-                    {info ? (
-                      <>
-                        <span className={info.incidencias ? "text-ouro" : "text-verde"}>
-                          {info.incidencias
-                            ? `${info.incidencias} incidência(s) em ${info.fontes} fonte(s)`
-                            : `sem incidências em ${info.fontes} fonte(s)`}
-                        </span>
-                        {info.ultima && (
-                          <span className="text-texto-2">
-                            {" "}· {new Date(info.ultima).toLocaleDateString("pt-BR")}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-texto-2">consulta territorial ainda não executada</span>
-                    )}
-                  </p>
-                </div>
-                <span className="text-texto-2 shrink-0">›</span>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      <p className="text-xs text-texto-2 mt-6">
-        A consulta territorial é executada pela equipe Arini na análise do imóvel.
-        O relatório sempre mostra a data de cada fonte — dado antigo é sinalizado, nunca apresentado como atual.
-      </p>
+      </Conteudo>
     </AppShell>
   );
 }

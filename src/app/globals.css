@@ -72,6 +72,8 @@
   --color-superficie: var(--superficie);
   --color-superficie-2: var(--superficie-2);
   --color-linha: var(--linha);
+  --color-linha-forte: var(--linha-forte);
+  --color-texto-3: var(--texto-3);
   --color-texto: var(--texto);
   --color-texto-2: var(--texto-2);
 
@@ -93,12 +95,22 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
 }
 
 body {
   background: var(--fundo);
   color: var(--texto);
 }
+
+/* TIPOGRAFIA (redesign 08/10/2026): títulos do sistema inteiro em Urbanist,
+   como a página inicial; corpo continua em Geist. */
+h1, h2, h3, .titulo-display {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: -0.015em;
+}
+h1 { font-weight: 700; }
+h2, h3 { font-weight: 700; }
 
 ::selection { background: color-mix(in srgb, var(--verde) 25%, transparent); }
 
@@ -164,9 +176,9 @@ button:disabled,
   display: inline-block;
   background: linear-gradient(180deg, #45D98A 0%, #2FA866 100%);
   color: #06140D;
-  font-weight: 600;
-  border-radius: 0.85rem;
-  box-shadow: 0 6px 18px rgba(63, 207, 127, 0.22);
+  font-weight: 700;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px -10px rgba(63, 207, 127, 0.6);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 .btn-verde:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 10px 24px rgba(63, 207, 127, 0.34); }
@@ -178,9 +190,9 @@ button:disabled,
   background: linear-gradient(120deg, #9A7A26 0%, #C9A14E 45%, #E4C77E 60%, #C9A14E 75%, #9A7A26 100%);
   background-size: 200% auto;
   color: #10201A;
-  font-weight: 600;
-  border-radius: 0.85rem;
-  box-shadow: 0 6px 18px rgba(201, 161, 78, 0.25);
+  font-weight: 700;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px -10px rgba(201, 161, 78, 0.6);
   transition: background-position 0.6s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 .btn-ouro:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 12px 26px rgba(201, 161, 78, 0.38); }
@@ -209,8 +221,8 @@ button:disabled,
   background: var(--superficie-2);
   border: 1px solid var(--linha-forte);
   color: var(--texto);
-  font-weight: 500;
-  border-radius: 0.85rem;
+  font-weight: 600;
+  border-radius: 10px;
   box-shadow: 0 1px 2px var(--sombra-botao);
   transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -229,8 +241,8 @@ button:disabled,
   background: var(--superficie-2);
   border: 1px solid color-mix(in srgb, var(--critico) 45%, var(--linha-forte));
   color: var(--critico);
-  font-weight: 500;
-  border-radius: 0.85rem;
+  font-weight: 600;
+  border-radius: 10px;
   box-shadow: 0 1px 2px var(--sombra-botao);
   transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -253,10 +265,19 @@ button:disabled,
 .chip:hover { background: var(--superficie-2); color: var(--texto); }
 .chip[data-ativo="true"] { background: var(--verde); color: var(--fundo); border-color: var(--verde); font-weight: 600; }
 
+/* Em @layer components: assim border-l-*, bg-*, rounded-* do Tailwind vencem
+   quando a tela pede (ex.: borda de destaque do Estatistica). */
+@layer components {
+/* cartão no padrão do site: canto maior, sombra rasa que dá profundidade */
 .cartao {
   background: var(--superficie);
   border: 1px solid var(--linha);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 2px var(--sombra-botao), 0 18px 40px -34px rgb(0 0 0 / 0.6);
+}
+/* cartão clicável: sobe e acende a borda no hover */
+.cartao-link { transition: transform 0.3s cubic-bezier(.22,1,.36,1), border-color 0.25s ease, box-shadow 0.3s ease; }
+.cartao-link:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--verde) 45%, var(--linha)); box-shadow: 0 24px 50px -30px rgb(0 0 0 / 0.6); }
 }
 
 /* ---------- texto ---------- */

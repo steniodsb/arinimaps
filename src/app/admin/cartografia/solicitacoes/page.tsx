@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { ExternalLink, Inbox } from "lucide-react";
+import { Etiqueta, Secao, Vazio } from "@/components/ui/Pagina";
+import { TOM_STATUS } from "./tom-status";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { CabecalhoSetor, Indicadores, dataHoraBR } from "@/components/admin/Painel";
 import {
-  STATUS_ABERTOS, STATUS_SOLICITACAO, STATUS_SOLICITACAO_COR, STATUS_SOLICITACAO_LABEL, TIPO_SOLICITACAO_LABEL,
+  STATUS_ABERTOS, STATUS_SOLICITACAO,STATUS_SOLICITACAO_LABEL, TIPO_SOLICITACAO_LABEL,
   ehStatusSolicitacao, type StatusSolicitacao, type TipoSolicitacao,
 } from "@/lib/cartografia/solicitacoes";
 
@@ -38,29 +41,30 @@ export default async function SolicitacoesCartograficas({ searchParams }: PagePr
   const ids = [...new Set((lista ?? []).flatMap((r) => [r.user_id, r.responsavel]).filter((x): x is string => !!x))];
   const { data: perfis } = ids.length ? await admin.from("profiles").select("user_id, nome").in("user_id", ids) : { data: [] };
   const nome = new Map((perfis ?? []).map((p) => [p.user_id, p.nome]));
-  const chip = "rounded-full border px-3 py-1 text-xs transition ";
+  const chip = "rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ";
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="mx-auto max-w-[1280px] space-y-10">
       <CabecalhoSetor setor="cartografia">
-        <Link href="/cartografia/solicitar" target="_blank" className="btn-contorno px-4 py-2 text-sm">Ver o formulário público</Link>
+        <Link href="/cartografia/solicitar" target="_blank" className="btn-contorno inline-flex items-center gap-2 px-4 py-2.5 text-sm">
+          <ExternalLink className="size-4" /> Ver o formulário público
+        </Link>
       </CabecalhoSetor>
 
-      <div>
-        <h2 className="font-semibold text-texto">Solicitações cartográficas</h2>
-        <p className="text-sm text-texto-2">
-          Imóveis ausentes ou divergentes informados pelos usuários. A geometria enviada é indicação: só vira oficial
-          quando a equipe aplica e valida.
-        </p>
-      </div>
-
+      <Secao
+        eyebrow="Fila da cartografia"
+        titulo="Solicitações cartográficas"
+        subtitulo="Imóveis ausentes ou divergentes informados pelos usuários. A geometria enviada é indicação: só vira oficial quando a equipe aplica e valida."
+      >
       <Indicadores itens={[
         { rotulo: "Recebidas (sem triagem)", valor: n("recebida"), destaque: n("recebida") > 0, href: "/admin/cartografia/solicitacoes?status=recebida" },
         { rotulo: "Em aberto", valor: abertas, href: "/admin/cartografia/solicitacoes?status=abertas" },
         { rotulo: "Aguardando documentação", valor: n("aguardando_documentacao"), href: "/admin/cartografia/solicitacoes?status=aguardando_documentacao" },
         { rotulo: "Em vetorização / revisão", valor: n("em_vetorizacao") + n("em_revisao"), href: "/admin/cartografia/solicitacoes?status=em_vetorizacao" },
       ]} />
+      </Secao>
 
+      <section className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {[["abertas", `Em aberto (${abertas})`], ["minhas", "Comigo"], ...STATUS_SOLICITACAO.map((s) => [s, `${STATUS_SOLICITACAO_LABEL[s]} (${n(s)})`]), ["todas", "Todas"]].map(([v, l]) => (
           <Link key={v} href={`/admin/cartografia/solicitacoes?status=${v}`}
@@ -68,31 +72,35 @@ export default async function SolicitacoesCartograficas({ searchParams }: PagePr
         ))}
       </div>
 
-      <div className="cartao divide-y divide-linha">
-        <div className="hidden md:grid grid-cols-[7rem_1fr_1fr_8rem_11rem_8rem_8rem] gap-3 px-4 py-2 text-[11px] uppercase tracking-wide text-texto-2">
+      {lista?.length ? (
+      <div className="cartao overflow-hidden divide-y divide-linha">
+        <div className="hidden md:grid grid-cols-[7rem_1fr_1fr_8rem_11rem_8rem_8rem] gap-3 bg-superficie-2 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-texto-2">
           <span>Protocolo</span><span>Tipo</span><span>Solicitante</span><span>Município</span><span>Status</span><span>Responsável</span><span>Criada</span>
         </div>
         {(lista ?? []).map((r) => {
           const municipio = r.municipality as unknown as { nome: string } | null;
           return (
             <Link key={r.id} href={`/admin/cartografia/solicitacoes/${r.id}`}
-              className="grid md:grid-cols-[7rem_1fr_1fr_8rem_11rem_8rem_8rem] gap-x-3 gap-y-1 px-4 py-3 text-sm items-center hover:bg-superficie-2 transition">
-              <span className="font-mono text-xs text-texto-2">{r.protocolo}</span>
-              <span className="text-texto">{TIPO_SOLICITACAO_LABEL[r.tipo as TipoSolicitacao] ?? r.tipo}</span>
+              className="grid md:grid-cols-[7rem_1fr_1fr_8rem_11rem_8rem_8rem] gap-x-3 gap-y-1.5 px-5 py-3.5 text-[0.95rem] items-center hover:bg-superficie-2/70 transition-colors">
+              <span className="font-mono text-sm text-texto-2">{r.protocolo}</span>
+              <span className="font-semibold text-texto">{TIPO_SOLICITACAO_LABEL[r.tipo as TipoSolicitacao] ?? r.tipo}</span>
               <span className="text-texto-2 truncate">{nome.get(r.user_id) ?? "—"}</span>
               <span className="text-texto-2 truncate">{municipio?.nome ?? "—"}</span>
               <span>
-                <span className={`text-xs rounded-full px-3 py-1 ${STATUS_SOLICITACAO_COR[r.status as StatusSolicitacao] ?? "bg-superficie-2"}`}>
+                <Etiqueta tom={TOM_STATUS[r.status as StatusSolicitacao] ?? "neutro"}>
                   {STATUS_SOLICITACAO_LABEL[r.status as StatusSolicitacao] ?? r.status}
-                </span>
+                </Etiqueta>
               </span>
               <span className="text-texto-2 truncate">{r.responsavel ? nome.get(r.responsavel) ?? "equipe" : "—"}</span>
-              <span className="text-xs text-texto-2 tabular-nums">{dataHoraBR(r.created_at)}</span>
+              <span className="text-sm text-texto-2 tabular-nums">{dataHoraBR(r.created_at)}</span>
             </Link>
           );
         })}
-        {!lista?.length && <p className="px-4 py-8 text-center text-sm text-texto-2">Nenhuma solicitação neste filtro.</p>}
       </div>
+      ) : (
+        <Vazio icone={Inbox} titulo="Nenhuma solicitação neste filtro." texto="Troque o filtro acima para ver outras etapas da fila." />
+      )}
+      </section>
     </div>
   );
 }

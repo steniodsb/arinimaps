@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarJson } from "@/lib/api/enviar";
+import { ShieldCheck } from "lucide-react";
 
 /**
  * Botão da Matriz para validar a divisa atual (§3: até a validação, a
@@ -28,7 +29,8 @@ export default function ValidarGeometria({ propertyId }: { propertyId: string })
   return (
     <span className="inline-flex flex-col items-end gap-1">
       <button type="button" disabled={ocupado} onClick={validar}
-        className="rounded-lg bg-verde text-white px-3 py-1.5 text-xs font-medium hover:bg-verde-escuro disabled:opacity-50">
+        className="btn-verde inline-flex items-center gap-1.5 px-3.5 py-2 text-xs disabled:opacity-50">
+        <ShieldCheck className="size-3.5" />
         {ocupado ? "Validando…" : "Validar divisa"}
       </button>
       {erro && <span className="text-xs text-critico">{erro}</span>}

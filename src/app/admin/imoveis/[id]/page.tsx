@@ -11,6 +11,48 @@ import { CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 import ConsultaRural from "@/components/rural/ConsultaRural";
 import { exigirSetor } from "@/lib/setores-servidor";
 import SecaoAvaliacaoAdmin from "@/components/avaliacao/SecaoAvaliacaoAdmin";
+import { TABELA, TBODY, TH, THEAD } from "@/components/admin/estilos";
+import {
+  Camera, CircleAlert, CircleCheck, CircleX, ExternalLink, Gavel, Hourglass, Map as IconeMapa, UserRound,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Etiqueta } from "@/components/ui/Pagina";
+
+type Estado = "ok" | "aviso" | "erro" | "espera" | "info";
+const ICONE_ESTADO: Record<Estado, { icone: LucideIcon; cor: string }> = {
+  ok: { icone: CircleCheck, cor: "text-verde" },
+  aviso: { icone: CircleAlert, cor: "text-alerta" },
+  erro: { icone: CircleX, cor: "text-critico" },
+  espera: { icone: Hourglass, cor: "text-ouro" },
+  info: { icone: CircleAlert, cor: "text-texto-2" },
+};
+
+/** Linha do checklist: ícone de estado + texto. */
+function Item({ estado, icone, children }: { estado: Estado; icone?: LucideIcon; children: React.ReactNode }) {
+  const { icone: Padrao, cor } = ICONE_ESTADO[estado];
+  const Icone = icone ?? Padrao;
+  return (
+    <li className="flex items-start gap-3 py-2.5">
+      <Icone className={`mt-0.5 size-[18px] shrink-0 ${icone ? "text-texto-2" : cor}`} />
+      <span className="min-w-0 leading-relaxed">{children}</span>
+    </li>
+  );
+}
+
+/** Seção do dossiê do imóvel: cartão com título no padrão do site. */
+function Bloco({ titulo, subtitulo, children, className = "" }: {
+  titulo: string; subtitulo?: React.ReactNode; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <section className={`cartao p-6 space-y-4 ${className}`}>
+      <div>
+        <h2 className="lp-display text-xl md:text-2xl text-texto">{titulo}</h2>
+        {subtitulo && <p className="mt-1.5 text-[0.95rem] leading-relaxed text-texto-2">{subtitulo}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 function mediaUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${path}`;
@@ -90,99 +132,104 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       ? Math.abs(geo.area_m2 - areaDeclaradaM2) / areaDeclaradaM2
       : null;
 
+  const tomStatus = ["publicado", "aprovado", "em_negociacao"].includes(p.status) ? "verde"
+    : ["pendente", "em_analise"].includes(p.status) ? "ouro"
+    : p.status === "correcao" ? "alerta" : p.status === "reprovado" ? "critico" : "neutro";
+
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <p className="font-mono text-xs text-texto-2">{p.codigo}</p>
-        <h1 className="text-2xl font-semibold text-texto">{p.titulo}</h1>
-        <p className="text-sm text-texto-2">
-          {municipio ? `${municipio.nome} · ${municipio.uf}` : "Sem município"} · {p.tipo} ·{" "}
-          <strong>{p.status === "correcao" && p.pendencia_tipo === "complemento" ? "Aguardando complemento" : STATUS_LABEL[p.status]}</strong>
+    <div className="space-y-8 max-w-5xl">
+      <header>
+        <p className="lp-eyebrow text-xs">Análise do imóvel <span className="font-mono tracking-normal">{p.codigo}</span></p>
+        <h1 className="lp-display mt-2 text-3xl md:text-[2.5rem] text-texto text-balance">{p.titulo}</h1>
+        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-texto-2">
+          <span>{municipio ? `${municipio.nome} · ${municipio.uf}` : "Sem município"}</span>
+          <span aria-hidden>·</span>
+          <span className="capitalize">{p.tipo}</span>
+          <Etiqueta tom={tomStatus}>
+            {p.status === "correcao" && p.pendencia_tipo === "complemento" ? "Aguardando complemento" : STATUS_LABEL[p.status]}
+          </Etiqueta>
         </p>
-      </div>
+      </header>
 
       {revisao && (
-        <section className="cartao p-5 space-y-3 border-ouro/50">
-          <div>
-            <h2 className="font-semibold text-texto">Alteração proposta pela versão {revisao.versao}</h2>
-            <p className="text-sm text-texto-2">
-              Enviada em {new Date(revisao.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-              {autorRevisao?.nome ? ` por ${autorRevisao.nome}` : ""}. O anúncio publicado continua no ar como está;
-              aprovar substitui os campos abaixo.
-            </p>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="py-2 pr-3 font-medium">Campo</th>
-                <th className="py-2 pr-3 font-medium">Atual</th>
-                <th className="py-2 font-medium">Proposto</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-linha">
-              {camposRevisao.map((c) => (
-                <tr key={c} className="align-top">
-                  <td className="py-2 pr-3 text-texto">{CAMPO_REVISAO_LABEL[c as keyof typeof CAMPO_REVISAO_LABEL] ?? c}</td>
-                  <td className="py-2 pr-3 text-texto-2 whitespace-pre-line">{valorRevisao(c, (p as unknown as Record<string, unknown>)[c])}</td>
-                  <td className="py-2 text-texto whitespace-pre-line">{valorRevisao(c, (revisao.dados as Record<string, unknown>)[c])}</td>
+        <Bloco titulo={`Alteração proposta pela versão ${revisao.versao}`} className="border-ouro/50 border-l-4 border-l-ouro"
+          subtitulo={<>
+            Enviada em {new Date(revisao.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+            {autorRevisao?.nome ? ` por ${autorRevisao.nome}` : ""}. O anúncio publicado continua no ar como está;
+            aprovar substitui os campos abaixo.
+          </>}>
+          <div className="overflow-x-auto rounded-xl border border-linha">
+            <table className={TABELA}>
+              <thead>
+                <tr className={THEAD}>
+                  <th className={TH}>Campo</th>
+                  <th className={TH}>Atual</th>
+                  <th className={TH}>Proposto</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className={TBODY}>
+                {camposRevisao.map((c) => (
+                  <tr key={c} className="align-top">
+                    <td className="px-4 py-3.5 font-semibold text-texto">{CAMPO_REVISAO_LABEL[c as keyof typeof CAMPO_REVISAO_LABEL] ?? c}</td>
+                    <td className="px-4 py-3.5 text-texto-2 whitespace-pre-line">{valorRevisao(c, (p as unknown as Record<string, unknown>)[c])}</td>
+                    <td className="px-4 py-3.5 text-texto whitespace-pre-line bg-verde/5">{valorRevisao(c, (revisao.dados as Record<string, unknown>)[c])}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <RevisaoBotoes revisaoId={revisao.id} />
-        </section>
+        </Bloco>
       )}
 
-      <section className="cartao p-5 space-y-2">
-        <h2 className="font-semibold text-texto">Checklist de análise</h2>
-        <ul className="text-sm space-y-1.5">
-          <li>{p.descricao ? "✅" : "⚠️"} Descrição {p.descricao ? "preenchida" : "vazia"}</li>
-          <li>{p.valor ? "✅" : "⚠️"} Valor: {formatBRL(p.valor)}</li>
-          <li>{geo ? "✅" : "❌"} Geometria {geo ? `(${geo.fonte}) — ${formatArea(geo.area_m2, p.tipo as "urbano" | "rural")}` : "ausente"}</li>
+      <Bloco titulo="Checklist de análise">
+        <ul className="divide-y divide-linha text-[0.95rem] text-texto">
+          <Item estado={p.descricao ? "ok" : "aviso"}>Descrição {p.descricao ? "preenchida" : "vazia"}</Item>
+          <Item estado={p.valor ? "ok" : "aviso"}>Valor: <span className="tabular-nums">{formatBRL(p.valor)}</span></Item>
+          <Item estado={geo ? "ok" : "erro"}>Geometria {geo ? `(${geo.fonte}) — ${formatArea(geo.area_m2, p.tipo as "urbano" | "rural")}` : "ausente"}</Item>
           {divergencia != null && (
-            <li>
-              {divergencia > 0.1 ? "⚠️" : "✅"} Área medida vs declarada:{" "}
-              {(divergencia * 100).toFixed(1)}% de diferença
+            <Item estado={divergencia > 0.1 ? "aviso" : "ok"}>
+              Área medida vs declarada:{" "}
+              <span className="tabular-nums">{(divergencia * 100).toFixed(1)}%</span> de diferença
               {divergencia > 0.1 && " — confirmar com o anunciante"}
-            </li>
+            </Item>
           )}
-          <li>{media?.length ? "✅" : "⚠️"} {media?.length ?? 0} foto(s)</li>
-          <li>
-            {matriculaConferida ? "✅" : temMatricula ? "⏳" : "❌"} {ehLeilao ? "Documento do leilão" : "Comprovação de propriedade"}:{" "}
+          <Item estado={media?.length ? "ok" : "aviso"}>{media?.length ?? 0} foto(s)</Item>
+          <Item estado={matriculaConferida ? "ok" : temMatricula ? "espera" : "erro"}>
+            {ehLeilao ? "Documento do leilão" : "Comprovação de propriedade"}:{" "}
             {matriculaConferida
               ? `${nomeDoc} conferid${ehLeilao ? "o" : "a"}`
               : temMatricula
                 ? `${nomeDoc} enviad${ehLeilao ? "o" : "a"}, falta conferir (aprovar e publicar ficam bloqueados)`
                 : `${nomeDoc} não enviad${ehLeilao ? "o" : "a"} — peça correção`}
             {" "}· {docs.length} documento(s), {docs.filter((d) => d.verificado).length} conferido(s)
-          </li>
+          </Item>
           {selfieUrl && (
-            <li>
-              🤳 Selfie do aceite da exclusividade:{" "}
-              <a href={selfieUrl} target="_blank" className="text-verde hover:underline">abrir</a>
+            <Item estado="info" icone={Camera}>
+              Selfie do aceite da exclusividade:{" "}
+              <a href={selfieUrl} target="_blank" className="inline-flex items-center gap-1 font-semibold text-verde hover:underline">abrir <ExternalLink className="size-3.5" /></a>
               {" — confira com o documento do proprietário."}
-            </li>
+            </Item>
           )}
           {ehLeilao && (
-            <li>
-              🔨 Leilão{lei.comitente ? ` de ${lei.comitente}` : ""}
+            <Item estado="info" icone={Gavel}>
+              Leilão{lei.comitente ? ` de ${lei.comitente}` : ""}
               {lei.praca1_data && ` — 1ª praça em ${new Date(String(lei.praca1_data)).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`}
               {lei.praca1_lance != null && ` (lance mínimo ${formatBRL(Number(lei.praca1_lance))})`}
               {lei.praca2_data && `; 2ª praça em ${new Date(String(lei.praca2_data)).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`}
               {lei.praca2_lance != null && ` (${formatBRL(Number(lei.praca2_lance))})`}
               {lei.processo && ` · ${lei.processo}`}
-            </li>
+            </Item>
           )}
           {p.car_codigo && (
-            <li>
-              🗺️ Divisa trazida do CAR <span className="font-mono text-xs">{p.car_codigo}</span>
+            <Item estado="info" icone={IconeMapa}>
+              Divisa trazida do CAR <span className="font-mono text-xs">{p.car_codigo}</span>
               {car?.properties?.area_ha != null && <> — {Number(car.properties.area_ha).toLocaleString("pt-BR")} ha no CAR</>}
               {car?.properties?.condicao && <> ({car.properties.condicao})</>}
               {". Confira se a matrícula descreve a mesma área."}
-            </li>
+            </Item>
           )}
-          <li>
-            {autorizacao?.aceite_at ? "✅" : "⚠️"}{" "}
+          <Item estado={autorizacao?.aceite_at ? "ok" : "aviso"}>
             {autorizacao
               ? <>
                   {CONDICAO[autorizacao.tipo] ?? autorizacao.tipo}
@@ -193,51 +240,47 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
                     : " — sem aceite eletrônico: confira a autorização assinada nos documentos"}
                 </>
               : p.exclusividade ? "Exclusividade (cadastro anterior aos termos, sem aceite registrado)" : "Sem autorização registrada (cadastro anterior aos termos)"}
-          </li>
-          <li>
-            👤 Responsável:{" "}
+          </Item>
+          <Item estado="info" icone={UserRound}>
+            Responsável:{" "}
             {partner
               ? `${partner.razao_social} (${partner.tipo}) — ${partner.profile?.telefone ?? "sem telefone"}`
               : owner
                 ? `${owner.profile?.nome} (proprietário) — ${owner.profile?.telefone ?? "sem telefone"}`
                 : "—"}
-          </li>
+          </Item>
         </ul>
         {p.motivo_correcao && (
-          <p className="text-sm bg-alerta/10 text-alerta rounded px-3 py-2">
-            Última observação enviada: {p.motivo_correcao}
+          <p className="flex items-start gap-2.5 rounded-xl border border-alerta/40 bg-alerta/10 px-4 py-3 text-[0.95rem] text-alerta">
+            <CircleAlert className="mt-0.5 size-[18px] shrink-0" />
+            <span>Última observação enviada: {p.motivo_correcao}</span>
           </p>
         )}
-      </section>
+      </Bloco>
 
       {geoJson && (
         <MiniMapa
           geometry={geoJson as GeoJSON.Geometry}
           status={p.status}
-          className="h-80 w-full rounded-xl overflow-hidden border border-linha"
+          className="h-80 md:h-96 w-full rounded-[1.25rem] overflow-hidden border border-linha"
         />
       )}
 
       {!!media?.length && (
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {media.map((m) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={m.storage_path} src={mediaUrl(m.storage_path)} alt="" className="h-28 w-full object-cover rounded-lg" />
+            <img key={m.storage_path} src={mediaUrl(m.storage_path)} alt="" className="h-32 w-full object-cover rounded-xl border border-linha" />
           ))}
         </div>
       )}
 
       {p.tipo === "rural" && (
-        <section className="cartao p-5 space-y-3">
-          <div>
-            <h2 className="font-semibold text-texto">Consulta territorial</h2>
-            <p className="text-sm text-texto-2">
-              Cruza a área do imóvel com mineração (ANM), terras indígenas (FUNAI), desmatamento (INPE)
-              e pontos de interesse. Cada resultado guarda a origem e a data.
-            </p>
-          </div>
+        <Bloco titulo="Consulta territorial"
+          subtitulo={<>Cruza a área do imóvel com mineração (ANM), terras indígenas (FUNAI), desmatamento (INPE)
+            e pontos de interesse. Cada resultado guarda a origem e a data.</>}>
           <ConsultaRural propertyId={p.id} />
-        </section>
+        </Bloco>
       )}
 
       {/* 5.3/5.4: pré-avaliação e aptidão (a equipe sempre pode testar) */}
@@ -246,15 +289,13 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
       {/* §1: histórico, versões da divisa, origem dos dados e auditoria */}
       <HistoricoImovel propertyId={p.id} modo="admin" tipoImovel={p.tipo as "urbano" | "rural"} />
 
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Documentos</h2>
+      <Bloco titulo="Documentos">
         <DocumentosImovel propertyId={p.id} podeConferir />
-      </section>
+      </Bloco>
 
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Decisão</h2>
+      <Bloco titulo="Decisão" className="border-l-4 border-l-verde">
         <DecisaoBotoes propertyId={p.id} />
-      </section>
+      </Bloco>
     </div>
   );
 }

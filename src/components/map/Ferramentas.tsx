@@ -15,6 +15,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Map as MLMap, MapMouseEvent, GeoJSONSource } from "maplibre-gl";
 import type { RecursoId } from "@/lib/planos";
+import { ArrowRight, Camera, Lock, MoveHorizontal, Printer, ScanSearch, Triangle, Upload, X } from "lucide-react";
+import { VIDRO, BotaoFechar } from "@/components/map/UiMapa";
 
 type Modo = null | "area" | "distancia" | "consulta";
 
@@ -204,12 +206,12 @@ export default function Ferramentas({
   // cada ferramenta pertence a um recurso do plano (src/lib/planos.ts); a trava
   // de verdade é no servidor — aqui o botão só avisa e aponta para os planos
   const FERRAMENTAS = [
-    { id: "area", icone: "△", rotulo: "Medir Área", recurso: "ferramenta_medir", acao: () => iniciar("area") },
-    { id: "distancia", icone: "↔", rotulo: "Medir Distância", recurso: "ferramenta_medir", acao: () => iniciar("distancia") },
-    { id: "consulta", icone: "⌖", rotulo: "Consultar Área", recurso: "consulta_area", acao: () => iniciar("consulta") },
-    { id: "kml", icone: "⬆", rotulo: "Importar KML", recurso: "ferramenta_kml", acao: null },
-    { id: "imprimir", icone: "⎙", rotulo: "Imprimir", recurso: "ferramenta_exportar", acao: () => window.print() },
-    { id: "captura", icone: "◉", rotulo: "Capturar Imagem", recurso: "ferramenta_exportar", acao: onCapturar },
+    { id: "area", icone: Triangle, rotulo: "Medir Área", recurso: "ferramenta_medir", acao: () => iniciar("area") },
+    { id: "distancia", icone: MoveHorizontal, rotulo: "Medir Distância", recurso: "ferramenta_medir", acao: () => iniciar("distancia") },
+    { id: "consulta", icone: ScanSearch, rotulo: "Consultar Área", recurso: "consulta_area", acao: () => iniciar("consulta") },
+    { id: "kml", icone: Upload, rotulo: "Importar KML", recurso: "ferramenta_kml", acao: null },
+    { id: "imprimir", icone: Printer, rotulo: "Imprimir", recurso: "ferramenta_exportar", acao: () => window.print() },
+    { id: "captura", icone: Camera, rotulo: "Capturar Imagem", recurso: "ferramenta_exportar", acao: onCapturar },
   ] as const;
 
   const avisarBloqueio = (rotulo: string) =>
@@ -217,32 +219,41 @@ export default function Ferramentas({
       ? `“${rotulo}” faz parte da consulta profissional e não está no seu plano.`
       : `Entre na sua conta para usar “${rotulo}”.`);
 
+  const botaoLimpar = (
+    <button onClick={limpar}
+      className="inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-semibold text-texto-2 transition hover:bg-superficie-2 hover:text-texto">
+      <X className="size-3.5" /> limpar
+    </button>
+  );
+
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-[min(92%,680px)]">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-[min(92%,680px)] space-y-2">
       {bloqueio && (
-        <div className="cartao px-4 py-2.5 mb-2 flex items-center gap-3 text-sm shadow-xl anima-subir">
-          <span className="text-texto-2 flex-1">{bloqueio}</span>
-          <Link href={logado ? "/planos" : "/entrar"} className="text-verde font-medium whitespace-nowrap">
-            {logado ? "Ver planos ›" : "Entrar ›"}
+        <div className={`flex items-center gap-3 px-4 py-3 text-sm ${VIDRO}`}>
+          <Lock className="size-4 shrink-0 text-ouro" />
+          <span className="text-texto-3 flex-1">{bloqueio}</span>
+          <Link href={logado ? "/planos" : "/entrar"} className="inline-flex items-center gap-1 font-semibold text-verde whitespace-nowrap hover:underline">
+            {logado ? "Ver planos" : "Entrar"} <ArrowRight className="size-3.5" />
           </Link>
-          <button onClick={() => setBloqueio("")} aria-label="Fechar" className="text-texto-2 hover:text-texto">✕</button>
+          <BotaoFechar onClick={() => setBloqueio("")} />
         </div>
       )}
       {consultaPronta && !modo && (
-        <div className="cartao px-4 py-2.5 mb-2 text-sm shadow-xl anima-subir space-y-1.5">
+        <div className={`px-4 py-3 text-sm space-y-2 ${VIDRO}`}>
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-texto-2">Área desenhada</span>
-            <span className="font-semibold text-verde tabular-nums">
+            <span className="font-display text-lg font-bold text-verde tabular-nums">
               {consultaPronta.ha.toLocaleString("pt-BR", { maximumFractionDigits: consultaPronta.ha < 10 ? 2 : 0 })} ha
             </span>
             {consultaPronta.ha > CONSULTA_MAX_HA ? (
               <span className="text-alerta text-xs">Máximo de {CONSULTA_MAX_HA.toLocaleString("pt-BR")} ha por consulta.</span>
             ) : (
-              <button onClick={consultar} disabled={consultando} className="btn-verde ml-auto px-4 py-1.5 text-xs disabled:opacity-60">
+              <button onClick={consultar} disabled={consultando} className="btn-verde ml-auto inline-flex items-center gap-1.5 px-4 py-2 text-xs disabled:opacity-60">
+                <ScanSearch className="size-4" />
                 {consultando ? "Consultando os órgãos…" : "Consultar fontes oficiais"}
               </button>
             )}
-            <button onClick={limpar} className="text-texto-2 hover:text-texto transition">limpar</button>
+            {botaoLimpar}
           </div>
           {erroConsulta && (
             <p className="text-xs text-alerta">
@@ -253,42 +264,42 @@ export default function Ferramentas({
         </div>
       )}
       {(modo || (resultado && !consultaPronta)) && (
-        <div className="cartao px-4 py-2.5 mb-2 flex items-center gap-3 text-sm shadow-xl anima-subir">
-          <span className="text-texto-2">
+        <div className={`flex items-center gap-3 px-4 py-3 text-sm ${VIDRO}`}>
+          <span className="text-texto-3">
             {modo === "area" ? "Clique nos vértices; duplo clique encerra."
               : modo === "distancia" ? "Clique nos pontos; duplo clique encerra."
               : modo === "consulta" ? "Desenhe a área a consultar (qualquer lugar do Brasil); duplo clique fecha."
               : "Medição"}
           </span>
-          {resultado && <span className="ml-auto font-semibold text-verde tabular-nums">{resultado}</span>}
-          <button onClick={limpar} className="text-texto-2 hover:text-texto transition">limpar</button>
+          {resultado && <span className="ml-auto font-display text-lg font-bold text-verde tabular-nums">{resultado}</span>}
+          {botaoLimpar}
         </div>
       )}
 
-      <div className="cartao px-3 py-2.5 shadow-2xl">
-        <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-texto-2 px-1 mb-1.5">Ferramentas</p>
+      <div className={`px-2.5 py-2 ${VIDRO}`}>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-ouro px-2 pt-0.5 mb-1">Ferramentas</p>
         <div className="flex items-center justify-between gap-1 overflow-x-auto">
           {FERRAMENTAS.map((f) => {
             const ativo = modo === f.id;
             const pode = liberado(f.recurso);
+            const Icone = pode ? f.icone : Lock;
             const classe =
-              "flex flex-col items-center gap-1 rounded-xl px-3 py-2 min-w-[74px] text-[11px] transition " +
-              (ativo ? "bg-verde/15 text-verde" : "text-texto-2 hover:text-texto hover:bg-superficie-2") +
+              "flex flex-col items-center gap-1.5 rounded-[10px] px-3 py-2 min-w-[76px] text-[11px] font-medium transition " +
+              (ativo ? "bg-verde/15 text-verde ring-1 ring-verde/40" : "text-texto-2 hover:text-texto hover:bg-superficie-2") +
               (pode ? "" : " opacity-60");
+            const miolo = <><Icone className="size-[18px]" strokeWidth={1.9} />{f.rotulo}</>;
             if (!pode) {
               return (
                 <button key={f.id} onClick={() => avisarBloqueio(f.rotulo)} className={classe}
                   title="Disponível na consulta profissional">
-                  <span className="text-base leading-none">🔒</span>
-                  {f.rotulo}
+                  {miolo}
                 </button>
               );
             }
             if (f.id === "kml") {
               return (
                 <label key={f.id} className={classe + " cursor-pointer"}>
-                  <span className="text-base leading-none">{f.icone}</span>
-                  {f.rotulo}
+                  {miolo}
                   <input type="file" accept=".kml,.kmz" className="hidden"
                     onChange={(e) => e.target.files?.[0] && onImportarKml(e.target.files[0])} />
                 </label>
@@ -296,8 +307,7 @@ export default function Ferramentas({
             }
             return (
               <button key={f.id} onClick={f.acao ?? undefined} className={classe}>
-                <span className="text-base leading-none">{f.icone}</span>
-                {f.rotulo}
+                {miolo}
               </button>
             );
           })}

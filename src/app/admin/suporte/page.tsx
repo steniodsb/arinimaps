@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ExternalLink, Flag, LifeBuoy, MessageCircle } from "lucide-react";
+import { Etiqueta, Vazio } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { chamadosEsperandoEquipe } from "@/lib/suporte";
@@ -37,12 +39,14 @@ export default async function AdminSuporte({ searchParams }: PageProps<"/admin/s
   ]);
   const novaMsg = new Set(esperando);
   const nome = new Map(equipe.map((m) => [m.user_id, m.nome]));
-  const chip = "rounded-full border px-3 py-1 text-xs transition ";
+  const chip = "rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ";
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="mx-auto max-w-[1280px] space-y-10">
       <CabecalhoSetor setor="suporte">
-        <Link href="/suporte" target="_blank" className="btn-contorno px-4 py-2 text-sm">Ver a página pública</Link>
+        <Link href="/suporte" target="_blank" className="btn-contorno inline-flex items-center gap-2 px-4 py-2.5 text-sm">
+          <ExternalLink className="size-4" /> Ver a página pública
+        </Link>
       </CabecalhoSetor>
 
       <Indicadores itens={[
@@ -52,6 +56,13 @@ export default async function AdminSuporte({ searchParams }: PageProps<"/admin/s
         { rotulo: "Resolvidos em 7 dias", valor: resolvidos7 },
       ]} />
 
+      <section className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="lp-eyebrow text-xs">Fila</p>
+          <h2 className="lp-display mt-2 text-2xl md:text-[1.75rem] text-texto">Chamados</h2>
+        </div>
+      </div>
       <div className="flex flex-wrap gap-2">
         {[["ativos", "Em aberto"], ["meus", "Comigo"], ["aguardando_cliente", "Aguardando cliente"], ["resolvido", "Resolvidos"], ["todos", "Todos"]].map(([v, l]) => (
           <Link key={v} href={`/admin/suporte?situacao=${v}`}
@@ -59,29 +70,32 @@ export default async function AdminSuporte({ searchParams }: PageProps<"/admin/s
         ))}
       </div>
 
-      <div className="cartao divide-y divide-linha">
-        {(chamados ?? []).map((c) => (
+      {chamados?.length ? (
+      <div className="cartao overflow-hidden divide-y divide-linha">
+        {chamados.map((c) => (
           <Link key={c.id} href={`/admin/suporte/${c.id}`}
-            className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm hover:bg-superficie-2 transition">
-            <span className="font-mono text-xs text-texto-2">{c.codigo}</span>
+            className="px-5 py-3.5 flex items-center gap-4 flex-wrap text-[0.95rem] hover:bg-superficie-2/70 transition-colors">
+            <span className="font-mono text-sm text-texto-2 w-24 shrink-0">{c.codigo}</span>
             <span className="flex-1 min-w-52">
-              <span className="text-texto">
-                {c.prioridade === "alta" && <span className="text-critico">● </span>}{c.assunto}
-                {novaMsg.has(c.id) && <span className="ml-2 text-[10px] rounded-full bg-ouro/15 text-ouro px-2 py-0.5">nova mensagem do cliente</span>}
+              <span className="flex flex-wrap items-center gap-2 font-semibold text-texto">
+                {c.prioridade === "alta" && <Flag className="size-4 shrink-0 text-critico" aria-label="Prioridade alta" />}{c.assunto}
+                {novaMsg.has(c.id) && <Etiqueta tom="ouro"><MessageCircle className="size-3.5" /> nova mensagem do cliente</Etiqueta>}
               </span>
-              <span className="block text-xs text-texto-2">
+              <span className="mt-0.5 block text-sm text-texto-2">
                 {c.nome} · {CATEGORIA[c.categoria] ?? c.categoria} · {c.responsavel ? nome.get(c.responsavel) ?? "equipe" : "sem responsável"}
               </span>
             </span>
-            <span className={"text-xs rounded-full px-3 py-1 " +
-              (c.status === "aberto" ? "bg-ouro/15 text-ouro" : c.status === "resolvido" ? "bg-verde/10 text-verde" : "bg-superficie-2 text-texto-2")}>
+            <Etiqueta tom={c.status === "aberto" ? "ouro" : c.status === "resolvido" ? "verde" : "neutro"}>
               {SITUACAO[c.status]}
-            </span>
-            <span className="text-xs text-texto-2 tabular-nums">{dataHoraBR(c.updated_at)}</span>
+            </Etiqueta>
+            <span className="text-sm text-texto-2 tabular-nums">{dataHoraBR(c.updated_at)}</span>
           </Link>
         ))}
-        {!chamados?.length && <p className="px-4 py-8 text-center text-sm text-texto-2">Nenhum chamado neste filtro.</p>}
       </div>
+      ) : (
+        <Vazio icone={LifeBuoy} titulo="Nenhum chamado neste filtro." texto="Troque o filtro acima para ver outros chamados." />
+      )}
+      </section>
 
       <TarefasDoSetor setor="suporte" souEu={user.id} />
     </div>

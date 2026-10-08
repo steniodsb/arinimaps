@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft, Phone, Mail, Building2, Quote } from "lucide-react";
+import { Etiqueta } from "@/components/ui/Pagina";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL } from "@/lib/format";
@@ -31,22 +34,33 @@ export default async function OportunidadeParceiro({ params }: PageProps<"/paine
   const prop = detalhe?.property as unknown as { codigo: string; titulo: string; valor: number | null } | null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs text-texto-2">{opp.codigo}</p>
-          <h1 className="text-2xl font-semibold text-texto">{lead?.nome}</h1>
-          <p className="text-sm text-texto-2">
-            {lead?.telefone && <span className="mr-3">📞 {lead.telefone}</span>}
-            {lead?.email && <span>✉️ {lead.email}</span>}
-          </p>
-          {lead?.mensagem && <p className="text-sm text-texto-2 mt-1">“{lead.mensagem}”</p>}
-        </div>
-        <div className="text-right">
-          <span className="inline-block rounded-full bg-ouro/20 text-ouro-escuro text-sm font-medium px-4 py-1.5">
-            {ETAPA_LABEL[opp.etapa]}
-          </span>
-          <p className="text-xs text-texto-2 mt-1">{prop?.codigo} — {prop?.titulo}<br />{formatBRL(prop?.valor ?? null)}</p>
+    <div className="space-y-8">
+      <div>
+        <Link href="/painel/oportunidades" className="inline-flex items-center gap-1.5 text-sm font-semibold text-texto-2 hover:text-verde transition-colors">
+          <ArrowLeft className="size-4" /> Minhas oportunidades
+        </Link>
+        <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-sm text-texto-2">{opp.codigo}</p>
+            <h1 className="lp-display mt-1 text-2xl md:text-[2rem] text-texto">{lead?.nome}</h1>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-base text-texto-2">
+              {lead?.telefone && <span className="inline-flex items-center gap-2"><Phone className="size-4" /> {lead.telefone}</span>}
+              {lead?.email && <span className="inline-flex items-center gap-2"><Mail className="size-4" /> {lead.email}</span>}
+            </div>
+            {lead?.mensagem && (
+              <p className="mt-4 flex max-w-2xl gap-2 rounded-xl bg-superficie-2 px-4 py-3 text-base italic text-texto-2">
+                <Quote className="mt-1 size-4 shrink-0 text-ouro" />“{lead.mensagem}”
+              </p>
+            )}
+          </div>
+          <div className="cartao shrink-0 p-5 md:max-w-xs">
+            <Etiqueta tom="ouro">{ETAPA_LABEL[opp.etapa]}</Etiqueta>
+            <p className="mt-3 flex items-start gap-2 text-sm text-texto-2">
+              <Building2 className="mt-0.5 size-4 shrink-0" />
+              <span>{prop?.codigo} — {prop?.titulo}</span>
+            </p>
+            <p className="mt-2 text-lg font-semibold tabular-nums text-texto">{formatBRL(prop?.valor ?? null)}</p>
+          </div>
         </div>
       </div>
 

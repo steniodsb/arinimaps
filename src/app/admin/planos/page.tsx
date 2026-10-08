@@ -4,6 +4,8 @@ import { exigirSetor } from "@/lib/setores-servidor";
 import { NICHOS, PAPEIS_EQUIPE_IDS, type Plano } from "@/lib/planos";
 import { PAPEL_LABEL } from "@/lib/perfis";
 import PlanosAdmin from "./PlanosAdmin";
+import { CabecalhoPagina, Etiqueta, Secao } from "@/components/ui/Pagina";
+import { Users } from "lucide-react";
 
 /**
  * Planos e nichos (pedido do Carlos, 05/10/2026). O que cada plano libera é
@@ -30,50 +32,46 @@ export default async function AdminPlanos() {
   }
 
   return (
-    <div className="space-y-7 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Planos e nichos</h1>
-        <p className="text-sm text-texto-2">
-          Cada conta externa tem um nicho (o segmento comercial) e um plano (o que ela pode usar). O que você
-          mudar aqui vale imediatamente para todas as contas do plano. A equipe da Arini não usa plano: o papel libera tudo.
-        </p>
-      </div>
+    <div className="mx-auto max-w-[1280px] space-y-12">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Central · Diretoria"
+        titulo="Planos e nichos"
+        subtitulo="Cada conta externa tem um nicho (o segmento comercial) e um plano (o que ela pode usar). O que você mudar aqui vale imediatamente para todas as contas do plano. A equipe da Arini não usa plano: o papel libera tudo."
+      />
 
       <PlanosAdmin planos={planos} contasPorPlano={porPlano} ehDiretoria={user?.role === "admin_central"} />
 
-      <section className="space-y-3">
-        <div>
-          <h2 className="font-semibold text-texto">Nichos</h2>
-          <p className="text-sm text-texto-2">
-            Personas do Fluxograma Mestre. A lista é fixa no código; o plano padrão de cada nicho é definido
-            marcando o nicho no plano, acima.
-          </p>
-        </div>
-        <div className="cartao divide-y divide-linha">
+      <Secao
+        eyebrow="Segmentos"
+        titulo="Nichos"
+        subtitulo="Personas do Fluxograma Mestre. A lista é fixa no código; o plano padrão de cada nicho é definido marcando o nicho no plano, acima."
+      >
+        <div className="cartao overflow-hidden divide-y divide-linha">
           {NICHOS.map((n) => {
             const padrao = planos.find((p) => p.ativo && p.nichos_padrao.includes(n.id));
             return (
-              <div key={n.id} className="px-4 py-3 flex items-start gap-3 flex-wrap text-sm">
+              <div key={n.id} className="px-5 py-4 flex items-start gap-4 flex-wrap text-[0.95rem] transition-colors hover:bg-superficie-2/50">
                 <div className="flex-1 min-w-56">
-                  <p className="font-medium text-texto">
-                    {n.nome} <span className="font-mono text-[11px] text-texto-2">{n.id}</span>
-                    {n.reservado && <span className="ml-2 text-[10px] uppercase tracking-wide text-ouro-escuro">reservado</span>}
-                    {!n.escolhivel && <span className="ml-2 text-[10px] uppercase tracking-wide text-texto-2">definido pela Matriz</span>}
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-texto">
+                    {n.nome} <span className="font-mono text-xs font-normal text-texto-2">{n.id}</span>
+                    {n.reservado && <Etiqueta tom="ouro">reservado</Etiqueta>}
+                    {!n.escolhivel && <Etiqueta tom="neutro">definido pela Matriz</Etiqueta>}
                   </p>
-                  <p className="text-xs text-texto-2">{n.descricao}</p>
-                  <p className="text-xs text-texto-2 mt-1">
+                  <p className="mt-1 text-sm leading-relaxed text-texto-2">{n.descricao}</p>
+                  <p className="text-sm text-texto-2 mt-1.5">
                     Papéis: {n.papeis.map((r) => PAPEL_LABEL[r] ?? r).join(", ")} · plano padrão:{" "}
-                    <span className="text-texto">{padrao?.nome ?? "nenhum"}</span>
+                    <span className="font-semibold text-texto">{padrao?.nome ?? "nenhum"}</span>
                   </p>
                 </div>
-                <span className="text-xs rounded-full bg-superficie-2 px-3 py-1 tabular-nums">
-                  {porNicho[n.id] ?? 0} conta(s)
-                </span>
+                <Etiqueta tom="neutro" className="tabular-nums">
+                  <Users className="size-3.5" /> {porNicho[n.id] ?? 0} conta(s)
+                </Etiqueta>
               </div>
             );
           })}
         </div>
-      </section>
+      </Secao>
     </div>
   );
 }

@@ -2,8 +2,11 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
+import { CalendarClock, FileText, Handshake, TrendingUp, UserPlus, Users } from "lucide-react";
 import { formatBRL } from "@/lib/format";
-import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataHoraBR } from "@/components/admin/Painel";
+import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataHoraBR, LinkAcao } from "@/components/admin/Painel";
+import { CODIGO, LINHA_LISTA, LISTA, LISTA_VAZIA } from "@/components/admin/estilos";
+import { Etiqueta } from "@/components/ui/Pagina";
 
 const dias = (d: string) => Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
 
@@ -40,84 +43,90 @@ export default async function PainelComercial() {
   type Opp = { id: string; codigo: string; lead?: { nome: string } | null; property?: { codigo?: string; titulo: string } | null };
 
   return (
-    <div className="space-y-7 max-w-5xl">
+    <div className="space-y-10 md:space-y-12">
       <CabecalhoSetor setor="comercial" />
 
       <Indicadores itens={[
-        { rotulo: "Leads novos sem contato", valor: novos, href: "/admin/leads", destaque: novos > 0 },
-        { rotulo: "Interessados em 30 dias", valor: leads30 },
-        { rotulo: "Vendas em 30 dias", valor: vendas30.n, nota: vendas30.n ? formatBRL(vendas30.volume) : undefined },
-        { rotulo: "Parceiros ativos", valor: parceirosAtivos, href: "/admin/cadastros" },
+        { rotulo: "Leads novos sem contato", icone: UserPlus, valor: novos, href: "/admin/leads", destaque: novos > 0 },
+        { rotulo: "Interessados em 30 dias", icone: Users, valor: leads30 },
+        { rotulo: "Vendas em 30 dias", icone: TrendingUp, valor: vendas30.n, nota: vendas30.n ? formatBRL(vendas30.volume) : undefined },
+        { rotulo: "Parceiros ativos", icone: Handshake, valor: parceirosAtivos, href: "/admin/cadastros" },
       ]} />
 
-      <Secao titulo="Funil agora" acao={<Link href="/admin/funil" className="text-xs text-verde hover:underline">Abrir o funil</Link>}>
-        <div className="cartao p-4 space-y-2">
+      <Secao titulo="Funil agora" acao={<LinkAcao href="/admin/funil">Abrir o funil</LinkAcao>}>
+        <div className="cartao p-6 space-y-3">
           {ETAPAS.filter((e) => !["fechado", "pos_venda"].includes(e)).map((e) => {
             const n = porEtapa.get(e) ?? 0;
             return (
-              <div key={e} className="grid grid-cols-[9.5rem_1fr_2rem] items-center gap-3 text-sm">
+              <div key={e} className="grid grid-cols-[8rem_1fr_2.5rem] sm:grid-cols-[11rem_1fr_3rem] items-center gap-4 text-[0.95rem]">
                 <span className="text-texto-2 truncate">{ETAPA_LABEL[e]}</span>
-                <span className="h-2 rounded-full bg-superficie-2 overflow-hidden">
-                  <span className="block h-full rounded-full bg-verde" style={{ width: `${(n / maior) * 100}%` }} />
+                <span className="h-2.5 rounded-full bg-superficie-2 overflow-hidden">
+                  <span className={"block h-full rounded-full " + (e === "novo_lead" && n > 0 ? "bg-ouro" : "bg-verde")} style={{ width: `${(n / maior) * 100}%` }} />
                 </span>
-                <span className="text-right tabular-nums text-texto">{n}</span>
+                <span className="lp-display text-right text-lg leading-none tabular-nums text-texto">{n}</span>
               </div>
             );
           })}
         </div>
       </Secao>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-10 lg:gap-6 lg:grid-cols-2">
         <Secao titulo="Próximas visitas">
-          <div className="cartao divide-y divide-linha">
+          <div className={LISTA}>
             {(visitas ?? []).map((v) => {
               const o = v.opportunity as unknown as Opp | null;
               return (
                 <Link key={v.id} href={o ? `/admin/oportunidades/${o.id}` : "/admin/funil"}
-                  className="px-4 py-3 block text-sm hover:bg-superficie-2 transition">
-                  <p className="text-texto">{dataHoraBR(v.data_hora)} · {o?.lead?.nome ?? "interessado"}</p>
-                  <p className="text-xs text-texto-2">{o?.codigo} · {o?.property?.titulo}</p>
+                  className="block px-5 py-3.5 text-[0.95rem] transition-colors hover:bg-superficie-2/70">
+                  <p className="flex items-center gap-2 font-medium text-texto">
+                    <CalendarClock className="size-4 shrink-0 text-verde" />
+                    <span className="tabular-nums">{dataHoraBR(v.data_hora)}</span> · {o?.lead?.nome ?? "interessado"}
+                  </p>
+                  <p className="mt-0.5 text-sm text-texto-2">{o?.codigo} · {o?.property?.titulo}</p>
                 </Link>
               );
             })}
-            {!visitas?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma visita marcada.</p>}
+            {!visitas?.length && <p className={LISTA_VAZIA}>Nenhuma visita marcada.</p>}
           </div>
         </Secao>
 
         <Secao titulo="Propostas aguardando resposta">
-          <div className="cartao divide-y divide-linha">
+          <div className={LISTA}>
             {(propostas ?? []).map((p) => {
               const o = p.opportunity as unknown as Opp | null;
               return (
                 <Link key={p.id} href={o ? `/admin/oportunidades/${o.id}` : "/admin/funil"}
-                  className="px-4 py-3 block text-sm hover:bg-superficie-2 transition">
-                  <p className="text-texto">{formatBRL(Number(p.valor))} · do {p.autor_lado}</p>
-                  <p className="text-xs text-texto-2">{o?.codigo} · {o?.property?.titulo}</p>
+                  className="block px-5 py-3.5 text-[0.95rem] transition-colors hover:bg-superficie-2/70">
+                  <p className="flex items-center gap-2 font-medium text-texto">
+                    <FileText className="size-4 shrink-0 text-verde" />
+                    <span className="tabular-nums">{formatBRL(Number(p.valor))}</span> · do {p.autor_lado}
+                  </p>
+                  <p className="mt-0.5 text-sm text-texto-2">{o?.codigo} · {o?.property?.titulo}</p>
                 </Link>
               );
             })}
-            {!propostas?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma proposta em aberto.</p>}
+            {!propostas?.length && <p className={LISTA_VAZIA}>Nenhuma proposta em aberto.</p>}
           </div>
         </Secao>
       </div>
 
       <Secao titulo="Oportunidades paradas há 7 dias ou mais">
-        <div className="cartao divide-y divide-linha">
+        <div className={LISTA}>
           {paradas.map((o) => {
             const op = o as unknown as Opp & { etapa: string; updated_at: string };
             return (
               <Link key={op.id} href={`/admin/oportunidades/${op.id}`}
-                className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm hover:bg-superficie-2 transition">
-                <span className="font-mono text-xs text-texto-2">{op.codigo}</span>
-                <span className="flex-1 min-w-48 text-texto">
-                  {op.lead?.nome ?? "interessado"}<span className="text-xs text-texto-2"> · {op.property?.titulo}</span>
+                className={LINHA_LISTA}>
+                <span className={CODIGO}>{op.codigo}</span>
+                <span className="flex-1 min-w-48 font-medium text-texto">
+                  {op.lead?.nome ?? "interessado"}<span className="font-normal text-sm text-texto-2"> · {op.property?.titulo}</span>
                 </span>
-                <span className="text-xs rounded-full bg-superficie-2 px-3 py-1">{ETAPA_LABEL[op.etapa]}</span>
-                <span className="text-xs text-alerta tabular-nums">{dias(op.updated_at)} dias</span>
+                <Etiqueta>{ETAPA_LABEL[op.etapa]}</Etiqueta>
+                <span className="text-xs font-semibold text-alerta tabular-nums whitespace-nowrap">{dias(op.updated_at)} dias</span>
               </Link>
             );
           })}
-          {!paradas.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma oportunidade parada.</p>}
+          {!paradas.length && <p className={LISTA_VAZIA}>Nenhuma oportunidade parada.</p>}
         </div>
       </Secao>
 

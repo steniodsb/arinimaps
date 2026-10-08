@@ -14,6 +14,8 @@
  * e são opcionais — sem elas o bloco cai para o que o item traz.
  */
 import { LinhaOrigem, SeloClassificacao, SeloSituacao, type OrigemItem } from "./Selos";
+import { Etiqueta } from "@/components/ui/Pagina";
+import { CircleCheck, CircleDashed, Database, TriangleAlert } from "lucide-react";
 
 export type ItemFonte = {
   titulo: string; detalhe?: string;
@@ -36,7 +38,7 @@ export type FonteConsultada = {
 
 export default function FontesLista({ fontes, alvo = "a área" }: { fontes: FonteConsultada[]; alvo?: string }) {
   return (
-    <div className="space-y-3">
+    <div className="grid gap-4">
       {fontes.map((f) => {
         const c = f.consulta;
         const itens = c?.resultado?.itens ?? [];
@@ -47,28 +49,33 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
           : c.quantidade > 0 ? `${c.quantidade.toLocaleString("pt-BR")} registro(s)`
           : instavel ? "fonte com instabilidade"
           : "nenhuma incidência";
+        // mesma régua de cor de antes: problema na fonte = alerta, registro = ouro, limpo = verde
+        const tom = c?.erro || (instavel && !c?.quantidade) ? "alerta"
+          : !c ? "neutro" : c.quantidade > 0 ? "ouro" : "verde";
+        const IconeEstado = tom === "alerta" ? TriangleAlert : tom === "neutro" ? CircleDashed : tom === "verde" ? CircleCheck : Database;
         return (
-          <div key={f.id} className="cartao p-4 break-inside-avoid">
-            <div className="flex items-baseline justify-between gap-3 flex-wrap">
-              <p className="font-medium text-texto flex flex-wrap items-center gap-1.5">
-                {f.nome} <span className="text-texto-2 text-xs">· {f.orgao}</span>
-                <SeloClassificacao valor={origem?.tipo ?? f.classificacao} />
-                <SeloSituacao valor={f.situacao} soProblema />
-              </p>
-              <span className={"text-xs font-medium " +
-                (c?.erro || (instavel && !c?.quantidade) ? "text-alerta"
-                  : !c ? "text-texto-2" : c.quantidade > 0 ? "text-ouro" : "text-verde")}>
-                {estado}
-              </span>
+          <div key={f.id} className="cartao p-5 md:p-6 break-inside-avoid">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-display text-lg font-bold leading-snug text-texto">{f.nome}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-texto-2">
+                  {f.orgao}
+                  <SeloClassificacao valor={origem?.tipo ?? f.classificacao} />
+                  <SeloSituacao valor={f.situacao} soProblema />
+                </p>
+              </div>
+              <Etiqueta tom={tom}>
+                <IconeEstado className="size-3.5" /> {estado}
+              </Etiqueta>
             </div>
 
             {c?.erro && (
-              <p className="text-xs text-alerta mt-1">
+              <p className="text-sm text-alerta mt-3 leading-relaxed">
                 O serviço não respondeu ({c.erro}). Ausência de dados aqui não significa ausência de registro no órgão.
               </p>
             )}
             {instavel && !c?.erro && (
-              <p className="text-xs text-alerta mt-1">
+              <p className="text-sm text-alerta mt-3 leading-relaxed">
                 Esta fonte falhou nas últimas verificações automáticas. {c?.quantidade
                   ? "Os registros abaixo são reais, mas podem estar incompletos."
                   : "A consulta não trouxe registro, o que não basta para concluir que não há — refaça a consulta mais tarde."}
@@ -76,11 +83,11 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
             )}
 
             {itens.length > 0 && (
-              <ul className="mt-2.5 space-y-1.5 text-sm">
+              <ul className="mt-4 divide-y divide-linha rounded-xl border border-linha bg-superficie-2/50 px-4 text-[0.95rem]">
                 {itens.slice(0, 8).map((i, n) => (
-                  <li key={n} className="border-b border-linha last:border-0 pb-1.5">
-                    <p className="text-texto">{i.titulo}</p>
-                    {i.detalhe && <p className="text-xs text-texto-2">{i.detalhe}</p>}
+                  <li key={n} className="py-3 space-y-0.5">
+                    <p className="font-medium text-texto">{i.titulo}</p>
+                    {i.detalhe && <p className="text-sm text-texto-2">{i.detalhe}</p>}
                     {i.extra && (
                       <p className="text-[11px] text-texto-2">
                         {Object.entries(i.extra)
@@ -96,13 +103,13 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
                   </li>
                 ))}
                 {itens.length > 8 && (
-                  <li className="text-xs text-texto-2">… e mais {itens.length - 8} registro(s).</li>
+                  <li className="py-3 text-xs text-texto-2">… e mais {itens.length - 8} registro(s).</li>
                 )}
               </ul>
             )}
 
             {c && (
-              <div className="mt-2 space-y-0.5">
+              <div className="mt-4 space-y-1 border-t border-linha pt-3">
                 <LinhaOrigem origem={origem} orgao={f.orgao} classificacao={f.classificacao}
                   consultadoEm={c.consultado_em} atualizacao={f.atualizacao} />
                 {!c.erro && (

@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { lerConfiguracoes } from "@/lib/settings";
+import { CabecalhoPagina } from "@/components/ui/Pagina";
+import TopoConta from "@/components/painel/TopoConta";
 import Seguranca from "./Seguranca";
 
 export const dynamic = "force-dynamic";
@@ -30,17 +31,9 @@ export default async function ContaSeguranca({ searchParams }: PageProps<"/conta
 
   return (
     <div className="min-h-screen bg-fundo">
-      <div className="px-4 py-4 border-b border-linha flex items-center justify-between">
-        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Imóveis Brasil</span></Link>
-        <Link href={daEquipe ? "/admin" : "/painel"} className="text-sm text-verde hover:underline">
-          ← Voltar {daEquipe ? "à Central" : "ao painel"}
-        </Link>
-      </div>
-      <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-texto">Segurança da conta</h1>
-          <p className="text-sm text-texto-2">{user.nome} · {user.email}</p>
-        </div>
+      <TopoConta daEquipe={daEquipe} />
+      <main className="mx-auto w-full max-w-3xl px-5 pb-16 pt-10 md:px-8 md:pt-14">
+        <CabecalhoPagina eyebrow="Minha conta" titulo="Segurança da conta" subtitulo={<>{user.nome} · {user.email}</>} />
         <Seguranca
           eventos={eventos ?? []}
           obrigatorio={obrigatorio}

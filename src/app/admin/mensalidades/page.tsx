@@ -2,6 +2,16 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { formatBRL } from "@/lib/format";
 import MensalidadeAcoes, { FaturaAcoes, ValorMensal } from "./MensalidadeAcoes";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { CODIGO, TABELA, TABELA_CAIXA, TBODY, TH, THEAD, TR } from "@/components/admin/estilos";
+import { CabecalhoPagina, Etiqueta } from "@/components/ui/Pagina";
+import { Secao } from "@/components/admin/Painel";
+
+const TOM_SUB: Record<string, "verde" | "critico" | "ouro" | "neutro"> = {
+  ativa: "verde", inadimplente: "critico", pendente: "ouro", isenta: "neutro", cancelada: "neutro",
+};
+const TOM_FATURA: Record<string, "verde" | "critico" | "ouro" | "neutro"> = {
+  paga: "verde", vencida: "critico", aberta: "ouro",
+};
 
 const SUB_LABEL: Record<string, string> = {
   ativa: "Ativa", pendente: "Pendente", inadimplente: "Inadimplente", isenta: "Isenta", cancelada: "Cancelada",
@@ -20,80 +30,76 @@ export default async function AdminMensalidades() {
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-texto">Mensalidades</h1>
-        <MensalidadeAcoes />
-      </div>
+    <div className="space-y-10 md:space-y-12">
+      <CabecalhoPagina eyebrow="Financeiro" titulo="Mensalidades"
+        subtitulo="Assinatura de cada imóvel publicado e as faturas do mês." acoes={<MensalidadeAcoes />} />
 
-      <section className="space-y-2">
-        <h2 className="font-semibold text-texto">Assinaturas por imóvel publicado</h2>
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+      <Secao titulo="Assinaturas por imóvel publicado">
+        <div className={TABELA_CAIXA}>
+          <table className={TABELA}>
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Imóvel</th>
-                <th className="px-4 py-3">Valor mensal</th>
-                <th className="px-4 py-3">Vencimento</th>
-                <th className="px-4 py-3">Status</th>
+              <tr className={THEAD}>
+                <th className={TH}>Imóvel</th>
+                <th className={TH}>Valor mensal</th>
+                <th className={TH}>Vencimento</th>
+                <th className={TH}>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-linha">
+            <tbody className={TBODY}>
               {(subs ?? []).map((s) => {
                 const prop = s.property as unknown as { codigo: string; titulo: string; status: string } | null;
                 return (
-                  <tr key={s.id}>
-                    <td className="px-4 py-3">{prop?.titulo}<br /><span className="font-mono text-xs text-texto-2">{prop?.codigo}</span></td>
-                    <td className="px-4 py-3"><ValorMensal id={s.id} valor={Number(s.valor_mensal)} /></td>
-                    <td className="px-4 py-3">dia {s.dia_vencimento}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs rounded-full px-3 py-1 ${s.status === "inadimplente" ? "bg-critico/15 text-critico" : s.status === "ativa" ? "bg-verde/10 text-verde" : "bg-superficie-2"}`}>
-                        {SUB_LABEL[s.status]}
-                      </span>
+                  <tr key={s.id} className={TR}>
+                    <td className="px-4 py-3.5"><span className="font-medium text-texto">{prop?.titulo}</span><span className={"block mt-0.5 " + CODIGO}>{prop?.codigo}</span></td>
+                    <td className="px-4 py-3.5"><ValorMensal id={s.id} valor={Number(s.valor_mensal)} /></td>
+                    <td className="px-4 py-3.5 tabular-nums whitespace-nowrap">dia {s.dia_vencimento}</td>
+                    <td className="px-4 py-3.5">
+                      <Etiqueta tom={TOM_SUB[s.status] ?? "neutro"}>{SUB_LABEL[s.status]}</Etiqueta>
                     </td>
                   </tr>
                 );
               })}
-              {!subs?.length && <tr><td colSpan={4} className="px-4 py-8 text-center text-texto-2">Nenhuma assinatura — nascem ao publicar um imóvel.</td></tr>}
+              {!subs?.length && <tr><td colSpan={4} className="px-4 py-10 text-center text-texto-2">Nenhuma assinatura — nascem ao publicar um imóvel.</td></tr>}
             </tbody>
           </table>
         </div>
-      </section>
+      </Secao>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold text-texto">Faturas</h2>
-        <div className="cartao overflow-x-auto">
-          <table className="w-full text-sm">
+      <Secao titulo="Faturas">
+        <div className={TABELA_CAIXA}>
+          <table className={TABELA}>
             <thead>
-              <tr className="text-left text-xs uppercase text-texto-2 border-b border-linha">
-                <th className="px-4 py-3">Imóvel</th>
-                <th className="px-4 py-3">Competência</th>
-                <th className="px-4 py-3">Valor</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3"></th>
+              <tr className={THEAD}>
+                <th className={TH}>Imóvel</th>
+                <th className={TH}>Competência</th>
+                <th className={TH}>Valor</th>
+                <th className={TH}>Status</th>
+                <th className={TH}></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-linha">
+            <tbody className={TBODY}>
               {(invoices ?? []).map((i) => {
                 const sub = i.subscription as unknown as { property: { codigo: string } | null } | null;
                 return (
-                  <tr key={i.id}>
-                    <td className="px-4 py-3 font-mono text-xs">{sub?.property?.codigo}</td>
-                    <td className="px-4 py-3">{new Date(i.competencia + "T12:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</td>
-                    <td className="px-4 py-3 tabular-nums">{formatBRL(i.valor)}</td>
-                    <td className="px-4 py-3">
-                      {i.status}{i.pago_em ? ` em ${new Date(i.pago_em + "T12:00:00").toLocaleDateString("pt-BR")}` : ""}
-                      {i.gateway_id && <span className="text-xs text-texto-2"> · Asaas</span>}
+                  <tr key={i.id} className={TR}>
+                    <td className={"px-4 py-3.5 whitespace-nowrap " + CODIGO}>{sub?.property?.codigo}</td>
+                    <td className="px-4 py-3.5 capitalize whitespace-nowrap">{new Date(i.competencia + "T12:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</td>
+                    <td className="px-4 py-3.5 tabular-nums whitespace-nowrap font-semibold text-texto">{formatBRL(i.valor)}</td>
+                    <td className="px-4 py-3.5">
+                      <Etiqueta tom={TOM_FATURA[i.status] ?? "neutro"}>
+                        {i.status}{i.pago_em ? ` em ${new Date(i.pago_em + "T12:00:00").toLocaleDateString("pt-BR")}` : ""}
+                      </Etiqueta>
+                      {i.gateway_id && <span className="ml-2 text-xs text-texto-2">Asaas</span>}
                     </td>
-                    <td className="px-4 py-3">{i.status !== "paga" && <FaturaAcoes id={i.id} />}</td>
+                    <td className="px-4 py-3.5">{i.status !== "paga" && <FaturaAcoes id={i.id} />}</td>
                   </tr>
                 );
               })}
-              {!invoices?.length && <tr><td colSpan={5} className="px-4 py-8 text-center text-texto-2">Nenhuma fatura — use “Gerar faturas do mês”.</td></tr>}
+              {!invoices?.length && <tr><td colSpan={5} className="px-4 py-10 text-center text-texto-2">Nenhuma fatura — use “Gerar faturas do mês”.</td></tr>}
             </tbody>
           </table>
         </div>
-      </section>
+      </Secao>
     </div>
   );
 }

@@ -3,6 +3,8 @@ import AdicionarMunicipio from "./AdicionarMunicipio";
 import ConfereSatelite from "./ConfereSatelite";
 import AtualizarCar from "./AtualizarCar";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { Globe, MapPin, Tractor } from "lucide-react";
+import { CabecalhoPagina, Cartao, Estatistica, Etiqueta, Secao } from "@/components/ui/Pagina";
 
 export default async function AdminRegioes() {
   await exigirSetor("cartografia");
@@ -19,53 +21,83 @@ export default async function AdminRegioes() {
   const ultimaImportacao = [...carPorIbge.values()]
     .map((c) => c.importado_em).filter(Boolean).sort().pop();
 
+  const lista = municipios ?? [];
+  const totalCar = lista.reduce((t, m) => t + (carPorIbge.get(String(m.codigo_ibge))?.imoveis ?? 0), 0);
+
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-texto">Regiões e municípios</h1>
-        <p className="text-sm text-texto-2">
-          A estrutura já suporta múltiplas regiões (expansão/franquias). A primeira versão opera na região piloto.
-        </p>
+    <div className="mx-auto max-w-[1280px] space-y-12">
+      <CabecalhoPagina
+        variante="simples"
+        eyebrow="Central · Cartografia"
+        titulo="Regiões e municípios"
+        subtitulo="A estrutura já suporta múltiplas regiões (expansão/franquias). A primeira versão opera na região piloto."
+      />
+
+      <div className="grid gap-5 sm:grid-cols-3">
+        <Estatistica icone={Globe} valor={(regioes ?? []).filter((r) => r.ativa).length} rotulo="Regiões ativas" />
+        <Estatistica icone={MapPin} valor={lista.length} rotulo="Municípios no mapa" />
+        <Estatistica icone={Tractor} valor={<span className="tabular-nums">{totalCar.toLocaleString("pt-BR")}</span>} rotulo="Imóveis rurais do CAR" />
       </div>
 
-      <section className="cartao p-5 space-y-2">
-        <h2 className="font-semibold text-texto">Regiões</h2>
-        {(regioes ?? []).map((r) => (
-          <p key={r.id} className="text-sm flex justify-between">
-            <span>{r.nome}</span>
-            <span className={`text-xs rounded-full px-3 py-0.5 ${r.ativa ? "bg-verde/10 text-verde" : "bg-superficie-2"}`}>{r.ativa ? "ativa" : "inativa"}</span>
-          </p>
-        ))}
-      </section>
+      <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+        <Secao eyebrow="Expansão" titulo="Regiões">
+          <Cartao padding="p-2">
+            <ul className="divide-y divide-linha">
+              {(regioes ?? []).map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3.5 text-[0.95rem]">
+                  <span className="font-semibold text-texto">{r.nome}</span>
+                  <Etiqueta tom={r.ativa ? "verde" : "neutro"}>{r.ativa ? "ativa" : "inativa"}</Etiqueta>
+                </li>
+              ))}
+            </ul>
+          </Cartao>
+        </Secao>
 
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Municípios no mapa</h2>
-        <AdicionarMunicipio />
-        <div className="divide-y divide-linha">
-          {(municipios ?? []).map((m) => (
-            <p key={m.id} className="text-sm py-2 flex justify-between gap-3">
-              <span>{m.nome} · {m.uf} <span className="font-mono text-xs text-texto-2">{m.codigo_ibge}</span></span>
-              <span className="text-xs text-texto-2">
-                {(carPorIbge.get(String(m.codigo_ibge))?.imoveis ?? 0).toLocaleString("pt-BR")} imóveis no CAR
-                {" · "}{(m.region as unknown as { nome: string } | null)?.nome}
-              </span>
-            </p>
-          ))}
-        </div>
-      </section>
+        <Secao eyebrow="Malha do IBGE" titulo="Municípios no mapa">
+          <Cartao className="space-y-5">
+            <AdicionarMunicipio />
+            <div className="-mx-6 -mb-6 overflow-x-auto border-t border-linha">
+              <table className="w-full min-w-[560px] text-[0.95rem]">
+                <thead className="bg-superficie-2 text-left text-[11px] font-semibold uppercase tracking-wider text-texto-2">
+                  <tr>
+                    <th className="px-6 py-3">Município</th>
+                    <th className="px-3 py-3">IBGE</th>
+                    <th className="px-3 py-3 text-right">Imóveis no CAR</th>
+                    <th className="px-6 py-3">Região</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-linha">
+                  {lista.map((m) => (
+                    <tr key={m.id} className="transition-colors hover:bg-superficie-2/60">
+                      <td className="px-6 py-3.5 font-semibold text-texto">{m.nome} <span className="font-normal text-texto-2">· {m.uf}</span></td>
+                      <td className="px-3 py-3.5 font-mono text-sm text-texto-2">{m.codigo_ibge}</td>
+                      <td className="px-3 py-3.5 text-right tabular-nums text-texto">
+                        {(carPorIbge.get(String(m.codigo_ibge))?.imoveis ?? 0).toLocaleString("pt-BR")}
+                      </td>
+                      <td className="px-6 py-3.5 text-texto-2">{(m.region as unknown as { nome: string } | null)?.nome}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Cartao>
+        </Secao>
+      </div>
 
-      <section className="cartao p-5 space-y-3">
-        <div>
-          <h2 className="font-semibold text-texto">Imóveis rurais do CAR</h2>
-          <p className="text-sm text-texto-2">
-            A malha do SICAR aparece no mapa para o proprietário clicar na área dele e anunciar. Ela é
-            copiada para o sistema (o mapa não depende do SICAR estar no ar) e atualizada por este botão —
-            vale rodar uma vez por mês. Município novo já entra com o CAR.
-            {ultimaImportacao && <> Última atualização: {new Date(ultimaImportacao).toLocaleString("pt-BR")}.</>}
-          </p>
-        </div>
-        <AtualizarCar />
-      </section>
+      <Secao
+        eyebrow="SICAR"
+        titulo="Imóveis rurais do CAR"
+        subtitulo={<>
+          A malha do SICAR aparece no mapa para o proprietário clicar na área dele e anunciar. Ela é
+          copiada para o sistema (o mapa não depende do SICAR estar no ar) e atualizada por este botão —
+          vale rodar uma vez por mês. Município novo já entra com o CAR.
+          {ultimaImportacao && <> Última atualização: <strong className="text-texto tabular-nums">{new Date(ultimaImportacao).toLocaleString("pt-BR")}</strong>.</>}
+        </>}
+      >
+        <Cartao>
+          <AtualizarCar />
+        </Cartao>
+      </Secao>
 
       <ConfereSatelite />
     </div>

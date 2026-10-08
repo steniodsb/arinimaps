@@ -1,12 +1,14 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Hash, MapPin, Ruler, Square } from "lucide-react";
 import AppShell from "@/components/shell/AppShell";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
+import { IconePoi } from "@/components/map/UiMapa";
+import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica, Secao } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
-import { CATEGORIA_POI_ICONE, CATEGORIA_POI_LABEL, formatDistancia, type PoiDistancia } from "@/lib/geo/distancia";
+import { CATEGORIA_POI_LABEL, formatDistancia, type PoiDistancia } from "@/lib/geo/distancia";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Consulta de lote urbano" };
@@ -47,8 +49,9 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
   const pois = ((poisRaw ?? []) as PoiDistancia[]).slice(0, 12);
 
   const identificacao = [p.quadra && `Quadra ${p.quadra}`, p.numero && `Lote ${p.numero}`].filter(Boolean).join(" · ");
+  const municipio = p.municipio ? `${p.municipio}${p.uf ? ` — ${p.uf}` : ""}` : "—";
   const dados: [string, string][] = [
-    ["Município", p.municipio ? `${p.municipio}${p.uf ? ` — ${p.uf}` : ""}` : "—"],
+    ["Município", municipio],
     ["Quadra", p.quadra ?? "não identificada na planta"],
     ["Número do lote", p.numero ?? "não identificado na planta"],
     ["Área", `${m2(p.area_m2)} m²`],
@@ -58,71 +61,77 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
   ];
 
   return (
-    <AppShell usuario={consulta.usuario}>
-      <div className="max-w-5xl space-y-6">
-        <div>
-          <p className="text-xs text-texto-2">Lote urbano · consulta de área</p>
-          <h1 className="text-2xl font-semibold text-texto">
-            {identificacao || `${m2(p.area_m2)} m²`}
-            {p.municipio && <span className="text-texto-2 font-normal"> em {p.municipio}</span>}
-          </h1>
-          {identificacao && <p className="text-sm text-texto-2 mt-1">{m2(p.area_m2)} m² pela planta da cidade</p>}
+    <AppShell usuario={consulta.usuario} semPadding>
+      <CabecalhoPagina
+        variante="faixa"
+        eyebrow="Consulta territorial"
+        titulo={identificacao || `${m2(p.area_m2)} m²`}
+        destaque={p.municipio ? `em ${p.municipio}` : undefined}
+        subtitulo={identificacao
+          ? `Lote urbano · ${m2(p.area_m2)} m² pela planta da cidade`
+          : "Lote urbano · consulta de área"}
+        acoes={p.anuncio ? (
+          <BotaoLink href={`/imovel/${p.anuncio}`}>Este lote está à venda — ver o anúncio</BotaoLink>
+        ) : (
+          <BotaoLink href={`/painel/novo?lote=${p.id}`} variante="ouro">Este lote é meu — anunciar</BotaoLink>
+        )}
+      />
+
+      <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Estatistica icone={Square} valor={`${m2(p.area_m2)} m²`} rotulo="Área do lote" />
+          <Estatistica icone={Ruler} valor={`${metros(p.perimetro_m)} m`} rotulo="Perímetro" />
+          <Estatistica icone={Hash} valor={[p.quadra && `Q ${p.quadra}`, p.numero && `L ${p.numero}`].filter(Boolean).join(" · ") || "—"} rotulo="Quadra e lote" />
+          <Estatistica icone={MapPin} valor={p.municipio ?? "—"} rotulo="Município" />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <MiniMapa geometry={lote.geometry} status="publicado"
-            className="h-80 w-full rounded-xl overflow-hidden border border-linha" />
-          <div className="cartao p-5 space-y-3">
-            <dl className="text-sm space-y-2">
+            className="h-80 lg:h-full lg:min-h-96 w-full rounded-[20px] overflow-hidden border border-linha" />
+          <div className="cartao p-6 space-y-5">
+            <h2 className="lp-display text-xl text-texto">Dados da planta</h2>
+            <dl className="text-[0.95rem] divide-y divide-linha">
               {dados.map(([r, v]) => (
-                <div key={r} className="flex justify-between gap-3 border-b border-linha last:border-0 pb-2">
-                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto text-right">{v}</dd>
+                <div key={r} className="flex justify-between gap-4 py-3">
+                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto font-medium text-right tabular-nums">{v}</dd>
                 </div>
               ))}
             </dl>
-            {p.anuncio ? (
-              <Link href={`/imovel/${p.anuncio}`} className="btn-verde w-full text-center py-2.5 text-sm">
-                Este lote está à venda — ver o anúncio
-              </Link>
-            ) : (
-              <Link href={`/painel/novo?lote=${p.id}`} className="btn-ouro w-full text-center py-2.5 text-sm">
-                Este lote é meu — anunciar
-              </Link>
-            )}
-            <p className="text-[11px] text-texto-2 leading-snug">
+            <p className="text-xs text-texto-2 leading-relaxed border-t border-linha pt-4">
               Medidas, quadra e número lidos da planta da cidade (CAD da prefeitura). São referência: não
               substituem a matrícula nem o levantamento do lote.
             </p>
           </div>
         </div>
 
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-semibold text-texto text-lg">Pontos de referência próximos</h2>
-            <p className="text-sm text-texto-2">Distância em linha reta do centro do lote, até {formatDistancia(raio)}.</p>
-          </div>
+        <Secao eyebrow="Entorno" titulo="Pontos de referência próximos"
+          subtitulo={`Distância em linha reta do centro do lote, até ${formatDistancia(raio)}.`}>
           {pois.length ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {pois.map((poi, i) => (
-                <div key={i} className="cartao px-4 py-2.5 text-sm flex items-center justify-between gap-3">
-                  <span className="min-w-0">
-                    <span className="block truncate text-texto">
-                      <span aria-hidden className="mr-1.5">{CATEGORIA_POI_ICONE[poi.categoria] ?? "•"}</span>
-                      {poi.nome ?? CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}
+                <div key={i} className="cartao flex items-center justify-between gap-3 p-4">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+                      <IconePoi categoria={poi.categoria} className="size-5" />
                     </span>
-                    {poi.nome && <span className="block text-[11px] text-texto-2">{CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}</span>}
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-texto">
+                        {poi.nome ?? CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}
+                      </span>
+                      {poi.nome && <span className="block text-xs text-texto-2">{CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}</span>}
+                    </span>
                   </span>
-                  <span className="font-medium tabular-nums text-texto shrink-0">{formatDistancia(poi.distancia_m)}</span>
+                  <span className="font-display text-lg font-bold tabular-nums text-texto shrink-0">{formatDistancia(poi.distancia_m)}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="cartao p-5 text-sm text-texto-2">
+            <p className="cartao p-6 text-base leading-relaxed text-texto-2">
               Nenhum ponto de referência no cache para esta região ainda. Ao consultar as fontes oficiais, os pontos
               ao redor do lote são buscados no OpenStreetMap.
             </p>
           )}
-        </section>
+        </Secao>
 
         <SecaoFontesOficiais
           url={`/api/consulta/lote/${p.id}`}
@@ -131,7 +140,7 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
           logado={!!consulta.user} podeConsultar={consulta.podeConsultar} acesso={consulta.acesso}
           cotaRestante={consulta.cotaRestante} lista={consulta.lista} pendentes={consulta.pendentes}
           jaConsultou={consulta.jaConsultou} />
-      </div>
+      </Conteudo>
     </AppShell>
   );
 }

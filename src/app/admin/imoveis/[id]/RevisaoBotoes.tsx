@@ -25,14 +25,14 @@ export default function RevisaoBotoes({ revisaoId }: { revisaoId: string }) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2.5">
         <button type="button" disabled={ocupado} onClick={() => decidir("aprovar")}
-          className="rounded-lg bg-verde text-white px-4 py-2 text-sm font-medium hover:bg-verde-escuro disabled:opacity-50">
+          className="btn-verde px-4 py-2.5 text-sm disabled:opacity-50">
           Aprovar e aplicar no anúncio
         </button>
         <button type="button" disabled={ocupado} onClick={() => decidir("rejeitar")}
-          className="rounded-lg bg-critico text-fundo px-4 py-2 text-sm font-medium hover:bg-critico/80 disabled:opacity-50">
+          className="btn-perigo px-4 py-2.5 text-sm disabled:opacity-50">
           Rejeitar
         </button>
       </div>

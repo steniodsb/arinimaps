@@ -9,6 +9,9 @@ import { lerCarPendente } from "@/lib/map/carPendente";
 import { SENHA_MIN, validarSenha } from "@/lib/seguranca/senha";
 import { REGISTRO_LABEL, ehParceiro as papelEhParceiro, podeAnunciar } from "@/lib/perfis";
 import { nichoPadrao, nichosDoPapel } from "@/lib/planos";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import TelaDividida from "@/components/publico/TelaDividida";
+import { CAMPO, ROTULO as ROTULO_KIT } from "@/components/ui/Pagina";
 
 const PERFIS = [
   { value: "comprador", label: "Quero comprar / procurar imóvel" },
@@ -20,8 +23,8 @@ const PERFIS = [
   { value: "leiloeiro", label: "Sou leiloeiro" },
 ];
 
-const INPUT = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
-const ROTULO = "block text-sm font-medium text-texto mb-1";
+const INPUT = CAMPO;
+const ROTULO = ROTULO_KIT;
 
 export default function Entrar() {
   const router = useRouter();
@@ -140,34 +143,34 @@ export default function Entrar() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-fundo">
-      <div className="px-4 py-4 border-b border-linha">
-        <Link href="/" className="font-semibold text-texto">
-          Arini <span className="texto-ouro">Imóveis Brasil</span>
-        </Link>
-      </div>
-
-      <main className="flex-1 flex items-center justify-center p-4">
-        <form onSubmit={submit} className="w-full max-w-md cartao p-6 space-y-3.5">
-          {(modo === "recuperar" || modo === "mfa") && (
-            <div className="space-y-1">
-              <h1 className="text-lg font-semibold text-texto">
-                {modo === "recuperar" ? "Recuperar a senha" : "Confirme que é você"}
-              </h1>
-              <p className="text-sm text-texto-2">
+    <TelaDividida>
+        <form onSubmit={submit} className="space-y-5">
+          <div>
+            <p className="lp-eyebrow !text-xs">
+              {modo === "cadastro" ? "Nova conta" : modo === "login" ? "Bem-vindo de volta" : "Segurança da conta"}
+            </p>
+            <h1 className="lp-display mt-2 text-3xl text-texto md:text-[2.25rem]">
+              {modo === "login" ? "Entrar na sua conta"
+                : modo === "cadastro" ? "Criar conta"
+                : modo === "recuperar" ? "Recuperar a senha"
+                : "Confirme que é você"}
+            </h1>
+            {(modo === "recuperar" || modo === "mfa") && (
+              <p className="mt-2 text-[15px] leading-relaxed text-texto-2">
                 {modo === "recuperar"
                   ? "Informe o e-mail da conta. Enviamos um link de uso único para criar uma senha nova."
                   : "Digite o código de 6 dígitos do seu aplicativo autenticador."}
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className={"rounded-xl overflow-hidden border border-linha text-sm font-medium " + (modo === "login" || modo === "cadastro" ? "flex" : "hidden")}>
+          <div className={"grid-cols-2 gap-1 rounded-xl border border-linha bg-superficie-2 p-1 text-sm font-bold " + (modo === "login" || modo === "cadastro" ? "grid" : "hidden")}>
             {(["login", "cadastro"] as const).map((m) => (
               <button key={m} type="button" onClick={() => { setModo(m); setErro(""); setAviso(""); }}
+                aria-pressed={modo === m}
                 className={
-                  "flex-1 py-2.5 transition " +
-                  (modo === m ? "bg-verde text-[#06140D]" : "bg-superficie-2 text-texto-2 hover:text-texto")
+                  "rounded-[10px] py-2.5 transition " +
+                  (modo === m ? "bg-superficie text-texto shadow-sm ring-1 ring-linha" : "text-texto-2 hover:text-texto")
                 }>
                 {m === "login" ? "Entrar" : "Criar conta"}
               </button>
@@ -191,7 +194,7 @@ export default function Entrar() {
                     onChange={(e) => setForm({ ...form, nicho: e.target.value })}>
                     {nichosOpcoes.map((n) => <option key={n.id} value={n.id}>{n.nome} — {n.descricao}</option>)}
                   </select>
-                  <p className="text-xs text-texto-2 mt-1">Define o plano com que a conta começa. A Arini pode ajustar depois.</p>
+                  <p className="mt-1.5 text-xs text-texto-2">Define o plano com que a conta começa. A Arini pode ajustar depois.</p>
                 </div>
               )}
 
@@ -209,7 +212,7 @@ export default function Entrar() {
                   className={INPUT + (docInvalido ? " border-critico focus:ring-critico" : "")}
                   value={formatarCPF(form.cpf)}
                   onChange={(e) => setForm({ ...form, cpf: e.target.value })} />
-                <p className={"text-xs mt-1 " + (docInvalido ? "text-critico" : "text-texto-2")}>
+                <p className={"mt-1.5 text-xs " + (docInvalido ? "text-critico" : "text-texto-2")}>
                   {docInvalido
                     ? "Documento inválido — confira os números."
                     : "Identifica a conta e mantém cada negociação rastreável."}
@@ -269,7 +272,7 @@ export default function Entrar() {
                 value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} />
               {modo === "login" && (
                 <button type="button" onClick={() => { setModo("recuperar"); setErro(""); setAviso(""); }}
-                  className="mt-1.5 text-xs text-verde hover:underline">
+                  className="mt-2 text-sm font-semibold text-verde hover:underline">
                   Esqueci minha senha
                 </button>
               )}
@@ -278,17 +281,17 @@ export default function Entrar() {
 
           {modo === "cadastro" && (
             <div className="space-y-2">
-              <label className="flex items-start gap-2 text-xs text-texto-2">
+              <label className="flex items-start gap-2.5 text-[13px] leading-relaxed text-texto-2">
                 <input type="checkbox" required checked={aceite}
-                  onChange={(e) => setAceite(e.target.checked)} className="mt-0.5" />
+                  onChange={(e) => setAceite(e.target.checked)} className="mt-1 size-4 shrink-0 accent-[var(--verde)]" />
                 <span>
                   Li e aceito os{" "}
-                  <Link href="/termos/termos-de-uso" target="_blank" className="text-verde underline">Termos de Uso</Link>
+                  <Link href="/termos/termos-de-uso" target="_blank" className="font-semibold text-verde hover:underline">Termos de Uso</Link>
                   {ehParceiro && <>, o{" "}
-                    <Link href="/termos/parceiros" target="_blank" className="text-verde underline">Termo de Parceria</Link>
+                    <Link href="/termos/parceiros" target="_blank" className="font-semibold text-verde hover:underline">Termo de Parceria</Link>
                   </>}
                   {" "}e a{" "}
-                  <Link href="/termos/privacidade" target="_blank" className="text-verde underline">Política de Privacidade</Link>.
+                  <Link href="/termos/privacidade" target="_blank" className="font-semibold text-verde hover:underline">Política de Privacidade</Link>.
                 </span>
               </label>
               {!["comprador", "consulta"].includes(form.role) && (
@@ -298,28 +301,27 @@ export default function Entrar() {
               )}
             </div>
           )}
-          {erro && <p className="text-sm text-critico">{erro}</p>}
-          {aviso && <p className="text-sm text-verde">{aviso}</p>}
+          {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
+          {aviso && <p className="rounded-xl border border-verde/30 bg-verde/10 px-4 py-3 text-sm text-verde">{aviso}</p>}
 
-          <button disabled={carregando} className="btn-verde w-full py-3 disabled:opacity-60">
+          <button disabled={carregando} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
             {carregando ? "Aguarde…"
-              : modo === "login" ? "Entrar"
-              : modo === "cadastro" ? "Criar conta"
-              : modo === "recuperar" ? "Enviar link"
-              : "Confirmar código"}
+              : <>{modo === "login" ? "Entrar"
+                : modo === "cadastro" ? "Criar conta"
+                : modo === "recuperar" ? "Enviar link"
+                : "Confirmar código"} <ArrowRight /></>}
           </button>
 
           {(modo === "recuperar" || modo === "mfa") && (
-            <button type="button" className="w-full text-xs text-texto-2 hover:text-texto"
+            <button type="button" className="flex w-full items-center justify-center gap-1.5 text-sm font-semibold text-texto-2 hover:text-texto"
               onClick={async () => {
                 if (modo === "mfa") await supabaseBrowser().auth.signOut();
                 setModo("login"); setErro(""); setAviso(""); setCodigoMfa("");
               }}>
-              ← Voltar para o login
+              <ArrowLeft className="size-4" /> Voltar para o login
             </button>
           )}
         </form>
-      </main>
-    </div>
+    </TelaDividida>
   );
 }

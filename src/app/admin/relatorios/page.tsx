@@ -2,6 +2,11 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
 import { formatBRL } from "@/lib/format";
 import { exigirSetor } from "@/lib/setores-servidor";
+import {
+  CircleDollarSign, Filter, Hourglass, Percent, Receipt, TrendingDown, TrendingUp, Wallet,
+} from "lucide-react";
+import { CabecalhoPagina, Estatistica } from "@/components/ui/Pagina";
+import { Secao } from "@/components/admin/Painel";
 
 export default async function AdminRelatorios() {
   await exigirSetor("diretoria");
@@ -31,51 +36,56 @@ export default async function AdminRelatorios() {
   const maxEtapa = Math.max(1, ...[...porEtapa.values()]);
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <h1 className="text-2xl font-semibold text-texto">Relatórios</h1>
+    <div className="space-y-10 md:space-y-12">
+      <CabecalhoPagina eyebrow="Diretoria" titulo="Relatórios"
+        subtitulo="Indicadores gerais da empresa: funil, vendas, comissões e mensalidades." />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { l: "Oportunidades", v: String(totalOpps) },
-          { l: "Conversão em venda", v: `${conversao}%` },
-          { l: "Volume vendido (VGV)", v: formatBRL(somaVendas) },
-          { l: "Comissão recebida", v: formatBRL(somaComissao(["paga", "conciliada"])) },
-          { l: "Comissão a receber", v: formatBRL(somaComissao(["registrada", "cobrada"])) },
-          { l: "Mensalidades recebidas", v: formatBRL(somaFaturas(["paga"])) },
-          { l: "Mensalidades em aberto", v: formatBRL(somaFaturas(["aberta", "vencida"])) },
-          { l: "Oportunidades perdidas", v: String(perdidas) },
+          { l: "Oportunidades", v: String(totalOpps), i: Filter },
+          { l: "Conversão em venda", v: `${conversao}%`, i: Percent },
+          { l: "Volume vendido (VGV)", v: formatBRL(somaVendas), i: TrendingUp },
+          { l: "Comissão recebida", v: formatBRL(somaComissao(["paga", "conciliada"])), i: CircleDollarSign },
+          { l: "Comissão a receber", v: formatBRL(somaComissao(["registrada", "cobrada"])), i: Wallet },
+          { l: "Mensalidades recebidas", v: formatBRL(somaFaturas(["paga"])), i: Receipt },
+          { l: "Mensalidades em aberto", v: formatBRL(somaFaturas(["aberta", "vencida"])), i: Hourglass },
+          { l: "Oportunidades perdidas", v: String(perdidas), i: TrendingDown },
         ].map((c) => (
-          <div key={c.l} className="cartao p-4">
-            <p className="text-xs text-texto-2">{c.l}</p>
-            <p className="text-lg font-semibold tabular-nums">{c.v}</p>
-          </div>
+          <Estatistica key={c.l} icone={c.i} valor={<span className="tabular-nums text-[1.6rem] md:text-3xl">{c.v}</span>} rotulo={c.l} />
         ))}
       </div>
 
-      <section className="cartao p-5 space-y-2">
-        <h2 className="font-semibold text-texto">Funil por etapa</h2>
-        {[...ETAPAS, "perdido"].map((e) => {
-          const n = porEtapa.get(e) ?? 0;
-          return (
-            <div key={e} className="flex items-center gap-3 text-sm">
-              <span className="w-40 shrink-0 text-texto-2">{ETAPA_LABEL[e]}</span>
-              <div className="flex-1 h-5 bg-superficie-2 rounded overflow-hidden">
-                <div className={`h-full ${e === "perdido" ? "bg-critico/60" : "bg-verde"}`}
-                  style={{ width: `${(n / maxEtapa) * 100}%` }} />
-              </div>
-              <span className="w-8 text-right tabular-nums">{n}</span>
-            </div>
-          );
-        })}
-      </section>
+      <div className="grid gap-10 lg:gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <Secao titulo="Funil por etapa">
+          <div className="cartao p-6 space-y-3">
+            {[...ETAPAS, "perdido"].map((e) => {
+              const n = porEtapa.get(e) ?? 0;
+              return (
+                <div key={e} className="grid grid-cols-[8rem_1fr_2.5rem] sm:grid-cols-[11rem_1fr_3rem] items-center gap-4 text-[0.95rem]">
+                  <span className="truncate text-texto-2">{ETAPA_LABEL[e]}</span>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-superficie-2">
+                    <div className={`h-full rounded-full ${e === "perdido" ? "bg-critico/70" : "bg-verde"}`}
+                      style={{ width: `${(n / maxEtapa) * 100}%` }} />
+                  </div>
+                  <span className="lp-display text-right text-lg leading-none tabular-nums text-texto">{n}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Secao>
 
-      <section className="cartao p-5 space-y-1">
-        <h2 className="font-semibold text-texto mb-2">Leads por origem</h2>
-        {[...porOrigem.entries()].map(([origem, n]) => (
-          <p key={origem} className="text-sm flex justify-between"><span className="capitalize">{origem}</span><span className="tabular-nums">{n}</span></p>
-        ))}
-        {!porOrigem.size && <p className="text-sm text-texto-2">Sem leads ainda.</p>}
-      </section>
+        <Secao titulo="Leads por origem">
+          <div className="cartao p-6 text-[0.95rem]">
+            {[...porOrigem.entries()].map(([origem, n]) => (
+              <p key={origem} className="flex justify-between gap-3 border-b border-linha py-2.5 last:border-0">
+                <span className="capitalize text-texto-2">{origem}</span>
+                <span className="font-semibold tabular-nums text-texto">{n}</span>
+              </p>
+            ))}
+            {!porOrigem.size && <p className="py-4 text-center text-texto-2">Sem leads ainda.</p>}
+          </div>
+        </Secao>
+      </div>
     </div>
   );
 }

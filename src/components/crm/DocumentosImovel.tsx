@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Upload, FileText, ExternalLink, Check, History } from "lucide-react";
+import { CAMPO, Etiqueta } from "@/components/ui/Pagina";
 
 type Doc = {
   id: string; tipo: string; nome_arquivo: string | null; verificado: boolean;
@@ -47,13 +49,14 @@ export default function DocumentosImovel({ propertyId, podeConferir = false }: {
   const temHistorico = docs.some((d) => (d.versao ?? 1) > 1);
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2 flex-wrap items-center">
-        <select className="rounded-lg cartao px-3 py-2 text-sm"
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <select className={`${CAMPO} !w-auto min-w-52`}
           value={tipo} onChange={(e) => setTipo(e.target.value)}>
           {TIPOS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
-        <label className={`rounded-lg px-4 py-2 text-sm font-medium cursor-pointer ${ocupado ? "bg-superficie-2 text-texto-2" : "bg-verde text-white hover:bg-verde-escuro"}`}>
+        <label className={`inline-flex cursor-pointer items-center gap-2 px-5 py-3 text-sm ${ocupado ? "rounded-[10px] bg-superficie-2 font-semibold text-texto-2" : "btn-verde"}`}>
+          <Upload className="size-4" />
           {ocupado ? "Enviando…" : jaTem ? "Enviar nova versão" : "Anexar arquivo"}
           <input type="file" className="hidden" disabled={ocupado} onChange={async (e) => {
             const f = e.target.files?.[0];
@@ -76,23 +79,28 @@ export default function DocumentosImovel({ propertyId, podeConferir = false }: {
             else setMsg((await res.json().catch(() => ({}))).error ?? "Falha no envio.");
           }} />
         </label>
-        {jaTem && <span className="text-xs text-texto-2">Já existe {rotuloTipo(tipo).toLowerCase()}: o envio vira a próxima versão.</span>}
+        {jaTem && <span className="text-sm text-texto-2">Já existe {rotuloTipo(tipo).toLowerCase()}: o envio vira a próxima versão.</span>}
       </div>
-      {msg && <p className="text-xs text-verde">{msg}</p>}
-      <ul className="divide-y divide-linha text-sm">
+      {msg && <p className="text-sm text-verde">{msg}</p>}
+      <ul className="divide-y divide-linha rounded-xl border border-linha">
         {docs.map((d) => (
-          <li key={d.id} className="py-2 flex items-center gap-3 flex-wrap">
-            <span className="flex-1 min-w-40">
-              <span className="block">
-                {rotuloTipo(d.tipo)}
-                {(d.versao ?? 1) > 1 && (
-                  <span className="ml-2 text-[11px] rounded-full border border-linha px-2 py-0.5 text-texto-2">versão {d.versao}</span>
-                )}
-              </span>
-              {d.nome_arquivo && <span className="block text-xs text-texto-2 truncate">{d.nome_arquivo}</span>}
+          <li key={d.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5 transition-colors hover:bg-superficie-2/60">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-superficie-2 text-texto-2">
+              <FileText className="size-4" />
             </span>
-            <span className="text-xs text-texto-2">{data(d.created_at)}</span>
-            {d.url && <a href={d.url} target="_blank" className="text-xs text-verde hover:underline">abrir</a>}
+            <span className="min-w-40 flex-1">
+              <span className="flex flex-wrap items-center gap-2 text-[0.95rem] font-semibold text-texto">
+                {rotuloTipo(d.tipo)}
+                {(d.versao ?? 1) > 1 && <Etiqueta>versão {d.versao}</Etiqueta>}
+              </span>
+              {d.nome_arquivo && <span className="block truncate text-xs text-texto-2">{d.nome_arquivo}</span>}
+            </span>
+            <span className="text-xs tabular-nums text-texto-2">{data(d.created_at)}</span>
+            {d.url && (
+              <a href={d.url} target="_blank" className="inline-flex items-center gap-1 text-sm font-semibold text-verde hover:underline">
+                abrir <ExternalLink className="size-3.5" />
+              </a>
+            )}
             {podeConferir ? (
               <button type="button" disabled={ocupado}
                 onClick={async () => {
@@ -104,45 +112,46 @@ export default function DocumentosImovel({ propertyId, podeConferir = false }: {
                   setOcupado(false);
                   if (res.ok) carregar(verAnteriores); else setMsg((await res.json()).error ?? "Falha ao conferir.");
                 }}
-                className={`text-xs rounded-full px-3 py-1 border transition ${d.verificado ? "border-verde text-verde bg-verde/10" : "border-linha text-texto-2 hover:text-texto"}`}>
-                {d.verificado ? "conferido ✓" : "marcar como conferido"}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${d.verificado ? "border-verde/40 bg-verde/10 text-verde" : "border-linha-forte text-texto-2 hover:border-verde hover:text-texto"}`}>
+                {d.verificado ? <>conferido <Check className="size-3.5" /></> : "marcar como conferido"}
               </button>
+            ) : d.verificado ? (
+              <Etiqueta tom="verde"><Check className="size-3.5" /> conferido pela Arini</Etiqueta>
             ) : (
-              <span className={`text-xs ${d.verificado ? "text-verde" : "text-texto-2"}`}>
-                {d.verificado ? "conferido pela Arini ✓" : "aguardando conferência"}
-              </span>
+              <Etiqueta>aguardando conferência</Etiqueta>
             )}
           </li>
         ))}
-        {!docs.length && <li className="py-2 text-xs text-texto-2">Nenhum documento ainda.</li>}
+        {!docs.length && <li className="px-4 py-5 text-sm text-texto-2">Nenhum documento ainda.</li>}
       </ul>
 
       {(temHistorico || verAnteriores) && (
         <div className="space-y-2">
           <button type="button" onClick={() => setVerAnteriores(!verAnteriores)}
-            className="text-xs text-verde hover:underline">
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline">
+            <History className="size-4" />
             {verAnteriores ? "Ocultar versões anteriores" : "Ver versões anteriores"}
           </button>
           {verAnteriores && (
-            <ul className="divide-y divide-linha text-sm rounded-xl border border-linha bg-superficie-2 px-3">
+            <ul className="divide-y divide-linha rounded-xl border border-linha bg-superficie-2 px-4 text-sm">
               {(anteriores ?? []).map((d) => (
-                <li key={d.id} className="py-2 flex items-center gap-3 flex-wrap text-texto-2">
-                  <span className="flex-1 min-w-40">
+                <li key={d.id} className="flex flex-wrap items-center gap-3 py-3 text-texto-2">
+                  <span className="min-w-40 flex-1">
                     <span className="block text-texto">
-                      {rotuloTipo(d.tipo)} <span className="text-[11px]">· versão {d.versao ?? 1}</span>
+                      {rotuloTipo(d.tipo)} <span className="text-xs">· versão {d.versao ?? 1}</span>
                     </span>
-                    <span className="block text-xs truncate">
+                    <span className="block truncate text-xs">
                       {d.nome_arquivo ?? "arquivo"} · enviada em {data(d.created_at)}
                       {d.substituido_em && ` · substituída em ${data(d.substituido_em)}`}
                       {d.enviado_por_nome && ` · por ${d.enviado_por_nome}`}
                       {d.verificado && " · tinha sido conferida"}
                     </span>
                   </span>
-                  {d.url && <a href={d.url} target="_blank" className="text-xs text-verde hover:underline">abrir</a>}
+                  {d.url && <a href={d.url} target="_blank" className="text-sm font-semibold text-verde hover:underline">abrir</a>}
                 </li>
               ))}
-              {anteriores && !anteriores.length && <li className="py-2 text-xs">Nenhuma versão anterior.</li>}
-              {!anteriores && <li className="py-2 text-xs">Carregando…</li>}
+              {anteriores && !anteriores.length && <li className="py-3 text-xs">Nenhuma versão anterior.</li>}
+              {!anteriores && <li className="py-3 text-xs">Carregando…</li>}
             </ul>
           )}
         </div>

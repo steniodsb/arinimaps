@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { ARQUIVOS_ACEITOS, STATUS_SOLICITACAO_LABEL, tamanhoLegivel, type StatusSolicitacao } from "@/lib/cartografia/solicitacoes";
+import { MessagesSquare, Send } from "lucide-react";
+import { CAMPO } from "@/components/ui/Pagina";
 
-const input = "w-full rounded-lg cartao px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde";
+const input = CAMPO;
 
 /** O solicitante conversa com a cartografia: mensagem, anexos pedidos e cancelamento. */
 export default function MensagemSolicitacao({
@@ -62,28 +64,31 @@ export default function MensagemSolicitacao({
 
   if (encerrada) {
     return (
-      <p className="text-sm text-texto-2">
+      <p className="rounded-xl bg-superficie-2 px-5 py-4 text-base text-texto-2">
         Solicitação {STATUS_SOLICITACAO_LABEL[status].toLowerCase()}. Se o problema continuar, abra uma nova solicitação.
       </p>
     );
   }
 
   return (
-    <form onSubmit={enviar} className="cartao p-5 space-y-3">
-      <h2 className="font-semibold text-texto">Falar com a cartografia</h2>
+    <form onSubmit={enviar} className="cartao space-y-5 p-5 md:p-7">
+      <h2 className="lp-display flex items-center gap-3 text-xl md:text-2xl text-texto">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde"><MessagesSquare className="size-5" /></span>
+        Falar com a cartografia
+      </h2>
       <textarea rows={3} className={input} value={texto} onChange={(e) => setTexto(e.target.value)}
         placeholder={podeAnexar ? "Explique o que está enviando" : "Mensagem para a equipe"} />
       {podeAnexar && (
         <div>
           <input type="file" multiple accept={ARQUIVOS_ACEITOS.accept} className={input}
             onChange={(e) => { setArquivos((a) => [...a, ...Array.from(e.target.files ?? [])].slice(0, ARQUIVOS_ACEITOS.maxQuantidade)); e.target.value = ""; }} />
-          <p className="text-xs text-texto-2 mt-1">{ARQUIVOS_ACEITOS.descricao}</p>
+          <p className="mt-1.5 text-sm text-texto-2">{ARQUIVOS_ACEITOS.descricao}</p>
           {arquivos.length > 0 && (
-            <ul className="mt-1 text-xs space-y-0.5">
+            <ul className="mt-3 divide-y divide-linha rounded-xl border border-linha text-sm">
               {arquivos.map((f, i) => (
-                <li key={`${f.name}-${i}`} className="flex justify-between gap-2">
+                <li key={`${f.name}-${i}`} className="flex justify-between gap-3 px-4 py-2.5">
                   <span className="truncate text-texto">{f.name} <span className="text-texto-2">· {tamanhoLegivel(f.size)}</span></span>
-                  <button type="button" className="text-critico hover:underline" onClick={() => setArquivos((a) => a.filter((_, j) => j !== i))}>remover</button>
+                  <button type="button" className="shrink-0 font-semibold text-critico hover:underline" onClick={() => setArquivos((a) => a.filter((_, j) => j !== i))}>remover</button>
                 </li>
               ))}
             </ul>
@@ -91,19 +96,20 @@ export default function MensagemSolicitacao({
         </div>
       )}
       {erro && (
-        <div className="text-sm space-y-0.5">
-          <p className="text-critico">{erro.mensagem}</p>
-          {erro.motivo && <p className="text-texto-2 text-xs">{erro.motivo}</p>}
-          {erro.solucao && <p className="text-texto text-xs">{erro.solucao}</p>}
+        <div className="space-y-0.5 rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm">
+          <p className="font-semibold text-critico">{erro.mensagem}</p>
+          {erro.motivo && <p className="text-texto-2">{erro.motivo}</p>}
+          {erro.solucao && <p className="text-texto">{erro.solucao}</p>}
         </div>
       )}
-      {aviso && <p className="text-sm text-verde">{aviso}</p>}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <button disabled={ocupado || (texto.trim().length < 2 && !arquivos.length)} className="btn-verde px-5 py-2.5 text-sm disabled:opacity-60">
+      {aviso && <p className="text-sm font-semibold text-verde">{aviso}</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button disabled={ocupado || (texto.trim().length < 2 && !arquivos.length)} className="btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-60">
+          <Send className="size-4" />
           {ocupado ? "Enviando…" : podeAnexar && arquivos.length ? "Enviar documentação" : "Enviar mensagem"}
         </button>
         {podeCancelar && (
-          <button type="button" disabled={ocupado} onClick={cancelar} className="text-sm text-critico hover:underline disabled:opacity-60">
+          <button type="button" disabled={ocupado} onClick={cancelar} className="text-sm font-semibold text-critico hover:underline disabled:opacity-60">
             Cancelar solicitação
           </button>
         )}

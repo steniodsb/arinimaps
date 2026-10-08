@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CircleCheck, Send } from "lucide-react";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 
-const input = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde transition";
-const rotulo = "block text-sm font-medium text-texto mb-1";
+const input = CAMPO;
+const rotulo = ROTULO;
 
 const CATEGORIAS = [
   ["duvida", "Tenho uma dúvida"],
@@ -51,8 +53,12 @@ export default function FormSuporte({
   }
 
   return (
-    <form onSubmit={enviar} className="cartao p-6 space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={enviar} className="cartao space-y-5 p-6 md:p-8">
+      <div>
+        <p className="lp-eyebrow !text-xs">Novo chamado</p>
+        <h2 className="lp-display mt-2 text-2xl text-texto md:text-[1.75rem]">Fale com a equipe</h2>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label className={rotulo} htmlFor="s-nome">Nome *</label>
           <input id="s-nome" required className={input} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
@@ -81,7 +87,7 @@ export default function FormSuporte({
           <select id="s-lgpd" className={input} value={form.lgpd_tipo} onChange={(e) => setForm({ ...form, lgpd_tipo: e.target.value })}>
             {LGPD.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
-          <p className="text-xs text-texto-2 mt-1">
+          <p className="mt-2 text-sm leading-relaxed text-texto-2">
             Pedidos sobre dados pessoais vão para o encarregado de dados e são respondidos em até 15 dias.
             Podemos pedir uma confirmação de identidade antes de atender.
           </p>
@@ -101,10 +107,14 @@ export default function FormSuporte({
           value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} />
       </div>
 
-      {erro && <p className="text-sm text-critico">{erro}</p>}
-      {ok && <p className="text-sm text-verde">{ok}</p>}
-      <button disabled={estado === "enviando"} className="btn-verde px-6 py-3 disabled:opacity-60">
-        {estado === "enviando" ? "Enviando…" : "Enviar"}
+      {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
+      {ok && (
+        <p className="flex items-start gap-2 rounded-xl border border-verde/30 bg-verde/10 px-4 py-3 text-sm text-verde">
+          <CircleCheck className="mt-0.5 size-4 shrink-0" /> {ok}
+        </p>
+      )}
+      <button disabled={estado === "enviando"} className="lp-btn lp-btn-verde disabled:opacity-60">
+        {estado === "enviando" ? "Enviando…" : <>Enviar <Send /></>}
       </button>
     </form>
   );

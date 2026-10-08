@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const ACOES: { acao: string; label: string; classe: string; pedirMotivo?: boolean }[] = [
-  { acao: "em_analise", label: "Iniciar análise", classe: "bg-superficie-2 hover:bg-linha" },
-  { acao: "aprovado", label: "Aprovar", classe: "bg-verde text-fundo hover:bg-verde/80" },
-  { acao: "publicado", label: "Publicar no mapa", classe: "bg-verde text-white hover:bg-verde-escuro" },
-  { acao: "correcao", label: "Pedir correção", classe: "bg-alerta text-white hover:bg-alerta/80", pedirMotivo: true },
+  { acao: "em_analise", label: "Iniciar análise", classe: "btn-contorno" },
+  { acao: "aprovado", label: "Aprovar", classe: "btn-verde" },
+  { acao: "publicado", label: "Publicar no mapa", classe: "btn-ouro" },
+  { acao: "correcao", label: "Pedir correção", classe: "btn-contorno !text-alerta !border-alerta/50", pedirMotivo: true },
   // Fluxograma §7: faltam dados (não há erro) — o anunciante vê "Aguardando complemento"
-  { acao: "complementar", label: "Pedir complemento", classe: "bg-ouro text-texto hover:bg-ouro/80", pedirMotivo: true },
-  { acao: "reprovado", label: "Reprovar", classe: "bg-critico text-fundo hover:bg-critico/80", pedirMotivo: true },
-  { acao: "suspenso", label: "Suspender", classe: "bg-superficie-2 text-texto border border-linha hover:bg-linha" },
+  { acao: "complementar", label: "Pedir complemento", classe: "btn-contorno !text-ouro !border-ouro/50", pedirMotivo: true },
+  { acao: "reprovado", label: "Reprovar", classe: "btn-perigo", pedirMotivo: true },
+  { acao: "suspenso", label: "Suspender", classe: "btn-contorno" },
 ];
 
 export default function DecisaoBotoes({ propertyId }: { propertyId: string }) {
@@ -42,18 +42,18 @@ export default function DecisaoBotoes({ propertyId }: { propertyId: string }) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2.5">
         {ACOES.map((a) => (
           <button key={a.acao} disabled={ocupado}
             onClick={() => decidir(a.acao, a.pedirMotivo)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${a.classe}`}>
+            className={`px-4 py-2.5 text-sm disabled:opacity-50 ${a.classe}`}>
             {a.label}
           </button>
         ))}
       </div>
       {erro && <p className="text-sm text-critico">{erro}</p>}
-      <p className="text-xs text-texto-2">
+      <p className="text-sm text-texto-2">
         Transições inválidas são bloqueadas pelo banco (máquina de estados).
       </p>
     </div>

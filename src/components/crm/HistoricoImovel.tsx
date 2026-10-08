@@ -4,6 +4,8 @@ import { EVENTO_IMOVEL_LABEL, ORIGEM_DADO_LABEL } from "@/lib/imovel/eventos";
 import { formatArea } from "@/lib/format";
 import { CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 import ValidarGeometria from "./ValidarGeometria";
+import { Fingerprint, Layers, GitCompare, ScrollText, Eye, type LucideIcon } from "lucide-react";
+import { Etiqueta } from "@/components/ui/Pagina";
 
 /**
  * Histórico e rastreabilidade do imóvel (requisitos cartográficos §1.1–1.5):
@@ -40,21 +42,22 @@ export const SITUACAO_DIVISA_LABEL: Record<string, string> = {
   validada: "Validada pela Matriz",
   substituida: "Substituída",
 };
-const SITUACAO_COR: Record<string, string> = {
-  informada: "bg-alerta/15 text-alerta",
-  em_analise: "bg-alerta/15 text-alerta",
-  validada: "bg-verde/15 text-verde",
-  substituida: "bg-superficie-2 text-texto-2",
+type Tom = "verde" | "alerta" | "critico" | "neutro";
+const SITUACAO_TOM: Record<string, Tom> = {
+  informada: "alerta",
+  em_analise: "alerta",
+  validada: "verde",
+  substituida: "neutro",
 };
 const CAMPO_LABEL: Record<string, string> = {
   geometria: "Divisa", area: "Área", valor: "Valor", cadastro: "Cadastro", documentos: "Documentos",
   consulta_territorial: "Consulta territorial", pois: "Pontos de interesse",
 };
-const STATUS_REVISAO: Record<string, { label: string; cor: string }> = {
-  pendente: { label: "Aguardando a Matriz", cor: "bg-alerta/15 text-alerta" },
-  aprovada: { label: "Aprovada e aplicada", cor: "bg-verde/15 text-verde" },
-  rejeitada: { label: "Rejeitada", cor: "bg-critico/15 text-critico" },
-  cancelada: { label: "Cancelada pelo anunciante", cor: "bg-superficie-2 text-texto-2" },
+const STATUS_REVISAO: Record<string, { label: string; tom: Tom }> = {
+  pendente: { label: "Aguardando a Matriz", tom: "alerta" },
+  aprovada: { label: "Aprovada e aplicada", tom: "verde" },
+  rejeitada: { label: "Rejeitada", tom: "critico" },
+  cancelada: { label: "Cancelada pelo anunciante", tom: "neutro" },
 };
 const CONTADORES: { tipo: string; rotulo: string }[] = [
   { tipo: "ficha", rotulo: "Visualizações da ficha" },
@@ -127,178 +130,191 @@ export default async function HistoricoImovel({ propertyId, modo, tipoImovel = "
   const nome = (id: string | null) => (id ? nomes.get(id) ?? "Usuário" : modo === "admin" ? "Sistema" : "—");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {/* ---------- rastreabilidade ---------- */}
-      <section className="cartao p-5 space-y-4">
-        <div>
-          <h2 className="font-semibold text-texto">Rastreabilidade</h2>
-          <p className="text-sm text-texto-2">
-            Versão atual da divisa, origem de cada dado e o que já aconteceu com este imóvel.
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-superficie-2 p-4 flex flex-wrap items-center gap-3">
-          {atual ? (
-            <>
-              <span className="text-sm text-texto">Divisa — versão <strong>{atual.versao}</strong></span>
-              <span className={`text-xs rounded-full px-3 py-1 ${SITUACAO_COR[atual.situacao] ?? "bg-superficie-2"}`}>
-                {SITUACAO_DIVISA_LABEL[atual.situacao] ?? atual.situacao}
-              </span>
-              <span className="text-xs text-texto-2">{ORIGEM_DADO_LABEL[atual.origem] ?? atual.origem} · fonte {atual.fonte}</span>
-              {atual.validada_em && (
-                <span className="text-xs text-texto-2">validada em {quando(atual.validada_em)}{atual.validada_por ? ` por ${nome(atual.validada_por)}` : ""}</span>
-              )}
-              {modo === "admin" && atual.situacao !== "validada" && (
-                <span className="ml-auto"><ValidarGeometria propertyId={propertyId} /></span>
-              )}
-            </>
-          ) : (
-            <span className="text-sm text-texto-2">Imóvel sem divisa registrada.</span>
-          )}
-        </div>
-
-        {origemPorCampo.size > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-texto-2 mb-1.5">Origem por dado</p>
-            <ul className="text-sm grid sm:grid-cols-2 gap-x-6 gap-y-1">
-              {[...origemPorCampo.values()].map((o) => (
-                <li key={o.campo} className="flex justify-between gap-3 border-b border-linha py-1">
-                  <span className="text-texto">{CAMPO_LABEL[o.campo] ?? o.campo}</span>
-                  <span className="text-texto-2 text-right" title={o.detalhe ?? undefined}>
-                    {ORIGEM_DADO_LABEL[o.origem] ?? o.origem}
-                  </span>
-                </li>
-              ))}
-            </ul>
+      <Bloco icone={Fingerprint} titulo="Rastreabilidade"
+        texto="Versão atual da divisa, origem de cada dado e o que já aconteceu com este imóvel.">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-superficie-2 p-4">
+            {atual ? (
+              <>
+                <span className="text-base text-texto">Divisa — versão <strong>{atual.versao}</strong></span>
+                <Etiqueta tom={SITUACAO_TOM[atual.situacao] ?? "neutro"}>
+                  {SITUACAO_DIVISA_LABEL[atual.situacao] ?? atual.situacao}
+                </Etiqueta>
+                <span className="text-sm text-texto-2">{ORIGEM_DADO_LABEL[atual.origem] ?? atual.origem} · fonte {atual.fonte}</span>
+                {atual.validada_em && (
+                  <span className="text-sm text-texto-2">validada em {quando(atual.validada_em)}{atual.validada_por ? ` por ${nome(atual.validada_por)}` : ""}</span>
+                )}
+                {modo === "admin" && atual.situacao !== "validada" && (
+                  <span className="ml-auto"><ValidarGeometria propertyId={propertyId} /></span>
+                )}
+              </>
+            ) : (
+              <span className="text-base text-texto-2">Imóvel sem divisa registrada.</span>
+            )}
           </div>
-        )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {contadores.map((c) => (
-            <div key={c.tipo} className="rounded-xl border border-linha p-3">
-              <p className="text-xl font-semibold text-texto tabular-nums">{c.n}</p>
-              <p className="text-[11px] text-texto-2">{c.rotulo}</p>
+          {origemPorCampo.size > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-texto-2">Origem por dado</p>
+              <ul className="grid gap-x-8 text-[0.95rem] sm:grid-cols-2">
+                {[...origemPorCampo.values()].map((o) => (
+                  <li key={o.campo} className="flex justify-between gap-3 border-b border-linha py-2.5">
+                    <span className="text-texto">{CAMPO_LABEL[o.campo] ?? o.campo}</span>
+                    <span className="text-right text-texto-2" title={o.detalhe ?? undefined}>
+                      {ORIGEM_DADO_LABEL[o.origem] ?? o.origem}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
+          )}
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {contadores.map((c) => (
+              <div key={c.tipo} className="rounded-xl border border-linha border-l-4 border-l-verde/60 p-4">
+                <p className="lp-display text-2xl leading-none tabular-nums text-texto">{c.n}</p>
+                <p className="mt-2 text-xs text-texto-2">{c.rotulo}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+      </Bloco>
 
       {/* ---------- versões da divisa ---------- */}
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Versões da divisa</h2>
+      <Bloco icone={Layers} titulo="Versões da divisa">
         {!lista.length ? (
-          <p className="text-sm text-texto-2">Nenhuma versão registrada.</p>
+          <p className="text-base text-texto-2">Nenhuma versão registrada.</p>
         ) : (
-          <ul className="divide-y divide-linha text-sm">
+          <ul className="divide-y divide-linha rounded-xl border border-linha">
             {lista.map((v) => (
-              <li key={v.id} className="py-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-mono text-xs text-texto-2 w-8">v{v.versao}</span>
-                <span className={`text-xs rounded-full px-2.5 py-0.5 ${SITUACAO_COR[v.situacao] ?? "bg-superficie-2"}`}>
+              <li key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3.5">
+                <span className="w-8 font-mono text-sm text-texto-2">v{v.versao}</span>
+                <Etiqueta tom={SITUACAO_TOM[v.situacao] ?? "neutro"}>
                   {SITUACAO_DIVISA_LABEL[v.situacao] ?? v.situacao}
-                </span>
-                <span className="text-texto">{formatArea(v.area_m2, tipoImovel)}</span>
+                </Etiqueta>
+                <span className="text-[0.95rem] font-semibold tabular-nums text-texto">{formatArea(v.area_m2, tipoImovel)}</span>
                 {v.perimeter_m != null && (
-                  <span className="text-texto-2 text-xs">perímetro {(Number(v.perimeter_m) / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} km</span>
+                  <span className="text-xs text-texto-2 tabular-nums">perímetro {(Number(v.perimeter_m) / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} km</span>
                 )}
-                <span className="text-texto-2 text-xs">{ORIGEM_DADO_LABEL[v.origem] ?? v.origem} · {v.fonte}</span>
-                <span className="text-texto-2 text-xs ml-auto">{quando(v.created_at)}{v.responsavel ? ` · ${nome(v.responsavel)}` : ""}</span>
-                {v.motivo && <p className="w-full text-xs text-texto-2">{v.motivo}</p>}
+                <span className="text-xs text-texto-2">{ORIGEM_DADO_LABEL[v.origem] ?? v.origem} · {v.fonte}</span>
+                <span className="ml-auto text-xs text-texto-2 tabular-nums">{quando(v.created_at)}{v.responsavel ? ` · ${nome(v.responsavel)}` : ""}</span>
+                {v.motivo && <p className="w-full text-sm text-texto-2">{v.motivo}</p>}
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Bloco>
 
       {/* ---------- alterações propostas ---------- */}
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Alterações propostas</h2>
+      <Bloco icone={GitCompare} titulo="Alterações propostas">
         {!revs.length ? (
-          <p className="text-sm text-texto-2">Nenhuma alteração proposta depois da publicação.</p>
+          <p className="text-base text-texto-2">Nenhuma alteração proposta depois da publicação.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {revs.map((r) => {
               const campos = Object.keys(r.dados ?? {});
-              const st = STATUS_REVISAO[r.status] ?? { label: r.status, cor: "bg-superficie-2" };
+              const st = STATUS_REVISAO[r.status] ?? { label: r.status, tom: "neutro" as const };
               return (
-                <div key={r.id} className="rounded-xl border border-linha p-3 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="font-medium text-texto">Versão {r.versao}</span>
-                    <span className={`text-xs rounded-full px-2.5 py-0.5 ${st.cor}`}>{st.label}</span>
-                    <span className="text-xs text-texto-2 ml-auto">
+                <div key={r.id} className="space-y-3 rounded-xl border border-linha p-4">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="text-base font-semibold text-texto">Versão {r.versao}</span>
+                    <Etiqueta tom={st.tom}>{st.label}</Etiqueta>
+                    <span className="ml-auto text-xs text-texto-2">
                       proposta em {quando(r.created_at)}{r.created_by ? ` por ${nome(r.created_by)}` : ""}
                       {r.revisada_em ? ` · decidida em ${quando(r.revisada_em)}${r.revisada_por ? ` por ${nome(r.revisada_por)}` : ""}` : ""}
                     </span>
                   </div>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-left text-texto-2 border-b border-linha">
-                        <th className="py-1 pr-2 font-medium">Campo</th>
-                        <th className="py-1 pr-2 font-medium">Antes</th>
-                        <th className="py-1 font-medium">Proposto</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-linha">
-                      {campos.map((c) => (
-                        <tr key={c}>
-                          <td className="py-1 pr-2 text-texto">{CAMPO_REVISAO_LABEL[c as keyof typeof CAMPO_REVISAO_LABEL] ?? c}</td>
-                          <td className="py-1 pr-2 text-texto-2 whitespace-pre-line">{valorRevisao(c, r.dados_anteriores?.[c])}</td>
-                          <td className="py-1 text-texto whitespace-pre-line">{valorRevisao(c, r.dados[c])}</td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[480px] text-sm">
+                      <thead>
+                        <tr className="border-b border-linha text-left text-[11px] uppercase tracking-[0.12em] text-texto-2">
+                          <th className="py-2.5 pr-3 font-semibold">Campo</th>
+                          <th className="py-2.5 pr-3 font-semibold">Antes</th>
+                          <th className="py-2.5 font-semibold">Proposto</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {r.motivo && <p className="text-xs text-critico">Motivo da Matriz: {r.motivo}</p>}
+                      </thead>
+                      <tbody className="divide-y divide-linha">
+                        {campos.map((c) => (
+                          <tr key={c} className="transition-colors hover:bg-superficie-2/60">
+                            <td className="py-3 pr-3 font-semibold text-texto">{CAMPO_REVISAO_LABEL[c as keyof typeof CAMPO_REVISAO_LABEL] ?? c}</td>
+                            <td className="py-3 pr-3 text-texto-2 whitespace-pre-line">{valorRevisao(c, r.dados_anteriores?.[c])}</td>
+                            <td className="py-3 text-texto whitespace-pre-line">{valorRevisao(c, r.dados[c])}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {r.motivo && <p className="text-sm text-critico">Motivo da Matriz: {r.motivo}</p>}
                 </div>
               );
             })}
           </div>
         )}
-      </section>
+      </Bloco>
 
       {/* ---------- trilha de auditoria ---------- */}
-      <section className="cartao p-5 space-y-3">
-        <h2 className="font-semibold text-texto">Trilha de auditoria</h2>
+      <Bloco icone={ScrollText} titulo="Trilha de auditoria">
         {!audit.length ? (
-          <p className="text-sm text-texto-2">Nenhuma ação registrada.</p>
+          <p className="text-base text-texto-2">Nenhuma ação registrada.</p>
         ) : (
-          <ul className="divide-y divide-linha text-sm max-h-96 overflow-y-auto">
+          <ul className="max-h-96 divide-y divide-linha overflow-y-auto rounded-xl border border-linha">
             {audit.map((a) => (
-              <li key={a.id} className="py-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                <span className="font-medium text-texto">{a.acao.replace(/_/g, " ")}</span>
+              <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-3">
+                <span className="text-[0.95rem] font-semibold text-texto">{a.acao.replace(/_/g, " ")}</span>
                 <span className="text-xs text-texto-2">{nome(a.user_id)}</span>
-                <span className="text-xs text-texto-2 ml-auto tabular-nums">{quando(a.created_at)}</span>
-                <p className="w-full text-xs text-texto-2 truncate" title={resumoAuditoria(a)}>{resumoAuditoria(a)}</p>
+                <span className="ml-auto text-xs text-texto-2 tabular-nums">{quando(a.created_at)}</span>
+                <p className="w-full truncate text-xs text-texto-2" title={resumoAuditoria(a)}>{resumoAuditoria(a)}</p>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Bloco>
 
       {/* ---------- últimos acessos (só Matriz) ---------- */}
       {modo === "admin" && (
-        <section className="cartao p-5 space-y-3">
-          <h2 className="font-semibold text-texto">Últimos acessos e interações</h2>
+        <Bloco icone={Eye} titulo="Últimos acessos e interações">
           {!evs.length ? (
-            <p className="text-sm text-texto-2">Nenhum acesso registrado ainda.</p>
+            <p className="text-base text-texto-2">Nenhum acesso registrado ainda.</p>
           ) : (
-            <ul className="divide-y divide-linha text-sm">
+            <ul className="divide-y divide-linha rounded-xl border border-linha">
               {evs.map((e) => (
-                <li key={e.id} className="py-1.5 flex flex-wrap items-baseline gap-x-3">
-                  <span className="text-texto">{EVENTO_IMOVEL_LABEL[e.tipo] ?? e.tipo}</span>
+                <li key={e.id} className="flex flex-wrap items-baseline gap-x-3 px-4 py-3">
+                  <span className="text-[0.95rem] text-texto">{EVENTO_IMOVEL_LABEL[e.tipo] ?? e.tipo}</span>
                   <span className="text-xs text-texto-2">{e.user_id ? nome(e.user_id) : "visitante"}</span>
-                  {e.ip && <span className="text-xs text-texto-2 font-mono">{e.ip}</span>}
+                  {e.ip && <span className="font-mono text-xs text-texto-2">{e.ip}</span>}
                   {e.detalhe && Object.keys(e.detalhe).length > 0 && (
-                    <span className="text-xs text-texto-2 truncate max-w-xs">
+                    <span className="max-w-xs truncate text-xs text-texto-2">
                       {Object.entries(e.detalhe).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}: ${String(v)}`).join(" · ")}
                     </span>
                   )}
-                  <span className="text-xs text-texto-2 ml-auto tabular-nums">{quando(e.created_at)}</span>
+                  <span className="ml-auto text-xs text-texto-2 tabular-nums">{quando(e.created_at)}</span>
                 </li>
               ))}
             </ul>
           )}
-        </section>
+        </Bloco>
       )}
     </div>
+  );
+}
+
+function Bloco({ icone: Icone, titulo, texto, children }: {
+  icone: LucideIcon; titulo: string; texto?: string; children: React.ReactNode;
+}) {
+  return (
+    <section className="cartao p-5 md:p-7">
+      <header className="mb-5 flex items-start gap-4">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+          <Icone className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="lp-display text-xl md:text-2xl text-texto">{titulo}</h2>
+          {texto && <p className="mt-1.5 text-base leading-relaxed text-texto-2">{texto}</p>}
+        </div>
+      </header>
+      {children}
+    </section>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CircleCheck, MessageCircle, Send } from "lucide-react";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 
 export default function InteresseForm({
   codigo, titulo, whatsapp,
@@ -26,9 +28,6 @@ export default function InteresseForm({
     }
   }
 
-  const rotulo = "block text-sm font-medium text-texto mb-1";
-  const input = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
-
   const linkWhats = whatsapp
     ? `https://wa.me/${whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
         `Olá! Tenho interesse no imóvel ${codigo} — ${titulo}.`
@@ -38,62 +37,68 @@ export default function InteresseForm({
   return (
     <div className="space-y-3">
       {estado === "ok" ? (
-        <div className="rounded-2xl bg-verde text-white p-6 text-center space-y-1">
-          <p className="text-2xl">✓</p>
-          <p className="text-lg font-semibold">Interesse registrado!</p>
-          <p className="text-sm text-white/85">A equipe da Arini vai falar com você em breve.</p>
+        <div className="lp-escuro lp-malha-escura relative overflow-hidden rounded-[20px] p-7 text-center">
+          <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+          <div className="relative">
+            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-verde/15 text-verde">
+              <CircleCheck className="size-7" />
+            </span>
+            <p className="lp-display mt-4 text-2xl text-texto">Interesse registrado!</p>
+            <p className="mt-2 text-base text-texto-2">A equipe da Arini vai falar com você em breve.</p>
+          </div>
         </div>
       ) : (
-        <form onSubmit={enviar} className="cartao p-5 space-y-3 shadow-sm">
+        <form onSubmit={enviar} className="cartao space-y-4 p-6">
           <div>
-            <p className="text-lg font-semibold text-texto">Receba todos os detalhes</p>
-            <p className="text-sm text-texto-2">
+            <p className="lp-eyebrow !text-xs">Tenho interesse</p>
+            <p className="lp-display mt-2 text-2xl text-texto">Receba todos os detalhes</p>
+            <p className="mt-1.5 text-[15px] leading-relaxed text-texto-2">
               Preencha seus dados e falaremos com você pelo WhatsApp.
             </p>
           </div>
 
           <div>
-            <label className={rotulo} htmlFor="nome">Nome completo *</label>
-            <input id="nome" required placeholder="Seu nome" className={input}
+            <label className={ROTULO} htmlFor="nome">Nome completo *</label>
+            <input id="nome" required placeholder="Seu nome" className={CAMPO}
               value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
           </div>
           <div>
-            <label className={rotulo} htmlFor="tel">Telefone / WhatsApp *</label>
-            <input id="tel" required placeholder="(00) 00000-0000" className={input} inputMode="tel"
+            <label className={ROTULO} htmlFor="tel">Telefone / WhatsApp *</label>
+            <input id="tel" required placeholder="(00) 00000-0000" className={CAMPO} inputMode="tel"
               value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
           </div>
           <div>
-            <label className={rotulo} htmlFor="email">E-mail</label>
-            <input id="email" type="email" placeholder="seu@email.com" className={input}
+            <label className={ROTULO} htmlFor="email">E-mail</label>
+            <input id="email" type="email" placeholder="seu@email.com" className={CAMPO}
               value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
           <div>
-            <label className={rotulo} htmlFor="msg">Mensagem</label>
-            <textarea id="msg" rows={2} placeholder="Quero agendar uma visita…" className={input}
+            <label className={ROTULO} htmlFor="msg">Mensagem</label>
+            <textarea id="msg" rows={2} placeholder="Quero agendar uma visita…" className={CAMPO}
               value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} />
           </div>
 
-          <label className="flex items-start gap-2 text-xs text-texto-2">
+          <label className="flex items-start gap-2.5 text-[13px] leading-relaxed text-texto-2">
             <input type="checkbox" required checked={form.consentimento}
-              onChange={(e) => setForm({ ...form, consentimento: e.target.checked })} className="mt-0.5" />
+              onChange={(e) => setForm({ ...form, consentimento: e.target.checked })} className="mt-1 size-4 shrink-0 accent-[var(--verde)]" />
             <span>
               Autorizo a Arini a entrar em contato sobre este imóvel, conforme a{" "}
-              <a href="/termos/privacidade" target="_blank" className="text-verde underline">Política de Privacidade</a>.
+              <a href="/termos/privacidade" target="_blank" className="font-semibold text-verde hover:underline">Política de Privacidade</a>.
             </span>
           </label>
 
-          {erro && <p className="text-sm text-critico">{erro}</p>}
+          {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
 
-          <button disabled={estado === "enviando"} className="btn-ouro w-full py-3 disabled:opacity-60">
-            {estado === "enviando" ? "Enviando…" : "Quero saber mais"}
+          <button disabled={estado === "enviando"} className="lp-btn lp-btn-ouro w-full disabled:opacity-60">
+            {estado === "enviando" ? "Enviando…" : <>Quero saber mais <Send /></>}
           </button>
         </form>
       )}
 
       {linkWhats && (
         <a href={linkWhats} target="_blank" rel="noreferrer"
-          className="flex items-center justify-center gap-2 w-full rounded-2xl bg-[#25D366] text-white font-semibold py-3.5 hover:brightness-95 hover:-translate-y-0.5 transition shadow-sm">
-          <span className="text-lg">💬</span> Chamar no WhatsApp
+          className="lp-btn w-full bg-[#25D366] text-white shadow-[0_8px_22px_-10px_rgba(37,211,102,0.6)] hover:brightness-95">
+          <MessageCircle /> Chamar no WhatsApp
         </a>
       )}
     </div>

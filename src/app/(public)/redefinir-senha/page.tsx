@@ -5,8 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { SENHA_MIN, validarSenha } from "@/lib/seguranca/senha";
+import { ArrowRight, CircleCheck, KeyRound, LoaderCircle, LogOut, ShieldCheck } from "lucide-react";
+import TelaDividida from "@/components/publico/TelaDividida";
+import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 
-const INPUT = "w-full rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-sm text-texto placeholder:text-texto-2/70 focus:outline-none focus:ring-2 focus:ring-verde focus:border-verde transition";
+const INPUT = CAMPO;
+
+const BENEFICIOS = [
+  { icone: KeyRound, titulo: "Link de uso único", texto: "Cada link vale por 1 hora e funciona uma única vez." },
+  { icone: ShieldCheck, titulo: "Senha forte", texto: `Mínimo de ${SENHA_MIN} caracteres, com letras e números.` },
+  { icone: LogOut, titulo: "Outros aparelhos saem", texto: "Ao salvar, as outras sessões abertas desta conta são desconectadas." },
+];
 
 /**
  * Chegada do link de recuperação. O link traz um token de uso único
@@ -83,63 +92,68 @@ export default function RedefinirSenha() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-fundo">
-      <div className="px-4 py-4 border-b border-linha">
-        <Link href="/" className="font-semibold text-texto">Arini <span className="texto-ouro">Imóveis Brasil</span></Link>
-      </div>
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md cartao p-6 space-y-4">
-          <h1 className="text-xl font-semibold text-texto">Criar senha nova</h1>
+    <TelaDividida eyebrow="Segurança da conta" titulo="Uma senha nova," destaque="em um minuto"
+      subtitulo="Escolha a senha nova da sua conta. Depois é só entrar de novo." beneficios={BENEFICIOS}>
+        <div className="space-y-5">
+          <div>
+            <p className="lp-eyebrow !text-xs">Recuperação de senha</p>
+            <h1 className="lp-display mt-2 text-3xl text-texto md:text-[2.25rem]">Criar senha nova</h1>
+          </div>
 
-          {estado === "validando" && <p className="text-sm text-texto-2">Conferindo o link…</p>}
+          {estado === "validando" && (
+            <p className="flex items-center gap-2 text-[15px] text-texto-2">
+              <LoaderCircle className="size-4 animate-spin" /> Conferindo o link…
+            </p>
+          )}
 
           {estado === "invalido" && (
             <>
-              <p className="text-sm text-texto-2">
+              <p className="text-[15px] leading-relaxed text-texto-2">
                 Este link expirou ou já foi usado. Cada link vale por 1 hora e funciona uma única vez.
               </p>
-              <Link href="/entrar?recuperar=1" className="btn-verde block text-center py-3">Pedir um link novo</Link>
+              <Link href="/entrar?recuperar=1" className="lp-btn lp-btn-verde w-full">Pedir um link novo <ArrowRight /></Link>
             </>
           )}
 
           {estado === "pronto" && (
-            <form onSubmit={salvar} className="space-y-3.5">
+            <form onSubmit={salvar} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-texto mb-1" htmlFor="nova">Senha nova</label>
+                <label className={ROTULO} htmlFor="nova">Senha nova</label>
                 <input id="nova" type="password" required autoComplete="new-password" className={INPUT}
                   placeholder={`Mínimo ${SENHA_MIN} caracteres, com letras e números`}
                   value={senha} onChange={(e) => setSenha(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-texto mb-1" htmlFor="conf">Repita a senha</label>
+                <label className={ROTULO} htmlFor="conf">Repita a senha</label>
                 <input id="conf" type="password" required autoComplete="new-password" className={INPUT}
                   value={confirma} onChange={(e) => setConfirma(e.target.value)} />
               </div>
               {etapa && (
                 <div>
-                  <label className="block text-sm font-medium text-texto mb-1" htmlFor="codigo">
+                  <label className={ROTULO} htmlFor="codigo">
                     {etapa === "mfa" ? "Código do aplicativo autenticador" : "Código enviado ao seu e-mail"}
                   </label>
                   <input id="codigo" required inputMode="numeric" autoComplete="one-time-code" maxLength={8} className={INPUT}
                     placeholder="000000" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
-                  {aviso && <p className="text-xs text-texto-2 mt-1">{aviso}</p>}
+                  {aviso && <p className="mt-1.5 text-xs text-texto-2">{aviso}</p>}
                 </div>
               )}
-              {erro && <p className="text-sm text-critico">{erro}</p>}
-              <button disabled={ocupado} className="btn-verde w-full py-3 disabled:opacity-60">
-                {ocupado ? "Salvando…" : "Salvar senha nova"}
+              {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
+              <button disabled={ocupado} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
+                {ocupado ? "Salvando…" : <>Salvar senha nova <ArrowRight /></>}
               </button>
-              <p className="text-xs text-texto-2">
+              <p className="text-sm text-texto-2">
                 Ao salvar, os outros aparelhos em que esta conta estiver aberta são desconectados.
               </p>
             </form>
           )}
 
           {estado === "feito" && (
-            <p className="text-sm text-verde">Senha alterada. Levando você para a tela de entrada…</p>
+            <p className="flex items-start gap-2 rounded-xl border border-verde/30 bg-verde/10 px-4 py-3 text-[15px] text-verde">
+              <CircleCheck className="mt-0.5 size-5 shrink-0" /> Senha alterada. Levando você para a tela de entrada…
+            </p>
           )}
         </div>
-      </main>
-    </div>
+    </TelaDividida>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { enviarVideo, VIDEO_ACEITA, VIDEO_MAX_MB } from "@/lib/midia/enviarVideo";
+import { Upload, Trash2 } from "lucide-react";
 
 type Video = { id: string; url: string };
 
@@ -35,23 +36,29 @@ export default function VideosImovel({ propertyId, videos }: { propertyId: strin
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {videos.map((v) => (
-          <div key={v.id} className="space-y-1.5">
-            <video src={v.url} controls preload="metadata" className="w-full rounded-xl border border-linha bg-black aspect-video" />
-            <button onClick={() => remover(v.id)} disabled={!!ocupado} className="text-xs text-critico hover:underline">Remover</button>
-          </div>
-        ))}
-      </div>
+    <div className="space-y-4">
+      {videos.length > 0 && (
+        <div className="grid gap-5 sm:grid-cols-2">
+          {videos.map((v) => (
+            <div key={v.id} className="space-y-2">
+              <video src={v.url} controls preload="metadata" className="w-full rounded-xl border border-linha bg-black aspect-video" />
+              <button onClick={() => remover(v.id)} disabled={!!ocupado}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-critico hover:underline disabled:opacity-50">
+                <Trash2 className="size-4" /> Remover
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       {videos.length < 3 && (
-        <label className={`inline-block rounded-lg px-4 py-2 text-sm font-medium cursor-pointer ${ocupado ? "bg-superficie-2 text-texto-2" : "btn-contorno"}`}>
+        <label className={`inline-flex cursor-pointer items-center gap-2 px-5 py-3 text-sm ${ocupado ? "rounded-[10px] bg-superficie-2 font-semibold text-texto-2" : "btn-contorno"}`}>
+          <Upload className="size-4" />
           {ocupado || "Enviar vídeo"}
           <input type="file" accept={VIDEO_ACEITA} multiple className="hidden" disabled={!!ocupado}
             onChange={(e) => { enviar(e.target.files); e.target.value = ""; }} />
         </label>
       )}
-      <p className="text-xs text-texto-2">
+      <p className="text-sm text-texto-2">
         Até 3 vídeos por imóvel, {VIDEO_MAX_MB} MB cada (MP4, MOV ou WebM) — de 1 a 2 minutos em 1080p.
       </p>
       {erro && <p className="text-sm text-critico">{erro}</p>}

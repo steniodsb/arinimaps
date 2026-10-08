@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
+import { CircleCheck, FileText, GitCompareArrows, Inbox, UserCheck } from "lucide-react";
 import { STATUS_LABEL } from "@/lib/format";
-import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataBR } from "@/components/admin/Painel";
+import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataBR, LinkAcao } from "@/components/admin/Painel";
+import { CODIGO, LINHA_LISTA, LISTA, LISTA_VAZIA } from "@/components/admin/estilos";
+import { Etiqueta } from "@/components/ui/Pagina";
 
 const dias = (d: string) => Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000);
 
@@ -37,87 +40,87 @@ export default async function PainelOperacoes() {
     .filter((d) => d.property && !["reprovado", "inativo", "historico"].includes(d.property.status));
 
   return (
-    <div className="space-y-7 max-w-5xl">
+    <div className="space-y-10 md:space-y-12">
       <CabecalhoSetor setor="operacoes" />
 
       <Indicadores itens={[
-        { rotulo: "Anúncios na fila de análise", valor: emAnalise, href: "/admin/imoveis?filtro=analise", destaque: emAnalise > 0 },
-        { rotulo: "Documentos sem conferência", valor: pendentes.length, destaque: pendentes.length > 0 },
-        { rotulo: "Alterações propostas", valor: alteracoes.length, href: "/admin/imoveis?revisao=1", destaque: alteracoes.length > 0,
+        { rotulo: "Anúncios na fila de análise", icone: Inbox, valor: emAnalise, href: "/admin/imoveis?filtro=analise", destaque: emAnalise > 0 },
+        { rotulo: "Documentos sem conferência", icone: FileText, valor: pendentes.length, destaque: pendentes.length > 0 },
+        { rotulo: "Alterações propostas", icone: GitCompareArrows, valor: alteracoes.length, href: "/admin/imoveis?revisao=1", destaque: alteracoes.length > 0,
           nota: "anúncios publicados com nova versão" },
-        { rotulo: "Cadastros para aprovar", valor: parceiros + proprietarios, href: "/admin/cadastros", destaque: parceiros + proprietarios > 0,
+        { rotulo: "Cadastros para aprovar", icone: UserCheck, valor: parceiros + proprietarios, href: "/admin/cadastros", destaque: parceiros + proprietarios > 0,
           nota: `${parceiros} parceiro(s) · ${proprietarios} proprietário(s)` },
-        { rotulo: "Publicados neste mês", valor: publicadosMes },
+        { rotulo: "Publicados neste mês", icone: CircleCheck, valor: publicadosMes },
       ]} />
 
-      <Secao titulo="Anúncios aguardando decisão" acao={<Link href="/admin/imoveis" className="text-xs text-verde hover:underline">Todos os imóveis</Link>}>
-        <div className="cartao divide-y divide-linha">
+      <Secao titulo="Anúncios aguardando decisão" acao={<LinkAcao href="/admin/imoveis">Todos os imóveis</LinkAcao>}>
+        <div className={LISTA}>
           {(fila ?? []).map((p) => {
             const espera = dias(p.created_at);
             return (
               <Link key={p.id} href={`/admin/imoveis/${p.id}`}
-                className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm hover:bg-superficie-2 transition">
-                <span className="font-mono text-xs text-texto-2">{p.codigo}</span>
-                <span className="flex-1 min-w-48 text-texto">
+                className={LINHA_LISTA}>
+                <span className={CODIGO}>{p.codigo}</span>
+                <span className="flex-1 min-w-48 font-medium text-texto">
                   {p.titulo}
-                  <span className="text-texto-2 text-xs">
+                  <span className="font-normal text-texto-2 text-sm">
                     {" · "}{(p.municipality as unknown as { nome: string } | null)?.nome ?? "sem município"} · {p.tipo}
                     {p.car_codigo && " · divisa do CAR"}
                   </span>
                 </span>
-                <span className="text-xs rounded-full bg-superficie-2 px-3 py-1">{STATUS_LABEL[p.status] ?? p.status}</span>
-                <span className={"text-xs tabular-nums " + (espera >= 3 ? "text-alerta" : "text-texto-2")}>
+                <Etiqueta>{STATUS_LABEL[p.status] ?? p.status}</Etiqueta>
+                <span className={"text-xs font-medium tabular-nums whitespace-nowrap " + (espera >= 3 ? "text-alerta" : "text-texto-2")}>
                   {espera === 0 ? "hoje" : `há ${espera} dia${espera === 1 ? "" : "s"}`}
                 </span>
               </Link>
             );
           })}
-          {!fila?.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Fila vazia: nenhum anúncio esperando análise.</p>}
+          {!fila?.length && <p className={LISTA_VAZIA}>Fila vazia: nenhum anúncio esperando análise.</p>}
         </div>
       </Secao>
 
       <Secao titulo="Documentos aguardando conferência">
-        <p className="text-sm text-texto-2 -mt-1">
+        <p className="-mt-1 text-[0.95rem] leading-relaxed text-texto-2">
           Sem a matrícula conferida o sistema não deixa aprovar nem publicar o imóvel.
         </p>
-        <div className="cartao divide-y divide-linha">
+        <div className={LISTA}>
           {pendentes.map((d) => (
             <Link key={d.id} href={`/admin/imoveis/${d.property!.id}`}
-              className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm hover:bg-superficie-2 transition">
-              <span className="font-mono text-xs text-texto-2">{d.property!.codigo}</span>
+              className={LINHA_LISTA}>
+              <span className={CODIGO}>{d.property!.codigo}</span>
               <span className="flex-1 min-w-48">
-                <span className="text-texto capitalize">{d.tipo.replace(/_/g, " / ")}</span>
-                <span className="text-xs text-texto-2"> · {d.nome_arquivo ?? "arquivo"} · {d.property!.titulo}</span>
+                <span className="font-medium text-texto capitalize">{d.tipo.replace(/_/g, " / ")}</span>
+                <span className="text-sm text-texto-2"> · {d.nome_arquivo ?? "arquivo"} · {d.property!.titulo}</span>
               </span>
               <span className="text-xs text-texto-2">{dataBR(d.created_at)}</span>
             </Link>
           ))}
-          {!pendentes.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhum documento esperando conferência.</p>}
+          {!pendentes.length && <p className={LISTA_VAZIA}>Nenhum documento esperando conferência.</p>}
         </div>
       </Secao>
 
-      <Secao titulo="Alterações propostas em anúncios publicados" acao={<Link href="/admin/imoveis?revisao=1" className="text-xs text-verde hover:underline">Ver fila</Link>}>
-        <p className="text-sm text-texto-2 -mt-1">
+      <Secao titulo="Alterações propostas em anúncios publicados" acao={<LinkAcao href="/admin/imoveis?revisao=1">Ver fila</LinkAcao>}>
+        <p className="-mt-1 text-[0.95rem] leading-relaxed text-texto-2">
           O anúncio atual continua no ar até a decisão; aprovar aplica a nova versão.
         </p>
-        <div className="cartao divide-y divide-linha">
+        <div className={LISTA}>
           {alteracoes.map((r) => {
             const espera = dias(r.created_at);
             return (
               <Link key={r.id} href={`/admin/imoveis/${r.property!.id}`}
-                className="px-4 py-3 flex items-center gap-3 flex-wrap text-sm hover:bg-superficie-2 transition">
-                <span className="font-mono text-xs text-texto-2">{r.property!.codigo}</span>
-                <span className="flex-1 min-w-48 text-texto">
+                className={LINHA_LISTA}>
+                <span className={CODIGO}>{r.property!.codigo}</span>
+                <span className="flex-1 min-w-48 font-medium text-texto">
                   {r.property!.titulo}
-                  <span className="text-texto-2 text-xs"> · versão {r.versao} · {Object.keys(r.dados ?? {}).join(", ")}</span>
+                  <span className="font-normal text-texto-2 text-sm"> · versão {r.versao} · {Object.keys(r.dados ?? {}).join(", ")}</span>
                 </span>
-                <span className={"text-xs tabular-nums " + (espera >= 3 ? "text-alerta" : "text-texto-2")}>
+                <span className={"text-xs font-medium tabular-nums whitespace-nowrap " + (espera >= 3 ? "text-alerta" : "text-texto-2")}>
                   {espera === 0 ? "hoje" : `há ${espera} dia${espera === 1 ? "" : "s"}`}
                 </span>
               </Link>
             );
           })}
-          {!alteracoes.length && <p className="px-4 py-6 text-center text-sm text-texto-2">Nenhuma alteração esperando decisão.</p>}
+          {!alteracoes.length && <p className={LISTA_VAZIA}>Nenhuma alteração esperando decisão.</p>}
         </div>
       </Secao>
 

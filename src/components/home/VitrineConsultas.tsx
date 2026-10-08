@@ -111,12 +111,15 @@ export default function VitrineConsultas({ consultas }: Props) {
   const legenda = CENAS[cena]?.legenda ?? CENAS[0].legenda;
 
   return (
-    <section id="consultas" className="bg-superficie border-y border-linha scroll-mt-20">
-      <div className="mx-auto max-w-7xl px-4 py-20">
+    // faixa escura fixa (malha verde + grade): `.lp-escuro` mantém as cores do
+    // tema escuro aqui dentro, com o site em qualquer tema
+    <section id="consultas" className="lp-escuro lp-malha-escura relative isolate overflow-hidden scroll-mt-20">
+      <div className="lp-grade pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+      <div className="lp-container py-24">
         {/* a faixa é sempre escura: o fundo dela é o satélite, em qualquer tema */}
         <div
           ref={faixaRef}
-          className="relative overflow-hidden rounded-3xl border border-linha bg-[#0A1310] text-white shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+          className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0A1310] text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]"
         >
           {/* ---------- mapa (bloco de 260px no celular; fundo inteiro no desktop) ---------- */}
           <div className="relative h-[260px] lg:absolute lg:inset-0 lg:h-auto">
@@ -163,15 +166,15 @@ export default function VitrineConsultas({ consultas }: Props) {
           {/* ---------- conteúdo (sobre o mapa no desktop) ---------- */}
           <div className="relative z-10 grid lg:min-h-[520px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:pointer-events-none">
             <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-12 lg:pb-20 lg:pointer-events-auto">
-              <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-[#3FCF7F]">Consultas</p>
-              <h2 className="mt-3 text-3xl font-semibold text-balance sm:text-4xl">
+              <p className="lp-eyebrow">Consultas</p>
+              <h2 className="lp-display mt-3 text-4xl text-balance md:text-[3.2rem]">
                 Entre na área de <span className="text-[#5FE09A]">consultas</span>
               </h2>
-              <p className="mt-4 max-w-md text-white/70">
+              <p className="mt-5 max-w-md text-lg leading-relaxed text-white/85">
                 Mapa, busca de imóveis e relatórios ficam numa área própria, com menu lateral e atalhos para cada camada oficial.
               </p>
               <div className="mt-7">
-                <Link href="/mapa" className="btn-verde px-6 py-3">Abrir o mapa</Link>
+                <Link href="/mapa" className="lp-btn lp-btn-verde">Abrir o mapa</Link>
               </div>
             </div>
 
@@ -197,11 +200,11 @@ export default function VitrineConsultas({ consultas }: Props) {
                     <Icone nome={c.icone} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-2 text-sm font-medium">
+                    <span className="flex items-center justify-between gap-2 text-base font-semibold">
                       {c.rotulo}
                       <span className="text-verde transition-transform duration-200 group-hover:translate-x-1">›</span>
                     </span>
-                    <span className="mt-0.5 block text-[11px] leading-snug text-texto-2">{c.desc}</span>
+                    <span className="mt-0.5 block text-sm leading-snug text-texto-2">{c.desc}</span>
                   </span>
                 </Link>
               ))}

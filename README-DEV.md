@@ -18,6 +18,18 @@ node scripts/seed.mjs      # idempotente: região, municípios IBGE, usuários, 
 | proprietario.teste@arinimaps.com.br | proprietário (ativo) | /painel |
 | corretor.teste@arinimaps.com.br | corretor (ativo) | /painel |
 
+## 08/10: página inicial no estilo do site do Grupo Cordeiro
+
+Pedido do Stenio: landing "moderna, com efeitos, personalizada" como
+https://grupocordeiro.steniowebdesigner.com/ (código em `../../GRUPO CORDEIRO/site`).
+Componentes em `src/components/landing/` (hero em carrossel com mapa vivo e fotos, números com
+contagem, "como você usa", municípios com mosaico de satélite, como funciona, faixa das fontes
+oficiais, rodapé), animações com `motion` (revelação ao rolar, títulos palavra a palavra,
+parallax, spotlight, rolagem suave; desligadas com `prefers-reduced-motion` ou `?qa=1`).
+Cabeçalho em `src/components/SiteHeader.tsx` (transparente sobre o hero). Para trocar um slide por
+vídeo real: `video: "/video/arquivo.mp4"` no slide em `src/app/(public)/page.tsx`.
+Capturas: `BASE_URL=… OUT=… node scripts/screenshot-landing.mjs`.
+
 ## 07/10: mapa fluido com tiles vetoriais + home com mapa vivo (migration 0031)
 
 Queixas do Stenio: zoom demorava a acompanhar, mapa pouco fluido, malha sumia ao afastar;

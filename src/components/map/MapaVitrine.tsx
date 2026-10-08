@@ -23,6 +23,15 @@ type Props = {
   onCena?: (indice: number) => void;
   /** Chamado quando o satélite da primeira cena está desenhado. */
   onPronto?: () => void;
+  /**
+   * Cena fixa (índice em CENAS), controlada por fora — usado no carrossel do
+   * topo da home. Com ela, o mapa NÃO troca de cena sozinho: desliza devagar
+   * pela cena e volta, em vaivém; trocar o valor voa até a nova cena.
+   * Sem ela, o passeio em loop pelas cenas continua como antes.
+   */
+  cena?: number;
+  /** false pausa a câmera (ex.: o slide atual do carrossel não é o mapa). */
+  ativo?: boolean;
 };
 
 const COR_CAR = "#FF9D3D";
@@ -92,16 +101,31 @@ async function pegarGeoJSON(url: string): Promise<GeoJSON.FeatureCollection | nu
   }
 }
 
-export default function MapaVitrine({ onCena, onPronto }: Props) {
+type Controle = { definirCena: (indice: number) => void; definirAtivo: (ativo: boolean) => void };
+
+export default function MapaVitrine({ onCena, onPronto, cena, ativo = true }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   // callbacks em ref: o efeito do mapa roda uma vez só e sempre chama a versão atual
   const onCenaRef = useRef(onCena);
   const onProntoRef = useRef(onPronto);
+  const cenaRef = useRef(cena);
+  const ativoRef = useRef(ativo);
+  const controleRef = useRef<Controle | null>(null);
   useEffect(() => {
     onCenaRef.current = onCena;
     onProntoRef.current = onPronto;
   }, [onCena, onPronto]);
+
+  // modo controlado: a cena e a pausa vêm de fora
+  useEffect(() => {
+    cenaRef.current = cena;
+    if (cena !== undefined) controleRef.current?.definirCena(cena);
+  }, [cena]);
+  useEffect(() => {
+    ativoRef.current = ativo;
+    controleRef.current?.definirAtivo(ativo);
+  }, [ativo]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -109,6 +133,8 @@ export default function MapaVitrine({ onCena, onPronto }: Props) {
     let cancelado = false;
     let mapa: MLMap | undefined;
     let observador: IntersectionObserver | undefined;
+    const controlado = cenaRef.current !== undefined;
+    const inicial = Math.min(Math.max(cenaRef.current ?? 0, 0), CENAS.length - 1);
 
     (async () => {
       const maplibregl = await carregarMaplibre();
@@ -188,8 +214,8 @@ export default function MapaVitrine({ onCena, onPronto }: Props) {
       const map = new maplibregl.Map({
         container: el,
         style: estilo,
-        center: CENAS[0].centro,
-        zoom: CENAS[0].zoom,
+        center: CENAS[inicial].centro,
+        zoom: CENAS[inicial].zoom,
         interactive: false,
         attributionControl: { compact: true },
         canvasContextAttributes: { preserveDrawingBuffer: false },
@@ -201,10 +227,12 @@ export default function MapaVitrine({ onCena, onPronto }: Props) {
       map.on("error", () => {});
 
       // ---------- passeio ----------
-      let atual = 0;
+      let atual = inicial;
       let visivel = true;
       let pronto = false;
-      let fase: "parado" | "passeio" | "troca" = "parado";
+      let ligado = ativoRef.current;
+      // "volta" = no modo controlado, o retorno lento ao centro da cena (vaivém)
+      let fase: "parado" | "passeio" | "troca" | "volta" = "parado";
       // `easeTo` chama `stop()` por dentro e isso dispara `moveend` de forma
       // síncrona; sem esta trava a cadeia se chamaria de novo antes de a
       // animação nova começar
@@ -237,9 +265,15 @@ export default function MapaVitrine({ onCena, onPronto }: Props) {
 
       const aoTerminarMovimento = () => {
         // `resize` também dispara moveend no meio da animação: ignora enquanto a câmera anda
-        if (ocupado || cancelado || !visivel || !pronto || map.isMoving()) return;
-        if (fase === "passeio") irPara((atual + 1) % CENAS.length);
+        if (ocupado || cancelado || !visivel || !ligado || !pronto || map.isMoving()) return;
+        if (fase === "passeio") {
+          if (controlado) {
+            const c = CENAS[atual];
+            mover("volta", { center: c.centro, zoom: c.zoom, duration: DURACAO_PASSEIO, easing: linear });
+          } else irPara((atual + 1) % CENAS.length);
+        }
         else if (fase === "troca") { onCenaRef.current?.(atual); passear(); }
+        else if (fase === "volta") passear();
       };
       map.on("moveend", aoTerminarMovimento);
 
@@ -250,10 +284,28 @@ export default function MapaVitrine({ onCena, onPronto }: Props) {
           if (agora === visivel) return;
           visivel = agora;
           if (!visivel) { map.stop(); fase = "parado"; return; }
-          if (pronto && !map.isMoving()) irPara(atual);
+          if (pronto && ligado && !map.isMoving()) irPara(atual);
         }, { threshold: 0.05 });
         observador.observe(el);
       }
+
+      controleRef.current = {
+        definirCena(indice) {
+          const i = Math.min(Math.max(indice, 0), CENAS.length - 1);
+          if (i === atual && fase !== "parado") return;
+          atual = i;
+          if (!pronto) { map.jumpTo({ center: CENAS[i].centro, zoom: CENAS[i].zoom }); return; }
+          if (reduzido) { map.jumpTo({ center: CENAS[i].centro, zoom: CENAS[i].zoom }); onCenaRef.current?.(i); return; }
+          if (visivel && ligado) irPara(i);
+          else { fase = "parado"; map.jumpTo({ center: CENAS[i].centro, zoom: CENAS[i].zoom }); }
+        },
+        definirAtivo(v) {
+          if (v === ligado) return;
+          ligado = v;
+          if (!v) { map.stop(); fase = "parado"; return; }
+          if (pronto && visivel && !reduzido && !map.isMoving()) irPara(atual);
+        },
+      };
 
       map.on("load", async () => {
         const [municipios, imoveis] = await Promise.all([
@@ -272,14 +324,15 @@ export default function MapaVitrine({ onCena, onPronto }: Props) {
         if (cancelado) return;
         pronto = true;
         onProntoRef.current?.();
-        onCenaRef.current?.(0);
-        if (reduzido) return; // vista parada da cena rural
-        if (visivel) passear();
+        onCenaRef.current?.(atual);
+        if (reduzido) return; // vista parada da cena inicial
+        if (visivel && ligado) passear();
       });
     })();
 
     return () => {
       cancelado = true;
+      controleRef.current = null;
       observador?.disconnect();
       mapa?.remove();
       mapRef.current = null;

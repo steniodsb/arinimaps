@@ -338,3 +338,125 @@ button:disabled,
 @media (prefers-reduced-motion: reduce) {
   .vitrine-espera, .vitrine-legenda { animation: none; }
 }
+
+/* =====================================================================
+   PÁGINA INICIAL (landing) — classes com prefixo `lp-`.
+
+   Faixas claras seguem o tema (var(--fundo)/var(--superficie)); faixas
+   escuras são SEMPRE escuras (satélite, foto, malha verde) e, por isso,
+   redefinem as variáveis do tema escuro dentro delas: qualquer `text-texto`,
+   `bg-superficie` ou `text-verde` ali dentro continua legível com o site no
+   tema claro. Fonte dos títulos: Urbanist (--font-display), só na landing.
+   Tudo em @layer components: os utilitários do Tailwind (hidden, px-*)
+   continuam vencendo estas classes.
+   ===================================================================== */
+@layer components {
+.lp-escuro {
+  --fundo: #0A1310;
+  --superficie: #121C17;
+  --superficie-2: #17231D;
+  --linha: #24352C;
+  --linha-forte: #2E4438;
+  --texto: #F1F6F2;
+  --texto-2: #B4C4BA;
+  --texto-3: #D3DFD7;
+  --verde: #3FCF7F;
+  --verde-2: #2FA866;
+  --verde-escuro: #0E2C1E;
+  --ouro: #C9A14E;
+  --ouro-claro: #E4C77E;
+  --sombra-botao: rgba(0, 0, 0, 0.45);
+  color: var(--texto);
+  color-scheme: dark;
+}
+
+.lp-container { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: 20px; }
+@media (min-width: 768px) { .lp-container { padding-inline: 32px; } }
+
+.lp-display {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+/* linha acima do título: só texto, sem formato de botão */
+.lp-eyebrow {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ouro);
+}
+.lp-escuro .lp-eyebrow { color: var(--ouro-claro); }
+
+/* ---------- faixas ---------- */
+.lp-clara { background: var(--fundo); }
+.lp-branca { background: var(--superficie); }
+.lp-malha-escura {
+  background:
+    linear-gradient(160deg, #123826 0%, #0C2419 48%, #07130E 100%);
+}
+.lp-grade {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ---------- botões da landing: retos, com ícone ---------- */
+.lp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+  font-weight: 700; font-size: 1rem; line-height: 1;
+  border-radius: 10px; padding: 1rem 1.6rem;
+  transition: background-color 0.25s, color 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s, filter 0.25s;
+  white-space: nowrap;
+}
+.lp-btn svg { width: 1.1rem; height: 1.1rem; transition: transform 0.3s ease; }
+.lp-btn:hover svg:last-child { transform: translateX(4px); }
+.lp-btn-verde { color: #0A1F14; background: linear-gradient(180deg, #45D98A 0%, #2FB86C 100%); box-shadow: 0 8px 22px -10px rgba(63, 207, 127, 0.6); }
+.lp-btn-verde:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.lp-btn-ouro { color: #10201A; background: linear-gradient(120deg, #B48A35 0%, #C9A14E 45%, #E4C77E 100%); box-shadow: 0 8px 22px -10px rgba(201, 161, 78, 0.6); }
+.lp-btn-ouro:hover { filter: brightness(1.06); transform: translateY(-1px); }
+/* sobre foto/faixa escura */
+.lp-btn-claro { color: #fff; border: 2px solid rgb(255 255 255 / 0.7); padding: calc(1rem - 2px) calc(1.6rem - 2px); }
+.lp-btn-claro:hover { background: #fff; color: #0A1F14; border-color: #fff; }
+/* sobre faixa clara (segue o tema) */
+.lp-btn-contorno { color: var(--texto); border: 2px solid var(--linha-forte); padding: calc(1rem - 2px) calc(1.6rem - 2px); }
+.lp-btn-contorno:hover { border-color: var(--verde); color: var(--verde); }
+
+/* ---------- cartões ---------- */
+.lp-lift { transition: transform 0.45s cubic-bezier(.22,1,.36,1), box-shadow 0.45s ease; }
+.lp-lift:hover { transform: translateY(-6px); box-shadow: 0 28px 60px -32px rgb(0 0 0 / 0.55); }
+
+/* luz que segue o cursor (posição escrita por SpotlightTracker) */
+.spotlight { position: relative; isolation: isolate; }
+.spotlight::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.14), transparent 45%);
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.spotlight:hover::after { opacity: 1; }
+
+/* ---------- animações ---------- */
+@keyframes lp-marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+.lp-marquee { animation: lp-marquee var(--lp-marquee-dur, 40s) linear infinite; }
+.lp-marquee-grupo:hover .lp-marquee { animation-play-state: paused; }
+
+@keyframes lp-kenburns { from { transform: scale(1.02); } to { transform: scale(1.12); } }
+.lp-kenburns { animation: lp-kenburns 16s ease-out both; transform-origin: 60% 40%; }
+
+/* barra de progresso do slide: o fim da animação passa para o próximo */
+@keyframes lp-progresso { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.lp-progresso { transform-origin: left; animation: lp-progresso var(--lp-slide-dur, 7s) linear both; }
+[data-pausado="true"] .lp-progresso { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee, .lp-kenburns, .lp-progresso { animation: none; }
+  .lp-progresso { transform: scaleX(1); }
+  .lp-lift, .lp-lift:hover { transition: none; transform: none; }
+  .lp-btn, .lp-btn svg { transition: none; }
+}
+} /* fim @layer components (landing) */

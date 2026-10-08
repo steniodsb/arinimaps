@@ -38,6 +38,8 @@ try {
 
   // ---------- regional: CAR aparece de longe ----------
   await abrir("#pos=9.5/-19.73/-50.21");
+  // espera os tiles chegarem (na primeira abertura o servidor de dev ainda compila a rota)
+  await p.waitForFunction(() => window.__mapa.querySourceFeatures("car", { sourceLayer: "car" }).length > 0, { timeout: 30000 }).catch(() => {});
   const car9 = await q(() => window.__mapa.querySourceFeatures("car", { sourceLayer: "car" }).length);
   ok("malha do CAR presente no zoom 9,5 (antes sumia abaixo de 12)", car9 > 50, `${car9} feições`);
 
@@ -62,6 +64,7 @@ try {
 
   // ---------- lotes: divisa, metragens e clique ----------
   await abrir("#pos=18/-19.7285/-50.1965");
+  await p.waitForFunction(() => window.__mapa.querySourceFeatures("lotes", { sourceLayer: "lotes" }).length > 0, { timeout: 30000 }).catch(() => {});
   const lotes = await q(() => window.__mapa.querySourceFeatures("lotes", { sourceLayer: "lotes" }).length);
   const medidas = await q(() => window.__mapa.querySourceFeatures("lotes", { sourceLayer: "medidas" }).length);
   ok("lotes urbanos carregados por tile no zoom 18", lotes > 10, `${lotes} lotes`);

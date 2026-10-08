@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { RotateCcw } from "lucide-react";
 import type { Map as MLMap, ErrorEvent as MLErrorEvent } from "maplibre-gl";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { SATELITE } from "@/lib/map/config";
@@ -114,10 +115,14 @@ const CATEGORIA_NOME: Record<string, string> = {
   escola: "Escola", centro: "Centro", acesso_rodovia: "Acesso à rodovia",
 };
 
-const CATEGORIA_EMOJI: Record<string, string> = {
-  combustivel: "⛽", farmacia: "💊", supermercado: "🛒", hospital: "🏥",
-  escola: "🏫", centro: "🏙️", acesso_rodovia: "🛣️",
+/* Marcador da etiqueta do tour: ponto colorido por categoria, em vez de emoji
+   (que muda de desenho em cada sistema e sai diferente no vídeo gravado). */
+const CATEGORIA_COR: Record<string, string> = {
+  combustivel: "#E4C77E", farmacia: "#5FE09A", supermercado: "#7CC4FF", hospital: "#FF8A80",
+  escola: "#B18CFF", centro: "#FFFFFF", acesso_rodovia: "#FFB74D",
 };
+const ponto = (cor: string) =>
+  `<i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${cor};margin-right:5px;vertical-align:1px"></i>`;
 
 export default function Tour3D(dados: TourData) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -183,7 +188,7 @@ export default function Tour3D(dados: TourData) {
               features: dados.pois.map((p) => ({
                 type: "Feature",
                 geometry: { type: "Point", coordinates: [p.lng, p.lat] },
-                properties: { rotulo: `${CATEGORIA_EMOJI[p.categoria] ?? "📍"} ${p.nome ?? p.categoria}` },
+                properties: { rotulo: p.nome ?? CATEGORIA_NOME[p.categoria] ?? p.categoria },
               })),
             },
           });
@@ -203,14 +208,14 @@ export default function Tour3D(dados: TourData) {
           const el = document.createElement("div");
           el.className = "tour-etiqueta";
           el.innerHTML =
-            `<b>${CATEGORIA_EMOJI[p.categoria] ?? "📍"} ${(p.nome ?? CATEGORIA_NOME[p.categoria] ?? p.categoria).replace(/[<>&]/g, "")}</b>` +
+            `<b>${ponto(CATEGORIA_COR[p.categoria] ?? "#FFFFFF")}${(p.nome ?? CATEGORIA_NOME[p.categoria] ?? p.categoria).replace(/[<>&]/g, "")}</b>` +
             `<span>${distancia(p.distancia_m)}</span>`;
           new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, -8] }).setLngLat([p.lng, p.lat]).addTo(map);
         }
         if (dados.municipio?.sede_lng != null && dados.municipio.sede_lat != null) {
           const el = document.createElement("div");
           el.className = "tour-etiqueta tour-etiqueta-cidade";
-          el.innerHTML = `<b>🏙️ ${dados.municipio.nome.replace(/[<>&]/g, "")}</b>`;
+          el.innerHTML = `<b>${dados.municipio.nome.replace(/[<>&]/g, "")}</b>`;
           new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, -8] })
             .setLngLat([dados.municipio.sede_lng, dados.municipio.sede_lat]).addTo(map);
         }
@@ -294,7 +299,7 @@ export default function Tour3D(dados: TourData) {
               <button
                 className="rounded-full bg-ouro text-fundo font-medium px-5 py-2.5 shadow-lg hover:bg-ouro-claro"
                 onClick={() => window.location.reload()}>
-                ↻ Repetir tour
+                <RotateCcw className="mr-1.5 inline size-4 -translate-y-px" />Repetir tour
               </button>
               <a href={`/imovel/${dados.codigo}`}
                 className="rounded-full bg-verde text-white font-medium px-5 py-2.5 shadow-lg hover:bg-verde-escuro">

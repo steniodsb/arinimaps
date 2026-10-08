@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import type { ErroApi } from "@/lib/api/enviar";
 
 /**
@@ -16,7 +17,7 @@ export function AvisoErro({ erro, aoFechar }: { erro: ErroApi; aoFechar?: () => 
   return (
     <div className="rounded-xl border border-critico/40 bg-critico/10 p-4 text-sm space-y-2">
       <div className="flex items-start gap-2">
-        <span aria-hidden className="text-critico leading-5">⚠</span>
+        <AlertTriangle aria-hidden className="size-5 shrink-0 text-critico" />
         <div className="flex-1 space-y-1.5">
           <p className="font-semibold text-critico">{erro.mensagem}</p>
           {erro.motivo && (
@@ -47,7 +48,7 @@ export function AvisoErro({ erro, aoFechar }: { erro: ErroApi; aoFechar?: () => 
           )}
         </div>
         {aoFechar && (
-          <button type="button" onClick={aoFechar} className="text-texto-2 hover:text-texto" aria-label="Fechar">✕</button>
+          <button type="button" onClick={aoFechar} className="text-texto-2 hover:text-texto" aria-label="Fechar"><X className="size-4" /></button>
         )}
       </div>
     </div>
@@ -57,7 +58,7 @@ export function AvisoErro({ erro, aoFechar }: { erro: ErroApi; aoFechar?: () => 
 export function AvisoOk({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-verde/40 bg-verde/10 p-4 text-sm text-texto flex items-start gap-2">
-      <span aria-hidden className="text-verde leading-5">✓</span>
+      <CheckCircle2 aria-hidden className="size-5 shrink-0 text-verde" />
       <div className="flex-1 space-y-1">{children}</div>
     </div>
   );

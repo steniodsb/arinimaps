@@ -169,7 +169,11 @@ button:disabled,
 .maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--fundo) 75%, transparent) !important; }
 .maplibregl-ctrl-attrib a { color: var(--texto-2) !important; }
 
-/* ---------- botões ---------- */
+/* ---------- botões ----------
+   Em @layer components (redesign 08/10/2026): fora de camada, o
+   `display: inline-block` daqui vencia o `inline-flex items-center gap-*` das
+   telas e o ícone caía para cima do texto. Agora o utilitário da tela manda. */
+@layer components {
 /* o verde e o dourado dos botões não seguem o tema: são a marca, e funcionam
    sobre os dois fundos com o texto escuro que já têm */
 .btn-verde {
@@ -264,6 +268,8 @@ button:disabled,
 }
 .chip:hover { background: var(--superficie-2); color: var(--texto); }
 .chip[data-ativo="true"] { background: var(--verde); color: var(--fundo); border-color: var(--verde); font-weight: 600; }
+
+}
 
 /* Em @layer components: assim border-l-*, bg-*, rounded-* do Tailwind vencem
    quando a tela pede (ex.: borda de destaque do Estatistica). */

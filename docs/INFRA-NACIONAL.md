@@ -21,12 +21,12 @@ na contratação**; R$ com cotação de 5,40. Complementa `DIMENSIONAMENTO.md` (
 |---|---|---|---|
 | Uso estimado | até 5 mil visitas/dia, ~300 simultâneos | até 50 mil/dia, ~2 mil simultâneos | 300 mil+/dia |
 | VPS do app | 4 vCPU · 8 GB (São Paulo) | 8 vCPU · 16 GB, 2–4 processos | 2+ VPS atrás de balanceador |
-| Banco (Supabase, região São Paulo) | Pro + compute Small (2 GB) | Pro + Medium (4 GB) ou Large (8 GB) | Large/XL + réplica de leitura |
+| Banco (Supabase, região São Paulo) | Pro com o compute Micro incluso (sobe para Small quando o uso pedir) | Pro + Medium (4 GB) ou Large (8 GB) | Large/XL + réplica de leitura |
 | CDN / proteção | Cloudflare grátis | Cloudflare Pro | Cloudflare Pro/Business |
 | Arquivos | Supabase Storage (100 GB no Pro) | + Cloudflare R2 para vídeo | R2 |
 | Cache compartilhado | — | Redis (limite por IP e cache entre processos) | Redis gerenciado |
 | Monitoramento | Uptime Kuma + Sentry grátis | Sentry pago | idem |
-| **Custo fixo aprox./mês** | **US$ 100–130 (≈ R$ 550–700)** | **US$ 300–450 (≈ R$ 1,6–2,4 mil)** | US$ 1–2 mil+ |
+| **Custo fixo aprox./mês** | **US$ 75–90 (≈ R$ 400–500)** | **US$ 300–450 (≈ R$ 1,6–2,4 mil)** | US$ 1–2 mil+ |
 
 Referências: VPS em São Paulo (Vultr, Magalu Cloud ou AWS Lightsail sa-east-1) 4 vCPU/8 GB ≈ US$ 48,
 8 vCPU/16 GB ≈ US$ 96. Supabase Pro US$ 25 + compute Small US$ 15 / Medium US$ 60 / Large US$ 110.
@@ -199,7 +199,9 @@ perguntas por dia ≈ 120 × pessoas no assistente no pico.
 
 ## 6. Decisões para o Carlos
 
-1. Fase de partida (recomendado: lançamento) e fornecedor da VPS em São Paulo.
+1. ~~Fase de partida~~ **Decidido em 08/10/2026:** testes com o Carlos no Supabase grátis + VPS 2 vCPU/4 GB; no
+   lançamento, Supabase Pro (Micro) + VPS 4 vCPU/8 GB em São Paulo. Alternativas ao Supabase avaliadas e
+   descartadas por ora (Neon/Postgres puro exigiriam refazer login e arquivos). Falta só o fornecedor da VPS.
 2. Satélite híbrido (aberto de longe, Esri de perto) — recomendado.
 3. Cota de perguntas por plano (modelo: Haiku 5.5, decidido em 08/10 pelo custo).
 4. Aprovar a base de inteligência em três camadas (§4) — implementação estimada em 1 a 2 semanas.

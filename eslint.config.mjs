@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build minificado de terceiros (maplibre-gl, copiado por scripts/copia-maplibre.mjs)
+    "public/vendor/**",
   ]),
 ]);
 

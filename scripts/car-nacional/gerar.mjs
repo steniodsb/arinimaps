@@ -70,7 +70,7 @@ rmSync(pastaBlocos, { recursive: true, force: true });
 mkdirSync(pastaBlocos, { recursive: true });
 const abertos = new Map();
 const limites = [Infinity, Infinity, -Infinity, -Infinity];
-let total = 0;
+let total = 0, descartadas = 0;
 const ufs = readdirSync(join(DADOS, "car"), { withFileTypes: true })
   .filter((d) => d.isDirectory() && /^[a-z]{2}$/.test(d.name) && (!so.length || so.includes(d.name)))
   .map((d) => d.name);
@@ -80,6 +80,10 @@ for (const uf of ufs) {
     for await (const l of linhas(join(DADOS, "car", uf, arq))) {
       const f = JSON.parse(l);
       const [x0, y0, x1, y1] = bbox(f.geometry);
+      // o SICAR tem feições com coordenadas fora de grau (projeção trocada ou
+      // lixo de cadastro): fora do Brasil não entra — senão vira um bloco por
+      // feição e estoura os arquivos abertos (EMFILE, medido em 08/10/2026)
+      if (!(x0 >= -75 && x1 <= -28 && y0 >= -35 && y1 <= 7) || x1 - x0 > 5 || y1 - y0 > 5) { descartadas++; continue; }
       limites[0] = Math.min(limites[0], x0); limites[1] = Math.min(limites[1], y0);
       limites[2] = Math.max(limites[2], x1); limites[3] = Math.max(limites[3], y1);
       for (let x = lon2x(x0, Z_BLOCO); x <= lon2x(x1, Z_BLOCO); x++) {
@@ -95,7 +99,7 @@ for (const uf of ufs) {
   }
 }
 await Promise.all([...abertos.values()].map((s) => { s.end(); return once(s, "close"); }));
-console.log(`${total} imóveis em ${abertos.size} blocos`);
+console.log(`${total} imóveis em ${abertos.size} blocos · ${descartadas} descartados por coordenada fora do Brasil`);
 
 // ---------- 2. gera os tiles bloco a bloco ----------
 const escritor = new EscritorPMTiles(SAIDA);
@@ -149,6 +153,7 @@ const r = await escritor.finalizar({
     gerado_em: new Date().toISOString(),
     ufs,
     imoveis: total,
+    descartados: descartadas,
     vector_layers: [{
       id: "car", minzoom: Z_MIN, maxzoom: Z_MAX,
       fields: { cod: "String", area_ha: "Number", condicao: "String", status: "String", tipo: "String", municipio: "String", uf: "String" },

@@ -1,6 +1,6 @@
-# ARINI IMÓVEIS BRASIL — Roadmap de pendências (06/10/2026)
+# ARINI IMÓVEIS BRASIL — Roadmap de pendências (08/10/2026)
 
-> Repositório: github.com/steniodsb/arinimaps · migrations até a 0030.
+> Repositório: github.com/steniodsb/arinimaps · migrations até a 0044 · verificação automática a cada push (GitHub Actions).
 > Cobertura dos documentos de 05/10 (Fluxograma Mestre e Requisitos cartográficos): `docs/FLUXOGRAMA-COBERTURA.md` · planos por nicho: `docs/PLANOS.md`.
 > Site travado pela senha de bloqueio (`SITE_SENHA`) até o lançamento.
 > Acessos e senhas: `ACESSOS - NAO COMPARTILHAR.md`, fora do repositório.
@@ -21,13 +21,13 @@ Servidor, domínio e a estrutura que sustenta o sistema em produção.
 | 1.1 | **Variáveis de ambiente no servidor** — Inclui a senha de bloqueio, que mantém o site fechado até o lançamento. | Pendente | Stênio | — | — |
 | 1.2 | **Publicar a versão atual** — Site, mapa, painel do anunciante e Matriz fora do ambiente de desenvolvimento. | Pendente | Stênio | 1.1 | — |
 | 1.3 | **Domínio definitivo** — Apontar o endereço e gerar a versão final com ele. | Bloqueado | Stênio e Carlos | 8.6 | — |
-| 1.4 | **Serviço de processamento** — Vídeo automático, imagens de compartilhamento e geração dos lotes urbanos. | Pendente | Stênio | 1.2 | — |
-| 1.5 | **Ambiente de homologação** — Roteiro pronto em `docs/HOMOLOGACAO.md` (migrations, seed, Asaas sandbox, testes); falta criar o projeto Supabase e o app no Dokploy. | Pendente | Stênio | — | Melhorias 22 · Segurança 9 e 15 |
-| 1.6 | **Backup automático e recuperação** — Backup criptografado e fora do ambiente principal, retenção definida, restauração testada e metas de tempo de recuperação. | Bloqueado | Stênio | 8.8 | Call · Melhorias 20 · Segurança 16 |
-| 1.7 | **Proteção de borda (Cloudflare)** — Filtro de ataques na frente do site. | Bloqueado | Stênio | 1.3 | Segurança 9 |
+| 1.4 | **Serviço de processamento** — Worker pronto e testado aqui (`deploy/worker-compose.yml`, `node scripts/worker-local.mjs`): vídeo otimizado (720p, 49,6 MB → 1,4 MB) e imagem de capa, captura para compartilhamento passando pela senha do site, lotes, pontos de referência, saúde das fontes, monitoramento e descarte. Falta subir na VPS. | Bloqueado | Stênio | 1.2 | — |
+| 1.5 | **Ambiente de homologação** — Um comando monta tudo (`node scripts/homologacao.mjs`: migrations, seed, CAR e 40 imóveis de teste; recusa se apontar para a produção). Roteiro em `docs/HOMOLOGACAO.md`. Falta criar o projeto Supabase e o app no Dokploy. | Pendente | Stênio | — | Melhorias 22 · Segurança 9 e 15 |
+| 1.6 | **Backup automático e recuperação** — `scripts/backup.mjs` (banco criptografado AES-256-GCM, retenção 7 diários / 4 semanais / 12 mensais na R2), `scripts/backup-arquivos.mjs` (fotos e documentos, incremental) e `scripts/backup-restaurar.mjs` (confere e restaura). Testado aqui; roteiro e metas em `docs/BACKUP.md`. Falta a R2 e o agendamento na VPS. | Parcial | Stênio | 1.7 | Call · Melhorias 20 · Segurança 16 |
+| 1.7 | **Proteção de borda (Cloudflare)** — Filtro de ataques, cache do mapa e R2 (arquivo do CAR nacional, backups). Roteiro em `deploy/DEPLOY.md` §6b. | Bloqueado | Stênio | 1.3 | Segurança 9 |
 | 1.8 | **Acesso direto ao banco restrito** — Banco sem exposição aberta à internet: acesso administrativo só por rede e IPs autorizados. | Pendente | Stênio | — | Segurança 9 |
-| 1.9 | **Dimensionar banco e armazenamento** — Medido e projetado em `docs/DIMENSIONAMENTO.md`: o piloto cabe no plano Pro do banco (decisão 8.8); vídeos são o que mais cresce. | Validar | Stênio | 8.8 | Call · Melhorias 13 e 20 |
-| 1.10 | **Monitoramento com alertas** — Site, banco, APIs, armazenamento e IA, com responsáveis definidos para receber os alertas. | Bloqueado | Stênio | 3.2 | Melhorias 20 · Segurança 17 |
+| 1.9 | **Dimensionar banco e armazenamento** — `docs/DIMENSIONAMENTO.md` e `docs/INFRA-NACIONAL.md`. **Decidido em 08/10:** testes com o Carlos no Supabase grátis + VPS 2 vCPU/4 GB; no lançamento, Supabase Pro (compute Micro incluso) + VPS 4 vCPU/8 GB em São Paulo. Fotos viram WebP no navegador e vídeos 720p no worker. | Validar | Stênio | 8.8 | Call · Melhorias 13 e 20 |
+| 1.10 | **Monitoramento com alertas** — `/api/saude` (banco, armazenamento, tiles, fila, fontes) e o worker conferindo a cada 5 min: alerta em Segurança e e-mail aos responsáveis, um por componente por hora. Monitor externo (Uptime Kuma) para a VPS inteira. `docs/MONITORAMENTO.md`. O e-mail depende do Resend. | Parcial | Stênio | 1.2 · 3.2 | Melhorias 20 · Segurança 17 |
 | 1.11 | **Limpeza dos dados de demonstração** — No dia do lançamento. | Pendente | Stênio | 8.13 | — |
 
 ## 2. Mapa e cartografia
@@ -36,7 +36,7 @@ O que foi apontado no mapa, o que já foi ajustado e precisa ser conferido, e o 
 
 | # | Pendência | Situação | Quem | Depende de | Origem |
 |---|---|---|---|---|---|
-| 2.1 | **Velocidade e fluidez do mapa** — CAR e lotes agora chegam como tiles vetoriais gerados no banco (poucos KB por tile, cache no navegador e no servidor); o mapa não baixa mais GeoJSON a cada movimento e os pedidos de tile não passam pelo refresh de sessão. Falta medir em aparelho real no 4G. | Validar | Stênio e Carlos | 1.2 | Call · Melhorias 2 |
+| 2.1 | **Velocidade e fluidez do mapa** — CAR e lotes como tiles vetoriais; CAR do **Brasil inteiro** num arquivo PMTiles pronto (2,4 GB, 432 mil tiles) que o navegador lê por pedaços direto da Cloudflare, sem passar pelo servidor. Marcadores menores. Falta publicar o arquivo na R2 e medir em aparelho real no 4G. | Validar | Stênio e Carlos | 1.7 | Call · Melhorias 2 |
 | 2.2 | **Tour 3D só depois do mapa carregar** — Ajustado e mais lento. Conferir no celular. | Validar | Stênio e Carlos | — | Call · Melhorias 4 |
 | 2.3 | **Marcações visíveis ao afastar o zoom** — Imóveis têm marcador regional; a malha do CAR agora aparece desde a visão regional (de longe só as áreas maiores, com aviso) em vez de sumir abaixo do zoom 12. | Validar | Stênio e Carlos | — | Call |
 | 2.4 | **Mapa limpo, só com o essencial** — Lotes e metragens numa camada limpa; a planta original, com círculos, setas, rodovias e nomes de rua, virou camada opcional. | Validar | Stênio e Carlos | — | Call · Melhorias 3 |
@@ -47,8 +47,10 @@ O que foi apontado no mapa, o que já foi ajustado e precisa ser conferido, e o 
 | 2.9 | **Plantas completas de Limeira do Oeste e União de Minas** — Exportar os arquivos do AutoCAD no formato que o sistema lê. | Bloqueado | Stênio | — | — |
 | 2.10 | **“Consultar informações” no lote urbano** — O rural já tem, pela consulta do CAR. Cartão do lote ganhou o botão; `/consulta/lote/[id]` mostra município, área, perímetro, lados, quadra e número, pontos de referência com distância e o cruzamento com as fontes ao vivo (mesma trava de plano, cota, cache e registro do CAR, código comum em `src/lib/geo/consultaArea.ts`). | Validar | Stênio | — | Melhorias 7 |
 | 2.11 | **Número do lote e da quadra** — Ler os textos da planta e associar a cada lote. `scripts/numera-lotes.mjs` lê os textos do DXF; em Iturama 21.688 de 25.910 lotes ganharam número e 21.504 quadra (19.002 os dois). Aparecem no cartão do lote, na consulta e no mapa a partir do zoom 18. Limeira e União só têm DWG: falta converter para DXF. | Validar | Stênio | — | Melhorias 6 |
-| 2.12 | **Pontos de referência** — Distância até o imóvel e atualização periódica da fonte (OpenStreetMap). Distância em linha reta no painel do mapa e na página do imóvel. Atualização: `POST /api/admin/pois/atualizar` põe na fila (job `refresh_pois`) os anúncios com pontos mais velhos que o prazo de Configurações › Mapa (padrão 90 dias). Falta um agendador chamar a rota. | Validar | Stênio | — | Melhorias 5 |
-| 2.13 | **Expansão para novas regiões** — Nova região (por exemplo Frutal, num raio de 150 km) entra só com municípios e plantas, com acesso próprio. O município já entra pelo código do IBGE, com o CAR automático; falta o roteiro e um teste completo. | Parcial | Stênio | — | Call · Melhorias 1 |
+| 2.12 | **Pontos de referência** — Distância até o imóvel (painel do mapa e página do imóvel) e atualização periódica: o worker agenda sozinho, uma vez por dia, os anúncios com pontos mais velhos que o prazo de Configurações › Mapa (padrão 90 dias). | Validar | Stênio | — | Melhorias 5 |
+| 2.13 | **Expansão para novas regiões** — `node scripts/nova-regiao.mjs` (municípios pelo IBGE num raio, CAR automático) e roteiro em `docs/EXPANSAO.md`. Testado com Frutal (117 municípios, desfeito depois do teste). | Validar | Stênio | — | Call · Melhorias 1 |
+| 2.14 | **Cartografia nacional do CAR** — Arquivo do Brasil inteiro gerado (`scripts/car-nacional/`: baixa do SICAR, gera, publica, confere), atualizado uma vez por mês, sem depender do SICAR na hora do uso. Enquanto não está na R2, o mapa busca no SICAR sob demanda a janela da tela. | Bloqueado | Stênio | 1.7 | Carlos 07/10 |
+| 2.15 | **Camadas oficiais no mapa** — SIGEF, terras indígenas (FUNAI), quilombolas, embargos do IBAMA, unidades de conservação, desmatamento PRODES Cerrado, focos de queimada do INPE e processos minerários da ANM desenhados no mapa, com cartão no clique e atalhos no menu (plano profissional). | Validar | Stênio e Carlos | — | Carlos 07/10 |
 
 ## 3. APIs e integrações
 
@@ -56,7 +58,7 @@ Serviços externos e bases oficiais que alimentam o mapa, os avisos e o relatór
 
 | # | Pendência | Situação | Quem | Depende de | Origem |
 |---|---|---|---|---|---|
-| 3.1 | **Satélite licenciado (Esri)** — Conta e chave restrita ao domínio; depois, conferir nuvem em cada município. | Pendente | Stênio | 1.3 | — |
+| 3.1 | **Satélite licenciado (Esri)** — Decidido em 23/09 (Esri Location Platform; 2 milhões de tiles/mês grátis). Conta e chave restrita ao domínio; depois, conferir nuvem em cada município. | Pendente | Stênio | 1.3 | — |
 | 3.2 | **E-mails automáticos (Resend)** — Novo interessado, imóvel aprovado, recuperação de senha e alertas. | Bloqueado | Stênio | 1.3 | — |
 | 3.3 | **Cobrança (Asaas)** — Mensalidade do anúncio e assinatura da consulta, com baixa automática. | Bloqueado | Carlos | 8.3 | Call |
 | 3.4 | **SIGEF, IBAMA embargos, quilombolas e IPHAN** — Consultados ao vivo no relatório territorial: SIGEF e SNCI pelo serviço do INCRA, embargos pelo ArcGIS do IBAMA, quilombolas pela base do INCRA republicada pelo IBAMA e patrimônio pelo serviço do IPHAN. Na região de Iturama: 4.170 parcelas SIGEF, 21 embargos, 19 bens do IPHAN, nenhum território quilombola. O serviço do INCRA declara “vedado o uso comercial”: validar com o jurídico. | Validar | Stênio e Carlos | — | APIs |
@@ -67,7 +69,7 @@ Serviços externos e bases oficiais que alimentam o mapa, os avisos e o relatór
 | 3.9 | **Rodovias (DNIT e DER/MG)** — Federais (versão vigente do cadastro nacional) e estaduais (base que o DNIT publica, com as do DER/MG) entram ao vivo no relatório; 15 rodovias na região. O DER/MG não publica serviço próprio. | Validar | Stênio | — | APIs |
 | 3.10 | **ANEEL e ANM** — A ANM voltou a responder (127 processos na região). A ANEEL agora traz linhas de transmissão e subestações, além das usinas (7 linhas e a UHE Água Vermelha na região). | Validar | Stênio | — | APIs |
 | 3.11 | **API de avaliação de imóveis** — Base para a pré-avaliação de valor. | Bloqueado | Carlos | 8.4 | Call · Melhorias 18 |
-| 3.12 | **Chave de inteligência artificial** — Necessária para o chat. | Bloqueado | Carlos | 8.2 | Call |
+| 3.12 | **Chave de inteligência artificial** — Modelo decidido em 08/10: Claude Haiku 5.5 (~R$ 0,005 por pergunta), com cotas por plano (20 a 2.000/mês) e limite de conversas simultâneas. Falta a conta e a chave da Anthropic. | Bloqueado | Carlos | — | Call |
 | 3.13 | **Busca por matrícula** — “Fazenda Santa Maria, matrícula X”: definir a fonte, já que matrícula fica nos cartórios. | Bloqueado | Stênio e Carlos | 8.12 | Call · Melhorias 16 |
 | 3.14 | **Matriz técnica das fontes** — Para cada fonte: órgão, endereço oficial, tipo de acesso, autenticação, custo, limites, licença, atualização, campos e situação medida. Em docs/FONTES.md e na tela Fontes oficiais (Cartografia). | Validar | Stênio e Carlos | — | APIs · Melhorias 19 |
 | 3.15 | **Origem e data de cada informação** — Cada bloco do relatório mostra órgão, base, selo (oficial, terceiro, derivado ou informado pelo usuário), data da consulta e, quando o órgão informa, a data ou versão da base. | Validar | Stênio e Carlos | — | APIs · Melhorias 19 |
@@ -110,6 +112,8 @@ Recursos novos que ainda não estão no sistema.
 | 5.14 | **Alteração de anúncio publicado** — Anunciante propõe mudanças (título, descrição, valor, área, condições); vira versão para a Matriz aprovar ou rejeitar; o anúncio atual continua no ar durante a análise. | Validar | Stênio e Carlos | — | Fluxograma 9 |
 | 5.15 | **Pedido de complemento** — Além de “corrigir”, a Matriz pede dados complementares; o anunciante vê a diferença no painel. | Validar | Stênio e Carlos | — | Fluxograma 7 |
 | 5.16 | **Cadastro de demanda sem imóvel** — Demandas registradas pelo Comercial (botão na oportunidade); quando um imóvel publicado casa com a demanda (tipo, município, valor e área, com folga ajustável, 10% por padrão), vira tarefa do Comercial e e-mail ao responsável. Falta o Carlos confirmar os critérios. | Validar | Carlos | — | Fluxograma 12 |
+| 5.17 | **Busca de imóveis** — Filtros de tipo, preço e área, ordem, grade ou lista, vista com **lista ao lado do mapa** (passar o mouse acende a divisa; clicar na divisa leva ao cartão), **favoritos** (coração no cartão e na ficha; sem conta ficam no aparelho e vão para a conta ao entrar) e páginas de 24. Imóvel sem foto mostra o terreno no satélite, também em Meu painel. | Validar | Stênio e Carlos | — | 08/10 |
+| 5.18 | **Fotos e vídeos sem sobrecarregar** — Foto vira WebP de até 2048 px no navegador antes de subir (6,3 MB → 0,2 MB, sem os dados de GPS); vídeo é reduzido a 720p no worker, com capa. | Validar | Stênio | 1.4 | 08/10 |
 
 ## 6. Segurança e LGPD
 
@@ -119,7 +123,7 @@ O que falta para fechar os requisitos de segurança e proteção de dados.
 |---|---|---|---|---|---|
 | 6.1 | **Varredura de vulnerabilidades e pentest** — Feito por empresa externa antes do lançamento. | Pendente | Externo | 1.2 | Segurança 15 e 21 |
 | 6.2 | **Revisão de segurança das APIs** — Feita em 07/10 (67 rotas + teste direto na API do banco), relatório em `docs/AUDITORIA-APIS.md` e triagem automática em `scripts/audita-rotas.mjs`. Corrigidos: cadastro direto no Auth que permitia criar conta de Diretoria, escrita direta pelo navegador em imóvel/documentos/oportunidades (dava para publicar sem a Matriz), relatório territorial aberto de qualquer imóvel, troca de senha sem a senha atual, XSS no popup do mapa, upload sem conferir o conteúdo, CSRF (conferência de origem), cabeçalhos e cookie seguro. Falta desligar o cadastro público no painel do Supabase. | Parcial | Stênio | — | Segurança 14 |
-| 6.3 | **Registro de quem abre cada documento** — Documentos, selfies, autorizações, contratos e anexos cartográficos abrem por `/api/arquivos`, que confere a permissão a cada clique, registra quem abriu (inclusive negados) e assina por 60 s; lista em Segurança › Acessos a documentos. Contratos e anexos já usam; falta a tela de documentos do imóvel e a selfie na ficha do admin passarem a usar o novo endereço. | Parcial | Stênio | — | Segurança 11 e 13 |
+| 6.3 | **Registro de quem abre cada documento** — Documentos, selfies, autorizações, contratos e anexos cartográficos abrem por `/api/arquivos`, que confere a permissão a cada clique, registra quem abriu (inclusive negados) e assina por 60 s; lista em Segurança › Acessos a documentos. A pasta de documentos do imóvel e a selfie na ficha da Central também passam por ali. | Validar | Stênio | — | Segurança 11 e 13 |
 | 6.4 | **Retenção e descarte automático** — Mecanismo pronto: prazos em Configurações › Segurança (selfie, documentos de anúncio reprovado, registros de acesso), rotina diária no worker com registro do que foi descartado e modo simulação. Tudo em 0 (não descartar) e só simulando até a decisão dos prazos. | Bloqueado | Stênio | 8.9 | Segurança 11, 12 e 19 |
 | 6.5 | **Criptografia de campos sensíveis** — CPF/CNPJ cifrado na aplicação, com hash para unicidade e busca, e fora do token de sessão; inerte sem a chave `CAMPO_CRIPTO_CHAVE` (nada muda no cadastro). Telefone e caminhos de arquivo ficam sem cifra, com a justificativa em `docs/SEGURANCA.md` §6. Falta pôr a chave no servidor e rodar `scripts/cifra-cpf.mjs` nas contas existentes. | Parcial | Stênio | 1.1 | Segurança 10 |
 | 6.6 | **Rotação de chaves e segredos** — Procedimento, frequência e responsável de cada segredo em `docs/SEGURANCA.md` §11. Falta indicar a conta da Arini que guarda cópia das chaves. | Validar | Stênio e Carlos | — | Segurança 2 e 10 |
@@ -154,13 +158,13 @@ Definições que destravam os itens bloqueados.
 | # | Pendência | Situação | Quem | Depende de | Origem |
 |---|---|---|---|---|---|
 | 8.1 | **Prazo, custo e valor do escopo novo** — Por etapa, separando correção, melhoria, novidade e integração, com riscos e dependências. | Decisão | Stênio e Carlos | — | Call · Melhorias 22 |
-| 8.2 | **Custo por uso da inteligência artificial** — E quais dados podem ser enviados ao serviço de IA. | Decisão | Carlos | — | Segurança 18 |
+| 8.2 | **Custo por uso da inteligência artificial** — Decidido em 08/10: Claude Haiku 5.5, com cota por plano. Falta definir quais dados podem ser enviados ao serviço de IA (hoje só dado público e de anúncio publicado). | Decisão | Carlos | — | Segurança 18 |
 | 8.3 | **Conta do Asaas e quais cobranças passam por ele** | Decisão | Carlos | — | — |
 | 8.4 | **API ou metodologia da pré-avaliação e da aptidão** — E a validação jurídica do uso. | Decisão | Carlos | — | Call · Melhorias 18 |
 | 8.5 | **Regras da consulta profissional** — O que libera, para quem e o valor da assinatura. | Decisão | Carlos | — | Call · Melhorias 15 |
 | 8.6 | **Domínio** — ariniimoveisbrasil.com.br ou subdomínio. | Decisão | Carlos | — | — |
 | 8.7 | **MapBiomas por token ou por arquivo** | Decisão | Stênio e Carlos | — | — |
-| 8.8 | **Plano pago do banco de dados** — Cerca de US$ 25 por mês: backup automático e mais capacidade. | Decisão | Carlos | — | Call |
+| 8.8 | **Plano pago do banco de dados** — Decidido em 08/10: Supabase Pro (US$ 25/mês, compute Micro incluso) a partir do lançamento; nos testes, o plano grátis. Alternativas (Neon, Postgres na VPS) avaliadas e descartadas por ora. | Validar | Carlos | — | Call |
 | 8.9 | **Selfie e prazos de guarda** — Finalidade, base legal, retenção e descarte de selfies e documentos. | Decisão | Carlos | — | Melhorias 9 · Segurança 12 |
 | 8.10 | **Regras das franquias** — Território e o que cada franqueado enxerga. | Decisão | Carlos | — | Call · Melhorias 12 |
 | 8.11 | **Pacote de suporte pós-lançamento** — Horário comercial, para usuários e para o sistema, e quando passar a ter pessoas dedicadas. | Decisão | Stênio e Carlos | — | Call |
@@ -181,7 +185,7 @@ Validação antes de abrir ao público.
 | 9.4 | **Android e iPhone em 4G** | Pendente | Stênio | — | Melhorias 2 |
 | 9.5 | **Testes de segurança antes do lançamento** — Força bruta, permissões com todos os perfis, acesso direto a endereços e registros de outros usuários, envio de arquivos e segregação por território. | Parcial | Stênio | — | Segurança 21 e 22 |
 | 9.6 | **Teste de restauração do backup** | Bloqueado | Stênio | 1.6 | Segurança 22 |
-| 9.7 | **Testes automáticos antes de cada publicação** — `npm run testa` roda a auditoria das rotas, as fontes oficiais e os quatro testes de ponta a ponta; falta só virar rotina antes de cada publicação. | Validar | Stênio | — | — |
+| 9.7 | **Testes automáticos antes de cada publicação** — A cada push o GitHub roda tipos, lint, auditoria das rotas e o build de produção (`.github/workflows/verificar.yml`); commit com ✗ não deve ir para o ar. `npm run testa` (ponta a ponta, precisa do site e do banco) roda na homologação. | Validar | Stênio | — | — |
 
 ## 10. Pós-lançamento e suporte
 
@@ -206,3 +210,4 @@ O que garante o sistema funcionando depois da abertura.
 - **Jurídico:** Seis termos com aceite registrado: versão, data, hora e IP. Pedidos de titulares (LGPD) atendidos pela Matriz.
 - **07/10:** Mapa fluido com tiles vetoriais (CAR de longe, lotes e metragens de perto, cliques mantidos) e home com mapa vivo na seção de consultas.
 - **06/10 — documentos de 05/10:** Planos por nicho (recursos, cotas, trava no servidor, tela da Diretoria, página pública), solicitações cartográficas com protocolo e fila da Matriz, histórico/versões/origem dos dados na ficha do imóvel, alteração de anúncio publicado como nova versão, pedido de complemento, tentativas de acesso bloqueadas registradas. Cobertura item a item em `docs/FLUXOGRAMA-COBERTURA.md`.
+- **08/10:** Cartografia nacional do CAR (arquivo do Brasil inteiro pronto), oito camadas oficiais no mapa, fila e limite por órgão para aguentar acessos simultâneos, assistente de IA com Haiku 5.5 e base de inteligência por município, fotos e vídeos otimizados, backup criptografado, monitoramento, homologação e expansão em um comando, busca com lista e mapa, favoritos e páginas, códigos AIB nos imóveis de demonstração, verificação automática no GitHub.

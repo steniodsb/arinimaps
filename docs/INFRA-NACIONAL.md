@@ -12,7 +12,7 @@ na contratação**; R$ com cotação de 5,40. Complementa `DIMENSIONAMENTO.md` (
 | CAR sob demanda | SICAR (serviço público) + gravação no banco | só a 1ª visita a uma área; depois é tile |
 | Consulta de área | 16 fontes oficiais externas | tempo das fontes, não da nossa máquina; resultado fica salvo |
 | Satélite | **tiles da Esri, cobrados por uso** | é o maior custo variável (ver §3) |
-| Assistente de IA | API da Anthropic, cobrada por token | cota por plano (ver §4) |
+| Assistente de IA | API da Anthropic, cobrada por token | cota por plano (ver §4 e §5) |
 | Vídeos e fotos | armazenamento e banda | Cloudflare R2 (sem custo de saída) |
 
 ## 2. Recomendação por fase
@@ -45,37 +45,41 @@ processo; mover vídeos para o R2.
 
 ## 3. Satélite — o custo que mais cresce
 
-Esri Location Platform: 2 milhões de tiles/mês grátis, depois US$ 0,15 por mil.
-Uma sessão de mapa de ~2 minutos pede de 150 a 300 tiles (estimativa: 200).
+Esri Location Platform (pesquisado em 08/10/2026), dois modelos de cobrança:
+- **por tile:** 2 milhões grátis/mês, depois US$ 0,15 por mil (uma sessão de mapa de ~2 min ≈ 200 tiles);
+- **por sessão:** mil grátis/mês, depois US$ 4 por mil; cada sessão = um usuário, tiles ilimitados por até 12 h.
 
-| Sessões de mapa por dia | Tiles/mês | Custo/mês |
+| Sessões de mapa por dia | Por tile | Por sessão |
 |---|---|---|
-| 300 | 1,8 milhão | grátis |
-| 1.000 | 6 milhões | ≈ US$ 600 (R$ 3,2 mil) |
-| 5.000 | 30 milhões | ≈ US$ 4.200 (R$ 23 mil) |
+| 300 | grátis | ≈ US$ 32 |
+| 1.000 | ≈ US$ 600 | ≈ US$ 116 |
+| 5.000 | ≈ US$ 4.200 | ≈ US$ 600 |
 
-**Recomendação:** usar imagem aberta (Sentinel-2 da EOX, já no sistema, licença livre, 10 m) quando o mapa
-está afastado (zoom < 13, visão regional) e a Esri só de perto, onde a resolução importa. Isso corta algo
-como 60–70% dos tiles pagos. Medir no painel da Esri no 1º mês antes de decidir.
+Começar por tile (cabe no grátis) e passar para sessão a partir de ~500 sessões/dia. A sessão é documentada
+para o estilo `arcgis/imagery` do serviço Basemap Styles com MapLibre; confirmar com a chave se a URL de
+imagem que usamos hoje aceita o token de sessão. Alternativas avaliadas: Mapbox (≈ US$ 0,25–1/mil tiles),
+Google Map Tiles (US$ 0,60/mil, termos restringem misturar com outro mapa), MapTiler Flex (por sessão, mais
+barato, qualidade da imagem no interior de MG não comparada), Azure (preço sob consulta).
 
 ## 4. Assistente de IA
 
-### Custo por pergunta (modelo padrão `claude-sonnet-5-5`, tabela de set/2026 — conferir)
+### Custo por pergunta (preços conferidos em 08/10/2026)
 
-| Parte | Tokens | US$ |
+Pergunta típica: ~8 mil tokens de instruções e ferramentas (em cache), ~5 mil de pergunta, histórico e
+resultados de ferramentas, ~600 de resposta.
+
+| Modelo | Entrada | Cache | Saída | Por pergunta |
+|---|---|---|---|---|
+| **Claude Haiku 5.5 (padrão desde 08/10)** | US$ 0,10/M | US$ 0,01/M | US$ 0,50/M | **≈ US$ 0,001 ≈ R$ 0,005** |
+| Claude Sonnet 5.5 | US$ 2/M | US$ 0,10/M | US$ 10/M | ≈ US$ 0,017 ≈ R$ 0,09 |
+
+| Perguntas por dia | Haiku 5.5/mês | Sonnet 5.5/mês |
 |---|---|---|
-| Instruções e ferramentas (em cache) | ~8 mil a US$ 0,20/M | 0,0016 |
-| Pergunta, histórico e resultados das ferramentas | ~5 mil a US$ 2/M | 0,0100 |
-| Resposta | ~600 a US$ 10/M | 0,0060 |
-| **Total** | | **≈ US$ 0,018 ≈ R$ 0,10** |
+| 1.000 | ≈ R$ 160 | ≈ R$ 2.700 |
+| 5.000 | ≈ R$ 800 | ≈ R$ 13.500 |
+| 20.000 | ≈ R$ 3.200 | ≈ R$ 54.000 |
 
-Com o `claude-haiku-4-5` (mais simples, metade do preço) ≈ R$ 0,05.
-
-| Perguntas por dia | Sonnet/mês | Haiku/mês |
-|---|---|---|
-| 200 | ≈ R$ 600 | ≈ R$ 300 |
-| 1.000 | ≈ R$ 3.000 | ≈ R$ 1.500 |
-| 5.000 | ≈ R$ 15.000 | ≈ R$ 7.500 |
+Trocar de modelo é só a variável `ARINI_IA_MODELO` (dá para usar Sonnet num plano premium no futuro).
 
 A cota mensal de perguntas por plano (já existe) é o que segura o custo: o plano grátis deve ter poucas
 perguntas; os pagos, cota proporcional ao preço. A Central já mostra o custo estimado em R$ por conversa.
@@ -99,9 +103,61 @@ Técnica: extensão `pgvector` no próprio Supabase (sem custo extra) + embeddin
 (≈ US$ 0,02 por milhão de tokens — indexar 100 mil consultas custa menos de US$ 5). Espaço: ~6 KB por
 consulta indexada → 100 mil consultas ≈ 600 MB.
 
-## 5. Decisões para o Carlos
+## 5. Cenário de acessos simultâneos
+
+"Simultâneos" = pessoas ativas no mesmo minuto, no pico do dia. Mistura suposta: 60% no mapa, 10% no
+assistente, 5% rodando consulta de área, 25% navegando páginas.
+
+**Medido em 08/10:** o banco gera um tile do CAR em 1 a 4 ms (zoom 12–13) e até 40 ms no zoom 10 na região
+mais densa; tile médio de 4 a 76 KB. O satélite não passa pelo nosso servidor (vai direto da Esri).
+
+| Carga por pessoa | Pedidos |
+|---|---|
+| No mapa | ~1 movimento a cada 10 s × ~12 tiles do CAR/lotes ≈ 1,2 pedido/s ao nosso servidor |
+| No assistente | ~1 pergunta/min, 2–3 chamadas à Anthropic, resposta em 5–15 s |
+| Consulta de área | ~1 a cada 3 min, 16 fontes oficiais em paralelo, 10–40 s |
+| Navegando | ~1 página a cada 20 s |
+
+| | 100 simultâneos | 500 simultâneos | 2.000 simultâneos |
+|---|---|---|---|
+| Visitas/dia (aprox.) | 3–5 mil | 20–30 mil | 100 mil+ |
+| Tiles no servidor | ~70/s | ~360/s | ~1.400/s |
+| Tiles que chegam ao banco | ~20/s (cache em memória) | ~25/s (Cloudflare + memória) | ~30/s, ou zero com base pré-gerada (ver abaixo) |
+| Perguntas à IA | ~10/min | ~50/min | ~200/min |
+| Consultas de área | ~2/min (~30 chamadas a órgãos/min) | ~8/min (~130/min) | ~33/min (~530/min) |
+| VPS | 4 vCPU · 8 GB | 8 vCPU · 16 GB, 4 processos | 2× 8 vCPU + balanceador |
+| Banco | Pro + Small | Pro + Medium | Pro + Large + réplica |
+| Infra fixa/mês | ≈ US$ 110 | ≈ US$ 350 | ≈ US$ 1.200 |
+| Satélite (Esri por sessão)/mês | ≈ US$ 100 | ≈ US$ 540 | ≈ US$ 2.150 |
+| IA (Haiku 5.5)/mês | ≈ US$ 35 | ≈ US$ 160 | ≈ US$ 650 |
+| **Total/mês** | **≈ US$ 250 (R$ 1,4 mil)** | **≈ US$ 1.050 (R$ 5,7 mil)** | **≈ US$ 4.000 (R$ 22 mil)** |
+
+Satélite: sessões por dia ≈ 15 × pessoas no mapa no pico; US$ 4 por mil sessões após mil grátis. IA:
+perguntas por dia ≈ 120 × pessoas no assistente no pico.
+
+### Onde trava primeiro e o que fazer antes
+
+1. **Consultas de área (as fontes do governo, não o nosso servidor).** Com 25+ consultas ao mesmo tempo
+   são centenas de pedidos por minuto ao SICAR, INCRA, IBAMA; esses serviços caem ou bloqueiam. Fazer:
+   **fila** com limite de pedidos simultâneos por órgão, reaproveitar consulta recente da mesma área (já
+   existe) e mostrar "sua consulta está na fila (posição 3)". *Ainda não implementado — necessário a partir
+   de ~200 simultâneos.*
+2. **Assistente: limite da Anthropic, não custo.** Contas novas começam com poucas chamadas por minuto; o
+   nível sobe com depósito/uso no console. Fazer: subir o nível antes do lançamento e limitar conversas
+   simultâneas no servidor, com mensagem "assistente ocupado, tente em instantes". *Limite por pessoa já
+   existe; o global, não.*
+3. **Tiles com 500+ simultâneos.** Fazer: Cloudflare com cache de `/api/tiles/*` (cabeçalhos já prontos).
+   Com 2.000+: gerar a base nacional do CAR como arquivo de tiles (PMTiles) toda semana e servir pelo
+   Cloudflare R2 — o banco deixa de gerar tile.
+4. **Limite por IP em memória** conta por processo; com mais de um processo, mover para Redis.
+5. **Satélite** passa a ser o maior custo a partir de ~500 simultâneos: abrir a sessão da Esri só quando a
+   pessoa aproxima (zoom ≥ 13); de longe, imagem aberta (Sentinel-2). Quem só olha a região não gasta sessão.
+6. **Teste de carga** (k6) simulando 100 e 500 simultâneos no ambiente de homologação, antes de abrir ao
+   público.
+
+## 6. Decisões para o Carlos
 
 1. Fase de partida (recomendado: lançamento) e fornecedor da VPS em São Paulo.
 2. Satélite híbrido (aberto de longe, Esri de perto) — recomendado.
-3. Modelo da IA (Sonnet para qualidade, Haiku para custo) e cota de perguntas por plano.
+3. Cota de perguntas por plano (modelo: Haiku 5.5, decidido em 08/10 pelo custo).
 4. Aprovar a base de inteligência em três camadas (§4) — implementação estimada em 1 a 2 semanas.

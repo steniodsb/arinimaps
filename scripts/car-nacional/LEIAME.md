@@ -6,8 +6,8 @@ nacional não depende do SICAR estar no ar; o SICAR só é consultado na atualiz
 
 | Passo | Script | Tempo (medido em GO, 244 mil imóveis) |
 |---|---|---|
-| 1. Baixar do SICAR, município por município (retomável) | `baixar.mjs` | 1 min 46 s → Brasil ≈ 1 h |
-| 2. Gerar o PMTiles (geojson-vt + vt-pbf, sem tippecanoe) | `gerar.mjs` | 27 s → Brasil ≈ 15–20 min, ~4 GB |
+| 1. Baixar do SICAR, município por município (retomável) | `baixar.mjs` | Brasil: 37 min, 27 UFs, 0 falhas, 1,6 GB (08/10/2026) |
+| 2. Gerar o PMTiles (geojson-vt + vt-pbf, sem tippecanoe) | `gerar.mjs` | Brasil: ~10 min, 8.536.801 imóveis, 432.570 tiles, 2,4 GB |
 | 3. Enviar para a R2 e trocar o arquivo publicado | `publicar.mjs` | depende do link |
 | Conferir um arquivo (cabeçalho e tiles) | `conferir.mjs` | — |
 
@@ -20,8 +20,8 @@ node scripts/car-nacional/publicar.mjs
 Dados em `../dados/car/<uf>/<cod_ibge>.geojsonl.gz` (fora do repositório; `--dados` ou `CAR_DADOS`
 mudam a pasta). Rodar o `baixar.mjs` de novo só refaz municípios com mais de 30 dias.
 
-**Tamanho dos tiles** (meta: abaixo de ~300 KB para o mapa ficar fluido). Medido em GO, com gzip:
-z7–z10 até 79 KB, z11 até 67 KB, z12–z13 até 28 KB. De longe entram só as áreas grandes
+**Tamanho dos tiles** (meta: abaixo de ~300 KB para o mapa ficar fluido). Brasil, com gzip: média de
+3 a 47 KB por zoom, maior tile 147 KB (z11). 2 feições descartadas por coordenada fora do Brasil. De longe entram só as áreas grandes
 (z7 ≥ 1.000 ha … z11 ≥ 5 ha, z12+ todas) e só os campos do cartão.
 
 **No mapa:** `NEXT_PUBLIC_CAR_NACIONAL_URL` = endereço público do arquivo

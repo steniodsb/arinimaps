@@ -65,8 +65,12 @@ async function* linhas(arquivo) {
 }
 
 // ---------- 1. particiona em blocos ----------
-const pastaBlocos = join(DADOS, "car", "_blocos");
-rmSync(pastaBlocos, { recursive: true, force: true });
+// pasta nova a cada geração: no Windows, apagar a anterior às vezes falha
+// (ENOTEMPTY com antivírus/indexador segurando arquivo) e não pode travar
+const pastaBlocos = join(DADOS, "car", `_blocos-${Date.now()}`);
+for (const velha of readdirSync(join(DADOS, "car")).filter((n) => n.startsWith("_blocos"))) {
+  try { rmSync(join(DADOS, "car", velha), { recursive: true, force: true, maxRetries: 3 }); } catch { /* fica para a próxima */ }
+}
 mkdirSync(pastaBlocos, { recursive: true });
 const abertos = new Map();
 const limites = [Infinity, Infinity, -Infinity, -Infinity];
@@ -160,7 +164,7 @@ const r = await escritor.finalizar({
     }],
   },
 });
-rmSync(pastaBlocos, { recursive: true, force: true });
+try { rmSync(pastaBlocos, { recursive: true, force: true, maxRetries: 3 }); } catch { /* limpa na próxima */ }
 console.log("");
 for (const [z, e] of Object.entries(estat)) {
   console.log(`  z${z}: ${e.n} tiles · média ${(e.soma / e.n / 1024).toFixed(0)} KB · maior ${(e.max / 1024).toFixed(0)} KB (gzip)`);

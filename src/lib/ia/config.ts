@@ -13,6 +13,7 @@ import "server-only";
  *   ARINI_IA_MODELO        modelo; padrão claude-haiku-5-5 (custo); claude-sonnet-5-5 para respostas mais elaboradas
  *   ARINI_IA_ESFORCO       low | medium | high (padrão low: conversa curta, respostas rápidas)
  *   ARINI_IA_COTACAO_USD   cotação usada só para estimar custo em R$ na Central (padrão abaixo)
+ *   ARINI_IA_MAX_SIMULTANEAS  conversas respondendo ao mesmo tempo neste processo (padrão 20)
  */
 
 // Haiku 5.5 (08/10/2026): ~R$ 0,005 por pergunta contra ~R$ 0,09 do Sonnet 5.5.
@@ -40,6 +41,20 @@ export const LIMITES_IA = {
   historico: 12,
   iteracoesFerramentas: 6,
 };
+
+/**
+ * Teto de conversas respondendo AO MESMO TEMPO no servidor (docs/INFRA-NACIONAL.md
+ * §5, item 2). O gargalo do assistente não é custo, é o limite de chamadas por
+ * minuto da conta na Anthropic: cada pergunta faz 2–3 chamadas e segura a
+ * conexão por 5–15 s. Acima do teto a rota responde 503 `ia_ocupada` na hora
+ * ("tente de novo em instantes") em vez de empilhar pedidos que estourariam o
+ * limite do provedor e falhariam para todo mundo. Vale por processo (fila em
+ * memória, src/lib/seguranca/fila.ts).
+ */
+export function maxIaSimultaneas() {
+  const v = Number(process.env.ARINI_IA_MAX_SIMULTANEAS);
+  return Number.isFinite(v) && v >= 1 ? Math.floor(v) : 20;
+}
 
 /**
  * Preço por MILHÃO de tokens, em US$. VERIFICAR antes de usar para cobrança:

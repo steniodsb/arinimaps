@@ -10,7 +10,15 @@ import { LoaderCircle, RefreshCw, ScanSearch } from "lucide-react";
  * desenhada — muda só a `url`). Quem decide se pode é o servidor (plano +
  * cota): aqui só mostramos o que ele responder, inclusive a `solucao` quando a
  * consulta é negada (sem plano, cota esgotada).
+ *
+ * Com muita gente consultando ao mesmo tempo o servidor responde 503
+ * `consulta_na_fila` com a posição (src/lib/geo/consultaArea.ts): mostramos
+ * "sua consulta está na fila (posição N)" e tentamos de novo sozinhos — a
+ * volta da fila não gasta cota.
  */
+/** Quantas vezes voltamos para a fila antes de pedir para a pessoa tentar mais tarde (~2 min). */
+const MAX_VOLTAS_FILA = 12;
+
 export default function BotaoConsultarArea({
   url, corpo, jaConsultou, planNome, cotaRestante,
 }: {
@@ -24,23 +32,35 @@ export default function BotaoConsultarArea({
   const [msg, setMsg] = useState("");
   const [solucao, setSolucao] = useState("");
   const [negado, setNegado] = useState(false);
+  const [posicaoFila, setPosicaoFila] = useState<number | null>(null);
 
   async function consultar() {
-    setRodando(true); setMsg(""); setSolucao(""); setNegado(false);
-    const r = await fetch(url, corpo === undefined ? { method: "POST" } : {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo),
-    }).catch(() => null);
-    const data = r ? await r.json().catch(() => ({})) : {};
-    setRodando(false);
+    setRodando(true); setMsg(""); setSolucao(""); setNegado(false); setPosicaoFila(null);
+    let r: Response | null = null;
+    let data: Record<string, unknown> & { error?: string; solucao?: string; codigo?: string } = {};
+    for (let volta = 0; ; volta++) {
+      r = await fetch(url, corpo === undefined ? { method: "POST" } : {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo),
+      }).catch(() => null);
+      data = r ? await r.json().catch(() => ({})) : {};
+      if (data.codigo !== "consulta_na_fila" || volta >= MAX_VOLTAS_FILA) break;
+      setPosicaoFila(Number(data.posicao) || 1);
+      setMsg(data.error ?? "Sua consulta está na fila.");
+      setSolucao(data.solucao ?? "");
+      await new Promise((ok) => setTimeout(ok, (Number(data.tentar_em) || 10) * 1000));
+    }
+    setRodando(false); setPosicaoFila(null); setMsg(""); setSolucao("");
     if (!r?.ok) {
       setMsg(data.error ?? "Não foi possível consultar agora.");
       if (typeof data.solucao === "string") setSolucao(data.solucao);
       if (data.codigo === "sem_plano" || data.codigo === "cota_esgotada") setNegado(true);
+      if (data.codigo === "consulta_na_fila") setSolucao("O sistema segue muito movimentado. Tente de novo em alguns minutos.");
       return;
     }
+    const falharam = Array.isArray(data.falharam) ? data.falharam : [];
     setMsg(
-      data.falharam?.length
-        ? `${data.falharam.length} fonte(s) não responderam e aparecem como indisponíveis.`
+      falharam.length
+        ? `${falharam.length} fonte(s) não responderam e aparecem como indisponíveis.`
         : data.consultadas === 0 ? "Os dados já estavam atualizados." : ""
     );
     router.refresh();
@@ -52,7 +72,7 @@ export default function BotaoConsultarArea({
     <div className="text-right space-y-1.5">
       <button onClick={consultar} disabled={rodando || semCota} className="btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-60">
         {rodando ? <LoaderCircle className="size-4 animate-spin" /> : jaConsultou ? <RefreshCw className="size-4" /> : <ScanSearch className="size-4" />}
-        {rodando ? "Consultando os órgãos…" : jaConsultou ? "Atualizar consulta" : "Consultar fontes oficiais"}
+        {posicaoFila != null ? `Na fila (posição ${posicaoFila})…` : rodando ? "Consultando os órgãos…" : jaConsultou ? "Atualizar consulta" : "Consultar fontes oficiais"}
       </button>
       {cotaRestante != null && (
         <p className={"text-xs " + (semCota ? "text-alerta" : "text-texto-2")}>

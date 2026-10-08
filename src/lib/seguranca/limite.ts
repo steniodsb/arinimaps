@@ -11,10 +11,21 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  */
 export type Limite = { permitido: boolean; restante: number; liberaEm: Date | null };
 
+/**
+ * IP de quem fez o pedido, na ordem em que dá para confiar:
+ *  1. `cf-connecting-ip` — a Cloudflare sobrescreve, o cliente não forja;
+ *  2. `x-real-ip` — o proxy da VPS (Traefik do Dokploy) grava o IP da conexão;
+ *  3. o ÚLTIMO item de `x-forwarded-for` — o que o nosso proxy acrescentou.
+ * O PRIMEIRO item do x-forwarded-for vem do próprio cliente quando o proxy só
+ * acrescenta: usá-lo deixava qualquer um trocar de "IP" a cada pedido e
+ * escapar dos limites (achado no teste de carga de 08/10/2026).
+ */
 export function ipDoPedido(request: Request) {
+  const xff = request.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean);
   return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    xff?.[xff.length - 1] ||
     "desconhecido"
   );
 }

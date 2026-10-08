@@ -15,6 +15,9 @@ import { formatArea, formatBRL, STATUS_LABEL } from "@/lib/format";
  *    resultados de consulta já gravados (nunca dispara consulta nova, que é
  *    paga/limitada), e artigos PUBLICADOS da base de conhecimento;
  *  · sem dado pessoal: nada de dono, parceiro, telefone, documento, lead;
+ *  · a única escrita é `registrar_lacuna`: grava a pergunta sem resposta (já
+ *    sem CPF/telefone/e-mail) numa fila de curadoria humana que o assistente
+ *    nunca lê de volta — só vira conhecimento depois que alguém publica artigo;
  *  · tudo que volta é DADO, entregue como JSON — o prompt de sistema manda o
  *    modelo ignorar qualquer instrução que apareça dentro desses dados.
  */
@@ -27,6 +30,9 @@ export const FERRAMENTA_ROTULO: Record<string, string> = {
   detalhes_imovel: "Lendo a ficha do imóvel",
   consultar_area_car: "Consultando a área do CAR",
   buscar_conhecimento: "Consultando a base de conhecimento",
+  buscar_consultas_anteriores: "Procurando consultas territoriais já feitas",
+  inteligencia_mercado: "Lendo os números de mercado da região",
+  registrar_lacuna: "Anotando a pergunta para a equipe",
 };
 
 // eager_input_streaming: as entradas chegam enquanto são geradas; como o
@@ -101,6 +107,64 @@ export const FERRAMENTAS: Anthropic.Beta.BetaTool[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: "buscar_consultas_anteriores",
+    description:
+      "Procura consultas territoriais JÁ FEITAS no sistema (áreas do CAR, lotes urbanos e imóveis anunciados) e devolve o resumo " +
+      "de cada uma: município, código do CAR, o que cada fonte oficial encontrou (embargos, SIGEF, terras indígenas, mineração, " +
+      "queimadas, desmatamento, água, energia etc.) e a DATA de cada dado. Use para \"já consultaram alguma área com embargo em " +
+      "Iturama?\", \"o que se sabe da área MG-3134400-...\" ou \"tem queimada perto de ...\". Informe ao menos um filtro. " +
+      "Não faz consulta nova e não diz quem consultou.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        municipio: { type: "string", description: "nome do município, ex.: Iturama" },
+        uf: { type: "string", description: "sigla do estado, ex.: MG" },
+        codigo_car: { type: "string", description: "código do CAR (inteiro ou o começo, mín. 10 caracteres)" },
+        termo: { type: "string", description: "o que procurar nos resultados, ex.: embargo, mineração, terra indígena, queimada" },
+        limite: { type: "integer", minimum: 1, maximum: 10 },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "inteligencia_mercado",
+    description:
+      "Números AGREGADOS de mercado de um município: quantos anúncios publicados, preço mediano por hectare (rural) ou por m² " +
+      "(urbano), faixa típica (25% a 75% dos anúncios) e, quando houver, vendas registradas — com a data do cálculo. Use para " +
+      "\"quanto vale o hectare em Iturama?\" ou \"qual o preço do m² de lote em Carneirinho?\". É referência a partir de valores " +
+      "anunciados, não avaliação do imóvel de ninguém.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        municipio: { type: "string", description: "nome do município, ex.: Iturama" },
+        uf: { type: "string", description: "sigla do estado, ex.: MG" },
+        tipo: { type: "string", enum: ["rural", "urbano"], description: "rural (R$/ha) ou urbano (R$/m²); sem tipo, traz os dois" },
+      },
+      required: ["municipio"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "registrar_lacuna",
+    description:
+      "Registra uma pergunta que você NÃO conseguiu responder com as outras ferramentas (sem resultado ou sem a informação), " +
+      "para a equipe da Arini responder na base de conhecimento. Chame no máximo uma vez por resposta, depois de tentar as " +
+      "ferramentas certas. Escreva a pergunta de forma curta e genérica, sem nome, CPF, telefone, e-mail ou outro dado pessoal. " +
+      "Não use para assuntos fora do escopo, recusas ou pedidos de dado pessoal.",
+    eager_input_streaming: true,
+    input_schema: {
+      type: "object",
+      properties: {
+        pergunta: { type: "string", description: "a dúvida, curta e genérica, ex.: \"Qual o prazo para receber a comissão?\"" },
+        motivo: { type: "string", description: "por que não deu para responder, ex.: nenhum artigo sobre o assunto" },
+      },
+      required: ["pergunta"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 // ------------------------------------------------------------------ validação
@@ -108,6 +172,31 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : t
 const txt = (v: unknown, max = 120) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : undefined);
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const json = (v: unknown) => JSON.stringify(v);
+const dataBR = (d: string | null | undefined) =>
+  d ? new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) : null;
+const siglaUf = (v: unknown) => { const t = txt(v, 2)?.toUpperCase(); return t && /^[A-Z]{2}$/.test(t) ? t : undefined; };
+/** "Iturama/MG", "Iturama - MG" ou "Iturama, MG" → nome e UF separados. */
+function municipioUf(e: Record<string, unknown>) {
+  const bruto = txt(e.municipio, 80);
+  const m = bruto?.match(/^(.+?)\s*(?:\/|-|,)\s*([A-Za-z]{2})$/);
+  return { municipio: m ? m[1].trim() : bruto, uf: siglaUf(e.uf) ?? (m ? m[2].toUpperCase() : undefined) };
+}
+
+/**
+ * Tira dado pessoal de texto livre antes de gravar (LGPD): e-mail, CNPJ, CPF
+ * e telefone viram marcadores. A ordem importa: CNPJ antes do CPF (o CPF
+ * casaria com um pedaço do CNPJ). Código do CAR (UF-7 dígitos-hash), áreas e
+ * valores comuns passam intactos.
+ */
+export function semDadosPessoais(texto: string) {
+  return texto
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[e-mail]")
+    .replace(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, "[CNPJ]")
+    .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, "[CPF]")
+    .replace(/(?:\+?55[\s-]?)?(?:\(\d{2}\)|\b\d{2})[\s-]?9?\d{4}[\s-]?\d{4}\b/g, "[telefone]")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 // ------------------------------------------------------------------ executores
 async function buscarImoveis(e: Record<string, unknown>): Promise<ResultadoFerramenta> {
@@ -283,7 +372,7 @@ async function buscarConhecimento(e: Record<string, unknown>): Promise<Resultado
   const { data, error } = await admin.rpc("fn_kb_buscar", { p_q: consulta, p_limite: 4 });
   if (error) return { ok: false, fontes: [], conteudo: json({ erro: "A base de conhecimento não respondeu agora." }) };
   const achados = (data ?? []) as { id: string; slug: string; titulo: string; trecho: string; fonte: string; data_referencia: string; versao: number }[];
-  if (!achados.length) return { ok: true, fontes: [], conteudo: json({ artigos: [], observacao: "Nenhum artigo publicado sobre isso. Não invente: diga que não há informação oficial e sugira falar com a Arini." }) };
+  if (!achados.length) return { ok: true, fontes: [], conteudo: json({ artigos: [], observacao: "Nenhum artigo publicado sobre isso. Não invente: diga que não há informação oficial, registre a dúvida com registrar_lacuna e sugira falar com a Arini." }) };
   const { data: completos } = await admin.from("kb_artigos").select("id, conteudo").in("id", achados.slice(0, 3).map((a) => a.id));
   const conteudo = new Map((completos ?? []).map((c) => [c.id, String(c.conteudo)]));
   return {
@@ -298,11 +387,174 @@ async function buscarConhecimento(e: Record<string, unknown>): Promise<Resultado
   };
 }
 
+// --- consultas territoriais já feitas (resumos em ia_consultas_resumo, migration 0040)
+type Ocorrencia = {
+  fonte_id: string; fonte: string; orgao: string | null; situacao: "ha_registros" | "nada_encontrado" | "indisponivel";
+  quantidade: number; itens: string[]; raio_m: number; consultado_em: string;
+};
+type Resumo = {
+  chave: string; origem: "car" | "lote" | "imovel"; rotulo: string; imovel_codigo: string | null; codigo_car: string | null;
+  municipio: string | null; uf: string | null; link: string | null; ocorrencias: Ocorrencia[];
+  dado_mais_antigo: string | null; dado_mais_recente: string | null; total: number;
+};
+const ORIGEM_RESUMO: Record<Resumo["origem"], string> = { car: "área do CAR", lote: "lote urbano", imovel: "imóvel anunciado" };
+
+async function buscarConsultasAnteriores(e: Record<string, unknown>): Promise<ResultadoFerramenta> {
+  const { municipio, uf } = municipioUf(e);
+  const car = txt(e.codigo_car, 80)?.toUpperCase().replace(/[\s.]/g, "");
+  const termo = txt(e.termo, 120);
+  const limite = Math.min(10, Math.max(1, Math.round(num(e.limite) ?? 5)));
+  if (!municipio && !car && !termo && !uf) {
+    return { ok: false, fontes: [], conteudo: json({ erro: "Informe um município, um código do CAR ou o que procurar." }) };
+  }
+  const { data, error } = await supabaseAdmin().rpc("fn_ia_buscar_consultas", {
+    p_municipio: municipio ?? null, p_uf: uf ?? null, p_car: car ?? null, p_termo: termo ?? null, p_limite: limite,
+  });
+  if (error) return { ok: false, fontes: [], conteudo: json({ erro: "As consultas anteriores não responderam agora." }) };
+  const lista = (data ?? []) as Resumo[];
+  if (!lista.length) {
+    return {
+      ok: true, fontes: [],
+      conteudo: json({
+        consultas: [],
+        observacao: "Nenhuma consulta territorial já feita casa com esses filtros. Isso NÃO quer dizer que a área esteja livre de " +
+          "restrições — só que ninguém consultou ainda. Quem tem o recurso no plano pode consultar pela página da área no mapa (/mapa).",
+      }),
+    };
+  }
+  const consultas = lista.map((r) => {
+    const com = (s: Ocorrencia["situacao"]) => r.ocorrencias.filter((o) => o.situacao === s);
+    const [de, ate] = [dataBR(r.dado_mais_antigo), dataBR(r.dado_mais_recente)];
+    return {
+      area: r.rotulo,
+      tipo_de_area: ORIGEM_RESUMO[r.origem],
+      municipio: r.municipio ? `${r.municipio}/${r.uf ?? ""}` : null,
+      codigo_car: r.codigo_car,
+      link: r.link,
+      dados_consultados_em: de === ate ? ate : `entre ${de} e ${ate}`,
+      com_registros: com("ha_registros").map((o) => ({
+        fonte: o.orgao ? `${o.fonte} — ${o.orgao}` : o.fonte,
+        quantidade: o.quantidade,
+        abrangencia: o.raio_m ? `a área e ${(o.raio_m / 1000).toLocaleString("pt-BR")} km ao redor` : "só a área",
+        itens: o.itens.slice(0, 4),
+        dado_de: dataBR(o.consultado_em),
+      })),
+      nada_encontrado: com("nada_encontrado").map((o) => `${o.fonte} (consultado em ${dataBR(o.consultado_em)})`),
+      fonte_indisponivel_na_consulta: com("indisponivel").map((o) => `${o.fonte} (${dataBR(o.consultado_em)})`),
+    };
+  });
+  const fontes: Fonte[] = lista.map((r) => ({
+    tipo: r.origem === "imovel" ? "imovel" : "car",
+    rotulo: `${r.origem === "car" ? `CAR ${String(r.codigo_car).slice(0, 18)}…` : r.rotulo} (consulta de ${dataBR(r.dado_mais_recente)})`,
+    href: r.link ?? undefined,
+  }));
+  return {
+    ok: true, fontes,
+    conteudo: json({
+      total_encontrado: Number(lista[0]?.total ?? lista.length), mostrando: consultas.length, consultas,
+      avisos: [
+        "Diga SEMPRE a data de cada dado: é de quando a fonte foi consultada e pode ter mudado desde então.",
+        "\"Nada encontrado\" não equivale a certidão negativa; fonte indisponível não significa ausência de restrição.",
+        "O CAR é autodeclarado e não comprova propriedade.",
+      ],
+    }),
+  };
+}
+
+// --- inteligência de mercado (ia_mercado_municipio, recalculada toda noite pelo worker)
+type LinhaMercado = {
+  tipo: "rural" | "urbano"; municipio: string; uf: string; unidade: "ha" | "m2";
+  anuncios: number; anuncios_no_calculo: number; preco_mediano: number | null; preco_p25: number | null; preco_p75: number | null;
+  vendas: number; venda_mediana: number | null; venda_p25: number | null; venda_p75: number | null;
+  vendas_desde: string | null; vendas_ate: string | null; calculado_em: string;
+};
+/** O mesmo mínimo aplicado no banco (fn_recalcular_inteligencia_mercado): abaixo dele não há número gravado. */
+const MINIMO_MERCADO = 3;
+
+async function inteligenciaMercado(e: Record<string, unknown>): Promise<ResultadoFerramenta> {
+  const { municipio, uf } = municipioUf(e);
+  const tipo = e.tipo === "rural" || e.tipo === "urbano" ? e.tipo : null;
+  if (!municipio || municipio.length < 3) return { ok: false, fontes: [], conteudo: json({ erro: "Informe o município." }) };
+  const { data, error } = await supabaseAdmin().rpc("fn_ia_mercado", { p_municipio: municipio, p_uf: uf ?? null, p_tipo: tipo });
+  if (error) return { ok: false, fontes: [], conteudo: json({ erro: "Os números de mercado não responderam agora." }) };
+  const linhas = (data ?? []) as LinhaMercado[];
+  if (!linhas.length) {
+    return {
+      ok: true, fontes: [],
+      conteudo: json({
+        grupos: [],
+        observacao: `Não há anúncios publicados nem vendas registradas${tipo ? ` (${tipo})` : ""} em ${municipio} para calcular uma ` +
+          "referência. Não estime de memória.",
+      }),
+    };
+  }
+  const reais = (v: number | null) => formatBRL(v == null ? null : Number(v));
+  const grupos = linhas.map((l) => {
+    const por = l.unidade === "ha" ? "por hectare" : "por m²";
+    return {
+      municipio: `${l.municipio}/${l.uf}`,
+      tipo: l.tipo,
+      anuncios_publicados: l.anuncios,
+      preco_anunciado: l.preco_mediano == null
+        ? `sem número: menos de ${MINIMO_MERCADO} anúncios com valor e área (há ${l.anuncios_no_calculo})`
+        : {
+            mediana: `${reais(l.preco_mediano)} ${por}`,
+            faixa_tipica: `${reais(l.preco_p25)} a ${reais(l.preco_p75)} ${por}`,
+            anuncios_no_calculo: l.anuncios_no_calculo,
+          },
+      vendas_registradas: l.vendas === 0 ? "nenhuma"
+        : l.venda_mediana == null ? `sem número: menos de ${MINIMO_MERCADO} vendas registradas`
+        : {
+            quantidade: l.vendas,
+            mediana: `${reais(l.venda_mediana)} ${por}`,
+            faixa_tipica: `${reais(l.venda_p25)} a ${reais(l.venda_p75)} ${por}`,
+            periodo: `${dataBR(l.vendas_desde)} a ${dataBR(l.vendas_ate)}`,
+          },
+      calculado_em: dataBR(l.calculado_em),
+    };
+  });
+  const nomes = [...new Set(grupos.map((g) => g.municipio))].join(", ");
+  return {
+    ok: true,
+    fontes: [{ tipo: "conhecimento", rotulo: `Inteligência de mercado — ${nomes} (calculada em ${dataBR(linhas[0].calculado_em)})` }],
+    conteudo: json({
+      grupos,
+      avisos: [
+        "Referência estatística a partir de valores ANUNCIADOS no Arini (preço pedido, não preço fechado) e de vendas registradas pela Arini. NÃO é avaliação de nenhum imóvel.",
+        "Diga a data do cálculo. O preço de cada imóvel varia com localização, acesso, solo, água, benfeitorias e documentação.",
+        "Para um imóvel específico, indique a pré-avaliação (quando disponível no plano) ou um avaliador profissional.",
+      ],
+    }),
+  };
+}
+
+// --- perguntas sem resposta → fila de curadoria (ia_lacunas)
+async function registrarLacuna(e: Record<string, unknown>): Promise<ResultadoFerramenta> {
+  const pergunta = semDadosPessoais(txt(e.pergunta, 600) ?? "").slice(0, 300);
+  const motivo = semDadosPessoais(txt(e.motivo, 600) ?? "").slice(0, 300);
+  if (pergunta.length < 3) return { ok: false, fontes: [], conteudo: json({ erro: "Pergunta vazia." }) };
+  const { data, error } = await supabaseAdmin().rpc("fn_ia_registrar_lacuna", { p_pergunta: pergunta, p_motivo: motivo || null });
+  if (error || !(data as { ok?: boolean } | null)?.ok) {
+    return { ok: false, fontes: [], conteudo: json({ erro: "Não deu para anotar agora; responda normalmente." }) };
+  }
+  return {
+    ok: true, fontes: [],
+    conteudo: json({
+      registrado: true,
+      observacao: "Anotado para a equipe da Arini. Diga ao usuário, em uma frase, que ainda não há informação oficial sobre isso e " +
+        "que a dúvida foi encaminhada à equipe; se for urgente, sugira o suporte ou o WhatsApp da central.",
+    }),
+  };
+}
+
 const EXECUTORES: Record<string, (e: Record<string, unknown>) => Promise<ResultadoFerramenta>> = {
   buscar_imoveis: buscarImoveis,
   detalhes_imovel: detalhesImovel,
   consultar_area_car: consultarAreaCar,
   buscar_conhecimento: buscarConhecimento,
+  buscar_consultas_anteriores: buscarConsultasAnteriores,
+  inteligencia_mercado: inteligenciaMercado,
+  registrar_lacuna: registrarLacuna,
 };
 
 /** Executa uma ferramenta. Nunca lança: falha vira resultado com ok=false. */

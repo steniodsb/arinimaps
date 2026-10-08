@@ -4,8 +4,9 @@ import { useState } from "react";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
 import {
-  STATUS_ARTIGO, STATUS_ARTIGO_LABEL, slugDe, type Artigo, type StatusArtigo,
+  STATUS_ARTIGO, STATUS_ARTIGO_LABEL, slugDe, type Artigo, type Lacuna, type StatusArtigo,
 } from "@/lib/ia/conhecimento";
+import LacunasLista from "./LacunasLista";
 import { CAMPO, Etiqueta, ROTULO } from "@/components/ui/Pagina";
 import { Archive, BookOpen, CheckCircle2, FilePen, History, Plus, Save, Search, Send, Undo2 } from "lucide-react";
 
@@ -24,9 +25,21 @@ const VAZIO = { id: "", slug: "", titulo: "", conteudo: "", fonte: "", data_refe
 const campo = CAMPO;
 const dataBR = (d: string) => new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString("pt-BR");
 
-/** CRUD da base de conhecimento + histórico de versões + teste da busca do assistente. */
-export default function ArtigosAdmin({ inicial }: { inicial: Artigo[] }) {
+/**
+ * CRUD da base de conhecimento + histórico de versões + teste da busca do
+ * assistente + fila das perguntas que ele não soube responder.
+ */
+export default function ArtigosAdmin({ inicial, lacunasIniciais, resumoLacunas }: {
+  inicial: Artigo[];
+  lacunasIniciais: Lacuna[];
+  resumoLacunas: { respondidas: number; descartadas: number };
+}) {
   const [artigos, setArtigos] = useState(inicial);
+  const [lacunas, setLacunas] = useState(lacunasIniciais);
+  const [resumo, setResumo] = useState(resumoLacunas);
+  // pergunta que originou o artigo aberto no editor: ao salvar, o artigo é ligado a ela
+  const [lacunaOrigem, setLacunaOrigem] = useState<Lacuna | null>(null);
+  const [lacunaOcupada, setLacunaOcupada] = useState<string | null>(null);
   const [edit, setEdit] = useState<Artigo | null>(null);
   const [slugManual, setSlugManual] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -43,9 +56,12 @@ export default function ArtigosAdmin({ inicial }: { inicial: Artigo[] }) {
     if (r?.artigos) setArtigos(r.artigos);
   }
 
-  async function abrir(a: Artigo | null) {
+  async function abrir(a: Artigo | null, origem: Lacuna | null = null) {
     setErro(null); setOk(null); setVersoes(null); setVerVersao(null);
-    setEdit(a ? { ...a } : { ...VAZIO });
+    setLacunaOrigem(origem);
+    setEdit(a ? { ...a } : origem
+      ? { ...VAZIO, titulo: origem.pergunta.slice(0, 200), slug: slugDe(origem.pergunta) }
+      : { ...VAZIO });
     setSlugManual(!!a);
     if (a) {
       const r = await fetch(`/api/ia/conhecimento/${a.id}`).then((x) => x.json()).catch(() => null);
@@ -62,11 +78,46 @@ export default function ArtigosAdmin({ inicial }: { inicial: Artigo[] }) {
       : await enviarJson<{ id: string }>("/api/ia/conhecimento", "POST", corpo);
     setSalvando(false);
     if (!r.ok) return setErro(r.erro);
-    setOk(edit.id ? "Alterações salvas — nova versão registrada." : "Artigo criado.");
-    await recarregar();
     const id = edit.id || (r.dados as { id: string }).id;
+    let aviso = edit.id ? "Alterações salvas — nova versão registrada." : "Artigo criado.";
+    if (lacunaOrigem) {
+      const v = await enviarJson<{ lacuna: Lacuna }>(`/api/ia/lacunas/${lacunaOrigem.id}`, "PATCH", { acao: "vincular", artigo_id: id });
+      if (v.ok) {
+        const l = v.dados.lacuna;
+        if (l.status === "respondida") {
+          setLacunas((ls) => ls.filter((x) => x.id !== l.id));
+          setResumo((s) => ({ ...s, respondidas: s.respondidas + 1 }));
+          setLacunaOrigem(null);
+          aviso += " A pergunta saiu da fila de perguntas sem resposta.";
+        } else {
+          setLacunas((ls) => ls.map((x) => (x.id === l.id ? l : x)));
+          setLacunaOrigem(l);
+          aviso += " Publique o artigo para a pergunta contar como respondida.";
+        }
+      }
+    }
+    setOk(aviso);
+    await recarregar();
     const atualizado = await fetch(`/api/ia/conhecimento/${id}`).then((x) => x.json()).catch(() => null);
     if (atualizado?.artigo) { setEdit(atualizado.artigo); setVersoes(atualizado.versoes); setSlugManual(true); }
+  }
+
+  /** Responder: abre o rascunho já ligado à pergunta ou um artigo novo com ela como título. */
+  function responderLacuna(l: Lacuna) {
+    const ligado = l.artigo_id ? artigos.find((x) => x.id === l.artigo_id) : null;
+    void abrir(ligado ?? null, l);
+    // o editor pode não estar na tela ainda: rola depois da renderização
+    setTimeout(() => document.getElementById("kb-titulo")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  }
+
+  async function descartarLacuna(l: Lacuna) {
+    setLacunaOcupada(l.id); setErro(null);
+    const r = await enviarJson<{ lacuna: Lacuna }>(`/api/ia/lacunas/${l.id}`, "PATCH", { acao: "descartar" });
+    setLacunaOcupada(null);
+    if (!r.ok) return setErro(r.erro);
+    setLacunas((ls) => ls.filter((x) => x.id !== l.id));
+    setResumo((s) => ({ ...s, descartadas: s.descartadas + 1 }));
+    if (lacunaOrigem?.id === l.id) setLacunaOrigem(null);
   }
 
   async function testarBusca(e: React.FormEvent) {
@@ -80,6 +131,9 @@ export default function ArtigosAdmin({ inicial }: { inicial: Artigo[] }) {
 
   return (
     <div className="space-y-8">
+      <LacunasLista lacunas={lacunas} resumo={resumo} ocupado={lacunaOcupada}
+        aoResponder={responderLacuna} aoDescartar={descartarLacuna} />
+
       <form onSubmit={testarBusca} className="cartao p-5 flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-60">
           <label htmlFor="kb-q" className={ROTULO}>Testar a busca do assistente (só artigos publicados)</label>
@@ -134,6 +188,12 @@ export default function ArtigosAdmin({ inicial }: { inicial: Artigo[] }) {
                 <h2 className="flex items-center gap-2.5 lp-display text-xl text-texto"><FilePen className="size-5 text-verde" /> {edit.id ? `Editar artigo (versão ${edit.versao})` : "Novo artigo"}</h2>
                 {edit.id && <Etiqueta tom={TOM_ARTIGO[edit.status]}>{STATUS_ARTIGO_LABEL[edit.status]}</Etiqueta>}
               </div>
+              {lacunaOrigem && (
+                <p className="rounded-xl border border-linha bg-superficie-2 px-4 py-3 text-sm text-texto-2">
+                  Respondendo à pergunta sem resposta <strong className="text-texto">“{lacunaOrigem.pergunta}”</strong>
+                  {" "}({lacunaOrigem.ocorrencias} {lacunaOrigem.ocorrencias === 1 ? "vez" : "vezes"}). Ao publicar, ela sai da fila.
+                </p>
+              )}
               <div>
                 <label htmlFor="kb-titulo" className={ROTULO}>Título</label>
                 <input id="kb-titulo" className={campo} value={edit.titulo}

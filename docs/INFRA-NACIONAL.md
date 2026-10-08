@@ -103,6 +103,23 @@ Técnica: extensão `pgvector` no próprio Supabase (sem custo extra) + embeddin
 (≈ US$ 0,02 por milhão de tokens — indexar 100 mil consultas custa menos de US$ 5). Espaço: ~6 KB por
 consulta indexada → 100 mil consultas ≈ 600 MB.
 
+**Implementado em 08/10/2026 (migration 0040), sem embeddings** — busca textual do Postgres em português,
+sem acento (`unaccent` + `to_tsvector('portuguese')`, índice GIN), que já funciona sem chave nenhuma:
+
+| Camada | Banco | Ferramenta do assistente | Atualização |
+|---|---|---|---|
+| 1. Consultas territoriais | `ia_consultas_resumo`: um resumo por área do CAR, lote urbano ou imóvel anunciado — município, CAR, o que cada fonte encontrou e a data de cada dado. Nunca guarda quem consultou; área desenhada à mão (`geo:`) fica fora; resumo de imóvel só aparece enquanto o anúncio está na vitrine | `buscar_consultas_anteriores` (município, UF, CAR ou termo: "embargo", "mineração", "queimada"…) — responde sempre com a data | gatilho em `consultas_area` e `consultas_rurais` (falha no resumo nunca derruba a consulta); `fn_ia_resumos_consultas_reconstruir()` refaz tudo |
+| 2. Mercado | `ia_mercado_municipio`: por município e tipo, anúncios publicados (venda, sem leilão), mediana e faixa p25–p75 de R$/ha (rural) e R$/m² (urbano), vendas registradas (`sales`) | `inteligencia_mercado` — "quanto vale o hectare em Iturama", com a data do cálculo e o aviso de que é referência de anúncios, não avaliação | `fn_recalcular_inteligencia_mercado()`, job `inteligencia_mercado` do worker uma vez por dia (o projeto agenda rotinas pela fila `jobs`, não por pg_cron). Grupo com **menos de 3** fica sem número gravado no banco |
+| 3. Lacunas | `ia_lacunas`: pergunta (sem CPF/CNPJ/telefone/e-mail), ocorrências agrupadas pela forma normalizada, situação pendente/respondida/descartada, artigo ligado | `registrar_lacuna` — o modelo chama quando as ferramentas não trazem a resposta (instrução no prompt de sistema) | Marketing › Conhecimento › "Perguntas sem resposta": Responder abre o editor com a pergunta como título; publicar o artigo marca como respondida |
+
+Primeiro cálculo (08/10/2026), Iturama/MG: rural, 19 anúncios, mediana ≈ R$ 38 mil/ha (faixa R$ 34,6 mil a
+43,1 mil); urbano, 20 anúncios, mediana ≈ R$ 703/m² (faixa R$ 577 a 779); 1 venda rural registrada (abaixo do
+mínimo, sem número).
+
+**Evolução quando houver chave da Voyage:** coluna `vector` (pgvector) em `ia_consultas_resumo` e
+`kb_artigos`, embeddings gerados no gatilho/worker e busca híbrida (texto + significado). As tabelas e
+ferramentas acima ficam iguais; muda só a função de busca.
+
 ## 5. Cenário de acessos simultâneos
 
 "Simultâneos" = pessoas ativas no mesmo minuto, no pico do dia. Mistura suposta: 60% no mapa, 10% no
@@ -140,20 +157,45 @@ perguntas por dia ≈ 120 × pessoas no assistente no pico.
 1. **Consultas de área (as fontes do governo, não o nosso servidor).** Com 25+ consultas ao mesmo tempo
    são centenas de pedidos por minuto ao SICAR, INCRA, IBAMA; esses serviços caem ou bloqueiam. Fazer:
    **fila** com limite de pedidos simultâneos por órgão, reaproveitar consulta recente da mesma área (já
-   existe) e mostrar "sua consulta está na fila (posição 3)". *Ainda não implementado — necessário a partir
-   de ~200 simultâneos.*
+   existe) e mostrar "sua consulta está na fila (posição 3)". *Implementado em 08/10:* no máximo 4 pedidos
+   simultâneos por servidor de órgão (`ARINI_FONTES_MAX_SIMULTANEOS`), espera de até 25 s
+   (`ARINI_FONTES_ESPERA_MS`) — quem não ganha vaga sai como "indisponível agora", nunca "nada encontrado";
+   no máximo 8 consultas de área rodando ao mesmo tempo (`ARINI_CONSULTAS_MAX_SIMULTANEAS`), até 40
+   esperando (`ARINI_CONSULTAS_FILA_MAX`) por até 30 s (`ARINI_CONSULTAS_ESPERA_MS`); passou disso, 503
+   `consulta_na_fila` com a posição e a tela tenta de novo sozinha, sem gastar cota. Código:
+   `src/lib/seguranca/fila.ts`, `src/lib/rural/adaptadores.ts` (`pedir`) e `src/lib/geo/consultaArea.ts`.
 2. **Assistente: limite da Anthropic, não custo.** Contas novas começam com poucas chamadas por minuto; o
    nível sobe com depósito/uso no console. Fazer: subir o nível antes do lançamento e limitar conversas
-   simultâneas no servidor, com mensagem "assistente ocupado, tente em instantes". *Limite por pessoa já
-   existe; o global, não.*
+   simultâneas no servidor, com mensagem "assistente ocupado, tente em instantes". *Implementado em 08/10:*
+   até 20 conversas respondendo ao mesmo tempo por processo (`ARINI_IA_MAX_SIMULTANEAS`); acima disso 503
+   `ia_ocupada` e o chat devolve a pergunta à caixa. Cota mensal por plano (`mensagens_ia_mes`, migration
+   0039): básica 20, anunciante 50, profissional 300, parceiro 500, organização e franquia 2.000.
 3. **Tiles com 500+ simultâneos.** Fazer: Cloudflare com cache de `/api/tiles/*` (cabeçalhos já prontos).
    Com 2.000+: gerar a base nacional do CAR como arquivo de tiles (PMTiles) toda semana e servir pelo
    Cloudflare R2 — o banco deixa de gerar tile.
 4. **Limite por IP em memória** conta por processo; com mais de um processo, mover para Redis.
 5. **Satélite** passa a ser o maior custo a partir de ~500 simultâneos: abrir a sessão da Esri só quando a
    pessoa aproxima (zoom ≥ 13); de longe, imagem aberta (Sentinel-2). Quem só olha a região não gasta sessão.
-6. **Teste de carga** (k6) simulando 100 e 500 simultâneos no ambiente de homologação, antes de abrir ao
-   público.
+6. **Teste de carga** simulando 100 e 500 simultâneos no ambiente de homologação, antes de abrir ao
+   público. Script pronto, em Node puro: `scripts/teste-carga.mjs`. Cada pessoa simulada mistura tiles do
+   CAR em volta de Iturama (zoom 10–13, 12 por movimento), `/api/geo/imoveis` e as páginas `/`, `/imoveis`
+   e `/mapa`, com pausa curta entre ações; entra com a senha de acesso (`SITE_SENHA` do `.env.local`) e
+   imprime req/s, p50/p95/p99 por tipo, status e taxa de erro.
+
+   ```bash
+   # validação rápida contra o servidor local
+   node scripts/teste-carga.mjs
+   # homologação, 100 e depois 500 pessoas por 2 minutos
+   BASE_URL=https://homolog.ariniimoveisbrasil.com.br USUARIOS=100 DURACAO_S=120 node scripts/teste-carga.mjs
+   BASE_URL=https://homolog.ariniimoveisbrasil.com.br USUARIOS=500 DURACAO_S=120 node scripts/teste-carga.mjs
+   ```
+
+   Outras variáveis: `PAUSA_MS` (pausa máxima entre ações, padrão 1500), `RAMPA_S` (tempo para todos
+   entrarem, padrão 3) e `SIMULAR_IPS` (padrão 1: cada pessoa manda um `X-Forwarded-For` próprio para o
+   limite por IP valer por pessoa; use 0 se o proxy da homologação sobrescrever o cabeçalho — aí todo o
+   teste conta como um IP e esbarra no limite de 3.000 tiles/5 min). Rodar de uma máquina FORA da VPS, e
+   contra `next build && next start` ou a homologação: em `next dev` os tempos não valem (compila sob
+   demanda). Não cobre consulta de área nem assistente de propósito — bateriam nos órgãos e na Anthropic.
 
 ## 6. Decisões para o Carlos
 

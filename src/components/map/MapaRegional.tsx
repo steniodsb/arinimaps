@@ -26,6 +26,8 @@ import { IMAGENS_HISTORICAS, imagemHistoricaPorId } from "@/lib/map/historico";
 import { useTema } from "@/components/shell/BotaoTema";
 import { usePreferencias } from "@/lib/usePreferencias";
 import { escaparHtml } from "@/lib/seguranca/html";
+import { GerenciadorCamadasOficiais, type EstadoCamada, type FeicaoNoPonto } from "@/components/map/camadasOficiaisMapa";
+import { CAMADAS_OFICIAIS, camadaOficialPorId, descreverFeicao, type CamadaOficialId } from "@/lib/map/camadasOficiais";
 
 type ImovelProps = {
   id: string;
@@ -88,10 +90,46 @@ const CAR_TIPO: Record<string, string> = {
 };
 
 /** Cartão do imóvel do CAR clicado: o atalho para o proprietário anunciar a área dele. */
-function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
+/** O que as camadas oficiais ligadas têm no ponto clicado: uma linha por feição, com a cor da camada. */
+function ListaOficiais({ itens }: { itens: FeicaoNoPonto[] }) {
+  return (
+    <ul className="space-y-2">
+      {itens.slice(0, 12).map((f, i) => {
+        const c = camadaOficialPorId(f.camada)!;
+        const { titulo, detalhe } = descreverFeicao(f.camada, f.props);
+        return (
+          <li key={i} className="flex gap-2.5 rounded-xl border border-linha bg-superficie-2/60 px-3 py-2">
+            <span className={"mt-1 inline-block size-2.5 shrink-0 " + (c.ponto ? "rounded-full" : "rounded-sm")} style={{ background: c.cor }} />
+            <span className="min-w-0 text-sm leading-snug">
+              <span className="block text-[11px] font-bold uppercase tracking-wide text-texto-2">{c.orgao} · {c.nome}</span>
+              <span className="block font-semibold text-texto">{titulo}</span>
+              {detalhe && <span className="block text-xs text-texto-2">{detalhe}</span>}
+            </span>
+          </li>
+        );
+      })}
+      {itens.length > 12 && <li className="text-xs text-texto-2">e mais {itens.length - 12} no ponto clicado.</li>}
+    </ul>
+  );
+}
+
+/** Clique fora do CAR mas sobre camadas oficiais: o mesmo resumo, sem o cartão do imóvel. */
+function CartaoOficiais({ itens, onFechar }: { itens: FeicaoNoPonto[]; onFechar: () => void }) {
+  return (
+    <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] max-h-[70%] overflow-y-auto p-5 space-y-3 ${VIDRO}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-display text-lg font-bold leading-tight text-texto">Neste ponto</p>
+        <BotaoFechar onClick={onFechar} />
+      </div>
+      <ListaOficiais itens={itens} />
+    </div>
+  );
+}
+
+function CartaoCar({ car, onFechar, oficiais = [] }: { car: CarProps; onFechar: () => void; oficiais?: FeicaoNoPonto[] }) {
   const area = Number(car.area_ha);
   return (
-    <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-4 ${VIDRO}`}>
+    <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] max-h-[calc(100%-5rem)] overflow-y-auto p-5 space-y-4 ${VIDRO}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">{CAR_TIPO[car.tipo ?? ""] ?? "Imóvel rural"} · CAR</p>
@@ -109,6 +147,12 @@ function CartaoCar({ car, onFechar }: { car: CarProps; onFechar: () => void }) {
           <dd className="mt-0.5 font-mono text-[11px] text-texto break-all">{car.cod}</dd>
         </div>
       </dl>
+      {oficiais.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Também neste ponto</p>
+          <ListaOficiais itens={oficiais} />
+        </div>
+      )}
       <div className="space-y-2">
         <Link href={`/painel/novo?car=${encodeURIComponent(car.cod)}`} onClick={() => guardarCarPendente(car.cod)}
           className="btn-ouro flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
@@ -241,6 +285,19 @@ export default function MapaRegional({
     setCarAtivo(prefs.camada_car);
   }, [prefsCarregadas, prefs.mapa_base, prefs.camada_car]);
   const [carSel, setCarSel] = useState<CarProps | null>(null);
+  // camadas oficiais (SIGEF, embargos, ANM…): ligadas no painel, pedidas por janela
+  const camadasRef = useRef<GerenciadorCamadasOficiais | null>(null);
+  const [camadasAtivas, setCamadasAtivas] = useState<Set<CamadaOficialId>>(new Set());
+  const camadasAtivasRef = useRef(camadasAtivas);
+  const [estadoCamadas, setEstadoCamadas] = useState<Partial<Record<CamadaOficialId, EstadoCamada>>>({});
+  const [noPonto, setNoPonto] = useState<FeicaoNoPonto[]>([]);
+  const alternarCamada = useCallback((id: CamadaOficialId) => {
+    const nova = new Set(camadasAtivasRef.current);
+    if (nova.has(id)) nova.delete(id); else nova.add(id);
+    camadasAtivasRef.current = nova;
+    camadasRef.current?.alternar(id, nova.has(id));
+    setCamadasAtivas(nova);
+  }, []);
   const [carAviso, setCarAviso] = useState("");
   // lotes urbanos: o lote sob o cursor e o clicado
   const loteHoverRef = useRef<string | null>(null);
@@ -680,8 +737,8 @@ export default function MapaRegional({
           filter: ["==", ["geometry-type"], "Point"],
           paint: {
             "circle-color": CORES_MATCH as never,
-            "circle-radius": ["case", ["boolean", ["feature-state", "hover"], false], 10, 7] as never,
-            "circle-stroke-width": 2,
+            "circle-radius": ["case", ["boolean", ["feature-state", "hover"], false], 7, 5] as never,
+            "circle-stroke-width": 1.5,
             "circle-stroke-color": "#0A1310",
           },
         });
@@ -695,9 +752,13 @@ export default function MapaRegional({
           id: "imoveis-marcador", type: "circle", source: "imoveis-centros", maxzoom: ZOOM_MARCADOR,
           paint: {
             "circle-color": CORES_MATCH as never,
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 9, 7.5, 12, 9] as never,
-            "circle-stroke-width": 2,
+            // pequeno (pedido do Stenio em 08/10: os pontos cobriam a divisa e a
+            // cidade); some aos poucos perto do zoom em que a divisa já aparece
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 3, 9, 4, 12, 5] as never,
+            "circle-stroke-width": 1.5,
             "circle-stroke-color": "#FFFFFF",
+            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 12.5, 0.35] as never,
+            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 12.5, 0.35] as never,
           },
         });
 
@@ -814,11 +875,39 @@ export default function MapaRegional({
         // CAR fora da base regional: busca no SICAR ao parar o mapa
         map.on("moveend", garantirCarSobDemanda);
         garantirCarSobDemanda();
+
+        // camadas oficiais: o mapa é recriado na troca de tema, então religa as que estavam ligadas
+        camadasRef.current = new GerenciadorCamadasOficiais(map, setEstadoCamadas);
+        camadasAtivasRef.current.forEach((id) => camadasRef.current?.alternar(id, true));
+        // clique: reúne no cartão tudo o que as camadas ligadas têm no ponto;
+        // fora do CAR, o cartão do imóvel rural fecha (não fica um de outro lugar)
+        map.on("click", (e) => {
+          if (desenhandoRef.current) return;
+          const oficiais = camadasRef.current?.noPonto(e.point) ?? [];
+          setNoPonto(oficiais);
+          const noCar = !!map.getLayer("car-fill") && map.getLayoutProperty("car-fill", "visibility") !== "none"
+            && map.queryRenderedFeatures(e.point, { layers: ["car-fill"] }).length > 0;
+          if (!noCar) setCarSel(null);
+          // o cartão do clique abre no mesmo canto do painel de camadas: o painel cede a vez
+          if (noCar || oficiais.length) setCamadasAbertas(false);
+        });
+
+        // atalhos do menu (/mapa?camada=…): CAR ou uma camada oficial já ligada
+        const pedida = new URLSearchParams(window.location.search).get("camada");
+        if (pedida === "car") setCarAtivo(true);
+        else if (pedida && camadaOficialPorId(pedida)) {
+          setCamadasAbertas(true);
+          if ((!recursos || recursos.includes("camadas_oficiais")) && !camadasAtivasRef.current.has(pedida as CamadaOficialId)) {
+            alternarCamada(pedida as CamadaOficialId);
+          }
+        }
       });
     })();
 
     return () => {
       cancelado = true;
+      camadasRef.current?.destruir();
+      camadasRef.current = null;
       mapa?.remove();
       mapRef.current = null;
     };
@@ -1116,7 +1205,8 @@ export default function MapaRegional({
           <ComparaImagens mapa={mapaPronto} imagem={imagemHistoricaPorId(imagemAno)!} onFechar={() => setComparar(false)} />
         )}
 
-        {carSel && <CartaoCar car={carSel} onFechar={() => setCarSel(null)} />}
+        {carSel && <CartaoCar car={carSel} oficiais={noPonto} onFechar={() => { setCarSel(null); setNoPonto([]); }} />}
+        {!carSel && noPonto.length > 0 && !loteSel && <CartaoOficiais itens={noPonto} onFechar={() => setNoPonto([])} />}
         {loteSel && !carSel && (
           <CartaoLote lote={loteSel} onFechar={() => {
             setLoteSel(null);
@@ -1126,9 +1216,10 @@ export default function MapaRegional({
 
         {camadasAbertas && (
           <PainelCamadas onFechar={() => setCamadasAbertas(false)}
-            bloqueado={!liberado("camadas_oficiais")} logado={logado} />
+            bloqueado={!liberado("camadas_oficiais")} logado={logado}
+            ativas={camadasAtivas} estado={estadoCamadas} onAlternar={alternarCamada} />
         )}
-        <Legenda />
+        <Legenda extras={CAMADAS_OFICIAIS.filter((c) => camadasAtivas.has(c.id))} />
 
         <Ferramentas
           mapa={mapaPronto}

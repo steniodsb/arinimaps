@@ -19,7 +19,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Database, FileText, Home, LoaderCircle, Lock, SendHorizontal, Sparkles, SquarePen, X } from "lucide-react";
 
 type Fonte = { tipo: "imovel" | "car" | "conhecimento"; rotulo: string; href?: string };
-type Msg = { papel: "user" | "assistant"; texto: string; fontes?: Fonte[]; erro?: boolean; status?: string };
+/** `aviso`: recado neutro do sistema (assistente ocupado), não falha — aparece sem o vermelho de erro. */
+type Msg = { papel: "user" | "assistant"; texto: string; fontes?: Fonte[]; erro?: boolean; aviso?: boolean; status?: string };
 type Estado = {
   ligado: boolean; motivo?: "sem_chave" | "desligado"; sessao: boolean; permitido: boolean;
   negacao?: { mensagem: string; solucao: string }; cota?: { limite: number; usado: number } | null;
@@ -172,6 +173,14 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
           // resposta inteira (sem streaming)
           if (typeof corpo.conversaId === "string") setConversaId(corpo.conversaId);
           atualizarUltima((m) => ({ ...m, texto: String(corpo.texto ?? ""), fontes: (corpo.fontes as Fonte[]) ?? [], status: undefined }));
+        } else if (corpo?.codigo === "ia_ocupada") {
+          // pico de uso (teto de conversas simultâneas do servidor): não é erro
+          // da pessoa nem do sistema — devolve a pergunta à caixa para reenviar
+          atualizarUltima((m) => ({
+            ...m, aviso: true, status: undefined,
+            texto: String(corpo.error ?? "O assistente está atendendo muita gente agora. Tente de novo em instantes."),
+          }));
+          setTexto(q);
         } else {
           const msg = [corpo?.error, corpo?.solucao].filter(Boolean).join(" ") || `O assistente não respondeu (${res.status}).`;
           atualizarUltima((m) => ({ ...m, texto: msg, erro: true, status: undefined }));
@@ -314,7 +323,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
                 <div className={
                   m.papel === "user"
                     ? "max-w-[85%] rounded-2xl rounded-br-md bg-verde/15 border border-verde/20 text-texto px-3.5 py-2.5 whitespace-pre-wrap"
-                    : "min-w-0 max-w-[92%] text-texto-3 leading-relaxed " + (m.erro ? "text-critico" : "")
+                    : "min-w-0 max-w-[92%] text-texto-3 leading-relaxed " + (m.erro ? "text-critico" : m.aviso ? "text-texto-2 italic" : "")
                 }>
                   {m.papel === "user" ? m.texto : <Markdown texto={m.texto} />}
                   {m.status && (

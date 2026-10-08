@@ -188,11 +188,20 @@ export default function Ferramentas({
     if (!consultaPronta) return;
     setConsultando(true); setErroConsulta(null);
     const anel = [...consultaPronta.pontos, consultaPronta.pontos[0]];
-    const r = await fetch("/api/consulta/area", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ geometria: { type: "Polygon", coordinates: [anel] } }),
-    }).catch(() => null);
-    const data = r ? await r.json().catch(() => ({})) : {};
+    // 503 `consulta_na_fila` (muita gente consultando): mostra a posição e tenta
+    // de novo sozinho, como o BotaoConsultarArea — a volta da fila não gasta cota
+    let r: Response | null = null;
+    let data: { chave?: unknown; error?: string; solucao?: string; codigo?: string; tentar_em?: number } = {};
+    for (let volta = 0; volta <= 12; volta++) {
+      r = await fetch("/api/consulta/area", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ geometria: { type: "Polygon", coordinates: [anel] } }),
+      }).catch(() => null);
+      data = r ? await r.json().catch(() => ({})) : {};
+      if (data.codigo !== "consulta_na_fila" || volta === 12) break;
+      setErroConsulta({ msg: [data.error, data.solucao].filter(Boolean).join(" "), planos: false });
+      await new Promise((ok) => setTimeout(ok, (Number(data.tentar_em) || 10) * 1000));
+    }
     setConsultando(false);
     if (!r?.ok || typeof data.chave !== "string") {
       setErroConsulta({

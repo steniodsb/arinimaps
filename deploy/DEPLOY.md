@@ -60,6 +60,11 @@ Node 18: o Next 16.3.2 exige `>=20.9.0` e o build morre antes de começar.
 | `CAMPO_CRIPTO_CHAVE` | CPF/CNPJ cifrado no banco + hash para busca (`openssl rand -base64 32`; guardar cópia no cofre — perder a chave = perder os CPFs cifrados). Depois de criar: `node scripts/cifra-cpf.mjs --aplicar`. Rotação: `docs/SEGURANCA.md` §11 | CPF gravado em claro, como antes |
 | `ORIGENS_PERMITIDAS` | outros endereços aceitos como origem de POST/PATCH/DELETE nas APIs (separados por vírgula), além de `NEXT_PUBLIC_SITE_URL` e do próprio host | só o próprio site |
 | `ARINI_IA_COTACAO_USD` | cotação do dólar usada só para estimar o custo em R$ em Conhecimento e IA › Conversas (padrão 5,4) | usa o padrão |
+| `NEXT_PUBLIC_CAR_NACIONAL_URL` | malha do CAR do **Brasil inteiro** a partir do arquivo PMTiles na Cloudflare R2 (ex.: `https://mapas.ariniimoveisbrasil.com.br/car/car-brasil.pmtiles`). Gerar e enviar: `scripts/car-nacional/LEIAME.md`. Vai **no build** (prefixo `NEXT_PUBLIC_`) | CAR do banco (região) + busca no SICAR sob demanda |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | envio do PMTiles nacional (`scripts/car-nacional/publicar.mjs`), só onde o job mensal roda | o arquivo não é publicado |
+| `ARINI_IA_MAX_SIMULTANEAS` | conversas de IA ao mesmo tempo no servidor (padrão 20); acima disso responde `ia_ocupada` | usa 20 |
+| `ARINI_CONSULTAS_MAX_SIMULTANEAS`, `ARINI_CONSULTAS_FILA_MAX`, `ARINI_CONSULTAS_ESPERA_MS` | fila das consultas de área (padrão 8 rodando, 40 na fila, 30 s de espera) | usa o padrão |
+| `ARINI_FONTES_MAX_SIMULTANEOS`, `ARINI_FONTES_ESPERA_MS` | pedidos simultâneos a cada órgão (SICAR, INCRA, IBAMA…; padrão 4, espera 25 s) | usa o padrão |
 
 O painel de **Admin › Configurações** mostra o estado de cada uma depois que o
 app subir.
@@ -125,6 +130,24 @@ O repositório no GitHub e a pasta local continuam com o nome técnico `arinimap
 isso não aparece para o usuário.
 
 ---
+
+## 6b. Cloudflare (DNS, cache do mapa e R2)
+
+1. **DNS:** domínio na Cloudflare, registro `A` para o IP da VPS com o proxy (nuvem laranja) ligado.
+2. **Cache do mapa:** Caching › Cache Rules › regra "URI Path starts with `/api/tiles/`" → *Eligible for cache*,
+   *Edge TTL: respeitar o cabeçalho de origem* (o app já manda `s-maxage=86400`). Com 500+ pessoas
+   simultâneas é o que tira os tiles do banco (`docs/INFRA-NACIONAL.md` §5).
+3. **R2 (CAR nacional e, depois, vídeos):** criar o bucket `arini-mapas`, ligar um domínio próprio
+   (ex.: `mapas.ariniimoveisbrasil.com.br`) e a política de CORS:
+   ```json
+   [{ "AllowedOrigins": ["https://ariniimoveisbrasil.com.br"], "AllowedMethods": ["GET", "HEAD"],
+      "AllowedHeaders": ["Range", "If-Match"], "ExposeHeaders": ["ETag", "Content-Length", "Content-Range"], "MaxAgeSeconds": 86400 }]
+   ```
+   Criar um token de API do R2 (Object Read & Write, só esse bucket) → `R2_*` (§2).
+4. **Primeira carga do CAR nacional** (na VPS, ~1 h 30 no total): `scripts/car-nacional/LEIAME.md`.
+   Depois, `NEXT_PUBLIC_CAR_NACIONAL_URL` no app e novo build.
+5. **IP real:** com o proxy da Cloudflare ligado, o app usa `cf-connecting-ip` para os limites por IP
+   (`src/lib/seguranca/limite.ts`). Não desligar o proxy só para alguns subdomínios do app.
 
 ## 7. Se der errado
 

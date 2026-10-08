@@ -1,5 +1,9 @@
 import "server-only";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { ufsDoEnvelope } from "./ufs";
+// relativo (não "@/"): scripts/testa-apis-rurais.mjs carrega este arquivo pelo jiti, sem os aliases do Next
+import { EsperaEsgotada, fila, inteiroDoAmbiente } from "../seguranca/fila";
+import { getComCadeia } from "../geo/tlsOrgaos";
 
 /**
  * Adaptadores das fontes oficiais de consulta rural.
@@ -61,26 +65,79 @@ export type ResultadoFonte = {
 };
 
 /**
+ * Limite de pedidos simultâneos POR ÓRGÃO (docs/INFRA-NACIONAL.md §5, item 1).
+ *
+ * Cada consulta de área dispara ~25 pedidos a ~12 servidores; com 25 consultas
+ * ao mesmo tempo são centenas por minuto, e os serviços do governo caem ou
+ * bloqueiam o IP. A chave é o HOST, não a fonte: PRODES, DETER, Queimadas, UCs
+ * e Hidrografia são todos o geoserver do INPE, e SIGEF/SNCI o mesmo i3geo do
+ * INCRA — o freio tem de valer para o servidor que de fato recebe a carga.
+ *
+ * Quem não ganha vaga em ESPERA_FONTE desiste e a fonte sai com `erro`
+ * ("indisponível agora"), NUNCA como "nada encontrado": a regra do relatório é
+ * que fonte não consultada não vale como ausência de restrição. Como o erro não
+ * entra no cache válido, a próxima consulta pergunta de novo.
+ */
+const MAX_POR_ORGAO = inteiroDoAmbiente("ARINI_FONTES_MAX_SIMULTANEOS", 4);
+const ESPERA_FONTE = inteiroDoAmbiente("ARINI_FONTES_ESPERA_MS", 25_000);
+
+/**
+ * Sinal de cancelamento do adaptador em andamento. Quando o PRAZO estoura o
+ * relatório já desistiu da fonte; sem isto os pedidos dela continuariam na fila
+ * do órgão (e as repetições, saindo) só para ninguém ler a resposta — carga
+ * inútil justo no pico. Vai por contexto assíncrono para não ter de passar um
+ * `signal` por todos os helpers.
+ */
+const contexto = new AsyncLocalStorage<AbortSignal>();
+
+/** Um pedido HTTP dentro da vaga do órgão; o corpo é lido ainda com a vaga ocupada. */
+async function pedir(url: string, opcoes: RequestInit, cancelado?: AbortSignal): Promise<Response> {
+  const host = new URL(url).host;
+  return fila(`orgao:${host}`, MAX_POR_ORGAO).executar({ esperaMs: ESPERA_FONTE, signal: cancelado }, async () => {
+    // FUNAI: o servidor não manda o certificado intermediário e o fetch do
+    // Node recusa (UNABLE_TO_VERIFY_LEAF_SIGNATURE) — ver ../geo/tlsOrgaos.ts
+    if (host === "geoserver.funai.gov.br") {
+      const r = await getComCadeia(url, { "User-Agent": UA, Accept: "application/json", ...(opcoes.headers as Record<string, string> ?? {}) }, TIMEOUT);
+      return new Response(r.corpo, { status: r.status });
+    }
+    const tempo = AbortSignal.timeout(TIMEOUT);
+    const r = await fetch(url, {
+      ...opcoes,
+      headers: { "User-Agent": UA, Accept: "application/json", ...(opcoes.headers ?? {}) },
+      signal: cancelado ? AbortSignal.any([tempo, cancelado]) : tempo,
+    });
+    // baixar o corpo também é carga no órgão: só devolve a vaga depois dele
+    const corpo = await r.arrayBuffer();
+    return new Response(corpo, { status: r.status, statusText: r.statusText, headers: r.headers });
+  });
+}
+
+/**
  * Uma chamada, com repetição.
  *
  * O geoserver do Programa Queimadas é um cluster e nem todo nó tem o
  * workspace: medido em 28/08, 3 de 8 chamadas idênticas voltam 404. Por isso
  * 404 é tratado como retentável junto com os 5xx — o que não existe mesmo
  * continua falhando depois das tentativas, e a fonte cai para `erro`.
+ *
+ * Fila do órgão cheia não repete: esperar de novo só alongaria o relatório.
  */
 async function buscar(url: string, opcoes: RequestInit = {}, tentativas = 3) {
+  const cancelado = contexto.getStore();
   let ultimo = "";
   for (let i = 0; i < tentativas; i++) {
+    if (cancelado?.aborted) break;
     try {
-      const r = await fetch(url, {
-        ...opcoes,
-        headers: { "User-Agent": UA, Accept: "application/json", ...(opcoes.headers ?? {}) },
-        signal: AbortSignal.timeout(TIMEOUT),
-      });
+      const r = await pedir(url, opcoes, cancelado);
       if (r.ok) return r;
       ultimo = `HTTP ${r.status}`;
       if (r.status !== 404 && r.status < 500) break; // 4xx real: insistir não ajuda
     } catch (e) {
+      if (e instanceof EsperaEsgotada) {
+        throw new Error(e.motivo === "cancelado"
+          ? "consulta encerrada pelo prazo"
+          : "muitas consultas a este órgão agora — indisponível no momento, tente de novo em instantes");
+      }
       ultimo = msg(e);
     }
     if (i < tentativas - 1) await new Promise((ok) => setTimeout(ok, 400 * (i + 1)));
@@ -247,9 +304,10 @@ async function adaptador(fonte_id: string, fn: () => Promise<Retorno>): Promise<
   const consultado_em = new Date().toISOString();
   const meta = ORIGENS[fonte_id] ?? { orgao: fonte_id, base: fonte_id, tipo: "oficial" as const };
   let estourou: ReturnType<typeof setTimeout> | undefined;
+  const cancelar = new AbortController();
   try {
     const r = await Promise.race([
-      fn(),
+      contexto.run(cancelar.signal, fn),
       new Promise<never>((_, falhou) => {
         estourou = setTimeout(() => falhou(new Error(`serviço não respondeu em ${PRAZO / 1000} s`)), PRAZO);
       }),
@@ -264,6 +322,8 @@ async function adaptador(fonte_id: string, fn: () => Promise<Retorno>): Promise<
     return { fonte_id, quantidade: 0, incide: false, itens: [], erro: msg(e), origem: { ...meta, consultado_em } };
   } finally {
     clearTimeout(estourou);
+    // desistiu (prazo) ou terminou: o que ainda estiver na fila do órgão sai dela
+    cancelar.abort();
   }
 }
 

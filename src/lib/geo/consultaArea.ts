@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { ADAPTADORES, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
+import { EsperaEsgotada, fila, inteiroDoAmbiente, type Liberar } from "@/lib/seguranca/fila";
 import {
   acessoAtual, conferirRecurso, consultasAreaNoMes, registrarTentativa, respostaNegacao,
 } from "@/lib/planos-servidor";
@@ -38,6 +39,38 @@ export type AlvoConsulta = {
   naoEncontrado: string;
 };
 
+/**
+ * Quantas consultas de área rodam ao mesmo tempo neste processo (docs/INFRA-NACIONAL.md
+ * §5, item 1). Cada uma abre ~25 pedidos aos órgãos; o freio por órgão
+ * (adaptadores.ts) segura cada servidor, este segura o total — sem ele, 40
+ * consultas simultâneas encheriam todas as filas dos órgãos ao mesmo tempo e
+ * TODAS sairiam com fontes "indisponíveis agora", em vez de umas esperarem e
+ * saírem completas.
+ */
+const MAX_CONSULTAS = inteiroDoAmbiente("ARINI_CONSULTAS_MAX_SIMULTANEAS", 8);
+/** Quantas podem esperar vaga; acima disso a resposta é "na fila" na hora. */
+const MAX_FILA_CONSULTAS = inteiroDoAmbiente("ARINI_CONSULTAS_FILA_MAX", 40);
+/**
+ * Espera dentro do pedido HTTP. A rota tem 120 s (maxDuration) e a consulta
+ * leva até ~45 s; acima de 30 s de espera devolvemos "na fila" e o navegador
+ * tenta de novo sozinho (BotaoConsultarArea), sem segurar a conexão.
+ */
+const ESPERA_CONSULTA_MS = inteiroDoAmbiente("ARINI_CONSULTAS_ESPERA_MS", 30_000);
+/** Sugestão de nova tentativa ao navegador, em segundos. */
+const TENTAR_EM_S = 10;
+
+/** Resposta "sua consulta está na fila": 503 + Retry-After, sem gastar cota nem limite. */
+function respostaFila(e: EsperaEsgotada) {
+  const posicao = Math.max(1, e.posicao);
+  return NextResponse.json({
+    error: `Muitas consultas sendo feitas agora. Sua consulta está na fila (posição ${posicao}).`,
+    solucao: `Vamos tentar de novo automaticamente em ${TENTAR_EM_S} segundos — não precisa clicar outra vez.`,
+    codigo: "consulta_na_fila",
+    posicao,
+    tentar_em: TENTAR_EM_S,
+  }, { status: 503, headers: { "Retry-After": String(TENTAR_EM_S) } });
+}
+
 /** Executa a consulta (rota POST). Devolve a resposta HTTP pronta. */
 export async function executarConsultaArea(request: Request, alvo: AlvoConsulta): Promise<NextResponse> {
   const user = await currentUser();
@@ -51,15 +84,13 @@ export async function executarConsultaArea(request: Request, alvo: AlvoConsulta)
   const { negacao } = await conferirRecurso(request, user, "consulta_area", { cota: "consultas_area_mes" });
   if (negacao) return respostaNegacao(negacao);
 
-  const limite = await limitar(`consulta:${user.id}`, 20, 3600);
-  if (!limite.permitido) return respostaLimite(limite, "consulta");
-
   const bbox = await alvo.bbox();
   if (!bbox) return NextResponse.json({ error: alvo.naoEncontrado, codigo: "nao_encontrado" }, { status: 404 });
 
+  // reaproveitamento: fonte consultada há menos de 7 dias e sem erro não é
+  // perguntada de novo — o mesmo imóvel/área aberto por várias pessoas no mesmo
+  // dia custa aos órgãos uma consulta só
   const admin = supabaseAdmin();
-  await admin.from("consultas_area_log").insert({ user_id: user.id, chave: alvo.chave, acao: "consulta", ip: ipDoPedido(request) });
-
   const { data: emCache } = await admin.from("consultas_area")
     .select("fonte_id, erro, consultado_em").eq("chave", alvo.chave).eq("raio_m", alvo.raioM);
   const frescas = new Set(
@@ -70,20 +101,48 @@ export async function executarConsultaArea(request: Request, alvo: AlvoConsulta)
   const excluir = new Set(alvo.excluir ?? []);
   const pendentes = ADAPTADORES.filter((a) => !excluir.has(a.id) && !frescas.has(a.id));
 
-  const resultados: ResultadoFonte[] = await Promise.all(pendentes.map((a) => a.fn(bbox)));
-  for (const r of resultados) {
-    await admin.from("consultas_area").upsert({
-      chave: alvo.chave, fonte_id: r.fonte_id, raio_m: alvo.raioM,
-      resultado: { itens: r.itens }, quantidade: r.quantidade, incide: r.incide,
-      erro: r.erro ?? null, consultado_em: new Date().toISOString(),
-    }, { onConflict: "chave,fonte_id,raio_m" });
+  // Fila ANTES do limite por usuário e do registro: quem volta da fila (o
+  // navegador tenta de novo sozinho) não pode gastar a cota do mês nem o
+  // limite por hora com tentativas que não rodaram. Tudo em cache não entra
+  // na fila — não toca órgão nenhum.
+  let liberar: Liberar = () => {};
+  if (pendentes.length) {
+    try {
+      liberar = await fila("consultas_area", MAX_CONSULTAS).entrar({
+        esperaMs: ESPERA_CONSULTA_MS, maxFila: MAX_FILA_CONSULTAS, signal: request.signal,
+      });
+    } catch (e) {
+      if (e instanceof EsperaEsgotada) return respostaFila(e);
+      throw e;
+    }
   }
 
+  try {
+    const limite = await limitar(`consulta:${user.id}`, 20, 3600);
+    if (!limite.permitido) return respostaLimite(limite, "consulta");
+
+    await admin.from("consultas_area_log").insert({ user_id: user.id, chave: alvo.chave, acao: "consulta", ip: ipDoPedido(request) });
+
+    const resultados: ResultadoFonte[] = await Promise.all(pendentes.map((a) => a.fn(bbox)));
+    for (const r of resultados) {
+      await admin.from("consultas_area").upsert({
+        chave: alvo.chave, fonte_id: r.fonte_id, raio_m: alvo.raioM,
+        resultado: { itens: r.itens }, quantidade: r.quantidade, incide: r.incide,
+        erro: r.erro ?? null, consultado_em: new Date().toISOString(),
+      }, { onConflict: "chave,fonte_id,raio_m" });
+    }
+    return respostaConsulta(alvo.chave, resultados, frescas.size);
+  } finally {
+    liberar();
+  }
+}
+
+function respostaConsulta(chave: string, resultados: ResultadoFonte[], doCache: number) {
   return NextResponse.json({
     ok: true,
-    chave: alvo.chave,
+    chave,
     consultadas: resultados.length,
-    do_cache: frescas.size,
+    do_cache: doCache,
     falharam: resultados.filter((r) => r.erro).map((r) => r.fonte_id),
   });
 }

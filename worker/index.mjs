@@ -1,5 +1,5 @@
 // Worker do Arini Imóveis Brasil — polling da tabela jobs (Postgres/Supabase).
-// Processa: render_video · screenshot_og · tile_raster · fetch_pois · refresh_pois · gerar_lotes · descarte_retencao · verificar_fontes
+// Processa: render_video · screenshot_og · tile_raster · fetch_pois · refresh_pois · gerar_lotes · descarte_retencao · verificar_fontes · inteligencia_mercado
 // 1 job por vez, teto de memória no container (ver docker-compose).
 import pg from "pg";
 import { renderVideo } from "./jobs/renderVideo.mjs";
@@ -9,6 +9,7 @@ import { fetchPois } from "./jobs/fetchPois.mjs";
 import { gerarLotes } from "./jobs/gerarLotes.mjs";
 import { descarteRetencao } from "./jobs/descarteRetencao.mjs";
 import { verificarFontes } from "./jobs/verificarFontes.mjs";
+import { inteligenciaMercado } from "./jobs/inteligenciaMercado.mjs";
 
 const INTERVALO_MS = Number(process.env.WORKER_INTERVALO_MS ?? 15000);
 const MAX_TENTATIVAS = 3;
@@ -30,6 +31,8 @@ const HANDLERS = {
   descarte_retencao: descarteRetencao,
   // teste de queda e lentidão das fontes oficiais (PENDENCIAS 3.16)
   verificar_fontes: verificarFontes,
+  // preço por ha/m² por município para o assistente (migration 0040)
+  inteligencia_mercado: inteligenciaMercado,
 };
 
 async function proximoJob() {
@@ -76,16 +79,22 @@ async function loop() {
 // Rotinas diárias: enfileira o descarte por prazo de guarda (item 6.4) uma vez
 // a cada 24 h. Com os prazos em 0 (padrão) o job termina sem fazer nada; com
 // prazos e "Descartar de verdade" desligado, só simula e registra.
+// Também recalcula, uma vez por dia, a inteligência de mercado do assistente
+// (preço por ha/m² por município). Cada rotina no seu try: uma falha não
+// impede a outra de ser agendada.
+const ROTINAS_DIARIAS = ["descarte_retencao", "inteligencia_mercado"];
 async function agendarRotinas() {
-  try {
-    await db.query(`
-      insert into jobs (tipo, payload)
-      select 'descarte_retencao', '{}'::jsonb
-      where not exists (
-        select 1 from jobs where tipo = 'descarte_retencao' and created_at > now() - interval '23 hours'
-      )`);
-  } catch (e) {
-    console.error("agendar rotinas falhou:", e.message);
+  for (const tipo of ROTINAS_DIARIAS) {
+    try {
+      await db.query(`
+        insert into jobs (tipo, payload)
+        select $1::text, '{}'::jsonb
+        where not exists (
+          select 1 from jobs where tipo = $1::text and created_at > now() - interval '23 hours'
+        )`, [tipo]);
+    } catch (e) {
+      console.error(`agendar ${tipo} falhou:`, e.message);
+    }
   }
 }
 

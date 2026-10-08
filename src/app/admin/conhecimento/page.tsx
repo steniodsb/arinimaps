@@ -6,7 +6,7 @@ import { Indicadores } from "@/components/admin/Painel";
 import { CabecalhoPagina, Etiqueta, Secao, Vazio } from "@/components/ui/Pagina";
 import { Bot, BookOpen, MessagesSquare, Wrench } from "lucide-react";
 import ArtigosAdmin from "./ArtigosAdmin";
-import type { Artigo } from "@/lib/ia/conhecimento";
+import type { Artigo, Lacuna } from "@/lib/ia/conhecimento";
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +71,24 @@ export default async function ConhecimentoIA({ searchParams }: PageProps<"/admin
 }
 
 async function AbaArtigos({ admin }: { admin: ReturnType<typeof supabaseAdmin> }) {
-  const { data } = await admin.from("kb_artigos")
-    .select("id, slug, titulo, conteudo, fonte, data_referencia, status, versao, updated_at")
-    .order("updated_at", { ascending: false });
-  return <ArtigosAdmin inicial={(data ?? []) as Artigo[]} />;
+  // perguntas sem resposta (ia_lacunas): as pendentes mais frequentes primeiro
+  const [{ data }, { data: lacunas }, { count: respondidas }, { count: descartadas }] = await Promise.all([
+    admin.from("kb_artigos")
+      .select("id, slug, titulo, conteudo, fonte, data_referencia, status, versao, updated_at")
+      .order("updated_at", { ascending: false }),
+    admin.from("ia_lacunas")
+      .select("id, pergunta, motivo, ocorrencias, primeira_em, ultima_em, status, artigo_id")
+      .eq("status", "pendente").order("ocorrencias", { ascending: false }).order("ultima_em", { ascending: false }).limit(50),
+    admin.from("ia_lacunas").select("id", { count: "exact", head: true }).eq("status", "respondida"),
+    admin.from("ia_lacunas").select("id", { count: "exact", head: true }).eq("status", "descartada"),
+  ]);
+  return (
+    <ArtigosAdmin
+      inicial={(data ?? []) as Artigo[]}
+      lacunasIniciais={(lacunas ?? []) as Lacuna[]}
+      resumoLacunas={{ respondidas: respondidas ?? 0, descartadas: descartadas ?? 0 }}
+    />
+  );
 }
 
 async function AbaConversas({ admin, conversaSel }: { admin: ReturnType<typeof supabaseAdmin>; conversaSel: string | null }) {

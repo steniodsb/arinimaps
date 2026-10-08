@@ -195,8 +195,8 @@ export default function MapaVitrine({ onCena, onPronto, cena, ativo = true }: Pr
             id: "imoveis-ponto", type: "circle", source: "imoveis",
             filter: ["==", ["geometry-type"], "Point"],
             paint: {
-              "circle-color": CORES_STATUS as never, "circle-radius": 6,
-              "circle-stroke-width": 2, "circle-stroke-color": "#0A1310",
+              "circle-color": CORES_STATUS as never, "circle-radius": 4.5,
+              "circle-stroke-width": 1.5, "circle-stroke-color": "#0A1310",
             },
           },
           // de longe o polígono some; cada imóvel vira um marcador na cor do status
@@ -204,7 +204,7 @@ export default function MapaVitrine({ onCena, onPronto, cena, ativo = true }: Pr
             id: "imoveis-marcador", type: "circle", source: "imoveis-centros", maxzoom: 12.5,
             paint: {
               "circle-color": CORES_STATUS as never,
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 4.5, 12, 7] as never,
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3.5, 12, 5] as never,
               "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF",
             },
           },

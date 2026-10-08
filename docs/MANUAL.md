@@ -40,7 +40,7 @@ Toda tentativa bloqueada aparece em *Segurança › Tentativas bloqueadas*.
 | Saúde das fontes oficiais, matriz técnica | Cartografia › Fontes oficiais | Cartografia |
 | Mensalidades e comissões | Financeiro | Financeiro |
 | Pedidos LGPD, termos, contratos | Jurídico | Jurídico |
-| Base de conhecimento da IA, conversas e custo | Marketing › Conhecimento | Marketing |
+| Base de conhecimento da IA, conversas e custo; **perguntas sem resposta** (o que o assistente não soube, das mais frequentes para as menos — "Responder" abre um artigo novo com a pergunta como título; ao publicar, ela sai da fila; "Descartar" para fora do escopo) | Marketing › Conhecimento | Marketing |
 | Chamados de suporte (conversa ao vivo) | Suporte | Suporte |
 | Acessos, alertas, documentos abertos, revisão trimestral de permissões | Segurança | Segurança |
 | Planos, equipe, organizações, configurações | Diretoria | Diretoria |

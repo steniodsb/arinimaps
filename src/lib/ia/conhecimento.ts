@@ -18,7 +18,20 @@ export type Artigo = {
   data_referencia: string; status: StatusArtigo; versao: number; updated_at: string;
 };
 
-export const slugDe = (titulo: string) =>
+/**
+ * Pergunta que o assistente não soube responder (ferramenta registrar_lacuna,
+ * tabela ia_lacunas). Agrupada pela forma normalizada; `ocorrencias` diz
+ * quantas vezes foi feita. Vira "respondida" quando um artigo PUBLICADO é
+ * ligado a ela — artigo em rascunho fica ligado, mas a pergunta segue pendente.
+ */
+export const STATUS_LACUNA = ["pendente", "respondida", "descartada"] as const;
+export type StatusLacuna = (typeof STATUS_LACUNA)[number];
+export type Lacuna = {
+  id: string; pergunta: string; motivo: string | null; ocorrencias: number;
+  primeira_em: string; ultima_em: string; status: StatusLacuna; artigo_id: string | null;
+};
+
+export const slugDe =(titulo: string) =>
   titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 

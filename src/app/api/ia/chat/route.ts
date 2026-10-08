@@ -6,7 +6,8 @@ import { logAudit } from "@/lib/audit";
 import { lerConfiguracoes } from "@/lib/settings";
 import { conferirRecurso, registrarTentativa, respostaNegacao } from "@/lib/planos-servidor";
 import { limitar, respostaLimite } from "@/lib/seguranca/limite";
-import { iaConfigurada, LIMITES_IA } from "@/lib/ia/config";
+import { iaConfigurada, LIMITES_IA, maxIaSimultaneas } from "@/lib/ia/config";
+import { fila, type Liberar } from "@/lib/seguranca/fila";
 import { limiteMensalIa, mensagensIaNoMes } from "@/lib/ia/acesso";
 import { mensagemDeErro, responder, type EventoAssistente, type RespostaAssistente, type Turno } from "@/lib/ia/assistente";
 
@@ -27,7 +28,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Com ?stream=0 responde um JSON só, no fim (alternativa para quem não lê SSE).
  *
  * Travas, nesta ordem: chave instalada (503 ia_desligada) → função ligada →
- * sessão + recurso `chat_ia` no plano → cota mensal → limite por minuto/hora.
+ * sessão + recurso `chat_ia` no plano → cota mensal → limite por minuto/hora →
+ * vaga entre as conversas simultâneas do servidor (503 ia_ocupada).
  * Tudo fica em ia_conversas/ia_mensagens; o audit_log recebe só metadados.
  */
 export async function POST(request: Request) {
@@ -67,6 +69,21 @@ export async function POST(request: Request) {
     return falha(400, "mensagem_longa", `A pergunta passou de ${LIMITES_IA.tamanhoPergunta} caracteres.`, { solucao: "Resuma e envie de novo." });
   }
 
+  // Teto global de conversas simultâneas. Pedido ANTES de gravar a pergunta:
+  // quem ouve "ocupado" não gasta pergunta da cota (que conta ia_mensagens).
+  // Sem espera (maxFila 0): segurar a conexão só alongaria o pico.
+  let liberarVaga: Liberar;
+  try {
+    liberarVaga = await fila("ia_conversas", maxIaSimultaneas()).entrar({ esperaMs: 0, maxFila: 0 });
+  } catch {
+    return falha(503, "ia_ocupada", "O assistente está atendendo muita gente agora. Tente de novo em instantes.", {
+      motivo: `Limite de ${maxIaSimultaneas()} conversas ao mesmo tempo no servidor.`,
+    });
+  }
+  // A partir daqui toda saída devolve a vaga: o `finally` do fluxo SSE (fim,
+  // erro ou aborto do navegador, que chega a `responder` por request.signal),
+  // o `finally` da resposta sem streaming ou a saída antecipada abaixo.
+
   // conversa: só a própria conta continua a sua
   const admin = supabaseAdmin();
   let conversaId = typeof corpo?.conversaId === "string" && UUID.test(corpo.conversaId) ? corpo.conversaId : null;
@@ -84,7 +101,10 @@ export async function POST(request: Request) {
   if (!conversaId) {
     const { data: nova, error } = await admin.from("ia_conversas")
       .insert({ user_id: userId, titulo: pergunta.slice(0, 80) }).select("id").single();
-    if (error) return falha(500, "conversa_falhou", "Não foi possível iniciar a conversa.", { motivo: error.message });
+    if (error) {
+      liberarVaga();
+      return falha(500, "conversa_falhou", "Não foi possível iniciar a conversa.", { motivo: error.message });
+    }
     conversaId = nova.id as string;
   }
   await admin.from("ia_mensagens").insert({ conversa_id: conversaId, user_id: userId, papel: "user", conteudo: pergunta });
@@ -132,6 +152,8 @@ export async function POST(request: Request) {
       console.error("assistente de IA falhou:", e);
       await gravar(null, erro);
       return falha(502, erro.codigo, erro.mensagem, { detalhes: { conversaId } });
+    } finally {
+      liberarVaga();
     }
   }
 
@@ -159,6 +181,7 @@ export async function POST(request: Request) {
         enviar({ tipo: "erro", ...erro });
       } finally {
         aberto = false;
+        liberarVaga();
         try { controller.close(); } catch { /* já fechado pelo cliente */ }
       }
     },

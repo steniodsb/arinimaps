@@ -106,13 +106,11 @@ if (existing[0].n === 0) {
     `insert into properties (tipo, owner_id, municipality_id, titulo, descricao, valor, area_declarada,
        caracteristicas, condicoes_venda, status, created_by)
      values ('rural', $1, $2, 'Fazenda Boa Vista', 'Fazenda de pecuária com dupla aptidão, casa sede, curral e represas. Topografia plana, acesso por estrada municipal a 12 km do centro de Iturama.',
-       3800000, 84, '{"unidade_area":"ha","benfeitorias":["casa sede","curral","represa"],"solo":"misto"}',
+       3800000, 80.16, '{"unidade_area":"ha","benfeitorias":["casa sede","curral","represa"],"solo":"misto"}',
        'Aceita 50% de entrada + saldo em 4 parcelas semestrais', 'rascunho', $3)
      returning id`, [owner.id, mun?.id, adminId]);
-  const poly1 = { type: "Polygon", coordinates: [[
-    [-50.245, -19.795], [-50.225, -19.795], [-50.222, -19.808],
-    [-50.238, -19.815], [-50.248, -19.806], [-50.245, -19.795],
-  ]] };
+  // divisa copiada da base do mapa (antes era desenhada à mão e caía fora das linhas)
+  const { rows: [{ gj: poly1 }] } = await db.query(`select st_asgeojson(geom)::json gj from car_imoveis where cod_imovel = 'MG-3134400-21AA883E29F34D0D875D83766BDCB712'`);
   await db.query(`select * from fn_upsert_geometry($1, $2::jsonb, 'desenho')`, [p1.id, JSON.stringify(poly1)]);
   for (const s of ["pendente", "em_analise", "aprovado", "publicado"])
     await db.query(`update properties set status = $2 where id = $1`, [p1.id, s]);
@@ -122,12 +120,10 @@ if (existing[0].n === 0) {
     `insert into properties (tipo, owner_id, municipality_id, titulo, descricao, valor, area_declarada,
        caracteristicas, status, created_by)
      values ('rural', $1, $2, 'Sítio Água Limpa', 'Sítio com pomar formado, nascente e casa simples. Ideal para lazer ou pequena produção.',
-       650000, 9.6, '{"unidade_area":"ha","benfeitorias":["casa","pomar","nascente"]}', 'rascunho', $3)
+       650000, 9.82, '{"unidade_area":"ha","benfeitorias":["casa","pomar","nascente"]}', 'rascunho', $3)
      returning id`, [owner.id, mun?.id, adminId]);
-  const poly2 = { type: "Polygon", coordinates: [[
-    [-50.155, -19.712], [-50.148, -19.712], [-50.147, -19.719],
-    [-50.156, -19.720], [-50.155, -19.712],
-  ]] };
+  // divisa copiada da base do mapa (antes era desenhada à mão e caía fora das linhas)
+  const { rows: [{ gj: poly2 }] } = await db.query(`select st_asgeojson(geom)::json gj from car_imoveis where cod_imovel = 'MG-3134400-4F88AD5CEAE140EB9664AA61F13C5BA6'`);
   await db.query(`select * from fn_upsert_geometry($1, $2::jsonb, 'desenho')`, [p2.id, JSON.stringify(poly2)]);
   for (const s of ["pendente", "em_analise"])
     await db.query(`update properties set status = $2 where id = $1`, [p2.id, s]);
@@ -137,12 +133,10 @@ if (existing[0].n === 0) {
     `insert into properties (tipo, partner_id, municipality_id, titulo, descricao, valor, area_declarada,
        caracteristicas, status, created_by)
      values ('urbano', $1, $2, 'Lote Av. Prefeito Juca Padua', 'Lote comercial de esquina, 420 m², documentação em dia, pronto para construir.',
-       380000, 420, '{"unidade_area":"m2","zoneamento":"comercial"}', 'rascunho', $3)
+       380000, 452, '{"unidade_area":"m2","zoneamento":"comercial"}', 'rascunho', $3)
      returning id`, [partner.id, mun?.id, adminId]);
-  const poly3 = { type: "Polygon", coordinates: [[
-    [-50.1975, -19.7295], [-50.1971, -19.7295], [-50.1971, -19.7299],
-    [-50.1975, -19.7299], [-50.1975, -19.7295],
-  ]] };
+  // divisa copiada da base do mapa (antes era desenhada à mão e caía fora das linhas)
+  const { rows: [{ gj: poly3 }] } = await db.query(`select st_asgeojson(geom)::json gj from urban_lots where id = '04a5f19f-76da-47fe-8b07-ad0aec37694a'`);
   await db.query(`select * from fn_upsert_geometry($1, $2::jsonb, 'desenho')`, [p3.id, JSON.stringify(poly3)]);
   for (const s of ["pendente", "em_analise", "aprovado", "publicado"])
     await db.query(`update properties set status = $2 where id = $1`, [p3.id, s]);

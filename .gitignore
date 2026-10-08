@@ -42,3 +42,6 @@ next-env.d.ts
 
 # capturas de verificação visual (headless), não versionadas
 /.capturas/
+
+# arquivos grandes de teste local (PMTiles do CAR etc.)
+/public/dev/

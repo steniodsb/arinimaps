@@ -12,6 +12,7 @@
  */
 
 import type * as MapLibreNS from "maplibre-gl";
+import { Protocol } from "pmtiles";
 
 declare global {
   interface Window {
@@ -21,11 +22,24 @@ declare global {
 
 let promessa: Promise<typeof MapLibreNS> | null = null;
 
+/**
+ * `pmtiles://` — arquivo de mapa único (ex.: a malha nacional do CAR na
+ * Cloudflare R2): o MapLibre lê só os pedaços da tela por Range request.
+ * Registrado uma vez, junto com o carregamento do MapLibre.
+ */
+function registrarPmtiles(ml: typeof MapLibreNS) {
+  const w = window as unknown as { __pmtilesRegistrado?: boolean };
+  if (w.__pmtilesRegistrado) return ml;
+  ml.addProtocol("pmtiles", new Protocol({ metadata: true }).tile);
+  w.__pmtilesRegistrado = true;
+  return ml;
+}
+
 export function carregarMaplibre(): Promise<typeof MapLibreNS> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("carregarMaplibre só roda no navegador"));
   }
-  if (window.maplibregl) return Promise.resolve(window.maplibregl);
+  if (window.maplibregl) return Promise.resolve(registrarPmtiles(window.maplibregl));
   if (promessa) return promessa;
 
   promessa = new Promise((resolve, reject) => {
@@ -33,7 +47,7 @@ export function carregarMaplibre(): Promise<typeof MapLibreNS> {
     script.src = "/vendor/maplibre-gl.js";
     script.async = true;
     script.onload = () => {
-      if (window.maplibregl) resolve(window.maplibregl);
+      if (window.maplibregl) resolve(registrarPmtiles(window.maplibregl));
       else reject(new Error("maplibre-gl carregou mas não expôs window.maplibregl"));
     };
     script.onerror = () => {

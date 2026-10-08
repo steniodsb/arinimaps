@@ -71,6 +71,8 @@ const COR_RURAL = "#FF9D3D";
 
 /** A partir deste zoom a malha do CAR aparece (tiles vetoriais; de longe, só as áreas grandes). */
 const CAR_ZOOM_MIN = 7;
+/** Arquivo PMTiles com a malha nacional do CAR (scripts/car-nacional). Vazio = banco + SICAR sob demanda. */
+const CAR_NACIONAL = process.env.NEXT_PUBLIC_CAR_NACIONAL_URL?.trim() || "";
 
 type CarProps = {
   cod: string;
@@ -293,7 +295,8 @@ export default function MapaRegional({
     const z = map.getZoom();
     setCarAviso(
       z < CAR_ZOOM_MIN ? "Aproxime o mapa para ver os imóveis rurais do CAR."
-        : z < 11 ? "De longe, só as áreas maiores do CAR aparecem. Aproxime para ver todas."
+        // com o arquivo nacional as faixas vão até o z12 (scripts/car-nacional/gerar.mjs)
+        : z < (CAR_NACIONAL ? 12 : 11) ? "De longe, só as áreas maiores do CAR aparecem. Aproxime para ver todas."
         : ""
     );
   }, []);
@@ -311,7 +314,7 @@ export default function MapaRegional({
     if (carTimerRef.current) clearTimeout(carTimerRef.current);
     carTimerRef.current = setTimeout(async () => {
       const map = mapRef.current;
-      if (!map || !carAtivoRef.current || map.getZoom() < 11) return;
+      if (!map || !carAtivoRef.current || CAR_NACIONAL || map.getZoom() < 11) return;
       const b = map.getBounds();
       const n = 2 ** 11;
       const cx = (lng: number) => Math.floor(((lng + 180) / 360) * n);
@@ -625,11 +628,19 @@ export default function MapaRegional({
           paint: { "text-color": "#FFD45E", "text-halo-color": "rgba(10,19,16,0.92)", "text-halo-width": 1.6 },
         });
 
-        // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima)
-        map.addSource("car", {
-          type: "vector", tiles: [`${origem}/api/tiles/car/{z}/{x}/{y}.pbf`],
-          minzoom: CAR_ZOOM_MIN, maxzoom: 13, promoteId: { car: "cod" },
-        });
+        // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima).
+        // Com o arquivo nacional publicado (NEXT_PUBLIC_CAR_NACIONAL_URL), o
+        // Brasil inteiro vem dele, pronto e servido pela CDN; sem ele, do
+        // banco (base regional + busca no SICAR sob demanda).
+        map.addSource("car", CAR_NACIONAL
+          ? {
+              type: "vector", url: `pmtiles://${CAR_NACIONAL.startsWith("/") ? origem + CAR_NACIONAL : CAR_NACIONAL}`,
+              promoteId: { car: "cod" },
+            }
+          : {
+              type: "vector", tiles: [`${origem}/api/tiles/car/{z}/{x}/{y}.pbf`],
+              minzoom: CAR_ZOOM_MIN, maxzoom: 13, promoteId: { car: "cod" },
+            });
         map.addLayer({
           id: "car-fill", type: "fill", source: "car", "source-layer": "car", minzoom: CAR_ZOOM_MIN,
           paint: {

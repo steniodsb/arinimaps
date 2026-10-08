@@ -1,5 +1,5 @@
 // Worker do Arini Imóveis Brasil — polling da tabela jobs (Postgres/Supabase).
-// Processa: render_video · screenshot_og · tile_raster · fetch_pois · refresh_pois · gerar_lotes · descarte_retencao · verificar_fontes · inteligencia_mercado
+// Processa: otimizar_video · render_video · screenshot_og · tile_raster · fetch_pois · refresh_pois · gerar_lotes · descarte_retencao · verificar_fontes · inteligencia_mercado
 // 1 job por vez, teto de memória no container (ver docker-compose).
 import pg from "pg";
 import { renderVideo } from "./jobs/renderVideo.mjs";
@@ -10,6 +10,7 @@ import { gerarLotes } from "./jobs/gerarLotes.mjs";
 import { descarteRetencao } from "./jobs/descarteRetencao.mjs";
 import { verificarFontes } from "./jobs/verificarFontes.mjs";
 import { inteligenciaMercado } from "./jobs/inteligenciaMercado.mjs";
+import { otimizarVideo } from "./jobs/otimizarVideo.mjs";
 
 const INTERVALO_MS = Number(process.env.WORKER_INTERVALO_MS ?? 15000);
 const MAX_TENTATIVAS = 3;
@@ -33,6 +34,8 @@ const HANDLERS = {
   verificar_fontes: verificarFontes,
   // preço por ha/m² por município para o assistente (migration 0040)
   inteligencia_mercado: inteligenciaMercado,
+  // vídeo do anunciante → MP4 720p que toca em qualquer aparelho
+  otimizar_video: otimizarVideo,
 };
 
 async function proximoJob() {
@@ -73,6 +76,8 @@ async function loop() {
     setImmediate(loop); // tem fila? segue direto
     return;
   }
+  // teste local (scripts/worker-local.mjs --uma-vez): fila vazia = fim
+  if (process.env.WORKER_UMA_VEZ) { await db.end(); process.exit(0); }
   setTimeout(loop, INTERVALO_MS);
 }
 
@@ -115,7 +120,23 @@ async function agendarVerificacaoFontes() {
   }
 }
 
+// Pontos de referência vencidos (roadmap 2.12): uma vez por dia, enfileira os
+// anúncios ativos cujos POIs passaram de `poi_atualizar_dias` (Configurações ›
+// Mapa, padrão 90) — mesma função que o botão da Cartografia usa.
+async function agendarPois() {
+  try {
+    const { rows: [cfg] } = await db.query(`select valor from settings where chave = 'poi_atualizar_dias'`);
+    const dias = Math.max(1, Math.min(3650, Number(cfg?.valor ?? 90) || 90));
+    const { rows: [r] } = await db.query(`select fn_enfileirar_refresh_pois($1, 200) as n`, [dias]);
+    if (Number(r?.n)) console.log(`[pois] ${r.n} anúncio(s) com pontos de referência vencidos na fila`);
+  } catch (e) {
+    console.error("agendar pontos de referência falhou:", e.message);
+  }
+}
+
 console.log("Arini Imóveis Brasil worker iniciado.");
+agendarPois();
+setInterval(agendarPois, 24 * 60 * 60 * 1000);
 agendarVerificacaoFontes();
 setInterval(agendarVerificacaoFontes, 30 * 60 * 1000);
 agendarRotinas();

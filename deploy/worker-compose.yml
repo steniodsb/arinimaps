@@ -9,6 +9,10 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}                 # https://qtpjryvqifcmmabebccf.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       SITE_URL: ${SITE_URL}                         # https://ariniimoveisbrasil.com.br (ou URL do app no Dokploy)
+      # iguais aos do app: com o site travado por senha, o worker precisa do
+      # cookie de acesso para abrir o tour (vídeo) e a ficha (imagem de compartilhamento)
+      SITE_SENHA: ${SITE_SENHA}
+      SITE_BLOQUEIO_SEGREDO: ${SITE_BLOQUEIO_SEGREDO}
       WORKER_INTERVALO_MS: "15000"
     deploy:
       resources:

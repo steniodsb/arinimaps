@@ -83,6 +83,8 @@ export async function PUT(request: Request, ctx: RouteContext<"/api/imoveis/[id]
     .insert({ property_id: id, tipo: "video", storage_path: path, ordem: (count ?? 0) + 1 }).select("id").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
+  // o worker converte para MP4 720p (toca em iPhone e Android, 4–6× menor)
+  await admin.from("jobs").insert({ tipo: "otimizar_video", payload: { media_id: data.id } });
   await logAudit({ user_id: a.userId, acao: "video_anexado", entidade: "property_media", entidade_id: data.id, property_id: id });
   void registrarEventoImovel({ propertyId: id, tipo: "midia", userId: a.userId, partnerId: a.partnerId, request, detalhe: { acao: "video_anexado", path } });
   return NextResponse.json({ ok: true, id: data.id });

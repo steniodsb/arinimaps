@@ -9,6 +9,7 @@ import { lerCarPendente, limparCarPendente } from "@/lib/map/carPendente";
 import type { GeometriaEscolhida } from "@/components/map/DesenhoMapa";
 import { ehEquipe as papelEhEquipe, ehParceiro as papelEhParceiro } from "@/lib/perfis";
 import { enviarVideo, VIDEO_ACEITA, VIDEO_MAX_MB } from "@/lib/midia/enviarVideo";
+import { comprimirFotos } from "@/lib/midia/comprimirFoto";
 import {
   Check, CheckCircle2, Gavel, FileText, MapPin, Trees, LandPlot, Image as ImageIcon, ShieldCheck,
   Handshake, Camera, AlertTriangle, Send, type LucideIcon,
@@ -186,7 +187,10 @@ export default function NovoImovel() {
     }));
     if (pedeSelfie && selfie) fd.set("selfie", selfie);
     fd.set("geometria", JSON.stringify(geometria));
-    for (const f of fotos) fd.append("fotos", f);
+    // fotos reduzidas no próprio aparelho (~0,5 MB cada) antes de subir
+    const otimizadas = await comprimirFotos(fotos, (n) => setProgresso(`Otimizando fotos (${n} de ${fotos.length})…`));
+    setProgresso("Enviando…");
+    for (const f of otimizadas) fd.append("fotos", f);
     for (const [tipo, arquivos] of Object.entries(docs)) {
       for (const f of arquivos as File[]) fd.append(`doc_${tipo}`, f);
     }

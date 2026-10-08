@@ -1,8 +1,11 @@
 // Grava o tour 3D como MP4: Puppeteer (SwiftShader, sem GPU) captura frame a
 // frame com clock determinístico via window.__ARINI_TOUR.seek(t); ffmpeg monta.
 import { spawn } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import puppeteer from "puppeteer-core";
+import { caminhoChromium, liberarAcesso } from "./acessoSite.mjs";
 
 const FPS = 30;
 const LARGURA = 1280;
@@ -19,7 +22,7 @@ export async function renderVideo(payload, db) {
   const url = `${process.env.SITE_URL}/imovel/${codigo}/tour?record=1`;
 
   const browser = await puppeteer.launch({
-    executablePath: process.env.CHROMIUM_PATH ?? "/usr/bin/chromium",
+    executablePath: caminhoChromium(),
     headless: "shell",
     args: [
       "--no-sandbox", "--disable-dev-shm-usage",
@@ -30,6 +33,7 @@ export async function renderVideo(payload, db) {
 
   try {
     const page = await browser.newPage();
+    await liberarAcesso(page);
     await page.setViewport({ width: LARGURA, height: ALTURA });
     await page.goto(url, { waitUntil: "networkidle2", timeout: 90000 });
     await page.waitForFunction("window.__ARINI_TOUR !== undefined", { timeout: 60000 });
@@ -37,7 +41,7 @@ export async function renderVideo(payload, db) {
     const totalFrames = Math.ceil(duracao * FPS);
 
     // ffmpeg lendo PNGs do stdin
-    const saida = `/tmp/${codigo}.mp4`;
+    const saida = join(tmpdir(), `${codigo}.mp4`);
     const ffmpeg = spawn("ffmpeg", [
       "-y", "-f", "image2pipe", "-framerate", String(FPS), "-i", "-",
       "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "23",

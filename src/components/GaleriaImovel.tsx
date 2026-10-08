@@ -47,7 +47,11 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
           className={cheia ? "max-h-full max-w-full object-contain" : "w-full h-full object-cover"} />
       )}
       {slide.tipo === "video" && (
-        <video controls src={slide.url} className="w-full h-full object-contain bg-black" />
+        // vídeo otimizado pelo worker tem capa ao lado (…-poster.jpg); preload
+        // "metadata" não baixa o vídeo até a pessoa apertar o play
+        <video controls preload="metadata" playsInline src={slide.url}
+          poster={slide.url.endsWith("-otimizado.mp4") ? slide.url.replace(/-otimizado\.mp4$/, "-poster.jpg") : undefined}
+          className="w-full h-full object-contain bg-black" />
       )}
       {slide.tipo === "tour" && (
         <Link href={slide.href} className="relative block w-full h-full group/tour">

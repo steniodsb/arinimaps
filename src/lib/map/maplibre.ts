@@ -1,17 +1,23 @@
 "use client";
 
 /**
- * Carrega o MapLibre a partir do build UMD servido em /vendor/maplibre-gl.js.
+ * Carrega o MapLibre (v6, ESM) de /vendor/maplibre-gl.mjs, fora do bundle.
  *
- * POR QUÊ: o bundle do maplibre-gl via Turbopack quebra o web worker interno —
- * o mapa cria a UI mas nunca busca tiles (canvas fica na cor de fundo, sem erro
- * no console). O build UMD oficial embute o worker via blob e funciona em
- * qualquer bundler. Os TIPOS continuam vindo do pacote npm (mesma versão 5.6.0
- * pinada no package.json; ao atualizar o pacote, copie o dist novo para
- * public/vendor).
+ * POR QUÊ: o bundle do maplibre-gl via Turbopack quebrava o web worker interno —
+ * o mapa criava a UI mas nunca buscava tiles (canvas na cor de fundo, sem erro
+ * no console). Por isso o MapLibre é importado em runtime direto do arquivo
+ * estático, e ele mesmo resolve o worker por `import.meta.url`
+ * (/vendor/maplibre-gl-worker.mjs, mesma origem), sem precisar de setWorkerUrl.
+ *
+ * A v6 só publica ESM (o UMD `maplibre-gl.js` acabou), então o antigo
+ * `<script src>` virou `import()` com `turbopackIgnore`. Os arquivos de
+ * public/vendor são copiados do pacote npm por scripts/copia-maplibre.mjs
+ * (`prebuild`; no dev, `npm run vendor:maplibre` após atualizar o pacote):
+ * runtime, tipos e CSS saem sempre da mesma versão.
  */
 
 import type * as MapLibreNS from "maplibre-gl";
+import { version as VERSAO } from "maplibre-gl/package.json";
 import { Protocol } from "pmtiles";
 
 declare global {
@@ -19,6 +25,9 @@ declare global {
     maplibregl?: typeof MapLibreNS;
   }
 }
+
+/** Versão no query string: ao atualizar, o navegador não reaproveita o módulo velho do cache. */
+const URL_MAPLIBRE = `/vendor/maplibre-gl.mjs?v=${VERSAO}`;
 
 let promessa: Promise<typeof MapLibreNS> | null = null;
 
@@ -42,19 +51,18 @@ export function carregarMaplibre(): Promise<typeof MapLibreNS> {
   if (window.maplibregl) return Promise.resolve(registrarPmtiles(window.maplibregl));
   if (promessa) return promessa;
 
-  promessa = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "/vendor/maplibre-gl.js";
-    script.async = true;
-    script.onload = () => {
-      if (window.maplibregl) resolve(registrarPmtiles(window.maplibregl));
-      else reject(new Error("maplibre-gl carregou mas não expôs window.maplibregl"));
-    };
-    script.onerror = () => {
+  const modulo = import(/* webpackIgnore: true */ /* turbopackIgnore: true */ URL_MAPLIBRE) as Promise<
+    typeof MapLibreNS
+  >;
+  promessa = modulo.then(
+    (ml) => {
+      window.maplibregl = ml; // diagnóstico (scripts/debug-mapa.mjs) e reuso entre mapas
+      return registrarPmtiles(ml);
+    },
+    (e: unknown) => {
       promessa = null;
-      reject(new Error("falha ao carregar /vendor/maplibre-gl.js"));
-    };
-    document.head.appendChild(script);
-  });
+      throw new Error(`falha ao carregar ${URL_MAPLIBRE}: ${e instanceof Error ? e.message : String(e)}`);
+    },
+  );
   return promessa;
 }

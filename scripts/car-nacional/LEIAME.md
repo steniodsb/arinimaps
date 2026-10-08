@@ -1,10 +1,10 @@
 # CAR nacional — arquivo de mapa (PMTiles)
 
-A malha do CAR do Brasil inteiro (~7,5 milhões de imóveis) não fica no banco: vira um único arquivo
+A malha do CAR do Brasil inteiro (8,5 milhões de imóveis em 08/10/2026) não fica no banco: vira um único arquivo
 PMTiles na Cloudflare R2, e o mapa lê só os pedaços da tela (Range request), direto da CDN. O mapa
 nacional não depende do SICAR estar no ar; o SICAR só é consultado na atualização mensal.
 
-| Passo | Script | Tempo (medido em GO, 244 mil imóveis) |
+| Passo | Script | Tempo medido |
 |---|---|---|
 | 1. Baixar do SICAR, município por município (retomável) | `baixar.mjs` | Brasil: 37 min, 27 UFs, 0 falhas, 1,6 GB (08/10/2026) |
 | 2. Gerar o PMTiles (geojson-vt + vt-pbf, sem tippecanoe) | `gerar.mjs` | Brasil: ~10 min, 8.536.801 imóveis, 432.570 tiles, 2,4 GB |

@@ -46,7 +46,7 @@ const rodar = async (rotulo, sql, params = []) => {
 
 try {
   await c.query("begin");
-  const { rows } = await c.query("select id from properties where codigo = any($1)", [DEMO]);
+  const { rows } = await c.query("select id from properties where codigo = any($1) or caracteristicas->>'demo' = 'true'", [DEMO]);
   const ids = rows.map((r) => r.id);
   const opps = `select id from opportunities where property_id = any($1)`;
 

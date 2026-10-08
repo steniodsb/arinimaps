@@ -49,7 +49,14 @@ export default function MapaBusca({ itens, listaId }: { itens: ItemMapaBusca[]; 
       mapa.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
       const m = mapa;
 
-      m.on("load", () => {
+      // começa assim que o estilo está pronto, sem esperar o "load" (que só vem
+      // depois de todos os tiles da tela; com o satélite lento, o aviso de
+      // carregamento ficava preso)
+      let iniciado = false;
+      const iniciar = () => {
+        if (iniciado || !m.isStyleLoaded()) return;
+        iniciado = true;
+        m.off("styledata", iniciar);
         const cor = (i: ItemMapaBusca) => i.leilao ? STATUS_CORES.leilao : STATUS_CORES[i.status] ?? STATUS_CORES.publicado;
         const comDivisa = itens.filter((i) => i.geom);
         const divisas: GeoJSON.FeatureCollection = {
@@ -134,7 +141,10 @@ export default function MapaBusca({ itens, listaId }: { itens: ItemMapaBusca[]; 
           });
         }
         setPronto(true);
-      });
+      };
+      m.on("styledata", iniciar);
+      m.once("load", iniciar);
+      iniciar();
     })();
 
     return () => { cancelado = true; mapa?.remove(); mapaRef.current = null; };

@@ -57,11 +57,14 @@ export default function Ferramentas({
     onDesenhando?.(!!modo);
   }, [mapa, modo, onDesenhando]);
 
-  // fonte/camadas da medição, criadas uma vez
-  useEffect(() => {
-    if (!mapa) return;
-    const preparar = () => {
-      if (mapa.getSource("medicao")) return;
+  // fonte/camadas da medição. Criadas na hora do primeiro desenho se ainda não
+  // existirem (a ferramenta pode abrir antes do "load" do mapa) e sempre trazidas
+  // para o topo: a troca de base e o "Imagem do ano" adicionam camadas raster
+  // depois, que cobriam o desenho com o satélite ligado.
+  const CAMADAS_MEDICAO = ["medicao-area", "medicao-linha", "medicao-pontos"];
+  const garantirCamadas = () => {
+    if (!mapa?.style) return false;
+    if (!mapa.getSource("medicao")) {
       mapa.addSource("medicao", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       mapa.addLayer({
         id: "medicao-area", type: "fill", source: "medicao",
@@ -78,12 +81,22 @@ export default function Ferramentas({
         filter: ["==", ["geometry-type"], "Point"],
         paint: { "circle-color": "#0A1310", "circle-radius": 4.5, "circle-stroke-color": "#3FCF7F", "circle-stroke-width": 2 },
       });
-    };
-    if (mapa.isStyleLoaded()) preparar();
+    } else {
+      for (const id of CAMADAS_MEDICAO) if (mapa.getLayer(id)) mapa.moveLayer(id);
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (!mapa) return;
+    const preparar = () => { try { garantirCamadas(); } catch { /* estilo ainda carregando: o desenho cria depois */ } };
+    if (mapa.loaded()) preparar();
     else mapa.once("load", preparar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapa]);
 
   const desenhar = (pontos: [number, number][], fechar: boolean) => {
+    if (!garantirCamadas()) return;
     const src = mapa?.getSource("medicao") as GeoJSONSource | undefined;
     if (!src) return;
     const features: GeoJSON.Feature[] = pontos.map((p) => ({

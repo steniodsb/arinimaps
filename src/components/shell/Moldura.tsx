@@ -21,7 +21,7 @@ export default async function Moldura({
   cheia?: boolean;
 }) {
   if (usuario && !site) {
-    return <AppShell usuario={usuario} semPadding>{children}</AppShell>;
+    return <AppShell usuario={usuario} semPadding cheia={cheia}>{children}</AppShell>;
   }
 
   if (cheia) {

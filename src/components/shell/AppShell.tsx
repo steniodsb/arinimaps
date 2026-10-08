@@ -72,13 +72,19 @@ export function Logo({ compacto = false }: { compacto?: boolean }) {
 }
 
 export default function AppShell({
-  children, usuario, semPadding = false, busca = true,
+  children, usuario, semPadding = false, busca = true, cheia = false,
 }: {
   children: React.ReactNode;
   usuario?: Usuario;
   /** telas de mapa ocupam tudo; as demais recebem respiro */
   semPadding?: boolean;
   busca?: boolean;
+  /**
+   * Tela cheia (mapa): a moldura trava na altura da janela. Sem isso, um painel
+   * comprido dentro do mapa (lista com dezenas de imóveis) esticava a página e
+   * o mapa junto — o centro do mapa ia parar milhares de pixels abaixo da tela.
+   */
+  cheia?: boolean;
 }) {
   const caminho = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
@@ -88,9 +94,9 @@ export default function AppShell({
   const ativo = (href: string) => (href === "/" ? caminho === "/" : caminho.startsWith(href));
 
   return (
-    <div className="min-h-screen bg-fundo flex">
+    <div className={`${cheia ? "h-dvh overflow-hidden" : "min-h-screen"} bg-fundo flex`}>
       {/* ---------- sidebar (desktop) ---------- */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-linha bg-superficie">
+      <aside className={`hidden lg:flex w-64 shrink-0 flex-col border-r border-linha bg-superficie ${cheia ? "overflow-y-auto" : ""}`}>
         <Link href="/" aria-label="Arini Imóveis Brasil — início" className="flex h-[4.5rem] items-center border-b border-linha px-6">
           <Logo />
         </Link>
@@ -145,7 +151,7 @@ export default function AppShell({
       </aside>
 
       {/* ---------- coluna principal ---------- */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-linha bg-superficie px-4 lg:h-[4.5rem] lg:px-6">
           <button onClick={() => setMenuAberto(!menuAberto)} type="button"
             className="lg:hidden grid size-10 place-items-center rounded-[10px] border border-linha text-texto transition hover:border-verde"

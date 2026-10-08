@@ -46,3 +46,6 @@ next-env.d.ts
 
 # arquivos grandes de teste local (PMTiles do CAR etc.)
 /public/dev/
+
+# cópias de trabalho temporárias dos agentes do Claude Code
+/.claude/worktrees/

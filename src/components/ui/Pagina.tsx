@@ -155,11 +155,13 @@ const TONS = {
 } as const;
 
 /** Etiqueta de status (substitui os `rounded-full px-2 …` soltos pelas telas). */
-export function Etiqueta({ tom = "neutro", children, className = "" }: {
+export function Etiqueta({ tom = "neutro", children, className = "", quebra = false }: {
   tom?: keyof typeof TONS; children: React.ReactNode; className?: string;
+  /** texto longo: deixa quebrar a linha em vez de alargar a tela no celular */
+  quebra?: boolean;
 }) {
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-semibold ${TONS[tom]} ${className}`}>
+    <span className={`inline-flex max-w-full items-center gap-1 ${quebra ? "whitespace-normal" : "whitespace-nowrap"} rounded-md border px-2.5 py-1 text-xs font-semibold ${TONS[tom]} ${className}`}>
       {children}
     </span>
   );

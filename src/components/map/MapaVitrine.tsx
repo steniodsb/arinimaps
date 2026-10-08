@@ -319,8 +319,15 @@ export default function MapaVitrine({ onCena, onPronto, cena, ativo = true }: Pr
           (map.getSource("imoveis-centros") as GeoJSONSource | undefined)?.setData(centrosDe(imoveis));
         }
 
-        // só mostra (e só começa a andar) com o satélite da primeira cena desenhado
+        // só mostra (e só começa a andar) com o satélite da primeira cena desenhado.
+        // O teto de 5 s não basta para mostrar: numa conexão lenta ele vencia com
+        // os ladrilhos ainda chegando e o mapa preto cobria a foto do slide (visto
+        // na revisão de 08/10). Passado o teto, continua esperando o "idle" — se o
+        // satélite nunca chegar, a foto simplesmente fica.
         await esperarMapa(map, 5000);
+        while (!cancelado && !map.areTilesLoaded()) {
+          await new Promise<void>((ok) => map.once("idle", () => ok()));
+        }
         if (cancelado) return;
         pronto = true;
         onProntoRef.current?.();

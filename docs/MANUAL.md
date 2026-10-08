@@ -80,3 +80,10 @@ npm run testa
 
 Roda a auditoria das rotas, as fontes oficiais e os testes de ponta a ponta (planos, mapa,
 conta e suporte, perfis). Cada teste apaga o que cria. Roteiro de homologação: `HOMOLOGACAO.md`.
+
+Revisão visual de **todas** as telas (61 rotas + 404, em modo escuro, claro e celular, cada uma
+com o perfil certo), com detector de rolagem lateral, texto estourando, erro de página e emoji:
+
+```bash
+BASE_URL=http://localhost:3000 OUT=./capturas/revisao node scripts/revisao-completa.mjs
+```

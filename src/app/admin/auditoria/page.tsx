@@ -14,12 +14,21 @@ export default async function AdminAuditoria({ searchParams }: PageProps<"/admin
 
   const admin = supabaseAdmin();
   let q = admin.from("audit_log")
-    .select("id, acao, entidade, entidade_id, property_id, opportunity_id, created_at, usuario:profiles(nome)")
+    .select("id, acao, entidade, entidade_id, property_id, opportunity_id, created_at, user_id")
     .order("created_at", { ascending: false })
     .limit(200);
   if (entidade) q = q.eq("entidade", entidade);
   if (acao) q = q.ilike("acao", `%${acao}%`);
-  const { data: logs } = await q;
+  const { data: brutos } = await q;
+  // audit_log.user_id não tem chave estrangeira (o log sobrevive à conta), então
+  // o PostgREST não faz o join `profiles(nome)`: a consulta falhava calada e a
+  // tela mostrava "nada encontrado" com 200+ registros no banco. Nomes à parte.
+  const ids = [...new Set((brutos ?? []).map((l) => l.user_id).filter(Boolean))] as string[];
+  const { data: perfis } = ids.length
+    ? await admin.from("profiles").select("user_id, nome").in("user_id", ids)
+    : { data: [] as { user_id: string; nome: string }[] };
+  const nomePor = new Map((perfis ?? []).map((p) => [p.user_id, p.nome]));
+  const logs = (brutos ?? []).map((l) => ({ ...l, usuario: l.user_id ? { nome: nomePor.get(l.user_id) ?? null } : null }));
 
   return (
     <div className="mx-auto max-w-[1280px] space-y-8">

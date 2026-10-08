@@ -43,7 +43,7 @@ export default async function ConhecimentoIA({ searchParams }: PageProps<"/admin
           citando fonte e data. Cada alteração gera uma versão.
         </>}
         acoes={
-          <Etiqueta tom={iaConfigurada() ? "verde" : "alerta"} className="!px-3.5 !py-2 !text-sm">
+          <Etiqueta quebra tom={iaConfigurada() ? "verde" : "alerta"} className="!px-3.5 !py-2 !text-sm">
             <Bot className="size-4" />
             {iaConfigurada() ? `Assistente ligado · ${modeloIa()}` : "Assistente em configuração (sem ANTHROPIC_API_KEY)"}
           </Etiqueta>

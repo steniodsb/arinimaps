@@ -7,7 +7,9 @@
 
 /** Caixa da tabela: o cartão rola na horizontal, a página não. */
 export const TABELA_CAIXA = "cartao overflow-x-auto";
-export const TABELA = "w-full text-[0.92rem]";
+// min-w: no celular a tabela rola dentro da caixa em vez de quebrar uma
+// palavra por linha (Mensalidades e Comissões ficavam ilegíveis em 390 px)
+export const TABELA = "w-full min-w-[640px] text-[0.92rem]";
 /** Linha de cabeçalho: caixa alta pequena, espaçada. */
 export const THEAD = "border-b border-linha bg-superficie-2/60 text-left";
 export const TH = "px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-texto-2 whitespace-nowrap";

@@ -103,6 +103,15 @@ body {
   color: var(--texto);
 }
 
+/* GRADE SEM COLUNAS = UMA COLUNA QUE ENCOLHE (revisão de 08/10/2026).
+   Uma `grid` sem grid-cols-* no celular cria uma coluna implícita do tamanho do
+   conteúdo: um nome de rua longo ou uma lista rolável alargava a página inteira
+   (medido: 58 a 550 px de rolagem lateral em 4 telas). Em @layer base e com
+   :where, qualquer grid-cols-* da tela continua mandando. */
+@layer base {
+  :where(.grid) { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* TIPOGRAFIA (redesign 08/10/2026): títulos do sistema inteiro em Urbanist,
    como a página inicial; corpo continua em Geist. */
 h1, h2, h3, .titulo-display {

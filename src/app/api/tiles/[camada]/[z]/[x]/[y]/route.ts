@@ -56,7 +56,10 @@ export async function GET(request: Request, ctx: RouteContext<"/api/tiles/[camad
     return new NextResponse(null, { status: 204, headers: { "Cache-Control": CACHE } });
   }
 
-  const chaveTile = `${camada}/${z}/${x}/${y}`;
+  // `?v=` muda quando o CAR sob demanda grava uma área nova: o mapa pede de
+  // novo e este cache não pode devolver o tile antigo (vazio)
+  const versao = new URL(request.url).searchParams.get("v") ?? "";
+  const chaveTile = `${camada}/${z}/${x}/${y}/${versao}`;
   const aceitaGzip = /gzip/.test(request.headers.get("accept-encoding") ?? "");
   const lembrado = memoria.get(chaveTile);
   if (lembrado && Date.now() - lembrado.em < MEMORIA_TTL_MS) {

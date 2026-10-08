@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup } from "maplibre-gl";
+import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup, VectorTileSource } from "maplibre-gl";
 import { STATUS_CORES, CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea } from "@/lib/format";
@@ -297,6 +297,55 @@ export default function MapaRegional({
         : ""
     );
   }, []);
+
+  /**
+   * CAR sob demanda (08/10/2026): fora da base regional, ao parar num zoom
+   * ≥ 11 o mapa pede ao servidor o CAR da janela (POST /api/car/janela), que
+   * busca no SICAR o que faltar e grava. Se entrou imóvel novo, troca a URL
+   * dos tiles do CAR (`?v=`) para o MapLibre pedir de novo a área.
+   * As células z11 já pedidas nesta visita não são pedidas outra vez.
+   */
+  const carCelulasPedidasRef = useRef(new Set<string>());
+  const carTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const garantirCarSobDemanda = useCallback(() => {
+    if (carTimerRef.current) clearTimeout(carTimerRef.current);
+    carTimerRef.current = setTimeout(async () => {
+      const map = mapRef.current;
+      if (!map || !carAtivoRef.current || map.getZoom() < 11) return;
+      const b = map.getBounds();
+      const n = 2 ** 11;
+      const cx = (lng: number) => Math.floor(((lng + 180) / 360) * n);
+      const cy = (lat: number) => {
+        const r = (lat * Math.PI) / 180;
+        return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+      };
+      const celulas: string[] = [];
+      for (let x = cx(b.getWest()); x <= cx(b.getEast()); x++)
+        for (let y = cy(b.getNorth()); y <= cy(b.getSouth()); y++) celulas.push(`${x}/${y}`);
+      if (celulas.every((c) => carCelulasPedidasRef.current.has(c))) return;
+      celulas.forEach((c) => carCelulasPedidasRef.current.add(c));
+
+      const aviso = setTimeout(() => setCarAviso("Buscando no SICAR os imóveis rurais desta região…"), 600);
+      try {
+        const r = await fetch("/api/car/janela", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ xmin: b.getWest(), ymin: b.getSouth(), xmax: b.getEast(), ymax: b.getNorth() }),
+        });
+        const j = await r.json().catch(() => null) as { imoveis?: number } | null;
+        if (!r.ok) celulas.forEach((c) => carCelulasPedidasRef.current.delete(c)); // tenta de novo depois
+        if (j?.imoveis && mapRef.current) {
+          const fonte = mapRef.current.getSource("car") as VectorTileSource | undefined;
+          fonte?.setTiles([`${window.location.origin}/api/tiles/car/{z}/{x}/{y}.pbf?v=${Date.now()}`]);
+        }
+      } catch {
+        celulas.forEach((c) => carCelulasPedidasRef.current.delete(c));
+      } finally {
+        clearTimeout(aviso);
+        conferirZoomCar();
+      }
+    }, 700);
+  }, [conferirZoomCar]);
 
   /**
    * Baixa e desenha as plantas urbanas que a tela está pedindo — e só essas.
@@ -751,6 +800,9 @@ export default function MapaRegional({
         // zoom da cidade, pelo hash da URL) e depois a cada parada do mapa
         map.on("moveend", () => void garantirPlantas());
         void garantirPlantas();
+        // CAR fora da base regional: busca no SICAR ao parar o mapa
+        map.on("moveend", garantirCarSobDemanda);
+        garantirCarSobDemanda();
       });
     })();
 
@@ -807,9 +859,9 @@ export default function MapaRegional({
     const map = mapRef.current;
     if (!map || !pronto || !map.getLayer("car-fill")) return;
     for (const id of ["car-fill", "car-linha"]) map.setLayoutProperty(id, "visibility", carAtivo ? "visible" : "none");
-    if (carAtivo) conferirZoomCar();
+    if (carAtivo) { conferirZoomCar(); garantirCarSobDemanda(); }
     else { setCarSel(null); setCarAviso(""); }
-  }, [carAtivo, pronto, conferirZoomCar]);
+  }, [carAtivo, pronto, conferirZoomCar, garantirCarSobDemanda]);
 
   // filtros e busca
   useEffect(() => {

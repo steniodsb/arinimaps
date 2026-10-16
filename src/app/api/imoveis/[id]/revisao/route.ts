@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator, type Ator } from "@/lib/authz";
+import { ator, temSetor, type Ator } from "@/lib/authz";
 import { falha } from "@/lib/erros";
 import { ariniEmail, sendEmail } from "@/lib/notify";
 import { registrarEventoImovel } from "@/lib/imovel/eventos";
@@ -24,7 +24,8 @@ async function carregar(a: Ator, id: string): Promise<{ p: Imovel } | { resposta
     .eq("id", id).maybeSingle();
   if (!data) return { resposta: falha(404, "nao_encontrado", "Imóvel não encontrado.") };
   const p = data as Imovel;
-  const dono = a.ehArini || (!!a.ownerId && p.owner_id === a.ownerId) || (!!a.partnerId && p.partner_id === a.partnerId);
+  // equipe: anúncio é do setor de Operações (diretoria atua em todos)
+  const dono = (a.ehArini && temSetor(a, "operacoes")) || (!!a.ownerId && p.owner_id === a.ownerId) || (!!a.partnerId && p.partner_id === a.partnerId);
   if (!dono) return { resposta: falha(403, "sem_acesso", "Sem acesso a este imóvel.") };
   return { p };
 }

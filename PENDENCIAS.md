@@ -1,6 +1,6 @@
-# ARINI IMÓVEIS BRASIL — Roadmap de pendências (08/10/2026)
+# ARINI IMÓVEIS BRASIL — Roadmap de pendências (16/10/2026)
 
-> Repositório: github.com/steniodsb/arinimaps · migrations até a 0044 · verificação automática a cada push (GitHub Actions).
+> Repositório: github.com/steniodsb/arinimaps · migrations até a 0046 · verificação automática a cada push (GitHub Actions).
 > Cobertura dos documentos de 05/10 (Fluxograma Mestre e Requisitos cartográficos): `docs/FLUXOGRAMA-COBERTURA.md` · planos por nicho: `docs/PLANOS.md`.
 > Site travado pela senha de bloqueio (`SITE_SENHA`) até o lançamento.
 > Acessos e senhas: `ACESSOS - NAO COMPARTILHAR.md`, fora do repositório.
@@ -159,7 +159,7 @@ Definições que destravam os itens bloqueados.
 |---|---|---|---|---|---|
 | 8.1 | **Prazo, custo e valor do escopo novo** — Por etapa, separando correção, melhoria, novidade e integração, com riscos e dependências. | Decisão | Stênio e Carlos | — | Call · Melhorias 22 |
 | 8.2 | **Custo por uso da inteligência artificial** — Decidido em 08/10: Claude Haiku 5.5, com cota por plano. Falta definir quais dados podem ser enviados ao serviço de IA (hoje só dado público e de anúncio publicado). | Decisão | Carlos | — | Segurança 18 |
-| 8.3 | **Conta do Asaas e quais cobranças passam por ele** | Decisão | Carlos | — | — |
+| 8.3 | **Conta do Asaas e quais cobranças passam por ele** — Conta criada e chave de produção configurada (15/10); comercial aprovado, conta bancária e documentação pendentes no Asaas. Mensalidade pronta: cliente sem duplicar, webhook com vencimento, estorno e reenvio sem efeito duplo (migration 0045). Roteiro em `docs/ASAAS.md`. Decidir: fatura vencida suspende na hora ou respeita a carência; cobrar comissão pelo Asaas. | Decisão | Carlos | — | — |
 | 8.4 | **API ou metodologia da pré-avaliação e da aptidão** — E a validação jurídica do uso. | Decisão | Carlos | — | Call · Melhorias 18 |
 | 8.5 | **Regras da consulta profissional** — O que libera, para quem e o valor da assinatura. | Decisão | Carlos | — | Call · Melhorias 15 |
 | 8.6 | **Domínio** — ariniimoveisbrasil.com.br ou subdomínio. | Decisão | Carlos | — | — |
@@ -183,7 +183,7 @@ Validação antes de abrir ao público.
 | 9.2 | **Roteiro completo em homologação** — Cadastro, anúncio pelo CAR e pelo lote, documentos, aprovação, interessado, proposta, venda e comissão. | Pendente | Stênio | 1.5 | Melhorias 22 |
 | 9.3 | **Rodada de testes com o Carlos** — Acesso, visualização e rastreio de ajustes, com a conta dele. | Pendente | Stênio e Carlos | — | Call |
 | 9.4 | **Android e iPhone em 4G** | Pendente | Stênio | — | Melhorias 2 |
-| 9.5 | **Testes de segurança antes do lançamento** — Força bruta, permissões com todos os perfis, acesso direto a endereços e registros de outros usuários, envio de arquivos e segregação por território. | Parcial | Stênio | — | Segurança 21 e 22 |
+| 9.5 | **Testes de segurança antes do lançamento** — `scripts/testa-seguranca.mjs` (no `npm run testa`): 86 testes de força bruta, matriz de permissões por perfil e setor, acesso a registros de outro usuário, upload malicioso, RLS pela chave pública e segundo fator nas APIs; 86 ok em 16/10. Corrigido: funções do banco executáveis pela API pública (dava para trocar a divisa de qualquer imóvel — crítico, migration 0046), segundo fator só nas telas, setor ignorado em oportunidades/documentos/revisão e nas policies, relatório territorial legível por todos, caminho de documento com `../`. Território é só rótulo (a separação entre franquias vem da posse do imóvel). | Validar | Stênio | — | Segurança 21 e 22 |
 | 9.6 | **Teste de restauração do backup** | Bloqueado | Stênio | 1.6 | Segurança 22 |
 | 9.7 | **Testes automáticos antes de cada publicação** — A cada push o GitHub roda tipos, lint, auditoria das rotas e o build de produção (`.github/workflows/verificar.yml`); commit com ✗ não deve ir para o ar. `npm run testa` (ponta a ponta, precisa do site e do banco) roda na homologação. | Validar | Stênio | — | — |
 

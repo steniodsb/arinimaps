@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { setoresDe, type SetorId } from "@/lib/setores";
 import { montarAcesso, type Acesso, type Plano, type RecursoId } from "@/lib/planos";
 import { planoDaOrganizacao } from "@/lib/organizacoes-servidor";
+import { lerConfiguracoes } from "@/lib/settings";
 
 export type Ator = {
   userId: string;
@@ -29,6 +30,22 @@ export function temSetor(a: Ator | null | undefined, ...setores: SetorId[]) {
   return !!a?.ehArini && setores.some((s) => a.setores.includes(s));
 }
 
+/**
+ * A sessão ainda não passou pelo segundo fator exigido? Mesma regra do
+ * layout da Central: conta com MFA ativo e sessão em aal1 → pendente; com
+ * `seguranca_mfa_equipe` ligado, membro da equipe sem MFA → pendente.
+ * Sem MFA e com a exigência desligada, nada muda.
+ */
+export async function mfaPendente(supabase: Awaited<ReturnType<typeof supabaseServer>>, equipe: boolean) {
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") return true;
+  if (equipe && aal?.nextLevel !== "aal2") {
+    const cfg = await lerConfiguracoes();
+    if (cfg.seguranca_mfa_equipe === true) return true;
+  }
+  return false;
+}
+
 /** Usuário logado + vínculos (partner/owner). null = sem sessão. */
 export async function ator(): Promise<Ator | null> {
   const supabase = await supabaseServer();
@@ -39,6 +56,10 @@ export async function ator(): Promise<Ator | null> {
     .select("role, setores, ativo, nicho, plan_id, plan_valido_ate, plan_origem").eq("user_id", user.id).single();
   if (!profile || profile.ativo === false) return null;
   const equipe = ["admin_central", "analista_arini"].includes(profile.role);
+  // Segundo fator também nas APIs (testes 9.5), com a mesma regra da Central
+  // (src/app/admin/layout.tsx): quem tem MFA precisa tê-lo confirmado nesta
+  // sessão; se a diretoria o tornou obrigatório, equipe sem MFA não opera.
+  if (await mfaPendente(supabase, equipe)) return null;
   const [{ data: partner }, { data: owner }, { data: planoPessoal }, daOrg] = await Promise.all([
     admin.from("partners").select("id").eq("profile_id", user.id).maybeSingle(),
     admin.from("owners").select("id").eq("profile_id", user.id).maybeSingle(),
@@ -62,9 +83,10 @@ export async function ator(): Promise<Ator | null> {
   };
 }
 
-/** Pode operar esta oportunidade? Arini sempre; parceiro A/B; proprietário quando encaminhada a ele. */
+/** Pode operar esta oportunidade? Arini nos setores Comercial/Jurídico/Financeiro; parceiro A/B; proprietário quando encaminhada a ele. */
 export async function podeOperarOportunidade(a: Ator, opportunityId: string) {
-  if (a.ehArini) return true;
+  // equipe: Comercial conduz; Jurídico e Financeiro atuam no contrato e na venda (docs/SEGURANCA.md §2.1)
+  if (a.ehArini) return temSetor(a, "comercial", "juridico", "financeiro");
   const admin = supabaseAdmin();
   const { data: opp } = await admin
     .from("opportunities")

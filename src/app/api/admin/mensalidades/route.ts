@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, temSetor } from "@/lib/authz";
-import { asaasConfigurado, asaasCriarCliente, asaasCriarCobranca } from "@/lib/asaas";
+import { AsaasErro, asaasBuscarClientePorReferencia, asaasBuscarCobranca, asaasConfigurado, asaasCriarCliente, asaasCriarCobranca } from "@/lib/asaas";
+import { cpfDoPerfil } from "@/lib/seguranca/cripto";
 import { emailDoProfile } from "@/lib/notify";
 import { falha, falhaBanco } from "@/lib/erros";
 
@@ -61,38 +62,93 @@ export async function POST(request: Request) {
       return falha(400, "asaas_sem_chave", "A cobrança pelo Asaas não está ligada.", { motivo: "A variável ASAAS_API_KEY não está configurada no servidor.", solucao: "Cobre manualmente por enquanto, ou configure a chave do Asaas no painel de deploy — o botão volta a funcionar sozinho." });
     }
     const { data: inv } = await admin.from("invoices")
-      .select("id, valor, competencia, subscription:subscriptions(dia_vencimento, property:properties(codigo, titulo, owner_id, partner_id))")
-      .eq("id", body.invoice_id).single();
+      .select("id, valor, competencia, status, gateway_id, subscription:subscriptions(dia_vencimento, property:properties(codigo, titulo, owner_id, partner_id))")
+      .eq("id", body.invoice_id).maybeSingle();
     if (!inv) return falha(404, "fatura_sumiu", "Fatura não encontrada.", { solucao: "Recarregue a página — ela pode ter sido paga ou removida." });
+    if (inv.status === "paga") return falha(409, "fatura_paga", "Essa fatura já está paga.", { solucao: "Recarregue a página." });
     const sub = inv.subscription as unknown as { dia_vencimento: number; property: { codigo: string; titulo: string; owner_id: string | null; partner_id: string | null } };
 
-    // cliente = proprietário ou parceiro responsável
-    let profileId: string | null = null;
-    let nome = "Anunciante";
-    if (sub.property.owner_id) {
-      const { data: o } = await admin.from("owners").select("profile_id, profile:profiles(nome)").eq("id", sub.property.owner_id).single();
-      profileId = o?.profile_id ?? null;
-      nome = (o?.profile as unknown as { nome: string } | null)?.nome ?? nome;
-    } else if (sub.property.partner_id) {
-      const { data: p } = await admin.from("partners").select("profile_id, razao_social").eq("id", sub.property.partner_id).single();
-      profileId = p?.profile_id ?? null;
-      nome = p?.razao_social ?? nome;
-    }
-    const email = profileId ? await emailDoProfile(profileId) : null;
+    try {
+      // já existe cobrança viva no Asaas para esta fatura → reaproveita o link (não duplica)
+      if (inv.gateway_id) {
+        const atual = await asaasBuscarCobranca(inv.gateway_id);
+        if (atual && !atual.deleted && !["REFUNDED", "REFUND_REQUESTED", "CHARGEBACK_REQUESTED"].includes(atual.status)) {
+          return NextResponse.json({ ok: true, url: atual.invoiceUrl, reaproveitada: true });
+        }
+      }
 
-    const cliente = await asaasCriarCliente({ name: nome, email: email ?? undefined });
-    const comp = new Date(inv.competencia);
-    const due = new Date(comp.getFullYear(), comp.getMonth(), sub.dia_vencimento);
-    const cobranca = await asaasCriarCobranca({
-      customer: cliente!.id,
-      value: Number(inv.valor),
-      dueDate: due.toISOString().slice(0, 10),
-      description: `Mensalidade Arini Imóveis Brasil — ${sub.property.codigo} ${sub.property.titulo}`,
-      externalReference: inv.id,
-    });
-    await admin.from("invoices").update({ gateway_id: cobranca!.id }).eq("id", inv.id);
-    await logAudit({ user_id: a.userId, acao: "cobranca_asaas_criada", entidade: "invoices", entidade_id: inv.id, dados_depois: { gateway_id: cobranca!.id } });
-    return NextResponse.json({ ok: true, url: cobranca!.invoiceUrl });
+      // cliente = proprietário ou parceiro responsável
+      let profileId: string | null = null;
+      let nome = "Anunciante";
+      if (sub.property.owner_id) {
+        const { data: o } = await admin.from("owners").select("profile_id, profile:profiles(nome)").eq("id", sub.property.owner_id).single();
+        profileId = o?.profile_id ?? null;
+        nome = (o?.profile as unknown as { nome: string } | null)?.nome || nome;
+      } else if (sub.property.partner_id) {
+        const { data: p } = await admin.from("partners").select("profile_id, razao_social").eq("id", sub.property.partner_id).single();
+        profileId = p?.profile_id ?? null;
+        nome = p?.razao_social || nome;
+      }
+      if (!profileId) {
+        return falha(422, "asaas_sem_responsavel", "O imóvel não tem proprietário nem parceiro com conta.", { motivo: "O Asaas precisa de um cliente (nome e CPF/CNPJ) para emitir a cobrança.", solucao: "Vincule o responsável ao imóvel ou cobre manualmente." });
+      }
+
+      const { data: perfil } = await admin.from("profiles").select("*").eq("user_id", profileId).single();
+      const perfilRow = (perfil ?? {}) as { nome?: string; telefone?: string | null; asaas_customer_id?: string | null; cpf_cnpj?: string | null; cpf_cnpj_cifrado?: string | null };
+      let customerId = perfilRow.asaas_customer_id ?? null;
+      if (!customerId) {
+        // sem id guardado: procura pelo nosso identificador antes de criar (evita cliente duplicado)
+        customerId = (await asaasBuscarClientePorReferencia(profileId))?.id ?? null;
+      }
+      if (!customerId) {
+        const cpf = cpfDoPerfil(perfilRow)?.replace(/\D/g, "") ?? "";
+        if (cpf.length !== 11 && cpf.length !== 14) {
+          return falha(422, "asaas_sem_cpf", "O responsável pelo imóvel não tem CPF/CNPJ válido no cadastro.", { motivo: "O Asaas exige CPF ou CNPJ para criar o cliente da cobrança.", solucao: "Peça para a pessoa completar o CPF/CNPJ no cadastro e tente de novo." });
+        }
+        const email = await emailDoProfile(profileId);
+        const tel = perfilRow.telefone?.replace(/\D/g, "");
+        const cliente = await asaasCriarCliente({
+          name: nome, cpfCnpj: cpf, email: email ?? undefined,
+          mobilePhone: tel && tel.length >= 10 ? tel : undefined, externalReference: profileId,
+        });
+        customerId = cliente!.id;
+      }
+      if (customerId !== perfilRow.asaas_customer_id) {
+        // falha aqui não impede a cobrança: a busca por externalReference cobre a próxima vez
+        const { error } = await admin.from("profiles").update({ asaas_customer_id: customerId }).eq("user_id", profileId);
+        if (error) console.error("profiles.asaas_customer_id não gravado:", error.message);
+      }
+
+      // vencimento: dia do plano na competência; nunca no passado (o Asaas recusa)
+      const [ano, mes] = String(inv.competencia).split("-").map(Number);
+      const dia = Math.min(sub.dia_vencimento, new Date(ano, mes, 0).getDate());
+      const vencPlano = `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+      const hoje = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      const dueDate = vencPlano < hoje ? hoje : vencPlano;
+
+      const cobranca = await asaasCriarCobranca({
+        customer: customerId,
+        value: Number(inv.valor),
+        dueDate,
+        description: `Mensalidade Arini Imóveis Brasil — ${sub.property.codigo} ${sub.property.titulo}`.slice(0, 500),
+        externalReference: inv.id,
+      });
+      await admin.from("invoices").update({ gateway_id: cobranca!.id }).eq("id", inv.id);
+      await logAudit({ user_id: a.userId, acao: "cobranca_asaas_criada", entidade: "invoices", entidade_id: inv.id, dados_depois: { gateway_id: cobranca!.id, vencimento: dueDate } });
+      return NextResponse.json({ ok: true, url: cobranca!.invoiceUrl });
+    } catch (e) {
+      if (e instanceof AsaasErro) {
+        return falha(502, "asaas_falhou", "O Asaas não aceitou a cobrança.", {
+          motivo: e.mensagem,
+          solucao: e.status === 401 || e.status === 403
+            ? "Avise a diretoria: a chave ou o cadastro da conta Asaas precisa de atenção. Enquanto isso, cobre manualmente."
+            : "Confira os dados do responsável (nome, CPF/CNPJ, e-mail) e tente de novo. Se repetir, cobre manualmente.",
+          detalhes: { status: e.status, codigos: e.codigos },
+        });
+      }
+      console.error("cobrar_asaas falhou:", e);
+      return falha(500, "asaas_falhou", "Não foi possível gerar a cobrança agora.", { solucao: "Tente de novo em instantes. Se repetir, avise o desenvolvedor." });
+    }
   }
 
   return falha(400, "acao_invalida", "Ação de mensalidade desconhecida.", { solucao: "Recarregue a página; se repetir, avise o desenvolvedor." });

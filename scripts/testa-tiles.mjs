@@ -49,7 +49,10 @@ try {
     const m = window.__mapa, c = m.getCanvas();
     for (let dx = -200; dx <= 200; dx += 40) for (let dy = -150; dy <= 150; dy += 40) {
       const pt = [c.clientWidth / 2 + dx, c.clientHeight / 2 + dy];
-      if (m.queryRenderedFeatures(pt, { layers: ["car-fill"] }).length) { const r = c.getBoundingClientRect(); return [r.left + pt[0], r.top + pt[1]]; }
+      const r = c.getBoundingClientRect();
+      // o ponto precisa estar livre: sem anúncio por cima (o clique abriria o imóvel) e sem painel/legenda sobre o canvas
+      const anuncio = ["imoveis-fill", "imoveis-ponto", "imoveis-marcador"].some((l) => m.getLayer(l) && m.queryRenderedFeatures(pt, { layers: [l] }).length);
+      if (!anuncio && document.elementFromPoint(r.left + pt[0], r.top + pt[1]) === c && m.queryRenderedFeatures(pt, { layers: ["car-fill"] }).length) return [r.left + pt[0], r.top + pt[1]];
     }
     return null;
   });
@@ -73,7 +76,9 @@ try {
     const m = window.__mapa, c = m.getCanvas();
     for (let dx = -300; dx <= 300; dx += 30) for (let dy = -200; dy <= 200; dy += 30) {
       const pt = [c.clientWidth / 2 + dx, c.clientHeight / 2 + dy];
-      if (m.queryRenderedFeatures(pt, { layers: ["lotes-fill"] }).length) { const r = c.getBoundingClientRect(); return [r.left + pt[0], r.top + pt[1]]; }
+      const r = c.getBoundingClientRect();
+      const anuncio = ["imoveis-fill", "imoveis-ponto", "imoveis-marcador"].some((l) => m.getLayer(l) && m.queryRenderedFeatures(pt, { layers: [l] }).length);
+      if (!anuncio && document.elementFromPoint(r.left + pt[0], r.top + pt[1]) === c && m.queryRenderedFeatures(pt, { layers: ["lotes-fill"] }).length) return [r.left + pt[0], r.top + pt[1]];
     }
     return null;
   });

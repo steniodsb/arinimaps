@@ -14,6 +14,7 @@ const PASSOS = [
   ["Mapa com tiles vetoriais", "scripts/testa-tiles.mjs", true],
   ["Conta, organização, suporte, demandas", "scripts/testa-conta-suporte.mjs", true],
   ["Perfis, leilão, selfie, vídeo", "scripts/testa-perfis.mjs", true],
+  ["Segurança: força bruta, permissões, IDOR, upload, RLS", "scripts/testa-seguranca.mjs", true],
 ];
 
 const somente = process.argv[2];

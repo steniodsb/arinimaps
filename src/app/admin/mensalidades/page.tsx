@@ -10,7 +10,7 @@ const TOM_SUB: Record<string, "verde" | "critico" | "ouro" | "neutro"> = {
   ativa: "verde", inadimplente: "critico", pendente: "ouro", isenta: "neutro", cancelada: "neutro",
 };
 const TOM_FATURA: Record<string, "verde" | "critico" | "ouro" | "neutro"> = {
-  paga: "verde", vencida: "critico", aberta: "ouro",
+  paga: "verde", vencida: "critico", estornada: "critico", aberta: "ouro",
 };
 
 const SUB_LABEL: Record<string, string> = {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import { ator, type Ator } from "@/lib/authz";
+import { ator, temSetor, type Ator } from "@/lib/authz";
 import { limitar, respostaLimite } from "@/lib/seguranca/limite";
 import { registrarEventoImovel } from "@/lib/imovel/eventos";
 
@@ -22,7 +22,8 @@ const MAX_VIDEOS = 3;
 const TIPOS: Record<string, string> = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" };
 
 async function podeEditar(a: Ator, propertyId: string) {
-  if (a.ehArini) return true;
+  // equipe: mídia do anúncio é do setor de Operações (diretoria atua em todos)
+  if (a.ehArini) return temSetor(a, "operacoes");
   const { data: p } = await supabaseAdmin().from("properties").select("owner_id, partner_id").eq("id", propertyId).single();
   return !!p && ((!!a.ownerId && p.owner_id === a.ownerId) || (!!a.partnerId && p.partner_id === a.partnerId));
 }

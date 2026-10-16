@@ -49,3 +49,4 @@ next-env.d.ts
 
 # cópias de trabalho temporárias dos agentes do Claude Code
 /.claude/worktrees/
+.omc/

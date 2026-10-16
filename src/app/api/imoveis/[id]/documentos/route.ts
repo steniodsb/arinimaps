@@ -7,7 +7,8 @@ import { urlArquivo } from "@/lib/seguranca/link-arquivo";
 import { ACEITA, conferirArquivo } from "@/lib/seguranca/arquivos";
 
 async function podeEditarImovel(a: NonNullable<Awaited<ReturnType<typeof ator>>>, propertyId: string) {
-  if (a.ehArini) return true;
+  // equipe: os setores que tratam documentos (o mesmo mapa de /api/arquivos)
+  if (a.ehArini) return temSetor(a, "operacoes", "juridico", "cartografia");
   const { data: p } = await supabaseAdmin()
     .from("properties").select("owner_id, partner_id").eq("id", propertyId).single();
   if (!p) return false;
@@ -25,6 +26,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/imoveis/[id
   const arquivo = form.get("arquivo");
   const tipo = String(form.get("tipo") ?? "outro");
   if (!(arquivo instanceof File)) return NextResponse.json({ error: "Envie o arquivo." }, { status: 400 });
+  // o tipo entra no caminho do arquivo: só letras e "_" (nada de "../" nem "/")
+  if (!/^[a-z_]{1,40}$/.test(tipo)) return NextResponse.json({ error: "Tipo de documento inválido." }, { status: 400 });
   // tipo real pelos primeiros bytes, não pelo que o navegador declara (auditoria 6.2)
   const conferido = await conferirArquivo(arquivo, ACEITA.documento, 25 * 1024 * 1024);
   if (!conferido.ok) return NextResponse.json({ error: conferido.erro }, { status: 400 });

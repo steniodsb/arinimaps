@@ -6,6 +6,7 @@ import { sendEmail, emailDoProfile } from "@/lib/notify";
 import { buscarEVincularPois } from "@/lib/overpass";
 import { casarDemandas } from "@/lib/demandas";
 import { setoresDe } from "@/lib/setores";
+import { mfaPendente } from "@/lib/authz";
 import { CAMPOS_REVISAO, CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 
 async function emailDoAnunciante(propertyId: string): Promise<string | null> {
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
   const { data: profile } = await admin.from("profiles").select("role, setores").eq("user_id", user.id).single();
   const daEquipe = !!profile && ["admin_central", "analista_arini"].includes(profile.role);
   // aprovar e publicar é do setor de Operações (diretoria entra em todos)
-  if (!daEquipe || !setoresDe(profile.role, profile.setores as string[] | null).includes("operacoes")) {
+  if (!daEquipe || !setoresDe(profile.role, profile.setores as string[] | null).includes("operacoes") ||
+      (await mfaPendente(supabase, daEquipe))) {
     return NextResponse.json({ error: "Decisões sobre anúncios e cadastros são do setor de Operações." }, { status: 403 });
   }
 

@@ -8,7 +8,11 @@ async function acao(body: unknown) {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { alert(data.error ?? "Falha."); return null; }
+  if (!res.ok) {
+    // mensagem + motivo + o que fazer (envelope de src/lib/erros.ts)
+    alert([data.error ?? "Falha.", data.motivo, data.solucao].filter(Boolean).join("\n\n"));
+    return null;
+  }
   return data;
 }
 

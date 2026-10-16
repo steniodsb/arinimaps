@@ -40,7 +40,7 @@ Nunca misture as duas coisas: a chave de produção com a URL de sandbox (ou o c
 | Evento | Fatura (mensalidade) | Comissão |
 |---|---|---|
 | `PAYMENT_RECEIVED` / `PAYMENT_CONFIRMED` | aberta/vencida → **paga** (data do Asaas). A assinatura volta a ativa se não sobrar fatura vencida ou estornada. | registrada/cobrada → **paga** |
-| `PAYMENT_OVERDUE` | aberta → **vencida**. A assinatura vai para **inadimplente**. | nada (comissão não vence) |
+| `PAYMENT_OVERDUE` | aberta → **vencida**. A assinatura vai para **inadimplente** na hora, sem a carência de `suspensao_dias` (decisão do Carlos, 16/10). | nada (comissão não vence) |
 | `PAYMENT_REFUNDED` | paga → **estornada** | paga/conciliada → **cobrada** |
 | `PAYMENT_CHARGEBACK_REQUESTED` | paga → **estornada**. A assinatura vai para **inadimplente**. | paga/conciliada → **cobrada** |
 | `PAYMENT_RECEIVED_IN_CASH_UNDONE` | paga → **aberta** | paga/conciliada → **cobrada** |

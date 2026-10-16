@@ -12,6 +12,8 @@
 // de área. É uma leitura do desenho, não um cadastro: lote que o CAD não fechou
 // (traço faltando) não aparece.
 
+import { seletorDeMatriz, pedacosComMatriz, assinaturaAjustes } from "./ajustes.mjs";
+
 const AREA_MIN = 100;      // m² — abaixo disso é detalhe de desenho
 const AREA_MAX = 5000;     // m² — acima disso é quadra ou gleba
 const COMPACIDADE_MIN = 0.3;
@@ -31,6 +33,7 @@ const ESTICA_M = 0.3;
 // (5.000 m² pode ter 100 m de lado), e a face só entra pelo ladrilho em que o
 // seu ponto interno cai — nenhum lote é contado duas vezes nem cortado.
 const LADRILHO_M = 400;
+
 const MARGEM_M = 130;
 
 /** Centro do retângulo da coleção, em graus — o mesmo cálculo de centroDe() no app. */
@@ -63,7 +66,8 @@ export function afim(centro, t) {
 }
 
 export const assinaturaDe = (c) =>
-  [c.offset_leste_m ?? 0, c.offset_norte_m ?? 0, c.rotacao_graus ?? 0, c.escala ?? 1, [...(c.layers_ocultos ?? [])].sort().join("|")].join(";");
+  [c.offset_leste_m ?? 0, c.offset_norte_m ?? 0, c.rotacao_graus ?? 0, c.escala ?? 1, [...(c.layers_ocultos ?? [])].sort().join("|")].join(";") +
+  assinaturaAjustes(c.ajustes_locais);
 
 /**
  * @param {{layer_id: string}} payload
@@ -76,29 +80,34 @@ export async function gerarLotes(payload, db) {
   try {
     await client.query("set statement_timeout = 0");
     const { rows: [cam] } = await client.query(
-      `select id, nome, municipality_id, tiles_path, layers_ocultos, offset_leste_m, offset_norte_m, rotacao_graus, escala
+      `select id, nome, municipality_id, tiles_path, layers_ocultos, offset_leste_m, offset_norte_m, rotacao_graus, escala, ajustes_locais
        from cartography_layers where id = $1 and tipo = 'vector'`, [payload.layer_id]);
     if (!cam) throw new Error("planta vetorial não encontrada");
 
     const fc = await (await fetch(`${base}/storage/v1/object/public/media/${cam.tiles_path}`)).json();
     if (!Array.isArray(fc?.features)) throw new Error("GeoJSON da planta ilegível");
-    const k = afim(centroDe(fc), {
+    // cada linha usa a matriz da sua parte ajustada, ou a da planta (worker/jobs/ajustes.mjs)
+    const matrizDe = seletorDeMatriz(centroDe(fc), {
       dx: Number(cam.offset_leste_m ?? 0), dy: Number(cam.offset_norte_m ?? 0),
       rot: Number(cam.rotacao_graus ?? 0), esc: Number(cam.escala ?? 1),
-    });
+    }, cam.ajustes_locais);
     const ocultos = new Set(cam.layers_ocultos ?? []);
+    const temPartes = (cam.ajustes_locais ?? []).length > 0;
 
     await client.query("begin");
     await client.query("create temp table _linhas (geom geometry(LineString, 31982)) on commit drop");
     let linhas = 0;
     for (const f of fc.features) {
       if (ocultos.has(String(f.properties?.layer ?? "")) || !f.geometry) continue;
-      // calibra em graus (como o mapa) e só então projeta em UTM 22S para medir em metros
-      const r = await client.query(
-        `insert into _linhas
-         select (st_dump(st_transform(st_affine(st_setsrid(st_geomfromgeojson($1), 4326), $2, $3, $4, $5, $6, $7), 31982))).geom`,
-        [JSON.stringify(f.geometry), k.a, k.b, k.d, k.e, k.xoff, k.yoff]);
-      linhas += r.rowCount;
+      // calibra em graus (como o mapa) e só então projeta em UTM 22S para medir
+      // em metros; com partes ajustadas, cada grupo de linhas vai com a sua matriz
+      for (const { geometry, m: k } of pedacosComMatriz(f.geometry, matrizDe, temPartes)) {
+        const r = await client.query(
+          `insert into _linhas
+           select (st_dump(st_transform(st_affine(st_setsrid(st_geomfromgeojson($1), 4326), $2, $3, $4, $5, $6, $7), 31982))).geom`,
+          [JSON.stringify(geometry), k.a, k.b, k.d, k.e, k.xoff, k.yoff]);
+        linhas += r.rowCount;
+      }
     }
 
     // estica as duas pontas de cada linha aberta e encaixa na grade

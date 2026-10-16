@@ -15,6 +15,7 @@ const PASSOS = [
   ["Conta, organização, suporte, demandas", "scripts/testa-conta-suporte.mjs", true],
   ["Perfis, leilão, selfie, vídeo", "scripts/testa-perfis.mjs", true],
   ["Segurança: força bruta, permissões, IDOR, upload, RLS", "scripts/testa-seguranca.mjs", true],
+  ["Calibração por parte da planta (move e devolve)", "scripts/testa-calibracao-parte.mjs", true],
 ];
 
 const somente = process.argv[2];

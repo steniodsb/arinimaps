@@ -83,12 +83,45 @@ export function transformarGeoJSON<T extends GeoJSON.FeatureCollection>(
   fc: T,
   centro: [number, number],
   t: Transform,
-  layersOcultos: string[] = []
+  layersOcultos: string[] = [],
+  ajustes: AjusteLocal[] = []
 ): T {
   const esconder = new Set(layersOcultos);
   const features = esconder.size
     ? fc.features.filter((f) => !esconder.has(String(f.properties?.layer ?? "")))
     : fc.features;
+
+  // com partes ajustadas, cada linha usa a matriz da sua parte (ou a da planta)
+  if (ajustes.length) {
+    const g = afim(centro, t);
+    const matrizes = ajustes.map((a) => compor(g, afim(centroArea(a.area), a.t)));
+    const areas = ajustes.map((a) => a.area);
+    return {
+      ...fc,
+      features: features.map((f) => {
+        if (!f.geometry || !("coordinates" in f.geometry)) return f;
+        // o DXF chega como UMA MultiLineString por camada do CAD (União: 6
+        // objetos, 7,7 mil linhas): a parte é decidida linha a linha
+        if (f.geometry.type === "MultiLineString") {
+          return {
+            ...f,
+            geometry: {
+              ...f.geometry,
+              coordinates: f.geometry.coordinates.map((l) => {
+                const i = parteDaLinha(l as [number, number][], areas);
+                return aplicarMatriz(l, i < 0 ? g : matrizes[i]) as GeoJSON.Position[];
+              }),
+            },
+          };
+        }
+        const i = parteDaFeature(f, areas);
+        return {
+          ...f,
+          geometry: { ...f.geometry, coordinates: aplicarMatriz((f.geometry as { coordinates: unknown }).coordinates, i < 0 ? g : matrizes[i]) },
+        };
+      }),
+    } as T;
+  }
 
   if (ehIdentidade(t)) return { ...fc, features } as T;
 
@@ -223,3 +256,168 @@ export const DESLOCAMENTO_DATUM: Record<string, { leste: number; norte: number; 
   sad69: { leste: -59.5, norte: 28.0, rotulo: "SAD 69 → SIRGAS 2000 (~66 m)" },
   corrego: { leste: -47.6, norte: 22.5, rotulo: "Córrego Alegre → SIRGAS 2000 (~53 m)" },
 };
+
+/* ------------------------------------------------------------------ partes
+ *
+ * AJUSTE POR PARTE. A calibração acima move a planta inteira. Quando só um
+ * bairro ou uma quadra está fora (o norte de Iturama erra 5–11 m e o resto da
+ * cidade bate), mover tudo desalinha o que já estava certo. Uma parte é uma
+ * área desenhada sobre a planta com o seu próprio deslocamento e giro.
+ *
+ * - A área fica em coordenadas do DESENHO CRU (antes de qualquer calibração):
+ *   recalibrar a planta inteira depois não tira a parte do lugar.
+ * - Uma linha pertence à parte quando o centro dela cai dentro da área; a
+ *   primeira parte que a contém vence (a API recusa áreas sobrepostas).
+ * - Posição final = calibração da planta ∘ ajuste da parte (o ajuste da parte
+ *   é em metros, em torno do centro da área, antes do giro da planta).
+ * - Parte é rígida: desloca e gira, não muda de tamanho — o lote continua com
+ *   a área medida.
+ *
+ * As mesmas contas existem em JS no worker (worker/jobs/ajustes.mjs) para gerar
+ * os lotes e no banco (fn_ajustar_lotes_parte) para mover os lotes no lugar.
+ */
+
+export type AjusteLocal = {
+  id: string;
+  nome: string;
+  /** anel da área, em graus, no desenho cru */
+  area: [number, number][];
+  t: Transform;
+};
+
+/** Matriz 2D no formato do ST_Affine: x' = a·x + b·y + xoff ; y' = d·x + e·y + yoff. */
+export type Matriz = { a: number; b: number; d: number; e: number; xoff: number; yoff: number };
+
+/** A transformação de similaridade em graus — a mesma conta de transformarPonto(). */
+export function afim(centro: [number, number], t: Transform): Matriz {
+  const [cx, cy] = centro;
+  const k = escalaLocal(cy);
+  const rad = (t.rotacaoGraus * Math.PI) / 180, cos = Math.cos(rad), sen = Math.sin(rad), s = t.escala || 1;
+  const a = s * cos, b = (-s * sen * k.porGrauLat) / k.porGrauLng;
+  const d = (s * sen * k.porGrauLng) / k.porGrauLat, e = s * cos;
+  return {
+    a, b, d, e,
+    xoff: cx - a * cx - b * cy + t.offsetLesteM / k.porGrauLng,
+    yoff: cy - d * cx - e * cy + t.offsetNorteM / k.porGrauLat,
+  };
+}
+
+/** m2 ∘ m1: aplica m1 e depois m2. */
+export function compor(m2: Matriz, m1: Matriz): Matriz {
+  return {
+    a: m2.a * m1.a + m2.b * m1.d,
+    b: m2.a * m1.b + m2.b * m1.e,
+    d: m2.d * m1.a + m2.e * m1.d,
+    e: m2.d * m1.b + m2.e * m1.e,
+    xoff: m2.a * m1.xoff + m2.b * m1.yoff + m2.xoff,
+    yoff: m2.d * m1.xoff + m2.e * m1.yoff + m2.yoff,
+  };
+}
+
+export function inverter(m: Matriz): Matriz {
+  const det = m.a * m.e - m.b * m.d;
+  const a = m.e / det, b = -m.b / det, d = -m.d / det, e = m.a / det;
+  return { a, b, d, e, xoff: -(a * m.xoff + b * m.yoff), yoff: -(d * m.xoff + e * m.yoff) };
+}
+
+export const aplicarMatrizPonto = (m: Matriz, p: [number, number]): [number, number] =>
+  [m.a * p[0] + m.b * p[1] + m.xoff, m.d * p[0] + m.e * p[1] + m.yoff];
+
+export function aplicarMatriz(c: unknown, m: Matriz): unknown {
+  if (Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number") {
+    return aplicarMatrizPonto(m, c as [number, number]);
+  }
+  return Array.isArray(c) ? c.map((x) => aplicarMatriz(x, m)) : c;
+}
+
+/** Centro do retângulo da área (é em torno dele que a parte gira). */
+export function centroArea(area: [number, number][]): [number, number] {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of area) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  return [(x0 + x1) / 2, (y0 + y1) / 2];
+}
+
+/** Ponto dentro do anel (raio horizontal, par/ímpar). */
+export function pontoNaArea(p: [number, number], area: [number, number][]): boolean {
+  let dentro = false;
+  for (let i = 0, j = area.length - 1; i < area.length; j = i++) {
+    const [xi, yi] = area[i], [xj, yj] = area[j];
+    if ((yi > p[1]) !== (yj > p[1]) && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) dentro = !dentro;
+  }
+  return dentro;
+}
+
+/** Centro do retângulo da geometria crua da linha. */
+export function centroFeature(f: GeoJSON.Feature): [number, number] | null {
+  if (!f.geometry || !("coordinates" in f.geometry)) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const olhar = (c: unknown): void => {
+    if (Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number") {
+      const x = c[0] as number, y = c[1] as number;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      return;
+    }
+    if (Array.isArray(c)) for (const v of c) olhar(v);
+  };
+  olhar((f.geometry as { coordinates: unknown }).coordinates);
+  return x0 > x1 ? null : [(x0 + x1) / 2, (y0 + y1) / 2];
+}
+
+/** Índice da primeira parte que contém o centro desta linha (coordenadas de uma LineString), ou -1. */
+export function parteDaLinha(linha: [number, number][], areas: [number, number][][]): number {
+  if (!areas.length || !linha.length) return -1;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of linha) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const c: [number, number] = [(x0 + x1) / 2, (y0 + y1) / 2];
+  for (let i = 0; i < areas.length; i++) if (pontoNaArea(c, areas[i])) return i;
+  return -1;
+}
+
+/**
+ * Parte de cada linha do objeto: uma entrada por linha numa MultiLineString
+ * (o formato do DXF convertido), uma só para os demais tipos.
+ */
+export function partesDasLinhas(f: GeoJSON.Feature, areas: [number, number][][]): Int32Array {
+  if (f.geometry?.type === "MultiLineString") {
+    const ls = f.geometry.coordinates as [number, number][][];
+    const m = new Int32Array(ls.length);
+    ls.forEach((l, i) => { m[i] = parteDaLinha(l, areas); });
+    return m;
+  }
+  return Int32Array.of(parteDaFeature(f, areas));
+}
+
+/** Índice da primeira parte que contém o objeto inteiro (pelo centro), ou -1 (fica só com a calibração da planta). */
+export function parteDaFeature(f: GeoJSON.Feature, areas: [number, number][][]): number {
+  if (!areas.length) return -1;
+  const c = centroFeature(f);
+  if (!c) return -1;
+  for (let i = 0; i < areas.length; i++) if (pontoNaArea(c, areas[i])) return i;
+  return -1;
+}
+
+/** Duas áreas se sobrepõem? (algum vértice dentro da outra ou lados que se cruzam) */
+export function areasSeSobrepoem(a: [number, number][], b: [number, number][]): boolean {
+  if (a.some((p) => pontoNaArea(p, b)) || b.some((p) => pontoNaArea(p, a))) return true;
+  const cruza = (p1: number[], p2: number[], p3: number[], p4: number[]) => {
+    const o = (p: number[], q: number[], r: number[]) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+    return o(p1, p2, p3) !== o(p1, p2, p4) && o(p3, p4, p1) !== o(p3, p4, p2);
+  };
+  for (let i = 0; i < a.length; i++) {
+    for (let j = 0; j < b.length; j++) {
+      if (cruza(a[i], a[(i + 1) % a.length], b[j], b[(j + 1) % b.length])) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parte da assinatura dos lotes (lotes_assinatura): muda quando o ajuste de
+ * alguma parte muda. Vazia sem partes, para as assinaturas antigas continuarem
+ * valendo. A mesma conta está em worker/jobs/ajustes.mjs.
+ */
+export function assinaturaAjustes(ajustes: AjusteLocal[]): string {
+  if (!ajustes.length) return "";
+  const r = (n: number) => Math.round(n * 1e4) / 1e4;
+  return ";aj:" + ajustes.map((a) => `${a.id}=${r(a.t.offsetLesteM)},${r(a.t.offsetNorteM)},${r(a.t.rotacaoGraus)}`).join("|");
+}

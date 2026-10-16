@@ -42,7 +42,8 @@ import { fileURLToPath } from "node:url";
 import DxfParser from "dxf-parser";
 import proj4 from "proj4";
 import pg from "pg";
-import { afim, centroDe } from "../worker/jobs/gerarLotes.mjs";
+import { centroDe } from "../worker/jobs/gerarLotes.mjs";
+import { seletorDeMatriz } from "../worker/jobs/ajustes.mjs";
 
 const [, , arquivoDxf, nomeMunicipio, datumArg = "sirgas", zonaArg = "22"] = process.argv;
 if (!arquivoDxf || !nomeMunicipio) {
@@ -171,7 +172,7 @@ const db = new pg.Pool({
   password: process.env.SUPABASE_DB_PASSWORD, database: "postgres", ssl: { rejectUnauthorized: false }, max: 2,
 });
 const { rows: [cam] } = await db.query(`
-  select c.id, c.nome, c.tiles_path, c.offset_leste_m, c.offset_norte_m, c.rotacao_graus, c.escala, c.lotes_total
+  select c.id, c.nome, c.tiles_path, c.offset_leste_m, c.offset_norte_m, c.rotacao_graus, c.escala, c.ajustes_locais, c.lotes_total
   from cartography_layers c join municipalities m on m.id = c.municipality_id
   where m.nome ilike $1 and c.tipo = 'vector' and c.status = 'pronto' order by c.created_at desc limit 1`, [nomeMunicipio]);
 if (!cam) { console.error(`nenhuma planta vetorial pronta para "${nomeMunicipio}"`); process.exit(1); }
@@ -180,13 +181,15 @@ if (!cam.lotes_total) { console.error(`${cam.nome}: os lotes ainda não foram ge
 const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
 console.log(`baixando o GeoJSON da planta para achar o centro da calibração…`);
 const fc = await (await fetch(`${base}/storage/v1/object/public/media/${cam.tiles_path}`)).json();
-const k = afim(centroDe(fc), {
+// o texto segue a parte ajustada em que cai, como as linhas (worker/jobs/ajustes.mjs)
+const matrizDe = seletorDeMatriz(centroDe(fc), {
   dx: Number(cam.offset_leste_m ?? 0), dy: Number(cam.offset_norte_m ?? 0),
   rot: Number(cam.rotacao_graus ?? 0), esc: Number(cam.escala ?? 1),
-});
+}, cam.ajustes_locais);
 const arred = (n) => Math.round(n * 1e6) / 1e6; // o conversor grava 6 casas
 for (const t of uteis) {
   const [lng0, lat0] = proj4(projDef, "EPSG:4326", t.utm).map(arred);
+  const k = matrizDe([lng0, lat0]);
   // ST_Affine 2D: x' = a·x + b·y + xoff ; y' = d·x + e·y + yoff
   t.lng = k.a * lng0 + k.b * lat0 + k.xoff;
   t.lat = k.d * lng0 + k.e * lat0 + k.yoff;

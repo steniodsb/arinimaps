@@ -107,3 +107,26 @@ As demais 50 células de Iturama ficaram entre 0,8 e 4,9 m — dentro do ruído.
 Todas as células com amostra suficiente ficaram entre 1,1 e 5,4 m, com σ 4–5 m
 (ruído). Uma célula (−19,56312, −50,57820) acusou 34,8 m S, mas só tinha ruas
 numa direção (a componente ao longo da rua fica indeterminada) — descartada.
+
+## Ajuste por parte (16/10/2026)
+
+Para os desvios locais (norte de Iturama, um loteamento que não bate), a
+calibração tem **Nova parte**: Central › Cartografia › Calibrar → *Nova parte*,
+clicar em volta da quadra ou do trecho e fechar no primeiro ponto. Só aquele
+trecho fica em laranja; arrastar, setas e giro passam a mover só ele. *Planta
+inteira* volta a mover tudo. Ao salvar:
+
+- a parte é gravada em `cartography_layers.ajustes_locais` (área no desenho
+  cru, deslocamento e giro em metros; sem escala, para o lote manter a área);
+- os lotes clicáveis da parte andam junto **no lugar**
+  (`fn_ajustar_lotes_parte`, migration 0047), com a numeração de quadra e lote
+  preservada — sem refazer os lotes da cidade;
+- o mapa público aplica a parte ao desenhar a planta, e o worker e o
+  `numera-lotes.mjs` também, se os lotes forem refeitos depois.
+
+A parte é decidida **linha a linha**: o DXF convertido guarda uma
+MultiLineString por camada do CAD (União de Minas: 6 objetos, 7,7 mil linhas).
+Áreas de partes não podem se sobrepor. Testes: `npx tsx scripts/testa-ajuste-parte.ts`
+(as contas da tela, do worker e do banco dão o mesmo ponto) e
+`node scripts/testa-calibracao-parte.mjs` (cria, move, salva, confere os lotes no
+banco, remove e confere que voltaram; deixa a planta como estava).

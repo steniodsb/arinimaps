@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import CalibrarPlanta from "./CalibrarPlanta";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
-import type { Transform } from "@/lib/geo/deslocar";
+import type { Transform, AjusteLocal } from "@/lib/geo/deslocar";
 import { Etiqueta, Vazio } from "@/components/ui/Pagina";
 import { Crosshair, Layers, Loader2, Trash2 } from "lucide-react";
 
@@ -16,6 +16,7 @@ type Camada = {
   layers_ocultos?: string[];
   layers_cad?: { nome: string; linhas: number }[];
   transform?: Transform;
+  ajustes?: AjusteLocal[];
   lotes?: { total: number | null; gerados_em: string | null; defasados: boolean } | null;
   offset: { leste_m: number; norte_m: number };
 };
@@ -112,6 +113,7 @@ export default function ListaCamadas() {
                     : " · sem ajuste"}
                   {t && Math.abs(t.rotacaoGraus) > 0.0005 && ` · giro ${t.rotacaoGraus.toFixed(3)}°`}
                   {t && Math.abs(t.escala - 1) > 0.0001 && ` · escala ${(t.escala * 100).toFixed(2)}%`}
+                  {(c.ajustes?.length ?? 0) > 0 && ` · ${c.ajustes!.length} parte${c.ajustes!.length === 1 ? "" : "s"} com ajuste próprio`}
                 </p>
                 {(totalLinhas > 0 || c.bytes) && (
                   <p className="text-sm text-texto-2 tabular-nums">

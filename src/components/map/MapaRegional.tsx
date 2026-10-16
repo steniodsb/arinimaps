@@ -12,7 +12,7 @@ import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup, VectorTile
 import { STATUS_CORES, CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea } from "@/lib/format";
-import { transformarGeoJSON, centroDe, TRANSFORM_ZERO, type Transform } from "@/lib/geo/deslocar";
+import { transformarGeoJSON, centroDe, TRANSFORM_ZERO, type Transform, type AjusteLocal } from "@/lib/geo/deslocar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PainelImovel from "@/components/map/PainelImovel";
@@ -54,6 +54,7 @@ type Camada = {
   geojson_publico?: string;
   centro?: [number, number] | null;
   transform?: Transform;
+  ajustes?: AjusteLocal[];
 };
 
 /**
@@ -456,7 +457,7 @@ export default function MapaRegional({
       // calibração: giro, escala e deslocamento em torno do centro da planta,
       // mais as camadas de CAD que o operador escondeu
       const dados = transformarGeoJSON(
-        bruto, c.centro ?? centroDe(bruto), c.transform ?? TRANSFORM_ZERO, c.layers_ocultos ?? []
+        bruto, c.centro ?? centroDe(bruto), c.transform ?? TRANSFORM_ZERO, c.layers_ocultos ?? [], c.ajustes ?? []
       );
       const m = mapRef.current;
       const cores = CARTO_CORES[baseRef.current];

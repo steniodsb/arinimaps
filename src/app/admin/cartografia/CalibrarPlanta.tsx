@@ -14,16 +14,22 @@
  *  - CAMADAS DO CAD. O DXF de Iturama trouxe projeto paisagístico junto
  *    (VEGET_I com 25 mil linhas, Paisagismo com 15 mil). Desenhar árvore sobre
  *    o satélite polui o mapa — aqui elas se apagam sem reenviar o arquivo.
+ *  - AJUSTE POR PARTE (16/10/2026, pedido do Carlos). Quando só uma quadra ou
+ *    um bairro está fora, mover a planta inteira desalinha o que já batia. O
+ *    operador desenha uma área em volta do trecho e move/gira só aquilo; o
+ *    resto fica onde está. Ver "AJUSTE POR PARTE" em src/lib/geo/deslocar.ts.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Move, Save, Undo2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Hand, Move, PenLine, Save, Trash2, Undo2, X } from "lucide-react";
 import type { Map as MLMap, GeoJSONSource, MapMouseEvent } from "maplibre-gl";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { SATELITE } from "@/lib/map/config";
 import {
-  transformarGeoJSON, centroDe, ajustarPorPontos, DESLOCAMENTO_DATUM, TRANSFORM_ZERO,
-  type Transform, type ParDeControle,
+  centroDe, ajustarPorPontos, DESLOCAMENTO_DATUM, TRANSFORM_ZERO,
+  afim, compor, inverter, aplicarMatriz, aplicarMatrizPonto, centroArea, partesDasLinhas,
+  areasSeSobrepoem,
+  type Transform, type ParDeControle, type AjusteLocal,
 } from "@/lib/geo/deslocar";
 import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
@@ -36,10 +42,80 @@ type Camada = {
   layers_ocultos?: string[];
   layers_cad?: { nome: string; linhas: number }[];
   transform?: Transform;
+  ajustes?: AjusteLocal[];
   offset: { leste_m: number; norte_m: number };
 };
 
-type Modo = "navegar" | "mover" | "pontos";
+type Modo = "navegar" | "mover" | "pontos" | "parte";
+
+/** O que o desfazer guarda: a planta inteira e as partes. */
+type Estado = { t: Transform; ajustes: AjusteLocal[] };
+
+const VAZIO: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
+/**
+ * Monta o que o mapa desenha: a planta (cada linha com a matriz da sua parte, ou
+ * a da planta inteira), separando a parte ATIVA numa fonte própria — é ela que
+ * o arraste empurra sozinha — e o contorno de cada parte na posição atual.
+ */
+function montar(
+  bruto: GeoJSON.FeatureCollection, centro: [number, number], t: Transform,
+  esconder: Set<string>, ajustes: AjusteLocal[], ativa: string | null, membros: Int32Array[],
+) {
+  const g = afim(centro, t);
+  const ms = ajustes.map((a) => compor(g, afim(centroArea(a.area), a.t)));
+  const iAtiva = ativa ? ajustes.findIndex((a) => a.id === ativa) : -1;
+  const resto: GeoJSON.Feature[] = [], parte: GeoJSON.Feature[] = [];
+  bruto.features.forEach((f, i) => {
+    if (!f.geometry || !("coordinates" in f.geometry)) return;
+    if (esconder.size && esconder.has(String(f.properties?.layer ?? ""))) return;
+    const quem = membros[i];
+    // MultiLineString (uma por camada do CAD): as linhas da parte ativa saem
+    // num objeto à parte, com as mesmas propriedades
+    if (f.geometry.type === "MultiLineString") {
+      const ficam: GeoJSON.Position[][] = [], vao: GeoJSON.Position[][] = [];
+      f.geometry.coordinates.forEach((l, j) => {
+        const k = quem?.[j] ?? -1;
+        const nl = aplicarMatriz(l, k >= 0 ? ms[k] : g) as GeoJSON.Position[];
+        (k >= 0 && k === iAtiva ? vao : ficam).push(nl);
+      });
+      if (ficam.length) resto.push({ ...f, geometry: { type: "MultiLineString", coordinates: ficam } });
+      if (vao.length) parte.push({ ...f, geometry: { type: "MultiLineString", coordinates: vao } });
+      return;
+    }
+    const k = quem?.[0] ?? -1;
+    const nf = {
+      ...f,
+      geometry: { ...f.geometry, coordinates: aplicarMatriz((f.geometry as { coordinates: unknown }).coordinates, k >= 0 ? ms[k] : g) },
+    } as GeoJSON.Feature;
+    (k >= 0 && k === iAtiva ? parte : resto).push(nf);
+  });
+  const contornos: GeoJSON.Feature[] = ajustes.map((a, i) => {
+    const anel = a.area.map((p) => aplicarMatrizPonto(ms[i], p));
+    return {
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [[...anel, anel[0]]] },
+      properties: { ativa: a.id === ativa, nome: a.nome },
+    };
+  });
+  return {
+    resto: { type: "FeatureCollection", features: resto } as GeoJSON.FeatureCollection,
+    parte: { type: "FeatureCollection", features: parte } as GeoJSON.FeatureCollection,
+    contornos: { type: "FeatureCollection", features: contornos } as GeoJSON.FeatureCollection,
+  };
+}
+
+/** Parte de cada linha do desenho cru, por objeto (-1 = só a calibração da planta). */
+function calcularMembros(bruto: GeoJSON.FeatureCollection, ajustes: AjusteLocal[]): Int32Array[] {
+  const areas = ajustes.map((a) => a.area);
+  return bruto.features.map((f) => partesDasLinhas(f, areas));
+}
+
+/** Deslocamento visto na tela (metros) → deslocamento da parte, que é aplicado antes do giro e da escala da planta. */
+function telaParaParte(dLeste: number, dNorte: number, t: Transform): [number, number] {
+  const rad = (-t.rotacaoGraus * Math.PI) / 180, cos = Math.cos(rad), sen = Math.sin(rad), s = t.escala || 1;
+  return [(dLeste * cos - dNorte * sen) / s, (dLeste * sen + dNorte * cos) / s];
+}
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
@@ -74,7 +150,12 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
   const [pendente, setPendente] = useState<[number, number] | null>(null);
   const [residuo, setResiduo] = useState<number | null>(null);
   const [aba, setAba] = useState<"posicao" | "camadas">("posicao");
-  const [historico, setHistorico] = useState<Transform[]>([]);
+  const [historico, setHistorico] = useState<Estado[]>([]);
+  const [ajustes, setAjustes] = useState<AjusteLocal[]>(camada.ajustes ?? []);
+  // null = ajustando a planta inteira; id = só aquela parte
+  const [ativa, setAtiva] = useState<string | null>(null);
+  // vértices da área sendo desenhada (posição na tela, em graus)
+  const [desenho, setDesenho] = useState<[number, number][]>([]);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -85,6 +166,14 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
   const ocultosRef = useRef(ocultos); ocultosRef.current = ocultos;
   const modoRef = useRef(modo); modoRef.current = modo;
   const pendenteRef = useRef(pendente); pendenteRef.current = pendente;
+  const ajustesRef = useRef(ajustes); ajustesRef.current = ajustes;
+  const ativaRef = useRef(ativa); ativaRef.current = ativa;
+  const desenhoRef = useRef(desenho); desenhoRef.current = desenho;
+  // parte de cada linha: só muda quando uma parte nasce ou some, não a cada movimento
+  const membrosRef = useRef<{ chave: string; m: Int32Array[] }>({ chave: "", m: [] });
+  const parteAtual = ajustes.find((a) => a.id === ativa) ?? null;
+  // o clique do mapa é registrado uma vez; fechar a área usa o estado do momento
+  const fecharAreaRef = useRef<() => void>(() => undefined);
 
   const layersCad = useMemo(() => camada.layers_cad ?? [], [camada.layers_cad]);
   const totalLinhas = useMemo(() => layersCad.reduce((s, l) => s + l.linhas, 0), [layersCad]);
@@ -114,19 +203,48 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       const alvo = alvoRef.current;
       const map = mapRef.current, bruto = brutoRef.current;
       if (!alvo || !map || !bruto || !map.getSource("planta")) return;
-      (map.getSource("planta") as GeoJSONSource).setData(
-        transformarGeoJSON(bruto, centroRef.current, alvo.t, [...alvo.esconder])
-      );
+      const lista = ajustesRef.current;
+      const chave = lista.map((a) => a.id).join("|");
+      if (membrosRef.current.chave !== chave || membrosRef.current.m.length !== bruto.features.length) {
+        membrosRef.current = { chave, m: calcularMembros(bruto, lista) };
+      }
+      const d = montar(bruto, centroRef.current, alvo.t, alvo.esconder, lista, ativaRef.current, membrosRef.current.m);
+      (map.getSource("planta") as GeoJSONSource).setData(d.resto);
+      (map.getSource("planta-parte") as GeoJSONSource | undefined)?.setData(d.parte);
+      (map.getSource("partes") as GeoJSONSource | undefined)?.setData(d.contornos);
     });
   }, []);
 
-  useEffect(() => () => { if (quadroRef.current !== null) cancelAnimationFrame(quadroRef.current); }, []);
+  // zera a marca ao cancelar: no modo estrito do React a tela monta duas vezes,
+  // e um quadro cancelado com a marca de pé travava todos os redesenhos seguintes
+  useEffect(() => () => {
+    if (quadroRef.current !== null) cancelAnimationFrame(quadroRef.current);
+    quadroRef.current = null;
+  }, []);
+
+  /** Grava o estado atual no desfazer. */
+  const registrar = useCallback(() => {
+    setHistorico((h) => [...h.slice(-30), { t: tRef.current, ajustes: ajustesRef.current }]);
+  }, []);
+
+  /** Muda a planta inteira e/ou as partes, e redesenha uma vez. */
+  const definir = useCallback((novoT: Transform, novosAjustes: AjusteLocal[], guardarHistorico = true) => {
+    if (guardarHistorico) registrar();
+    tRef.current = novoT; ajustesRef.current = novosAjustes;
+    setT(novoT); setAjustes(novosAjustes);
+    redesenhar(novoT, ocultosRef.current);
+  }, [redesenhar, registrar]);
 
   const aplicar = useCallback((novo: Transform, guardarHistorico = true) => {
-    if (guardarHistorico) setHistorico((h) => [...h.slice(-30), tRef.current]);
-    setT(novo);
-    redesenhar(novo, ocultosRef.current);
-  }, [redesenhar]);
+    definir(novo, ajustesRef.current, guardarHistorico);
+  }, [definir]);
+
+  /** Muda o ajuste da parte ativa. */
+  const aplicarParte = useCallback((mudar: (t: Transform) => Transform, guardarHistorico = true) => {
+    const id = ativaRef.current;
+    if (!id) return;
+    definir(tRef.current, ajustesRef.current.map((a) => (a.id === id ? { ...a, t: mudar(a.t) } : a)), guardarHistorico);
+  }, [definir]);
 
   const desenharPares = useCallback((lista: ParDeControle[], meio: [number, number] | null) => {
     const map = mapRef.current;
@@ -159,6 +277,8 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       });
       mapa = map;
       mapRef.current = map;
+      // só em desenvolvimento: o teste de ponta a ponta lê as fontes do mapa
+      if (process.env.NODE_ENV !== "production") (window as unknown as { __mapaCalibracao?: MLMap }).__mapaCalibracao = map;
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
       // régua: calibrar é julgar distância, e "isso aí é uns 20 m?" precisa de
       // referência na tela, não de conta de cabeça
@@ -180,7 +300,10 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       centroRef.current = centroDe(bruto);
 
       map.on("load", () => {
-        map.addSource("planta", { type: "geojson", data: transformarGeoJSON(bruto, centroRef.current, inicial, camada.layers_ocultos ?? []) });
+        // a primeira montagem já separa as partes; daqui em diante é o redesenhar()
+        membrosRef.current = { chave: ajustesRef.current.map((a) => a.id).join("|"), m: calcularMembros(bruto, ajustesRef.current) };
+        const d0 = montar(bruto, centroRef.current, inicial, new Set(camada.layers_ocultos ?? []), ajustesRef.current, null, membrosRef.current.m);
+        map.addSource("planta", { type: "geojson", data: d0.resto });
         // contorno escuro embaixo, linha clara em cima: sobre telhado de
         // cerâmica o amarelo sozinho some, e é justamente ali que a divisa
         // precisa ser lida para calibrar
@@ -199,6 +322,53 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
             "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1, 16, 1.6, 19, 2.6] as never,
             "line-opacity": camada.opacidade ?? 0.85,
           },
+        });
+
+        // contorno de cada parte ajustada; a ativa em destaque
+        map.addSource("partes", { type: "geojson", data: d0.contornos });
+        map.addLayer({
+          id: "partes-fundo", type: "fill", source: "partes",
+          paint: { "fill-color": "#F08A24", "fill-opacity": ["case", ["get", "ativa"], 0.12, 0.04] as never },
+        });
+        map.addLayer({
+          id: "partes-linha", type: "line", source: "partes",
+          paint: {
+            "line-color": "#F08A24",
+            "line-width": ["case", ["get", "ativa"], 2.5, 1.2] as never,
+            "line-dasharray": [3, 2],
+          },
+        });
+
+        // a parte ativa numa fonte só dela: o arraste empurra só estas linhas
+        map.addSource("planta-parte", { type: "geojson", data: VAZIO });
+        map.addLayer({
+          id: "planta-parte-contorno", type: "line", source: "planta-parte",
+          paint: {
+            "line-color": "#120C02",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 13, 2.2, 16, 3.4, 19, 5] as never,
+            "line-opacity": 0.5,
+          },
+        });
+        map.addLayer({
+          id: "planta-parte", type: "line", source: "planta-parte",
+          paint: {
+            "line-color": "#FFB35C",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1.2, 16, 2, 19, 3] as never,
+            "line-opacity": 0.95,
+          },
+        });
+
+        // área sendo desenhada
+        map.addSource("desenho", { type: "geojson", data: VAZIO });
+        map.addLayer({
+          id: "desenho-linha", type: "line", source: "desenho",
+          filter: ["==", ["geometry-type"], "LineString"],
+          paint: { "line-color": "#F08A24", "line-width": 2, "line-dasharray": [2, 1] },
+        });
+        map.addLayer({
+          id: "desenho-pontos", type: "circle", source: "desenho",
+          filter: ["==", ["geometry-type"], "Point"],
+          paint: { "circle-radius": 5, "circle-color": "#F08A24", "circle-stroke-width": 2, "circle-stroke-color": "#0B140F" },
         });
 
         map.addSource("controle", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -238,7 +408,10 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
        * para cima) deixava a planta grudada no cursor.
        */
       const FINO = 0.15;
-      let arrastando: { px: number; py: number; base: Transform; ultimo: [number, number] } | null = null;
+      let arrastando: {
+        px: number; py: number; base: Transform; ultimo: [number, number];
+        parte: AjusteLocal | null; camadas: string[];
+      } | null = null;
       const canvas = map.getCanvas();
 
       const emMetros = (dxPx: number, dyPx: number, origem: { px: number; py: number }): [number, number] => {
@@ -254,7 +427,12 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       map.on("mousedown", (e: MapMouseEvent) => {
         if (modoRef.current !== "mover") return;
         e.preventDefault();
-        arrastando = { px: e.point.x, py: e.point.y, base: tRef.current, ultimo: [0, 0] };
+        // com uma parte ativa, só ela e o seu contorno andam
+        const parte = ajustesRef.current.find((a) => a.id === ativaRef.current) ?? null;
+        arrastando = {
+          px: e.point.x, py: e.point.y, base: tRef.current, ultimo: [0, 0], parte,
+          camadas: parte ? ["planta-parte", "planta-parte-contorno"] : ["planta", "planta-contorno", "partes-linha"],
+        };
         // o zoom durante o arraste invalidaria a conversão pixel→metro
         map.scrollZoom.disable();
         canvas.style.cursor = "grabbing";
@@ -267,11 +445,18 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         const dx = (ev.clientX - r.left - arrastando.px) * k;
         const dy = (ev.clientY - r.top - arrastando.py) * k;
         arrastando.ultimo = [dx, dy];
-        for (const id of ["planta", "planta-contorno"]) {
+        for (const id of arrastando.camadas) {
           if (map.getLayer(id)) map.setPaintProperty(id, "line-translate", [dx, dy]);
         }
         // o painel acompanha em metros, sem redesenhar o dado
         const [dLeste, dNorte] = emMetros(dx, dy, arrastando);
+        if (arrastando.parte) {
+          const [pl, pn] = telaParaParte(dLeste, dNorte, arrastando.base);
+          const p = arrastando.parte;
+          setAjustes(ajustesRef.current.map((a) => (a.id === p.id
+            ? { ...a, t: { ...p.t, offsetLesteM: p.t.offsetLesteM + pl, offsetNorteM: p.t.offsetNorteM + pn } } : a)));
+          return;
+        }
         setT({
           ...arrastando.base,
           offsetLesteM: arrastando.base.offsetLesteM + dLeste,
@@ -281,23 +466,37 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
 
       const aoSoltar = () => {
         if (!arrastando) return;
-        const { base, ultimo } = arrastando;
+        const { base, ultimo, parte, camadas } = arrastando;
         const [dLeste, dNorte] = emMetros(ultimo[0], ultimo[1], arrastando);
         arrastando = null;
         map.scrollZoom.enable();
         canvas.style.cursor = modoRef.current === "mover" ? "grab" : "";
 
-        const novo: Transform = {
-          ...base,
-          offsetLesteM: base.offsetLesteM + dLeste,
-          offsetNorteM: base.offsetNorteM + dNorte,
+        // o desfazer volta ao estado de ANTES do arraste
+        const antesDoArraste: Estado = {
+          t: base,
+          ajustes: parte ? ajustesRef.current.map((a) => (a.id === parte.id ? parte : a)) : ajustesRef.current,
         };
-        tRef.current = novo;
-        setT(novo);
-        setHistorico((h) => [...h.slice(-30), base]);
-        // a geometria assume a posição e o empurrão visual zera no mesmo quadro
-        redesenhar(novo, ocultosRef.current);
-        for (const id of ["planta", "planta-contorno"]) {
+        setHistorico((h) => [...h.slice(-30), antesDoArraste]);
+        if (parte) {
+          const [pl, pn] = telaParaParte(dLeste, dNorte, base);
+          const novos = antesDoArraste.ajustes.map((a) => (a.id === parte.id
+            ? { ...a, t: { ...parte.t, offsetLesteM: parte.t.offsetLesteM + pl, offsetNorteM: parte.t.offsetNorteM + pn } } : a));
+          ajustesRef.current = novos;
+          setAjustes(novos);
+          redesenhar(base, ocultosRef.current);
+        } else {
+          const novo: Transform = {
+            ...base,
+            offsetLesteM: base.offsetLesteM + dLeste,
+            offsetNorteM: base.offsetNorteM + dNorte,
+          };
+          tRef.current = novo;
+          setT(novo);
+          // a geometria assume a posição e o empurrão visual zera no mesmo quadro
+          redesenhar(novo, ocultosRef.current);
+        }
+        for (const id of camadas) {
           if (map.getLayer(id)) map.setPaintProperty(id, "line-translate", [0, 0]);
         }
       };
@@ -308,6 +507,26 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         window.removeEventListener("mousemove", aoMover);
         window.removeEventListener("mouseup", aoSoltar);
       };
+
+      // ---- área de uma parte nova: um clique por vértice; fecha clicando no
+      // primeiro ponto (ou duplo clique). O MapLibre manda dois "click" antes
+      // do "dblclick", então o duplo clique só fecha — o vértice já entrou.
+      map.on("click", (e: MapMouseEvent) => {
+        if (modoRef.current !== "parte") return;
+        const atual = desenhoRef.current;
+        if (atual.length >= 3) {
+          const p0 = map.project(atual[0] as [number, number]);
+          if (Math.hypot(p0.x - e.point.x, p0.y - e.point.y) < 12) { fecharAreaRef.current(); return; }
+        }
+        const novo = [...atual, [e.lngLat.lng, e.lngLat.lat] as [number, number]];
+        desenhoRef.current = novo;
+        setDesenho(novo);
+      });
+      map.on("dblclick", (e: MapMouseEvent) => {
+        if (modoRef.current !== "parte") return;
+        e.preventDefault();
+        fecharAreaRef.current();
+      });
 
       // ---- pontos de controle ----
       map.on("click", (e: MapMouseEvent) => {
@@ -341,12 +560,121 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
     const map = mapRef.current;
     if (!map) return;
     if (modo === "mover") { map.dragPan.disable(); map.getCanvas().style.cursor = "grab"; }
-    else { map.dragPan.enable(); map.getCanvas().style.cursor = modo === "pontos" ? "crosshair" : ""; }
+    else { map.dragPan.enable(); map.getCanvas().style.cursor = modo === "pontos" || modo === "parte" ? "crosshair" : ""; }
+    // no desenho da área o duplo clique fecha a área, não aproxima o mapa
+    if (modo === "parte") map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
   }, [modo, carregando]);
 
+  // a área em desenho aparece no mapa enquanto é desenhada
+  useEffect(() => {
+    const map = mapRef.current;
+    const fonte = map?.getSource("desenho") as GeoJSONSource | undefined;
+    if (!fonte) return;
+    const feats: GeoJSON.Feature[] = desenho.map((p) => ({ type: "Feature", geometry: { type: "Point", coordinates: p }, properties: {} }));
+    if (desenho.length >= 2) {
+      feats.push({ type: "Feature", geometry: { type: "LineString", coordinates: desenho.length >= 3 ? [...desenho, desenho[0]] : desenho }, properties: {} });
+    }
+    fonte.setData({ type: "FeatureCollection", features: feats });
+  }, [desenho, carregando]);
+
+  // trocar a parte ativa muda o que vai para a fonte que o arraste empurra
+  useEffect(() => { redesenhar(tRef.current, ocultosRef.current); }, [ativa, redesenhar]);
+
+  fecharAreaRef.current = () => {
+    const map = mapRef.current, bruto = brutoRef.current;
+    // o duplo clique deixa vértices repetidos no fim: fora
+    const pts: [number, number][] = [];
+    for (const p of desenhoRef.current) {
+      const ult = pts[pts.length - 1];
+      if (ult && map) {
+        const a = map.project(ult), b = map.project(p);
+        if (Math.hypot(a.x - b.x, a.y - b.y) < 4) continue;
+      }
+      pts.push(p);
+    }
+    if (pts.length < 3 || !bruto) {
+      setErro({
+        mensagem: "A área precisa de pelo menos três pontos.",
+        solucao: "Clique em volta da quadra ou do trecho que quer mover e feche clicando no primeiro ponto.",
+        codigo: "area_curta", status: 0,
+      });
+      return;
+    }
+    // a área é guardada no desenho cru: desfaz a calibração da planta inteira
+    const inv = inverter(afim(centroRef.current, tRef.current));
+    const area = pts.map((p) => aplicarMatrizPonto(inv, p));
+    const atuais = ajustesRef.current;
+    const encosta = atuais.find((a) => areasSeSobrepoem(a.area, area));
+    if (encosta) {
+      setErro({
+        mensagem: `A área nova encosta em “${encosta.nome}”.`,
+        motivo: "Cada linha da planta só pode pertencer a uma parte.",
+        solucao: "Desenhe a área sem cruzar o contorno laranja da outra parte, ou remova a outra parte antes.",
+        codigo: "partes_sobrepostas", status: 0,
+      });
+      return;
+    }
+    // linhas que a área nova pega e que ainda não são de outra parte
+    const linhas = bruto.features.reduce((n, f, i) => {
+      const novas = partesDasLinhas(f, [area]);
+      const ja = membrosRef.current.m[i];
+      return n + novas.reduce((s, k, j) => s + (k === 0 && (ja?.[j] ?? -1) < 0 ? 1 : 0), 0);
+    }, 0);
+    if (!linhas) {
+      setErro({
+        mensagem: "Nenhuma linha da planta caiu dentro da área.",
+        solucao: "Desenhe a área em volta das linhas amarelas que quer mover.",
+        codigo: "area_vazia", status: 0,
+      });
+      return;
+    }
+    const numero = atuais.reduce((n, a) => Math.max(n, Number(a.nome.match(/(\d+)$/)?.[1] ?? 0)), 0) + 1;
+    const id = (globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`).slice(0, 13);
+    const nova: AjusteLocal = { id, nome: `Parte ${numero}`, area, t: { ...TRANSFORM_ZERO } };
+    setErro(null);
+    desenhoRef.current = [];
+    setDesenho([]);
+    ativaRef.current = id;
+    setAtiva(id);
+    definir(tRef.current, [...atuais, nova]);
+    setModo("mover");
+    setMsg(`${nova.nome} criada com ${fmt(linhas)} linhas. Arraste para encaixar só este trecho.`);
+  };
+
+  function cancelarDesenho() {
+    desenhoRef.current = [];
+    setDesenho([]);
+    setModo("mover");
+  }
+
+  function selecionarParte(id: string | null) {
+    ativaRef.current = id;
+    setAtiva(id);
+    if (modo === "parte") cancelarDesenho();
+    if (id && modo === "pontos") setModo("mover");
+  }
+
+  function removerParte(id: string) {
+    const restantes = ajustesRef.current.filter((a) => a.id !== id);
+    ativaRef.current = null;
+    setAtiva(null);
+    definir(tRef.current, restantes);
+  }
+
+  function renomearParte(id: string, nome: string) {
+    setAjustes((lista) => lista.map((a) => (a.id === id ? { ...a, nome: nome.slice(0, 60) } : a)));
+  }
+
   const mover = useCallback((dLeste: number, dNorte: number) => {
+    if (ativaRef.current) {
+      // as setas falam em direção da tela (norte, leste); a parte guarda o
+      // deslocamento antes do giro da planta
+      const [pl, pn] = telaParaParte(dLeste, dNorte, tRef.current);
+      aplicarParte((pt) => ({ ...pt, offsetLesteM: pt.offsetLesteM + pl, offsetNorteM: pt.offsetNorteM + pn }));
+      return;
+    }
     aplicar({ ...tRef.current, offsetLesteM: tRef.current.offsetLesteM + dLeste, offsetNorteM: tRef.current.offsetNorteM + dNorte });
-  }, [aplicar]);
+  }, [aplicar, aplicarParte]);
 
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => {
@@ -358,20 +686,25 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       else if (e.key === "ArrowLeft") { e.preventDefault(); mover(-p, 0); }
       else if (e.key === "ArrowRight") { e.preventDefault(); mover(p, 0); }
       else if (e.key === "z" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); desfazer(); }
-      else if (e.key === "Escape") onFechar();
+      else if (e.key === "Enter" && modo === "parte") { e.preventDefault(); fecharAreaRef.current(); }
+      // no desenho da área, Esc desiste da área; não fecha a calibração
+      else if (e.key === "Escape") { if (modo === "parte") cancelarDesenho(); else onFechar(); }
     };
     window.addEventListener("keydown", tecla);
     return () => window.removeEventListener("keydown", tecla);
   });
 
   function desfazer() {
-    setHistorico((h) => {
-      if (!h.length) return h;
-      const anterior = h[h.length - 1];
-      setT(anterior);
-      redesenhar(anterior, ocultosRef.current);
-      return h.slice(0, -1);
-    });
+    const h = historico;
+    if (!h.length) return;
+    const anterior = h[h.length - 1];
+    setHistorico(h.slice(0, -1));
+    // a parte ativa pode ter sumido no passo desfeito (ex.: desfazer a criação)
+    if (ativaRef.current && !anterior.ajustes.some((a) => a.id === ativaRef.current)) {
+      ativaRef.current = null;
+      setAtiva(null);
+    }
+    definir(anterior.t, anterior.ajustes, false);
   }
 
   function alternarLayer(nome: string) {
@@ -420,6 +753,8 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       aplicado?: Record<string, number | string[]>;
       publico?: { bytes: number; linhas: number; linhas_total: number } | null;
       aviso_publico?: string | null;
+      lotes_movidos?: number | null;
+      aviso_lotes?: string | null;
     }>(
       `/api/admin/cartografia/${camada.id}`, "PATCH", {
         offset_leste_m: Math.round(t.offsetLesteM * 100) / 100,
@@ -429,12 +764,17 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         opacidade,
         layers_ocultos: [...ocultos],
         pontos_controle: pares,
+        ajustes_locais: ajustes,
       });
     setSalvando(false);
     if (!r.ok) { setErro(r.erro); return; }
 
     // o que acabou de ser gravado passa a ser a referência de "sem pendência"
-    setSalvo({ t: tRef.current, ocultos: [...ocultos].sort(), opacidade });
+    // as partes voltam arredondadas do servidor (cm e 1e-4°): a tela passa a
+    // usar o que foi gravado, senão acusaria pendência logo depois de salvar
+    const gravadas = (r.dados.aplicado as { ajustes_locais?: AjusteLocal[] } | undefined)?.ajustes_locais;
+    if (gravadas) { ajustesRef.current = gravadas; setAjustes(gravadas); }
+    setSalvo({ t: tRef.current, ocultos: [...ocultos].sort(), opacidade, ajustes: JSON.stringify(ajustesRef.current) });
 
     const g = r.dados.aplicado ?? {};
     const n = (v: unknown, casas: number) => (typeof v === "number" ? v.toFixed(casas) : "—");
@@ -446,7 +786,10 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         ? ` O mapa público passa a baixar ${(r.dados.publico.bytes / 1048576).toFixed(1)} MB ` +
           `(${r.dados.publico.linhas.toLocaleString("pt-BR")} de ${r.dados.publico.linhas_total.toLocaleString("pt-BR")} linhas).`
         : "") +
-      (r.dados.aviso_publico ? ` Atenção: o arquivo filtrado não foi gerado (${r.dados.aviso_publico}); o mapa filtra no navegador.` : "")
+      (r.dados.aviso_publico ? ` Atenção: o arquivo filtrado não foi gerado (${r.dados.aviso_publico}); o mapa filtra no navegador.` : "") +
+      (ajustes.length ? ` ${ajustes.length} parte${ajustes.length === 1 ? "" : "s"} com ajuste próprio.` : "") +
+      (r.dados.lotes_movidos ? ` ${fmt(r.dados.lotes_movidos)} lotes clicáveis acompanharam as partes.` : "") +
+      (r.dados.aviso_lotes ? ` Atenção: ${r.dados.aviso_lotes}.` : "")
     );
   }
 
@@ -460,8 +803,9 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
    * volta arredondado do banco (`salvar` manda 2 casas em metros): comparar por
    * igualdade exata acusaria pendência logo depois de salvar com sucesso.
    */
-  const [salvo, setSalvo] = useState<{ t: Transform; ocultos: string[]; opacidade: number }>({
+  const [salvo, setSalvo] = useState<{ t: Transform; ocultos: string[]; opacidade: number; ajustes: string }>({
     t: inicial,
+    ajustes: JSON.stringify(camada.ajustes ?? []),
     ocultos: [...(camada.layers_ocultos ?? [])].sort(),
     opacidade: camada.opacidade ?? 0.85,
   });
@@ -469,9 +813,10 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
   const haMudancaNaoSalva = useMemo(() => {
     if (!ehIgualAoSalvo(salvo.t, t)) return true;
     if (Math.abs(salvo.opacidade - opacidade) > 1e-6) return true;
+    if (salvo.ajustes !== JSON.stringify(ajustes)) return true;
     const atuais = [...ocultos].sort();
     return atuais.length !== salvo.ocultos.length || atuais.some((n, i) => n !== salvo.ocultos[i]);
-  }, [salvo, t, ocultos, opacidade]);
+  }, [salvo, t, ocultos, opacidade, ajustes]);
 
   const btn = "grid w-11 h-11 place-items-center rounded-xl bg-superficie border border-linha-forte hover:bg-verde hover:border-verde hover:text-white transition-colors text-base font-semibold";
   const chip = (ativo: boolean) =>
@@ -486,7 +831,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
             <p className="lp-eyebrow text-xs">Calibrar sobre o satélite</p>
             <p className="lp-display mt-1 text-xl text-texto">{camada.nome}</p>
             <p className="mt-1 text-sm leading-relaxed text-texto-2">
-              {modo === "mover" && "Arraste a planta com o mouse até bater no satélite. Segure Shift enquanto arrasta para andar devagar; setas do teclado para o ajuste fino (Shift = 1 m). Ctrl+Z desfaz."}
+              {modo === "mover" && !parteAtual && "Arraste a planta com o mouse até bater no satélite. Segure Shift enquanto arrasta para andar devagar; setas do teclado para o ajuste fino (Shift = 1 m). Ctrl+Z desfaz."}
+              {modo === "mover" && parteAtual && `Movendo só “${parteAtual.nome}” (linhas laranja). O resto da planta fica parado. Arraste, use as setas ou gire no painel abaixo. Para voltar a mover tudo, escolha “Planta inteira”.`}
+              {modo === "parte" && (desenho.length < 3
+                ? "Clique em volta da quadra ou do trecho que quer mover separado — um clique por canto."
+                : "Feche a área clicando no primeiro ponto, com duplo clique ou Enter. Esc desiste.")}
               {modo === "navegar" && "Arraste para navegar no mapa. Volte para “mover planta” quando quiser ajustar."}
               {modo === "pontos" && (pendente
                 ? "Agora clique no MESMO ponto no satélite."
@@ -512,7 +861,10 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           <div className="flex flex-wrap items-center gap-2">
             <button className={chip(modo === "mover")} onClick={() => setModo("mover")}><Move className="size-4" /> Mover planta</button>
             <button className={chip(modo === "navegar")} onClick={() => setModo("navegar")}><Hand className="size-4" /> Navegar</button>
-            <button className={chip(modo === "pontos")} onClick={() => setModo("pontos")}><Crosshair className="size-4" /> Pontos de controle</button>
+            <button className={chip(modo === "pontos")} onClick={() => { selecionarParte(null); setModo("pontos"); }}
+              title="Calibra a planta inteira por pares de pontos"><Crosshair className="size-4" /> Pontos de controle</button>
+            <button className={chip(modo === "parte")} onClick={() => { desenhoRef.current = []; setDesenho([]); setModo("parte"); }}
+              title="Desenhe uma área para mover só aquele trecho da planta"><PenLine className="size-4" /> Nova parte</button>
 
             <span className="w-px self-stretch bg-linha mx-1" aria-hidden />
 
@@ -521,8 +873,8 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
               title="Volta o último movimento (Ctrl+Z)">
               <Undo2 className="size-4" /> Desfazer
             </button>
-            <button onClick={() => aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 })}
-              disabled={ehIgualAoSalvo(TRANSFORM_ZERO, t)}
+            <button onClick={() => (parteAtual ? aplicarParte(() => ({ ...TRANSFORM_ZERO })) : aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 }))}
+              disabled={ehIgualAoSalvo(TRANSFORM_ZERO, parteAtual?.t ?? t)}
               className="rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2 transition disabled:opacity-40"
               title="Zera deslocamento, giro e escala">
               Zerar posição
@@ -534,6 +886,26 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
               {salvando ? "Salvando…" : "Salvar calibração"}
             </button>
           </div>
+
+          {(ajustes.length > 0 || modo === "parte") && (
+            <div className="flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="text-xs font-semibold uppercase tracking-wider text-texto-2 mr-1">Ajustar</span>
+              <button className={chip(!ativa)} onClick={() => selecionarParte(null)}>Planta inteira</button>
+              {ajustes.map((a) => (
+                <button key={a.id} className={chip(ativa === a.id)} onClick={() => { selecionarParte(a.id); setModo("mover"); }}
+                  title={`Mover só ${a.nome}`}>
+                  <span className="size-2 rounded-full bg-[#F08A24]" aria-hidden /> {a.nome}
+                </button>
+              ))}
+              {modo === "parte" && (
+                <span className="inline-flex items-center gap-1.5 ml-1">
+                  <button onClick={() => fecharAreaRef.current()} disabled={desenho.length < 3}
+                    className="btn-verde px-3 py-1.5 text-sm disabled:opacity-50">Concluir área ({desenho.length} pontos)</button>
+                  <button onClick={cancelarDesenho} className="rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2">Cancelar</button>
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-3 text-[13px]">
             {/* a pendência vem antes do "salvo com sucesso": mexer na planta
@@ -566,8 +938,8 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                 <button className={btn} onClick={() => mover(0, passo)} title="Norte" aria-label="Norte"><ArrowUp className="size-5" /></button>
                 <span />
                 <button className={btn} onClick={() => mover(-passo, 0)} title="Oeste" aria-label="Oeste"><ArrowLeft className="size-5" /></button>
-                <button className={btn + " text-xs"} title="Zerar tudo"
-                  onClick={() => aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 })}>0</button>
+                <button className={btn + " text-xs"} title={parteAtual ? `Zerar ${parteAtual.nome}` : "Zerar tudo"}
+                  onClick={() => (parteAtual ? aplicarParte(() => ({ ...TRANSFORM_ZERO })) : aplicar({ offsetLesteM: 0, offsetNorteM: 0, rotacaoGraus: 0, escala: 1 }))}>0</button>
                 <button className={btn} onClick={() => mover(passo, 0)} title="Leste" aria-label="Leste"><ArrowRight className="size-5" /></button>
                 <span />
                 <button className={btn} onClick={() => mover(0, -passo)} title="Sul" aria-label="Sul"><ArrowDown className="size-5" /></button>
@@ -583,7 +955,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                     ))}
                   </div>
                 </div>
-                <div className="space-y-1.5">
+                {!parteAtual && <div className="space-y-1.5">
                   <p className="text-xs font-semibold uppercase tracking-wider text-texto-2">Ponto de partida por datum da planta</p>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(DESLOCAMENTO_DATUM).map(([k, d]) => (
@@ -593,10 +965,34 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                       </button>
                     ))}
                   </div>
-                </div>
+                </div>}
               </div>
 
-              <div className="space-y-3 min-w-56">
+              {parteAtual && (
+                <div className="space-y-3 min-w-64">
+                  <label className="block space-y-1">
+                    <span className="text-sm text-texto-2">Nome da parte</span>
+                    <input value={parteAtual.nome} maxLength={60} onChange={(e) => renomearParte(parteAtual.id, e.target.value)}
+                      className="w-full rounded-lg border border-linha-forte bg-superficie px-3 py-1.5 text-sm" />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-sm text-texto-2">Giro da parte: <strong className="text-texto">{parteAtual.t.rotacaoGraus.toFixed(2)}°</strong></span>
+                    <input type="range" min={-15} max={15} step={0.01} value={parteAtual.t.rotacaoGraus} className="w-full"
+                      onPointerDown={registrar}
+                      onChange={(e) => aplicarParte((pt) => ({ ...pt, rotacaoGraus: Number(e.target.value) }), false)} />
+                  </label>
+                  <p className="text-xs text-texto-2 leading-relaxed">
+                    A parte só desloca e gira — não muda de tamanho, para os lotes manterem a área medida.
+                    Os lotes clicáveis dela andam junto ao salvar e mantêm a numeração.
+                  </p>
+                  <button onClick={() => removerParte(parteAtual.id)}
+                    className="inline-flex items-center gap-1.5 rounded-lg btn-contorno px-3 py-1.5 text-sm hover:bg-superficie-2 text-alerta">
+                    <Trash2 className="size-4" /> Remover esta parte
+                  </button>
+                </div>
+              )}
+
+              {!parteAtual && <div className="space-y-3 min-w-56">
                 <label className="block space-y-1">
                   <span className="text-sm text-texto-2">Giro: <strong className="text-texto">{t.rotacaoGraus.toFixed(3)}°</strong></span>
                   <input type="range" min={-2} max={2} step={0.001} value={t.rotacaoGraus} className="w-full"
@@ -616,13 +1012,18 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                       mapRef.current?.setPaintProperty("planta", "line-opacity", v);
                     }} />
                 </label>
-              </div>
+              </div>}
 
               <div className="text-sm tabular-nums space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-texto-2">Ajuste aplicado</p>
-                <p className="lp-display text-lg text-texto">
-                  leste {t.offsetLesteM.toFixed(1)} m · norte {t.offsetNorteM.toFixed(1)} m
+                <p className="text-xs font-semibold uppercase tracking-wider text-texto-2">
+                  {parteAtual ? `Ajuste de ${parteAtual.nome}` : "Ajuste aplicado"}
                 </p>
+                <p className="lp-display text-lg text-texto">
+                  {parteAtual
+                    ? `leste ${parteAtual.t.offsetLesteM.toFixed(1)} m · norte ${parteAtual.t.offsetNorteM.toFixed(1)} m`
+                    : `leste ${t.offsetLesteM.toFixed(1)} m · norte ${t.offsetNorteM.toFixed(1)} m`}
+                </p>
+                {parteAtual && <p className="text-xs text-texto-2">em relação à planta inteira, que segue em leste {t.offsetLesteM.toFixed(1)} m · norte {t.offsetNorteM.toFixed(1)} m</p>}
                 <p className="text-xs text-texto-2">
                   deslocamento total {deslocamentoTotal.toFixed(1)} m
                   {deslocamentoTotal > 40 && deslocamentoTotal < 90 && " — na faixa típica de erro de datum"}
@@ -644,7 +1045,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                 )}
               </div>
 
-              {modo === "pontos" && (
+              {modo === "pontos" && !parteAtual && (
                 <div className="w-full rounded-2xl border border-linha bg-superficie-2 p-5 text-sm space-y-3">
                   <p className="font-semibold text-texto">Como calibrar por pontos de controle</p>
                   <ol className="list-decimal ml-5 text-texto-2 space-y-1 text-sm leading-relaxed">

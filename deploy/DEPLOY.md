@@ -122,11 +122,11 @@ O sistema se chama **Arini Imóveis Brasil** e atende em **`arinibrasil.com.br`*
 O nome antigo era Arini Maps e o domínio `arinimaps.com.br`).
 O deploy vai para uma **VPS exclusiva** do projeto, não para o App Hosting compartilhado.
 
-1. Nameservers no Registro.br: `holly.ns.cloudflare.com` e `jarred.ns.cloudflare.com` (DNSSEC desligado).
+1. Nameservers no Registro.br: `holly.ns.cloudflare.com` e `jarred.ns.cloudflare.com` (delegados em 19/10/2026, DNSSEC desligado).
    Na Cloudflare, registro **A** de `arinibrasil.com.br` e de `www` para o IP da VPS.
 2. `NEXT_PUBLIC_SITE_URL=https://arinibrasil.com.br` no app e `SITE_URL` no worker.
 3. No Resend (conta "arinibrasil", região sa-east-1), domínio `arinibrasil.com.br` criado em 19/10/2026; DKIM
-   (`resend._domainkey`) e CNAMEs `send` e `rsend` já estão na Cloudflare. Usar
+   (`resend._domainkey`) e CNAMEs `send` e `rsend` na Cloudflare; **domínio verificado em 19/10/2026**. Usar
    `RESEND_FROM="Arini Imóveis Brasil <naoresponda@arinibrasil.com.br>"`.
 4. No Supabase › Authentication › URL Configuration, Site URL e Redirect URLs com o domínio novo
    (o link de recuperação de senha depende disso).

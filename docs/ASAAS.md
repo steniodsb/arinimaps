@@ -28,7 +28,11 @@ Nunca misture as duas coisas: a chave de produção com a URL de sandbox (ou o c
 1. Aplique a migration `supabase/migrations/0045_asaas_producao.sql` **antes** de publicar o código. Ela cria o status `estornada`, a coluna `profiles.asaas_customer_id` e a tabela `asaas_webhook_events`.
 2. Simule o cadastro do webhook (só lê a conta, não altera nada):
    `node scripts/asaas-webhook.mjs --site=https://arinibrasil.com.br --email=<financeiro>`
-3. Confira a saída. O script só cria ou edita o webhook **"Arini Imóveis Brasil"**. Os outros webhooks da conta (por exemplo, "Arini", que aponta para outro sistema) são só listados.
+3. Confira a saída. O script só cria ou edita o webhook **"Arini Imóveis Brasil"**; os outros webhooks da conta são só listados.
+   **Atenção (19/10/2026):** a conta tem um webhook "Arini" que é deste sistema, apontando para a
+   rota errada na Vercel (`https://arinimaps-lgbh-two.vercel.app/webhook`). Antes de `--aplicar`, renomeie esse
+   webhook para "Arini Imóveis Brasil" no painel (ou remova) para o script editar o mesmo em vez de criar outro.
+   O Asaas só aceita a URL nova quando `arinibrasil.com.br` já resolve e responde: faça isso depois do deploy.
 4. Grave: repita o comando com `--aplicar`.
 5. Teste: `curl -X POST https://arinibrasil.com.br/api/asaas/webhook -H "asaas-access-token: errado"` precisa responder **401**.
 6. Faça uma cobrança real de valor baixo (R$ 5) por **Admin → Mensalidades → Cobrar via Asaas**. Pague via Pix e confira que a fatura fica **paga**. Depois, se quiser, estorne pelo painel do Asaas e confira que ela fica **estornada**.

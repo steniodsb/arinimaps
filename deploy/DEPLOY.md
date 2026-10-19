@@ -131,6 +131,13 @@ O deploy vai para uma **VPS exclusiva** do projeto, não para o App Hosting comp
 4. No Supabase › Authentication › URL Configuration, Site URL e Redirect URLs com o domínio novo
    (o link de recuperação de senha depende disso).
 
+**Provisório (desde 19/10/2026, até a VPS):** o domínio aponta para a Vercel, projeto `arinimaps-lgbh`
+(conta pessoal do Stênio, plano Hobby). Na Cloudflare, CNAME `@` e `www` →
+`965a2a50e80bd7a5.vercel-dns-017.com`, **DNS only** (com proxy a Vercel não emite o certificado).
+Na Vercel, a raiz é Production e `www` redireciona (307) para a raiz. O worker não roda na Vercel.
+Na troca para a VPS: apagar os dois CNAMEs, criar os registros A do passo 1 e remover o domínio do
+projeto na Vercel.
+
 O repositório no GitHub e a pasta local continuam com o nome técnico `arinimaps` / `arini-maps`;
 isso não aparece para o usuário.
 

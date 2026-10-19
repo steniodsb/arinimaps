@@ -23,7 +23,7 @@ export const PRIORIDADE = [
   "ma", "pi", "pa", "ro", "ce", "pe", "pb", "rn", "al", "se", "am", "ac", "ap", "rr",
 ];
 const WFS = "https://geoserver.car.gov.br/geoserver/sicar/ows";
-const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)";
 const PAGINA = 2000;
 
 const args = process.argv.slice(2);

@@ -21,7 +21,7 @@ const Z_CELULA = 11;
 const MAX_CELULAS = 12; // janela de zoom 11 numa tela grande cobre ~6–9 células
 const VALIDADE_DIAS = 30;
 const PAGINA = 2000;
-const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)";
 
 export type Envelope = { xmin: number; ymin: number; xmax: number; ymax: number };
 

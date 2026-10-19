@@ -41,7 +41,7 @@ for (const linha of readFileSync(join(root, ".env.local"), "utf8").split("\n")) 
 const iJson = process.argv.indexOf("--json");
 const saidaJson = iJson > 0 ? process.argv[iJson + 1] : null;
 
-const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)";
 const CELULA_M = 500;
 const PASSO_M = 15;
 const MIN_AMOSTRAS = 15;

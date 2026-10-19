@@ -186,8 +186,8 @@ perguntas por dia ≈ 120 × pessoas no assistente no pico.
    # validação rápida contra o servidor local
    node scripts/teste-carga.mjs
    # homologação, 100 e depois 500 pessoas por 2 minutos
-   BASE_URL=https://homolog.ariniimoveisbrasil.com.br USUARIOS=100 DURACAO_S=120 node scripts/teste-carga.mjs
-   BASE_URL=https://homolog.ariniimoveisbrasil.com.br USUARIOS=500 DURACAO_S=120 node scripts/teste-carga.mjs
+   BASE_URL=https://homolog.arinibrasil.com.br USUARIOS=100 DURACAO_S=120 node scripts/teste-carga.mjs
+   BASE_URL=https://homolog.arinibrasil.com.br USUARIOS=500 DURACAO_S=120 node scripts/teste-carga.mjs
    ```
 
    Outras variáveis: `PAUSA_MS` (pausa máxima entre ações, padrão 1500), `RAMPA_S` (tempo para todos

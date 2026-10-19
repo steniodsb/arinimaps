@@ -9,7 +9,7 @@ Integração com a API v3 do Asaas. Código: `src/lib/asaas.ts` (cliente HTTP), 
 | `ASAAS_API_KEY` | sim | Chave da conta. Produção começa com `$aact_prod_`, sandbox com `$aact_hmlg_`. Sem ela o botão avisa e tudo segue manual. |
 | `ASAAS_WEBHOOK_TOKEN` | sim | Token que o Asaas manda no header `asaas-access-token`. De 32 a 255 caracteres, sem espaços. **Nunca** use a API key aqui. |
 | `ASAAS_BASE_URL` | não | Padrão `https://api.asaas.com/v3`. Sandbox: `https://api-sandbox.asaas.com/v3`. |
-| `NEXT_PUBLIC_SITE_URL` | para o script | Domínio público (`https://ariniimoveisbrasil.com.br`). O script também aceita `--site=`. |
+| `NEXT_PUBLIC_SITE_URL` | para o script | Domínio público (`https://arinibrasil.com.br`). O script também aceita `--site=`. |
 | `ASAAS_WEBHOOK_EMAIL` | para o script | E-mail que o Asaas avisa quando o webhook falha. O script também aceita `--email=`. |
 
 Toda requisição envia `User-Agent: AriniImoveisBrasil/1.0`. O Asaas exige esse header nas contas criadas a partir de 13/06/2024.
@@ -27,10 +27,10 @@ Nunca misture as duas coisas: a chave de produção com a URL de sandbox (ou o c
 
 1. Aplique a migration `supabase/migrations/0045_asaas_producao.sql` **antes** de publicar o código. Ela cria o status `estornada`, a coluna `profiles.asaas_customer_id` e a tabela `asaas_webhook_events`.
 2. Simule o cadastro do webhook (só lê a conta, não altera nada):
-   `node scripts/asaas-webhook.mjs --site=https://ariniimoveisbrasil.com.br --email=<financeiro>`
+   `node scripts/asaas-webhook.mjs --site=https://arinibrasil.com.br --email=<financeiro>`
 3. Confira a saída. O script só cria ou edita o webhook **"Arini Imóveis Brasil"**. Os outros webhooks da conta (por exemplo, "Arini", que aponta para outro sistema) são só listados.
 4. Grave: repita o comando com `--aplicar`.
-5. Teste: `curl -X POST https://ariniimoveisbrasil.com.br/api/asaas/webhook -H "asaas-access-token: errado"` precisa responder **401**.
+5. Teste: `curl -X POST https://arinibrasil.com.br/api/asaas/webhook -H "asaas-access-token: errado"` precisa responder **401**.
 6. Faça uma cobrança real de valor baixo (R$ 5) por **Admin → Mensalidades → Cobrar via Asaas**. Pague via Pix e confira que a fatura fica **paga**. Depois, se quiser, estorne pelo painel do Asaas e confira que ela fica **estornada**.
 
 ## Eventos tratados

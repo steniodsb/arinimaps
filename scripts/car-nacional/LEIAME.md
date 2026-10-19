@@ -25,7 +25,7 @@ mudam a pasta). Rodar o `baixar.mjs` de novo só refaz municípios com mais de 3
 (z7 ≥ 1.000 ha … z11 ≥ 5 ha, z12+ todas) e só os campos do cartão.
 
 **No mapa:** `NEXT_PUBLIC_CAR_NACIONAL_URL` = endereço público do arquivo
-(ex.: `https://mapas.ariniimoveisbrasil.com.br/car/car-brasil.pmtiles`). Sem a variável, o mapa usa
+(ex.: `https://mapas.arinibrasil.com.br/car/car-brasil.pmtiles`). Sem a variável, o mapa usa
 o banco (base regional) e busca no SICAR sob demanda (`/api/car/janela`). Em teste local, copie um
 arquivo para `public/dev/` e use `NEXT_PUBLIC_CAR_NACIONAL_URL=/dev/car-go.pmtiles` em
 `.env.development.local`.

@@ -13,7 +13,7 @@
 
 ## Fora do sistema (pega a VPS inteira caindo, worker junto)
 Uptime Kuma (no Dokploy, 1 container) ou UptimeRobot grátis:
-- monitor HTTP em `https://ariniimoveisbrasil.com.br/api/saude`, intervalo 1 min, alerta por
+- monitor HTTP em `https://arinibrasil.com.br/api/saude`, intervalo 1 min, alerta por
   e-mail/WhatsApp/Telegram após 2 falhas;
 - monitor de palavra-chave na página inicial;
 - certificado SSL (aviso 14 dias antes de vencer).

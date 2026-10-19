@@ -60,7 +60,7 @@ Node 18: o Next 16.3.2 exige `>=20.9.0` e o build morre antes de começar.
 | `CAMPO_CRIPTO_CHAVE` | CPF/CNPJ cifrado no banco + hash para busca (`openssl rand -base64 32`; guardar cópia no cofre — perder a chave = perder os CPFs cifrados). Depois de criar: `node scripts/cifra-cpf.mjs --aplicar`. Rotação: `docs/SEGURANCA.md` §11 | CPF gravado em claro, como antes |
 | `ORIGENS_PERMITIDAS` | outros endereços aceitos como origem de POST/PATCH/DELETE nas APIs (separados por vírgula), além de `NEXT_PUBLIC_SITE_URL` e do próprio host | só o próprio site |
 | `ARINI_IA_COTACAO_USD` | cotação do dólar usada só para estimar o custo em R$ em Conhecimento e IA › Conversas (padrão 5,4) | usa o padrão |
-| `NEXT_PUBLIC_CAR_NACIONAL_URL` | malha do CAR do **Brasil inteiro** a partir do arquivo PMTiles na Cloudflare R2 (ex.: `https://mapas.ariniimoveisbrasil.com.br/car/car-brasil.pmtiles`). Gerar e enviar: `scripts/car-nacional/LEIAME.md`. Vai **no build** (prefixo `NEXT_PUBLIC_`) | CAR do banco (região) + busca no SICAR sob demanda |
+| `NEXT_PUBLIC_CAR_NACIONAL_URL` | malha do CAR do **Brasil inteiro** a partir do arquivo PMTiles na Cloudflare R2 (ex.: `https://mapas.arinibrasil.com.br/car/car-brasil.pmtiles`). Gerar e enviar: `scripts/car-nacional/LEIAME.md`. Vai **no build** (prefixo `NEXT_PUBLIC_`) | CAR do banco (região) + busca no SICAR sob demanda |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | envio do PMTiles nacional (`scripts/car-nacional/publicar.mjs`), só onde o job mensal roda | o arquivo não é publicado |
 | `ARINI_IA_MAX_SIMULTANEAS` | conversas de IA ao mesmo tempo no servidor (padrão 20); acima disso responde `ia_ocupada` | usa 20 |
 | `ARINI_CONSULTAS_MAX_SIMULTANEAS`, `ARINI_CONSULTAS_FILA_MAX`, `ARINI_CONSULTAS_ESPERA_MS` | fila das consultas de área (padrão 8 rodando, 40 na fila, 30 s de espera) | usa o padrão |
@@ -117,14 +117,15 @@ Na ordem, porque cada uma isola uma camada diferente:
 
 ## 6. Domínio
 
-O sistema se chama **Arini Imóveis Brasil** e atende em **`ariniimoveisbrasil.com.br`**
-(decisão de 08/10/2026; o nome antigo era Arini Maps e o domínio `arinimaps.com.br`).
+O sistema se chama **Arini Imóveis Brasil** e atende em **`arinibrasil.com.br`**
+(nome decidido em 08/10/2026; domínio `arinibrasil.com.br` decidido e comprado em 19/10/2026, DNS na Cloudflare.
+O nome antigo era Arini Maps e o domínio `arinimaps.com.br`).
 O deploy vai para uma **VPS exclusiva** do projeto, não para o App Hosting compartilhado.
 
-1. No Registro.br, registro **A** de `ariniimoveisbrasil.com.br` e de `www` para o IP da VPS.
-2. `NEXT_PUBLIC_SITE_URL=https://ariniimoveisbrasil.com.br` no app e `SITE_URL` no worker.
-3. No Resend, verificar o domínio de envio `ariniimoveisbrasil.com.br` e usar
-   `RESEND_FROM="Arini Imóveis Brasil <naoresponda@ariniimoveisbrasil.com.br>"`.
+1. Na Cloudflare (o domínio já aponta para ela), registro **A** de `arinibrasil.com.br` e de `www` para o IP da VPS.
+2. `NEXT_PUBLIC_SITE_URL=https://arinibrasil.com.br` no app e `SITE_URL` no worker.
+3. No Resend, verificar o domínio de envio `arinibrasil.com.br` e usar
+   `RESEND_FROM="Arini Imóveis Brasil <naoresponda@arinibrasil.com.br>"`.
 4. No Supabase › Authentication › URL Configuration, Site URL e Redirect URLs com o domínio novo
    (o link de recuperação de senha depende disso).
 
@@ -140,9 +141,9 @@ isso não aparece para o usuário.
    *Edge TTL: respeitar o cabeçalho de origem* (o app já manda `s-maxage=86400`). Com 500+ pessoas
    simultâneas é o que tira os tiles do banco (`docs/INFRA-NACIONAL.md` §5).
 3. **R2 (CAR nacional e, depois, vídeos):** criar o bucket `arini-mapas`, ligar um domínio próprio
-   (ex.: `mapas.ariniimoveisbrasil.com.br`) e a política de CORS:
+   (ex.: `mapas.arinibrasil.com.br`) e a política de CORS:
    ```json
-   [{ "AllowedOrigins": ["https://ariniimoveisbrasil.com.br"], "AllowedMethods": ["GET", "HEAD"],
+   [{ "AllowedOrigins": ["https://arinibrasil.com.br"], "AllowedMethods": ["GET", "HEAD"],
       "AllowedHeaders": ["Range", "If-Match"], "ExposeHeaders": ["ETag", "Content-Length", "Content-Range"], "MaxAgeSeconds": 86400 }]
    ```
    Criar um token de API do R2 (Object Read & Write, só esse bucket) → `R2_*` (§2).

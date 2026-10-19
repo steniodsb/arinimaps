@@ -10,7 +10,7 @@
 //
 // Uso:
 //   node scripts/teste-carga.mjs
-//   BASE_URL=https://homolog.ariniimoveisbrasil.com.br USUARIOS=100 DURACAO_S=60 node scripts/teste-carga.mjs
+//   BASE_URL=https://homolog.arinibrasil.com.br USUARIOS=100 DURACAO_S=60 node scripts/teste-carga.mjs
 //
 // Variáveis: BASE_URL (padrão http://localhost:3000), USUARIOS (20), DURACAO_S (20),
 // PAUSA_MS (pausa máxima entre ações, padrão 1500), RAMPA_S (tempo para todos entrarem,

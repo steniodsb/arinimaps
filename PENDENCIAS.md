@@ -162,7 +162,7 @@ Definições que destravam os itens bloqueados.
 | 8.3 | **Conta do Asaas e quais cobranças passam por ele** — Conta criada e chave de produção configurada (15/10); comercial aprovado, conta bancária e documentação pendentes no Asaas. Mensalidade pronta: cliente sem duplicar, webhook com vencimento, estorno e reenvio sem efeito duplo (migration 0045). Roteiro em `docs/ASAAS.md`. Decidido em 16/10: fatura vencida no Asaas suspende na hora (sem carência). Em aberto: cobrar comissão pelo Asaas. Webhook atual aponta para a Vercel em `/webhook` (rota errada; a certa é `/api/asaas/webhook`). | Decisão | Carlos | — | — |
 | 8.4 | **API ou metodologia da pré-avaliação e da aptidão** — E a validação jurídica do uso. | Decisão | Carlos | — | Call · Melhorias 18 |
 | 8.5 | **Regras da consulta profissional** — O que libera, para quem e o valor da assinatura. | Decisão | Carlos | — | Call · Melhorias 15 |
-| 8.6 | **Domínio** — ariniimoveisbrasil.com.br ou subdomínio. | Decisão | Carlos | — | — |
+| 8.6 | **Domínio** — `arinibrasil.com.br` comprado em 19/10/2026, DNS na Cloudflare. Falta o registro A para a VPS. | Decisão (feita) | Carlos | — | — |
 | 8.7 | **MapBiomas por token ou por arquivo** | Decisão | Stênio e Carlos | — | — |
 | 8.8 | **Plano pago do banco de dados** — Decidido em 08/10: Supabase Pro (US$ 25/mês, compute Micro incluso) a partir do lançamento; nos testes, o plano grátis. Alternativas (Neon, Postgres na VPS) avaliadas e descartadas por ora. | Validar | Carlos | — | Call |
 | 8.9 | **Selfie e prazos de guarda** — Finalidade, base legal, retenção e descarte de selfies e documentos. | Decisão | Carlos | — | Melhorias 9 · Segurança 12 |

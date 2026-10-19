@@ -3,7 +3,7 @@
 // Uso: node scripts/sonda-fontes2.mjs [secao]
 //   secoes: terrabrasilis | ana | aneel | alternativos
 
-const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)";
 const T = 25_000;
 
 async function pega(url, texto = false) {

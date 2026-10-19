@@ -4,7 +4,7 @@
 //
 // Não presume nada: bate no endpoint, lê a resposta e diz o que achou.
 
-const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)";
 const TIMEOUT = 25_000;
 
 const ALVOS = [

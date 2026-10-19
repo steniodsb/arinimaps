@@ -39,7 +39,7 @@ function hostsPermitidos(request: Request) {
   if (daUrl) hosts.add(daUrl);
   const site = hostDe(process.env.NEXT_PUBLIC_SITE_URL);
   if (site) hosts.add(site);
-  // ORIGENS_PERMITIDAS="https://homolog.ariniimoveisbrasil.com.br,https://outro" — opcional
+  // ORIGENS_PERMITIDAS="https://homolog.arinibrasil.com.br,https://outro" — opcional
   for (const o of (process.env.ORIGENS_PERMITIDAS ?? "").split(",")) {
     const h = hostDe(o.trim());
     if (h) hosts.add(h);

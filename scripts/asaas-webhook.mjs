@@ -4,7 +4,7 @@
 //   node scripts/asaas-webhook.mjs                      → simula (padrão): lista e mostra o que faria
 //   node scripts/asaas-webhook.mjs --simular            → idem
 //   node scripts/asaas-webhook.mjs --aplicar            → cria/atualiza de verdade
-//   opções: --site=https://ariniimoveisbrasil.com.br  --email=financeiro@...
+//   opções: --site=https://arinibrasil.com.br  --email=financeiro@...
 //
 // Lê do ambiente ou do .env.local: ASAAS_API_KEY, ASAAS_WEBHOOK_TOKEN,
 // ASAAS_BASE_URL (opcional; sandbox = https://api-sandbox.asaas.com/v3),

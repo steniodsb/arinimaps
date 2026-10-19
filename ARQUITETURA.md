@@ -280,7 +280,7 @@ arini-maps/
 └── deploy/                          # compose do worker, notas Dokploy
 ```
 
-Domínio sugerido: `ariniimoveisbrasil.com.br` (ou `maps.arininegociosimobiliarios.com.br` para começar sem comprar domínio — decisão do Carlos).
+Domínio sugerido: `arinibrasil.com.br` (ou `maps.arininegociosimobiliarios.com.br` para começar sem comprar domínio — decisão do Carlos).
 
 ---
 
@@ -313,7 +313,7 @@ Asaas (mensalidade recorrente + cobrança de comissão) · relatórios (funil, c
 6. **Valor da mensalidade** de permanência e regra de suspensão (quantos dias de atraso).
 7. **Categorias de POI** que ele quer destacar (a lista da spec §9 já é o default).
 8. **Logo/identidade** (reaproveito verde/dourado do CRM se ele quiser consistência).
-9. **Domínio**: comprar `ariniimoveisbrasil.com.br` ou usar subdomínio do site atual.
+9. **Domínio**: comprar `arinibrasil.com.br` ou usar subdomínio do site atual.
 9b. **Aprovar o custo do satélite em produção** (~US$25/mês MapTiler ou free tier Mapbox) — único custo recorrente de mapa do projeto.
 10. **Vídeos de referência** dos concorrentes (ele mostrou na reunião — pedir os links no WhatsApp).
 

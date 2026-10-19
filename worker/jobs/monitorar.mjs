@@ -23,7 +23,7 @@ async function enviarEmail(para, assunto, texto) {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM ?? "Arini Imóveis Brasil <naoresponda@ariniimoveisbrasil.com.br>",
+      from: process.env.RESEND_FROM ?? "Arini Imóveis Brasil <naoresponda@arinibrasil.com.br>",
       to: para, subject: assunto, text: texto,
     }),
   }).catch(() => null);

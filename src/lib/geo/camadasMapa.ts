@@ -21,7 +21,7 @@ import type { CamadaOficialId } from "@/lib/map/camadasOficiais";
 type Feicao = { type: "Feature"; geometry: GeoJSON.Geometry; properties: Record<string, string | number | null> };
 type Env = { xmin: number; ymin: number; xmax: number; ymax: number };
 
-const UA = "AriniImoveisBrasil/1.0 (contato@ariniimoveisbrasil.com.br)";
+const UA = "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)";
 const MAX_CELULAS = 16;
 
 type Def = {

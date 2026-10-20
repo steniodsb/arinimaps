@@ -144,7 +144,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
 
                     {c?.erro && (
                       <p className="text-xs text-alerta print:text-gray-600 mt-1">
-                        O serviço não respondeu ({c.erro}). Ausência de dados aqui não significa ausência
+                        O serviço do órgão estava indisponível no momento da consulta. Ausência de dados aqui não significa ausência
                         de registro no órgão.
                       </p>
                     )}
@@ -172,7 +172,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
 
                     {c && !c.erro && (
                       <p className="text-[11px] text-texto-2 print:text-gray-500 mt-2">
-                        Consultado em {new Date(c.consultado_em).toLocaleString("pt-BR")}
+                        Consultado em {new Date(c.consultado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                         {c.raio_m ? ` · raio de ${c.raio_m / 1000} km ao redor do imóvel` : " · sobre o imóvel"}
                       </p>
                     )}

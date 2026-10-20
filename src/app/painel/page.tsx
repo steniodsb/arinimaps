@@ -120,11 +120,11 @@ export default async function MeusImoveis() {
                         className={"h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 " + (capa ? "" : "opacity-60") + (p.status === "vendido" ? " grayscale" : "")} />
                     )}
                     <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-                      <Etiqueta tom={STATUS_TOM[p.status] ?? "neutro"} className="bg-fundo/90 backdrop-blur">
+                      <Etiqueta tom={STATUS_TOM[p.status] ?? "neutro"} className="!bg-superficie shadow-sm">
                         {complemento ? "Aguardando complemento" : STATUS_LABEL[p.status] ?? p.status}
                       </Etiqueta>
                       {comRevisao.has(p.id) && (
-                        <Etiqueta tom="alerta" className="bg-fundo/90 backdrop-blur">alteração em análise</Etiqueta>
+                        <Etiqueta tom="alerta" className="!bg-superficie shadow-sm">alteração em análise</Etiqueta>
                       )}
                     </div>
                   </div>

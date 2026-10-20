@@ -234,7 +234,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
               ? <>
                   {CONDICAO[autorizacao.tipo] ?? autorizacao.tipo}
                   {autorizacao.aceite_at
-                    ? <> — aceite eletrônico em {new Date(autorizacao.aceite_at).toLocaleString("pt-BR")}
+                    ? <> — aceite eletrônico em {new Date(autorizacao.aceite_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                         {autorizacao.aceite_ip && ` (IP ${autorizacao.aceite_ip})`}, versão {autorizacao.versao}
                         {autorizacao.validade && `, válida até ${new Date(autorizacao.validade + "T12:00:00").toLocaleDateString("pt-BR")}`}</>
                     : " — sem aceite eletrônico: confira a autorização assinada nos documentos"}

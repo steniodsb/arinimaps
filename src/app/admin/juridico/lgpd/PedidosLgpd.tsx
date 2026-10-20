@@ -84,7 +84,7 @@ export default function PedidosLgpd({ pedidos }: { pedidos: Pedido[] }) {
               {aberto === p.id && (
                 <div className="mt-4 space-y-4 border-t border-linha pt-4">
                   <p className="text-sm text-texto-2">
-                    {p.email}{p.cpf && ` · CPF ${p.cpf}`} · recebido em {new Date(p.created_at).toLocaleString("pt-BR")}
+                    {p.email}{p.cpf && ` · CPF ${p.cpf}`} · recebido em {new Date(p.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                   </p>
                   {p.descricao && <p className="whitespace-pre-wrap leading-relaxed text-texto">{p.descricao}</p>}
                   <textarea rows={4} className={input} placeholder="Resposta ao titular (obrigatória para encerrar; é enviada por e-mail)"

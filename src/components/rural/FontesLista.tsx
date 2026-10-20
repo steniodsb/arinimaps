@@ -72,7 +72,7 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
 
             {c?.erro && (
               <p className="text-sm text-alerta mt-3 leading-relaxed">
-                O serviço não respondeu ({c.erro}). Ausência de dados aqui não significa ausência de registro no órgão.
+                <span title={c.erro}>O serviço do órgão estava indisponível no momento da consulta.</span> Ausência de dados aqui não significa ausência de registro no órgão.
               </p>
             )}
             {instavel && !c?.erro && (

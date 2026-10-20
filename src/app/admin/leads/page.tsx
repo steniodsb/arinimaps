@@ -53,7 +53,7 @@ export default async function AdminLeads() {
                 <div className="flex flex-col items-start gap-2 sm:items-end">
                   <Etiqueta tom="ouro">{ETAPA_LABEL[o.etapa] ?? o.etapa}</Etiqueta>
                   <p className="text-xs text-texto-2 tabular-nums">
-                    {new Date(o.created_at).toLocaleString("pt-BR")}
+                    {new Date(o.created_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
                   </p>
                   <Link href={`/admin/oportunidades/${o.id}`}
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-verde hover:underline underline-offset-4">

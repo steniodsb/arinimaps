@@ -42,7 +42,7 @@ export type OrigemItem = {
   consultado_em?: string; atualizado_em?: string | null; versao?: string | null;
 };
 
-const dataHora = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR") : "");
+const dataHora = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "");
 const data = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "");
 
 /**

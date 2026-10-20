@@ -503,3 +503,20 @@ button:disabled,
   transition: box-shadow 0.3s;
 }
 .popup-busca .maplibregl-popup-content { padding: 8px 12px; }
+
+/*
+  BOTÃO DESABILITADO NO TEMA CLARO (QA 19/10/2026).
+  O padrão é `disabled:opacity-40..60` sobre o botão inteiro: no escuro fica
+  "apagado"; no claro o verde/dourado translúcido vira menta/bege sobre branco
+  e o texto cai para ~1,5:1 — parecia que o botão nem existia. No claro, o
+  desabilitado vira um botão neutro, legível e claramente inativo.
+*/
+:root[data-tema="claro"] :is(.btn-verde, .btn-ouro, .btn-contorno):disabled {
+  opacity: 1 !important;
+  background: #E7ECE9 !important;
+  color: #5B6B63 !important;
+  border-color: #CBD5D0 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+:root[data-tema="claro"] .btn-ouro:disabled::after { display: none; }

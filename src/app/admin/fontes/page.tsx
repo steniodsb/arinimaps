@@ -27,7 +27,7 @@ const CAMPOS_FICHA: [keyof Ficha, string][] = [
   ["situacao_sondagem", "Situação na sondagem"], ["sondado_em", "Sondado em"],
 ];
 
-const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR") : "—");
+const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—");
 
 /**
  * Fontes oficiais (PENDENCIAS 3.14 e 3.16): catálogo com a matriz técnica,

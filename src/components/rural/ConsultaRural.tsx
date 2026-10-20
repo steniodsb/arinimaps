@@ -130,7 +130,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                   </p>
                   <p className="mt-0.5 text-xs text-texto-2">
                     {f.orgao}
-                    {c && !c.erro && ` · consultado em ${new Date(c.consultado_em).toLocaleString("pt-BR")}`}
+                    {c && !c.erro && ` · consultado em ${new Date(c.consultado_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`}
                     {c?.raio_m ? ` · raio ${c.raio_m / 1000} km` : null}
                   </p>
                 </div>
@@ -142,7 +142,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                 <div className="px-5 pb-4 space-y-2 border-t border-linha pt-4">
                   {c?.erro && (
                     <p className="text-sm text-alerta">
-                      Fonte indisponível: {c.erro}. Nada aqui significa ausência de registro — só que o serviço não respondeu.
+                      <span title={c.erro}>Fonte indisponível no momento.</span> Nada aqui significa ausência de registro — só que o serviço não respondeu.
                     </p>
                   )}
                   {itens.map((i, n) => (

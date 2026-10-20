@@ -91,7 +91,7 @@ export default async function AdminRegioes() {
           A malha do SICAR aparece no mapa para o proprietário clicar na área dele e anunciar. Ela é
           copiada para o sistema (o mapa não depende do SICAR estar no ar) e atualizada por este botão —
           vale rodar uma vez por mês. Município novo já entra com o CAR.
-          {ultimaImportacao && <> Última atualização: <strong className="text-texto tabular-nums">{new Date(ultimaImportacao).toLocaleString("pt-BR")}</strong>.</>}
+          {ultimaImportacao && <> Última atualização: <strong className="text-texto tabular-nums">{new Date(ultimaImportacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</strong>.</>}
         </>}
       >
         <Cartao>

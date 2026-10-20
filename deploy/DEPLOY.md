@@ -128,7 +128,8 @@ O deploy vai para uma **VPS exclusiva** do projeto, não para o App Hosting comp
 3. No Resend (conta "arinibrasil", região sa-east-1), domínio `arinibrasil.com.br` criado em 19/10/2026; DKIM
    (`resend._domainkey`) e CNAMEs `send` e `rsend` na Cloudflare; **domínio verificado em 19/10/2026**. Usar
    `RESEND_FROM="Arini Imóveis Brasil <naoresponda@arinibrasil.com.br>"`.
-4. No Supabase › Authentication › URL Configuration, Site URL e Redirect URLs com o domínio novo
+4. No Supabase › Authentication › URL Configuration, Site URL `https://arinibrasil.com.br` e Redirect URLs
+   `https://arinibrasil.com.br/**` e `http://localhost:3000/**` (feito em 19/10/2026)
    (o link de recuperação de senha depende disso).
 
 **Provisório (desde 19/10/2026, até a VPS):** o domínio aponta para a Vercel, projeto `arinimaps-lgbh`

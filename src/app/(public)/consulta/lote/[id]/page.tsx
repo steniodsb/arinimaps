@@ -9,6 +9,8 @@ import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica, Secao } from "@/comp
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { CATEGORIA_POI_LABEL, formatDistancia, nomePoi, type PoiDistancia } from "@/lib/geo/distancia";
+import BotaoMapaOnr from "@/components/rural/BotaoMapaOnr";
+import { pointOnFeature } from "@turf/turf";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Consulta de lote urbano" };
@@ -42,6 +44,7 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
   ]);
   const lote = loteRaw as Lote | null;
   if (!lote?.geometry) notFound();
+  const pontoLote = pointOnFeature(lote.geometry).geometry.coordinates;
   const p = lote.properties;
 
   const raio = Number(raioCfg?.valor ?? 4000) || 4000;
@@ -101,6 +104,11 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
               Medidas, quadra e número lidos da planta da cidade (CAD da prefeitura). São referência: não
               substituem a matrícula nem o levantamento do lote.
             </p>
+            {/* lote urbano não tem fonte gratuita de matrícula: o mapa oficial dos cartórios (ONR) pode ter */}
+            <div className="border-t border-linha pt-4 space-y-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Matrícula do lote</p>
+              <BotaoMapaOnr lat={pontoLote[1]} lng={pontoLote[0]} />
+            </div>
           </div>
         </div>
 

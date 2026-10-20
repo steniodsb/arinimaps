@@ -5,6 +5,8 @@ import { formatBRL, formatArea, STATUS_LABEL, plural } from "@/lib/format";
 import MiniMapa from "@/components/map/MiniMapa";
 import DecisaoBotoes from "./DecisaoBotoes";
 import RevisaoBotoes from "./RevisaoBotoes";
+import MatriculaAdmin from "./MatriculaAdmin";
+import MatriculaSigef from "@/components/rural/MatriculaSigef";
 import DocumentosImovel from "@/components/crm/DocumentosImovel";
 import HistoricoImovel from "@/components/crm/HistoricoImovel";
 import { CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
@@ -110,6 +112,8 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
   const selfieUrl = autorizacao?.selfie_path
     ? urlArquivo(autorizacao.selfie_path)
     : null;
+  const { data: matricula } = await admin.from("property_matriculas")
+    .select("numero, cartorio, conferida_em").eq("property_id", p.id).maybeSingle();
   const car = p.car_codigo
     ? ((await admin.rpc("fn_car_imovel", { p_cod: p.car_codigo })).data as { properties?: { area_ha?: number; condicao?: string } } | null)
     : null;
@@ -288,6 +292,11 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
 
       {/* §1: histórico, versões da divisa, origem dos dados e auditoria */}
       <HistoricoImovel propertyId={p.id} modo="admin" tipoImovel={p.tipo as "urbano" | "rural"} />
+
+      <Bloco titulo="Matrícula">
+        <MatriculaAdmin propertyId={p.id} atual={matricula ?? null} />
+        {p.car_codigo && <div className="mt-5 border-t border-linha pt-4"><MatriculaSigef cod={p.car_codigo} /></div>}
+      </Bloco>
 
       <Bloco titulo="Documentos">
         <DocumentosImovel propertyId={p.id} podeConferir />

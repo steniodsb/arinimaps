@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
+import BotaoMapaOnr from "./BotaoMapaOnr";
 
 type Matricula = {
   matricula: string; matriculas: string[]; nome: string; codigoIncra: string;
@@ -16,14 +17,16 @@ type Matricula = {
 export default function MatriculaSigef({ cod, compacto = false }: { cod: string; compacto?: boolean }) {
   const [estado, setEstado] = useState<"carregando" | "ok" | "erro">("carregando");
   const [lista, setLista] = useState<Matricula[]>([]);
+  const [ponto, setPonto] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     const ctl = new AbortController();
     fetch(`/api/geo/car/${encodeURIComponent(cod)}/matricula`, { signal: ctl.signal })
       .then(async (r) => {
         if (!r.ok) throw new Error(String(r.status));
-        const j = await r.json() as { matriculas?: Matricula[] };
+        const j = await r.json() as { matriculas?: Matricula[]; ponto?: { lat: number; lng: number } };
         setLista(j.matriculas ?? []);
+        setPonto(j.ponto ?? null);
         setEstado("ok");
       })
       .catch((e) => { if ((e as Error).name !== "AbortError") setEstado("erro"); });
@@ -55,8 +58,9 @@ export default function MatriculaSigef({ cod, compacto = false }: { cod: string;
       <div className="space-y-1.5">
         {rotulo}
         <p className="text-sm text-texto-2 leading-relaxed">
-          Esta área não tem parcela certificada no SIGEF. O número da matrícula só sai pelo cartório de registro de imóveis.
+          Esta área não tem parcela certificada no SIGEF. O mapa oficial dos cartórios pode ter a matrícula.
         </p>
+        {ponto && <BotaoMapaOnr lat={ponto.lat} lng={ponto.lng} compacto={compacto} />}
       </div>
     );
   }
@@ -81,6 +85,7 @@ export default function MatriculaSigef({ cod, compacto = false }: { cod: string;
       <p className="text-[11px] leading-relaxed text-texto-2">
         Fonte: INCRA / SIGEF (parcela certificada). Com o número, peça o espelho da matrícula no cartório de registro de imóveis.
       </p>
+      {ponto && !compacto && <BotaoMapaOnr lat={ponto.lat} lng={ponto.lng} />}
     </div>
   );
 }

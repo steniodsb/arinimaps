@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { limiteLeituraMapa } from "@/lib/geo/limiteMemoria";
 import { matriculasDoImovel } from "@/lib/rural/matricula";
+import { pointOnFeature } from "@turf/turf";
 
 export const maxDuration = 60;
 
@@ -21,8 +22,10 @@ export async function GET(request: Request, ctx: RouteContext<"/api/geo/car/[cod
   }
   try {
     const matriculas = await matriculasDoImovel(`car:${cod}`, geom);
+    // ponto DENTRO da área (o centroide pode cair fora em área em L): vai para o atalho do mapa do ONR
+    const [lng, lat] = pointOnFeature(geom).geometry.coordinates;
     return NextResponse.json(
-      { matriculas, fonte: "INCRA / SIGEF", consultado_em: new Date().toISOString() },
+      { matriculas, ponto: { lat, lng }, fonte: "INCRA / SIGEF", consultado_em: new Date().toISOString() },
       { headers: { "Cache-Control": "public, max-age=3600, s-maxage=3600" } },
     );
   } catch (e) {

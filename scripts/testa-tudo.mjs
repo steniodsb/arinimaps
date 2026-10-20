@@ -17,6 +17,7 @@ const PASSOS = [
   ["Segurança: força bruta, permissões, IDOR, upload, RLS", "scripts/testa-seguranca.mjs", true],
   ["Calibração por parte da planta (move e devolve)", "scripts/testa-calibracao-parte.mjs", true],
   ["Ferramentas do mapa (medir distância e área)", "scripts/testa-ferramentas-mapa.mjs", true],
+  ["Matrícula do anúncio (conferência, selo, RLS, ONR)", "scripts/testa-matricula.mjs", true],
 ];
 
 const somente = process.argv[2];

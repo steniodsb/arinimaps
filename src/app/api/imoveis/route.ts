@@ -210,6 +210,17 @@ export async function POST(request: Request) {
     .single();
   if (propError) return NextResponse.json({ error: propError.message }, { status: 500 });
 
+  // número e cartório da matrícula (opcional; a Matriz confere com o documento).
+  // Tabela só do servidor: o número não vai para o site público.
+  const numeroMatricula = String(dados.matricula_numero ?? "").trim().slice(0, 120);
+  if (numeroMatricula) {
+    await admin.from("property_matriculas").insert({
+      property_id: property.id,
+      numero: numeroMatricula,
+      cartorio: String(dados.matricula_cartorio ?? "").trim().slice(0, 200) || null,
+    });
+  }
+
   // aceite versionado: versão do termo, data/hora, usuário e IP
   const cfg = await lerConfiguracoes();
   const validade = new Date(Date.now() + numero(cfg, "juridico_prazo_autorizacao_dias", 180) * 86_400_000);

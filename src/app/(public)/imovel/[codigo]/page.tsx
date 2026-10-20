@@ -106,6 +106,9 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
   const admin = supabaseAdmin();
   const { data: propId } = await admin.from("properties").select("id, modalidade, leilao, owner_id, partner_id").eq("codigo", codigo).single();
   const leilao = propId?.modalidade === "leilao" ? (propId.leilao ?? {}) as Leilao : null;
+  // só a DATA da conferência: o número da matrícula não vai para o site público
+  const { data: matriculaConferida } = await supabaseAdmin().from("property_matriculas")
+    .select("conferida_em, imovel:properties!inner(codigo)").eq("imovel.codigo", imovel.codigo).not("conferida_em", "is", null).maybeSingle();
   const [{ data: tourData }, { data: video }, { data: unidades }, { data: whats }, { data: divisa }, { data: origemCadastro }] = await Promise.all([
     admin.rpc("fn_property_tour", { p_codigo: codigo }),
     admin.from("presentations").select("output_path")
@@ -399,7 +402,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                 <Navigation className="size-4" /> Como chegar até o imóvel
               </a>
             )}
-            {(divisa || origemCadastro) && (
+            {(divisa || origemCadastro || matriculaConferida) && (
               <div className="cartao space-y-2 p-5 text-sm">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-texto-2">
                   <ShieldCheck className="size-4 text-verde" /> Rastreabilidade
@@ -409,6 +412,11 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                     {divisa.situacao === "validada"
                       ? <><Check className="mt-0.5 size-4 shrink-0" strokeWidth={3} />{`Divisa validada pela Arini${divisa.validada_em ? ` em ${new Date(divisa.validada_em).toLocaleDateString("pt-BR")}` : ""}`}</>
                       : "Divisa informada pelo anunciante (em análise)"}
+                  </p>
+                )}
+                {matriculaConferida && (
+                  <p className="flex items-start gap-1.5 font-semibold text-verde">
+                    <Check className="mt-0.5 size-4 shrink-0" strokeWidth={3} />Matrícula conferida pela Arini
                   </p>
                 )}
                 {divisa && <p className="text-texto-2">Versão {divisa.versao} da divisa</p>}

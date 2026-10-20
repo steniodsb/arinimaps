@@ -42,6 +42,7 @@ export default function NovoImovel() {
     tipo: "rural", titulo: "", descricao: "", valor: "", area_declarada: "",
     municipality_id: "", condicoes_venda: "", parent_codigo: "",
     aceita_permuta: false, aceita_financiamento: false,
+    matricula_numero: "", matricula_cartorio: "",
   });
   const [papel, setPapel] = useState<string | null>(null);
   const [condicao, setCondicao] = useState<Condicao>("autorizacao");
@@ -437,6 +438,24 @@ export default function NovoImovel() {
         titulo={`Comprovação de propriedade${ehEquipe ? "" : " *"}`}
         subtitulo={<>Nenhum imóvel é publicado sem a Arini conferir estes documentos. Eles ficam em área privada:
           só você e a equipe da Arini veem. PDF ou foto, até 25 MB cada.</>}>
+        {/* número da matrícula (pedido do Carlos, 20/10/2026): a Matriz confere com o documento;
+            o site público mostra só "matrícula conferida", nunca o número */}
+        {!emLeilao && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={label} htmlFor="matricula_numero">Número da matrícula</label>
+              <input id="matricula_numero" className={input} maxLength={120} placeholder="Ex.: 45413"
+                value={form.matricula_numero} onChange={(e) => setForm({ ...form, matricula_numero: e.target.value })} />
+              <p className={ajuda}>Está no topo do documento da matrícula. Se houver mais de uma, separe por vírgula.</p>
+            </div>
+            <div>
+              <label className={label} htmlFor="matricula_cartorio">Cartório de registro</label>
+              <input id="matricula_cartorio" className={input} maxLength={200} placeholder="Ex.: Cartório de Registro de Imóveis de Iturama"
+                value={form.matricula_cartorio} onChange={(e) => setForm({ ...form, matricula_cartorio: e.target.value })} />
+              <p className={ajuda}>Não aparece no site: só a Arini usa, para conferir e pedir o espelho.</p>
+            </div>
+          </div>
+        )}
         {([
           ...(emLeilao ? [["edital", "Edital do leilão", "O edital publicado, com a descrição do bem, as praças e as condições.", !ehEquipe] as const] : []),
           ["matricula", "Matrícula atualizada do imóvel", "Ou escritura, contrato de compra e venda registrado, formal de partilha.", !ehEquipe && !emLeilao],

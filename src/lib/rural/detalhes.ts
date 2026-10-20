@@ -77,7 +77,8 @@ function valor(chave: string, v: unknown): string {
 export function detalhesRegistro(extra: Record<string, unknown> | null | undefined): string {
   if (!extra) return "";
   return Object.entries(extra)
-    .filter(([, v]) => v !== "" && v != null)
+    // a matrícula ganha destaque próprio no item (MatriculaSigef / selo)
+    .filter(([k, v]) => k !== "matricula" && v !== "" && v != null)
     .map(([k, v]) => `${rotulo(k)}: ${valor(k, v)}`)
     .join(" · ");
 }

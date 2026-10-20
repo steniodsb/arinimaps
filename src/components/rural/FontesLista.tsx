@@ -88,6 +88,7 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
                 {itens.slice(0, 8).map((i, n) => (
                   <li key={n} className="py-3 space-y-0.5">
                     <p className="font-medium text-texto">{i.titulo}</p>
+{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-md border border-ouro/40 bg-ouro/10 px-2 py-0.5 text-xs font-semibold text-texto tabular-nums">Matrícula nº {String(i.extra.matricula)}</p> : null}
                     {i.detalhe && <p className="text-sm text-texto-2">{i.detalhe}</p>}
                     {i.extra && (
                       <p className="text-[11px] text-texto-2">

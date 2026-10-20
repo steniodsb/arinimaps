@@ -154,6 +154,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
                         {itens.slice(0, 12).map((i, n) => (
                           <li key={n} className="border-b border-linha print:border-gray-200 last:border-0 pb-1.5">
                             <p>{i.titulo}</p>
+{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-md border border-ouro/40 bg-ouro/10 px-2 py-0.5 text-xs font-semibold text-texto tabular-nums print:border-gray-400 print:bg-white print:text-black">Matrícula nº {String(i.extra.matricula)}</p> : null}
                             {i.detalhe && <p className="text-xs text-texto-2 print:text-gray-600">{i.detalhe}</p>}
                             {i.extra && (
                               <p className="text-[11px] text-texto-2 print:text-gray-500">

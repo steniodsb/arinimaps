@@ -148,6 +148,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                   {itens.map((i, n) => (
                     <div key={n} className="text-sm border-b border-linha/60 last:border-0 pb-2">
                       <p className="font-medium text-texto">{i.titulo}</p>
+{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-md border border-ouro/40 bg-ouro/10 px-2 py-0.5 text-xs font-semibold text-texto tabular-nums">Matrícula nº {String(i.extra.matricula)}</p> : null}
                       {i.detalhe && <p className="text-texto-2 text-xs">{i.detalhe}</p>}
                       {i.extra && (
                         <p className="text-[11px] text-texto-2">

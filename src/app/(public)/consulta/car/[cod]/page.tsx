@@ -8,6 +8,7 @@ import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica } from "@/components/
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
+import MatriculaSigef from "@/components/rural/MatriculaSigef";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Consulta de área rural" };
@@ -91,6 +92,7 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
                 </div>
               ))}
             </dl>
+            <div className="border-t border-linha pt-4"><MatriculaSigef cod={p.cod} /></div>
             <p className="text-xs text-texto-2 leading-relaxed border-t border-linha pt-4">
               Dados públicos do SICAR, copiados em{" "}
               {p.importado_em ? new Date(p.importado_em).toLocaleDateString("pt-BR") : "—"}. O CAR é

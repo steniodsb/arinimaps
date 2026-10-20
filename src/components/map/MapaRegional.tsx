@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import PainelImovel from "@/components/map/PainelImovel";
 import { PainelCamadas, Legenda, VIDRO, BotaoFechar } from "@/components/map/UiMapa";
 import { ArrowRight, ChevronLeft, ChevronRight, Flag, History, Layers, Lock, ScanSearch, Search } from "lucide-react";
+import MatriculaSigef from "@/components/rural/MatriculaSigef";
 import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
 import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, ROTULO_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
@@ -148,6 +149,7 @@ function CartaoCar({ car, onFechar, oficiais = [] }: { car: CarProps; onFechar: 
           <dd className="mt-0.5 font-mono text-[11px] text-texto break-all">{car.cod}</dd>
         </div>
       </dl>
+      <MatriculaSigef cod={car.cod} compacto />
       {oficiais.length > 0 && (
         <div className="space-y-2">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Também neste ponto</p>

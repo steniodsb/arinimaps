@@ -412,6 +412,48 @@ async function temasIncra(prefixos: string[], bbox: Bbox, campos: string[]) {
   };
 }
 
+/** Parcela do SIGEF com a divisa, para cruzar com um imóvel (matrícula). */
+export type ParcelaSigef = {
+  matricula: string; nome: string; codigoIncra: string; parcela: string; situacao: string;
+  publico: boolean; geometria: GeoJSON.MultiPolygon;
+};
+
+/** "x,y x,y …" do GML 2 → anel [[x, y], …]. */
+const anelGml = (t: string): [number, number][] =>
+  t.trim().split(/\s+/).map((par) => par.split(",").map(Number) as [number, number]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+
+/**
+ * INCRA/SIGEF com a geometria de cada parcela (GML 2 do i3geo, que não fala
+ * GeoJSON). Usado para achar a matrícula do imóvel clicado: o SIGEF traz
+ * `registro_matricula` em toda parcela certificada (344 de 344 na amostra do
+ * piloto, 20/10/2026). Só na janela pedida, até `max` parcelas por tema.
+ */
+export async function parcelasSigefComGeometria(bbox: Bbox, max = 80): Promise<ParcelaSigef[]> {
+  const temas = ufsDoEnvelope(bbox).flatMap((uf) => ["certificada_sigef_particular", "certificada_sigef_publico"].map((p) => `${p}_${uf}`));
+  const porTema = await Promise.all(temas.map(async (tema) => {
+    const url = `${I3GEO}?tema=${tema}&service=WFS&version=1.0.0&request=GetFeature&typeName=${tema}` +
+      `&maxFeatures=${max}&bbox=${bbox.xmin},${bbox.ymin},${bbox.xmax},${bbox.ymax}`;
+    const xml = await (await buscar(url, { headers: { Accept: "application/xml" } })).text();
+    if (xml.includes("ServiceException")) throw new Error("o INCRA recusou a consulta");
+    return xml.split(`<ms:${tema}>`).slice(1).map((bloco): ParcelaSigef | null => {
+      const p: Props = {};
+      for (const m of bloco.matchAll(/<ms:([A-Za-z0-9_]+)>([^<]*)<\/ms:\1>/g)) p[m[1]] = desescapar(m[2]);
+      const poligonos = [...bloco.matchAll(/<gml:Polygon[^>]*>([\s\S]*?)<\/gml:Polygon>/g)].map(([, corpo]) => {
+        const externo = corpo.match(/<gml:outerBoundaryIs>[\s\S]*?<gml:coordinates[^>]*>([^<]+)<\/gml:coordinates>/)?.[1];
+        const internos = [...corpo.matchAll(/<gml:innerBoundaryIs>[\s\S]*?<gml:coordinates[^>]*>([^<]+)<\/gml:coordinates>/g)].map((m) => anelGml(m[1]));
+        return externo ? [anelGml(externo), ...internos] : null;
+      }).filter((x): x is [number, number][][] => !!x && x[0].length >= 4);
+      if (!poligonos.length) return null;
+      return {
+        matricula: texto(p.registro_matricula), nome: texto(p.nome_area, "Parcela sem denominação"),
+        codigoIncra: texto(p.codigo_imovel), parcela: texto(p.parcela_codigo), situacao: texto(p.status),
+        publico: tema.includes("publico"), geometria: { type: "MultiPolygon", coordinates: poligonos },
+      };
+    }).filter((x): x is ParcelaSigef => !!x);
+  }));
+  return porTema.flat();
+}
+
 /** INCRA/SIGEF — parcelas georreferenciadas e certificadas. */
 export function consultarSigef(bbox: Bbox) {
   return adaptador("sigef", async () => {

@@ -16,6 +16,7 @@ const PASSOS = [
   ["Perfis, leilão, selfie, vídeo", "scripts/testa-perfis.mjs", true],
   ["Segurança: força bruta, permissões, IDOR, upload, RLS", "scripts/testa-seguranca.mjs", true],
   ["Calibração por parte da planta (move e devolve)", "scripts/testa-calibracao-parte.mjs", true],
+  ["Ferramentas do mapa (medir distância e área)", "scripts/testa-ferramentas-mapa.mjs", true],
 ];
 
 const somente = process.argv[2];

@@ -56,10 +56,15 @@ async function sessao(email) {
   const ctx = await b.createBrowserContext();
   const p = await ctx.newPage();
   await p.goto(`${BASE}/acesso`, { waitUntil: "networkidle2", timeout: 120000 });
-  await p.evaluate(async (senhaSite, e, s) => {
-    await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: senhaSite }) });
-    if (e) await fetch("/api/auth/entrar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: e, senha: s }) });
+  const st = await p.evaluate(async (senhaSite, e, s) => {
+    const a = await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: senhaSite }) });
+    const l = e ? await fetch("/api/auth/entrar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: e, senha: s }) }) : null;
+    return { acesso: a.status, login: l?.status ?? 200 };
   }, process.env.SITE_SENHA ?? "", email, SENHA);
+  // sem isto, toda captura sai igual (a tela de acesso restrito) e o relatório diz "0 problemas"
+  if (st.acesso !== 200 || st.login !== 200) {
+    throw new Error(`sessão ${email ?? "visitante"} não entrou: acesso ${st.acesso}, login ${st.login}`);
+  }
   return { ctx, p };
 }
 
@@ -196,11 +201,13 @@ if (opp && oppOriginal) await admin.from("opportunities").update({ responsavel_t
 await b.close();
 
 writeFileSync(join(OUT, "relatorio.json"), JSON.stringify(relatorio, null, 1));
-const problemas = relatorio.filter((r) => r.status >= 400 && r.nome !== "404" || r.erros?.length || r.rolagemHorizontal || r.estouros?.length || r.glifos?.length);
+const caiuNoBloqueio = (r) => r.nome !== "acesso" && (r.url ?? "").startsWith("/acesso");
+const problemas = relatorio.filter((r) => r.status >= 400 && r.nome !== "404" || r.erros?.length || r.rolagemHorizontal || r.estouros?.length || r.glifos?.length || caiuNoBloqueio(r));
 console.log(`${relatorio.length} capturas (${ROTAS.length} rotas × ${MODOS.length} modos); ${problemas.length} com algo a olhar`);
 for (const r of problemas) {
   console.log(`- [${r.modo}] ${r.rota} (${r.perfil}) HTTP ${r.status}` +
     (r.url && r.url !== r.rota ? ` → ${r.url}` : "") +
+    (caiuNoBloqueio(r) ? " · CAIU NA TELA DE ACESSO RESTRITO" : "") +
     (r.erros?.length ? ` · erros: ${r.erros.join(" | ")}` : "") +
     (r.rolagemHorizontal ? ` · rolagem horizontal ${r.rolagemHorizontal}px` : "") +
     (r.estouros?.length ? ` · estouros: ${r.estouros.join("; ")}` : "") +

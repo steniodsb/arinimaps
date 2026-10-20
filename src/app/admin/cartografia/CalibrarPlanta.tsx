@@ -224,7 +224,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
 
   /** Grava o estado atual no desfazer. */
   const registrar = useCallback(() => {
-    setHistorico((h) => [...h.slice(-30), { t: tRef.current, ajustes: ajustesRef.current }]);
+    // fotografa AGORA: dentro do updater a leitura dos refs acontece quando o
+    // React processa a fila, e aí `definir` já trocou tRef pelo estado novo —
+    // o desfazer guardava a posição nova e "voltava" para ela.
+    const antes: Estado = { t: tRef.current, ajustes: ajustesRef.current };
+    setHistorico((h) => [...h.slice(-30), antes]);
   }, []);
 
   /** Muda a planta inteira e/ou as partes, e redesenha uma vez. */
@@ -688,7 +692,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       else if (e.key === "z" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); desfazer(); }
       else if (e.key === "Enter" && modo === "parte") { e.preventDefault(); fecharAreaRef.current(); }
       // no desenho da área, Esc desiste da área; não fecha a calibração
-      else if (e.key === "Escape") { if (modo === "parte") cancelarDesenho(); else onFechar(); }
+      else if (e.key === "Escape") {
+        if (modo === "parte") cancelarDesenho();
+        else if (pedirConfirmacao) setPedirConfirmacao(false);
+        else fechar();
+      }
     };
     window.addEventListener("keydown", tecla);
     return () => window.removeEventListener("keydown", tecla);
@@ -818,13 +826,23 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
     return atuais.length !== salvo.ocultos.length || atuais.some((n, i) => n !== salvo.ocultos[i]);
   }, [salvo, t, ocultos, opacidade, ajustes]);
 
+  /**
+   * Fechar com calibração pendente perdia o trabalho sem aviso (X, clique fora
+   * ou Esc). Agora a barra de edição pergunta antes; sem pendência, fecha direto.
+   */
+  const [pedirConfirmacao, setPedirConfirmacao] = useState(false);
+  function fechar() {
+    if (haMudancaNaoSalva && !salvando) setPedirConfirmacao(true);
+    else onFechar();
+  }
+
   const btn = "grid w-11 h-11 place-items-center rounded-xl bg-superficie border border-linha-forte hover:bg-verde hover:border-verde hover:text-white transition-colors text-base font-semibold";
   const chip = (ativo: boolean) =>
     `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${ativo ? "bg-verde text-white border-verde" : "border-linha-forte text-texto-2 hover:text-texto hover:bg-superficie-2"}`;
   const deslocamentoTotal = Math.hypot(t.offsetLesteM, t.offsetNorteM);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onFechar}>
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={fechar}>
       <div className="bg-superficie border border-linha rounded-[1.25rem] w-full max-w-6xl max-h-[95vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-linha flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -842,7 +860,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
                 : "Clique num ponto da planta (um cruzamento, um canto de quadra).")}
             </p>
           </div>
-          <button onClick={onFechar} aria-label="Fechar" className="grid w-9 h-9 place-items-center rounded-lg text-texto-2 hover:bg-superficie-2 hover:text-texto shrink-0"><X className="size-5" /></button>
+          <button onClick={fechar} aria-label="Fechar" className="grid w-9 h-9 place-items-center rounded-lg text-texto-2 hover:bg-superficie-2 hover:text-texto shrink-0"><X className="size-5" /></button>
         </div>
 
         {/*
@@ -858,6 +876,23 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           `sticky top-0` mantém a barra à vista durante a rolagem do modal.
         */}
         <div className="sticky top-0 z-10 bg-superficie/95 backdrop-blur border-b border-linha px-6 py-3 space-y-2">
+          {pedirConfirmacao && (
+            <div role="alertdialog" aria-label="Sair sem salvar?"
+              className="flex flex-wrap items-center gap-3 rounded-xl border border-ouro/50 bg-ouro/10 px-4 py-3 text-sm">
+              <span className="font-semibold text-texto">Esta calibração tem alterações que ainda não foram salvas.</span>
+              <span className="ml-auto flex flex-wrap gap-2">
+                <button onClick={() => setPedirConfirmacao(false)} className="rounded-lg btn-contorno px-3 py-1.5 hover:bg-superficie-2">
+                  Continuar editando
+                </button>
+                <button onClick={() => { setPedirConfirmacao(false); void salvar(); }} className="btn-ouro px-3 py-1.5">
+                  Salvar agora
+                </button>
+                <button onClick={onFechar} className="rounded-lg px-3 py-1.5 font-semibold text-critico hover:bg-critico/10">
+                  Sair sem salvar
+                </button>
+              </span>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <button className={chip(modo === "mover")} onClick={() => setModo("mover")}><Move className="size-4" /> Mover planta</button>
             <button className={chip(modo === "navegar")} onClick={() => setModo("navegar")}><Hand className="size-4" /> Navegar</button>

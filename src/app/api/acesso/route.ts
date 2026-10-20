@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import { BLOQUEIO_DIAS, COOKIE_BLOQUEIO, destinoSeguro, fichaDeAcesso, senhaConfere } from "@/lib/seguranca/bloqueio";
-import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
+import { consultarLimite, ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 
 // Confere a senha de bloqueio do site e libera o navegador por 30 dias.
+// Só a senha ERRADA conta no limite: a equipe inteira sai pelo mesmo IP do
+// escritório, e 10 acertos em 15 minutos não podem trancar o 11º colega.
+// Depois de 10 erros, nem a senha certa passa até a janela virar.
 export async function POST(request: Request) {
-  const limite = await limitar(`acesso:${ipDoPedido(request)}`, 10, 15 * 60);
-  if (!limite.permitido) return respostaLimite(limite, "senha");
+  const chave = `acesso:erro:${ipDoPedido(request)}`;
+  const atual = await consultarLimite(chave, 10, 15 * 60);
+  if (!atual.permitido) return respostaLimite(atual, "senha");
 
   const body = await request.json().catch(() => null);
   const senha = typeof body?.senha === "string" ? body.senha : "";
   if (!(await senhaConfere(senha))) {
+    const limite = await limitar(chave, 10, 15 * 60);
+    if (!limite.permitido) return respostaLimite(limite, "senha");
     return NextResponse.json({ error: "Senha incorreta." }, { status: 401 });
   }
 

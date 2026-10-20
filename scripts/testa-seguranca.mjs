@@ -228,6 +228,13 @@ try {
   // =========================================================== 1. força bruta
   console.log("\n━━ Força bruta");
   {
+    // a equipe toda sai pelo mesmo IP do escritório: acertar não gasta a cota
+    const s = new Sessao("acesso-equipe");
+    const certas = [];
+    for (let i = 0; i < 12; i++) certas.push((await s.req("POST", "/api/acesso", { json: { senha: process.env.SITE_SENHA ?? "" } })).status);
+    ok("senha do site: 12 acertos seguidos do mesmo IP passam (só o erro conta)", certas.every((x) => x === 200), certas.join(","));
+  }
+  {
     const s = new Sessao("forca-acesso");
     const respostas = [];
     for (let i = 0; i < 11; i++) respostas.push((await s.req("POST", "/api/acesso", { json: { senha: `errada-${i}` } })).status);

@@ -11,7 +11,7 @@
  */
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -27,6 +27,20 @@ import { usePreferencias } from "@/lib/usePreferencias";
 export type Usuario = { nome: string; papel: string; avatar?: string | null } | null;
 
 type ItemMenu = { href: string; rotulo: string; icone: LucideIcon };
+
+/**
+ * "-19.73, -50.19", "-19,73 -50,19" ou "-19.73;-50.19" → [lat, lng]. Aceita
+ * vírgula decimal (como se escreve no Brasil) quando o separador é espaço ou ";".
+ */
+export function lerCoordenada(texto: string): [number, number] | null {
+  const t = texto.trim();
+  const m = t.match(/^(-?\d{1,2}(?:[.,]\d+)?)\s*[;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)$/)
+    ?? t.match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (!m) return null;
+  const lat = Number(m[1].replace(",", ".")), lng = Number(m[2].replace(",", "."));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return [lat, lng];
+}
 
 const MENU: ItemMenu[] = [
   { href: "/", rotulo: "Início", icone: House },
@@ -87,7 +101,25 @@ export default function AppShell({
   cheia?: boolean;
 }) {
   const caminho = usePathname();
+  const router = useRouter();
   const [menuAberto, setMenuAberto] = useState(false);
+
+  // a busca do topo era só desenho: digitava e nada acontecia (QA 19/10/2026).
+  // Coordenada → mapa no ponto (o mapa segue o #pos= da URL, inclusive já aberto);
+  // o resto → busca de imóveis, que procura em título, código e município.
+  function buscar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const termo = String(new FormData(e.currentTarget).get("q") ?? "").trim();
+    if (!termo) return;
+    const ponto = lerCoordenada(termo);
+    if (ponto) {
+      const destino = `/mapa#pos=17/${ponto[0]}/${ponto[1]}`;
+      if (caminho === "/mapa") window.location.hash = `pos=17/${ponto[0]}/${ponto[1]}`;
+      else router.push(destino);
+      return;
+    }
+    router.push(`/imoveis?q=${encodeURIComponent(termo)}`);
+  }
   // a maioria das páginas não passa a foto: vem do mesmo pedido das preferências
   const { conta } = usePreferencias();
   const avatar = usuario?.avatar !== undefined ? usuario.avatar : conta?.avatar_url ?? null;
@@ -162,14 +194,18 @@ export default function AppShell({
           <Link href="/" className="lg:hidden" aria-label="Início"><Logo compacto /></Link>
 
           {busca && (
-            <div className="relative hidden max-w-xl flex-1 sm:block">
+            <form role="search" onSubmit={buscar} className="relative hidden max-w-xl flex-1 sm:block">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-texto-2" aria-hidden />
               <input
-                placeholder="Buscar por imóvel, município, estado ou coordenada"
-                aria-label="Buscar"
+                name="q"
+                type="search"
+                enterKeyHint="search"
+                placeholder="Buscar imóvel, código, município ou coordenada"
+                aria-label="Buscar imóvel, código, município ou coordenada"
+                title="Ex.: AIB-000029, Iturama, -19.73, -50.19 — Enter para buscar"
                 className="w-full rounded-xl border border-linha-forte bg-superficie-2 py-2.5 pl-10 pr-3 text-[15px] text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30"
               />
-            </div>
+            </form>
           )}
 
           <nav aria-label="Atalhos" className="ml-2 hidden items-center gap-1 xl:flex">

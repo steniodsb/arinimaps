@@ -43,6 +43,25 @@ export async function limitar(chave: string, max: number, janelaSegundos: number
   }
 }
 
+/**
+ * Lê o contador da janela atual SEM contar uma tentativa nova. Serve para
+ * limitar só o que falhou: confere aqui antes, e chama `limitar` só no erro.
+ * Mesma janela do fn_rate_limit (epoch arredondado para baixo).
+ */
+export async function consultarLimite(chave: string, max: number, janelaSegundos: number): Promise<Limite> {
+  const inicio = Math.floor(Date.now() / 1000 / janelaSegundos) * janelaSegundos;
+  const liberaEm = new Date((inicio + janelaSegundos) * 1000);
+  try {
+    const { data, error } = await supabaseAdmin().from("rate_limits").select("total")
+      .eq("chave", chave.slice(0, 200)).eq("janela", new Date(inicio * 1000).toISOString()).maybeSingle();
+    if (error) return { permitido: true, restante: max, liberaEm: null };
+    const total = (data as { total: number } | null)?.total ?? 0;
+    return { permitido: total < max, restante: Math.max(0, max - total), liberaEm };
+  } catch {
+    return { permitido: true, restante: max, liberaEm: null };
+  }
+}
+
 /** Resposta 429 padronizada, com o tempo de espera em linguagem de gente. */
 export function respostaLimite(l: Limite, oQue: string) {
   const seg = l.liberaEm ? Math.max(1, Math.ceil((l.liberaEm.getTime() - Date.now()) / 1000)) : 60;

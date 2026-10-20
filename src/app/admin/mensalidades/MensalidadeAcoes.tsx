@@ -28,11 +28,11 @@ export default function MensalidadeAcoes() {
   return (
     <div className="flex gap-2.5 flex-wrap">
       <button disabled={ocupado} className="btn-verde px-4 py-2.5 text-sm disabled:opacity-50"
-        onClick={() => wrap({ acao: "gerar_faturas" }, (d) => `${d.geradas} fatura(s) gerada(s) para o mês atual.`)}>
+        onClick={() => wrap({ acao: "gerar_faturas" }, (d) => `${d.geradas === 1 ? "1 fatura gerada" : `${d.geradas} faturas geradas`} para o mês atual.`)}>
         Gerar faturas do mês
       </button>
       <button disabled={ocupado} className="btn-contorno px-4 py-2.5 text-sm !text-alerta !border-alerta/50 disabled:opacity-50"
-        onClick={() => wrap({ acao: "marcar_inadimplentes" }, (d) => `${d.vencidas} fatura(s) marcadas como vencidas.`)}>
+        onClick={() => wrap({ acao: "marcar_inadimplentes" }, (d) => `${d.vencidas === 1 ? "1 fatura marcada como vencida" : `${d.vencidas} faturas marcadas como vencidas`}.`)}>
         Processar inadimplência
       </button>
     </div>

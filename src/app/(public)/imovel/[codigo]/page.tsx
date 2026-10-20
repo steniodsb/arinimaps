@@ -21,7 +21,7 @@ import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
 import { registrarEventoImovel, ORIGEM_DADO_LABEL } from "@/lib/imovel/eventos";
 import { ator, temRecurso } from "@/lib/authz";
 import CartaoAvaliacaoPublico from "@/components/avaliacao/CartaoAvaliacaoPublico";
-import { CATEGORIA_POI_LABEL, formatDistancia } from "@/lib/geo/distancia";
+import { CATEGORIA_POI_LABEL, formatDistancia, formatPerimetro, nomePoi, poisOrdenados } from "@/lib/geo/distancia";
 
 type Media = { tipo: string; path: string; capa: boolean };
 
@@ -126,7 +126,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
       .order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  const pois = ((tourData as { pois?: { nome: string | null; categoria: string; distancia_m: number }[] } | null)?.pois ?? [])
+  const pois = poisOrdenados((tourData as { pois?: { nome: string | null; categoria: string; distancia_m: number }[] } | null)?.pois ?? [])
     .slice(0, 10);
   const centroid = (tourData as { centroid?: { lng: number; lat: number } } | null)?.centroid;
   const whatsapp = (typeof whats?.valor === "string" ? whats.valor : null)
@@ -265,7 +265,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                   className="h-80 w-full overflow-hidden rounded-[20px] border border-linha md:h-[26rem]" />
                 <p className="text-[15px] leading-relaxed text-texto-2">
                   Área medida no mapa: <strong className="text-texto">{formatArea(imovel.area_m2, imovel.tipo)}</strong>
-                  {imovel.perimeter_m ? ` · perímetro ${(imovel.perimeter_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km` : null}
+                  {imovel.perimeter_m ? ` · perímetro ${formatPerimetro(imovel.perimeter_m)}` : null}
                   {imovel.area_declarada ? ` · área declarada pelo anunciante: ${imovel.area_declarada.toLocaleString("pt-BR")} ${imovel.tipo === "rural" ? "ha" : "m²"}` : null}
                 </p>
               </Secao>
@@ -302,7 +302,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[15px] font-semibold text-texto">
-                            {p.nome ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}
+                            {nomePoi(p.nome) ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}
                           </span>
                           {p.nome && <span className="block text-xs text-texto-2">{CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>}
                         </span>

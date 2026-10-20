@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LinhaOrigem, SeloClassificacao, SeloSituacao, type OrigemItem } from "./Selos";
 import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 import { ChevronDown, FileText, LoaderCircle, Radar } from "lucide-react";
+import { detalhesRegistro } from "@/lib/rural/detalhes";
 
 type Item = { titulo: string; detalhe?: string; extra?: Record<string, string | number | null>; origem?: OrigemItem };
 type Consulta = {
@@ -150,8 +151,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                       {i.detalhe && <p className="text-texto-2 text-xs">{i.detalhe}</p>}
                       {i.extra && (
                         <p className="text-[11px] text-texto-2">
-                          {Object.entries(i.extra).filter(([, v]) => v !== "" && v != null)
-                            .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(" · ")}
+                          {detalhesRegistro(i.extra)}
                         </p>
                       )}
                     </div>
@@ -188,7 +188,8 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
             {pendentes.map((f) => (
               <li key={f.id} className="flex gap-2">
                 <span className="mt-2 size-1.5 shrink-0 rounded-full bg-ouro" aria-hidden />
-                <span><strong>{f.nome}</strong> ({f.orgao}) — {f.observacao}</span>
+                {/* `observacao` é anotação interna da equipe: fica no painel de Fontes, não aqui */}
+                <span><strong>{f.nome}</strong> ({f.orgao})</span>
               </li>
             ))}
           </ul>

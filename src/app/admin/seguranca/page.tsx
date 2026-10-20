@@ -15,6 +15,7 @@ import { CATEGORIA_ARQUIVO_LABEL, type CategoriaArquivo } from "@/lib/seguranca/
 import { haDias, prazosRetencao, proximaRevisao, revisaoVencida, type Candidatos } from "@/lib/seguranca/retencao";
 import { ultimaRevisao } from "@/lib/seguranca/revisao";
 import { BotoesRetencao, MarcarAlerta } from "./AcoesSeguranca";
+import { plural } from "@/lib/format";
 
 const MOTIVO_TENTATIVA: Record<string, string> = {
   sem_sessao: "Sem sessão", sem_plano: "Fora do plano", sem_setor: "Fora do setor", sem_equipe: "Não é da equipe",
@@ -180,7 +181,7 @@ export default async function PainelSeguranca() {
                 const d = (al.detalhe ?? {}) as Record<string, unknown>;
                 return (
                   <div key={al.id} className={"px-5 py-3.5 flex items-center gap-4 flex-wrap text-[0.95rem] transition-colors hover:bg-superficie-2/60 " + (al.visto_em ? "opacity-60" : "")}>
-                    <Etiqueta tom={TOM_SEVERIDADE[al.severidade] ?? "neutro"} className="w-16 justify-center">{al.severidade}</Etiqueta>
+                    <Etiqueta tom={TOM_SEVERIDADE[al.severidade] ?? "neutro"} className="w-16 justify-center">{({ alta: "alta", media: "média", baixa: "baixa" } as Record<string, string>)[al.severidade] ?? al.severidade}</Etiqueta>
                     <span className="flex-1 min-w-56">
                       <span className="font-semibold text-texto">{ALERTA_LABEL[al.tipo as TipoAlerta] ?? al.tipo}</span>
                       <span className="mt-0.5 block text-sm text-texto-2">
@@ -388,8 +389,8 @@ export default async function PainelSeguranca() {
           <div className="cartao p-6 space-y-3">
             {candidatos && (
               <p className="text-[0.95rem] text-texto">
-                Hoje passaram do prazo: <strong className="tabular-nums">{candidatos.selfies.length}</strong> selfie(s), <strong className="tabular-nums">{candidatos.documentos.length}</strong> documento(s) e{" "}
-                <strong className="tabular-nums">{Object.values(candidatos.logs ?? {}).reduce((s, n) => s + Number(n), 0)}</strong> registro(s) de acesso.
+                Hoje passaram do prazo: <strong className="tabular-nums">{plural(candidatos.selfies.length, "selfie")}</strong>, <strong className="tabular-nums">{plural(candidatos.documentos.length, "documento")}</strong> e{" "}
+                <strong className="tabular-nums">{plural(Object.values(candidatos.logs ?? {}).reduce((s, n) => s + Number(n), 0), "registro")}</strong> de acesso.
                 {prazos.executar ? " A rotina diária do worker apaga." : " A rotina diária só simula (“Descartar de verdade” desligado)."}
               </p>
             )}

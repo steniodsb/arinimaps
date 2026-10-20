@@ -418,7 +418,7 @@ export default function NovoImovel() {
           <label className={label}>Fotos (até 20)</label>
           <input type="file" accept="image/*" multiple className={input}
             onChange={(e) => setFotos(Array.from(e.target.files ?? []).slice(0, 20))} />
-          {fotos.length > 0 && <p className={ajuda}>{fotos.length} foto(s) selecionada(s). A primeira vira capa.</p>}
+          {fotos.length > 0 && <p className={ajuda}>{fotos.length === 1 ? "1 foto selecionada" : `${fotos.length} fotos selecionadas`}. A primeira vira capa.</p>}
         </div>
 
         <div>

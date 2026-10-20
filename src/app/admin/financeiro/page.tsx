@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { CircleDollarSign, Download, Receipt, Repeat, Wallet } from "lucide-react";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, plural } from "@/lib/format";
 import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, dataBR, LinkAcao } from "@/components/admin/Painel";
 import { LISTA, LISTA_VAZIA, TABELA, TABELA_CAIXA, TBODY, TH, THEAD, TR } from "@/components/admin/estilos";
 
@@ -49,7 +49,7 @@ export default async function PainelFinanceiro() {
         { rotulo: "Faturas vencidas", icone: Receipt, valor: vencidas.length, href: "/admin/mensalidades", destaque: vencidas.length > 0,
           nota: vencidas.length ? formatBRL(vencidas.reduce((s, f) => s + Number(f.valor), 0)) : undefined },
         { rotulo: "Mensalidade recorrente", icone: Repeat, valor: formatBRL(recorrente), nota: "por mês, anúncios ativos" },
-        { rotulo: "Recebido em 12 meses", icone: CircleDollarSign, valor: formatBRL(recebido12), nota: atual ? `${atual.vendas} venda(s) neste mês` : undefined },
+        { rotulo: "Recebido em 12 meses", icone: CircleDollarSign, valor: formatBRL(recebido12), nota: atual ? `${plural(atual.vendas, "venda")} neste mês` : undefined },
       ]} />
 
       <Secao titulo="Receita por mês">

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { CircleCheck, FileText, GitCompareArrows, Inbox, UserCheck } from "lucide-react";
-import { STATUS_LABEL } from "@/lib/format";
+import { STATUS_LABEL, plural } from "@/lib/format";
 import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataBR, LinkAcao } from "@/components/admin/Painel";
 import { CODIGO, LINHA_LISTA, LISTA, LISTA_VAZIA } from "@/components/admin/estilos";
 import { Etiqueta } from "@/components/ui/Pagina";
@@ -49,7 +49,7 @@ export default async function PainelOperacoes() {
         { rotulo: "Alterações propostas", icone: GitCompareArrows, valor: alteracoes.length, href: "/admin/imoveis?revisao=1", destaque: alteracoes.length > 0,
           nota: "anúncios publicados com nova versão" },
         { rotulo: "Cadastros para aprovar", icone: UserCheck, valor: parceiros + proprietarios, href: "/admin/cadastros", destaque: parceiros + proprietarios > 0,
-          nota: `${parceiros} parceiro(s) · ${proprietarios} proprietário(s)` },
+          nota: `${plural(parceiros, "parceiro")} · ${plural(proprietarios, "proprietário")}` },
         { rotulo: "Publicados neste mês", icone: CircleCheck, valor: publicadosMes },
       ]} />
 

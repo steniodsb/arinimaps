@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatArea } from "@/lib/format";
-import { CATEGORIA_POI_LABEL, formatDistancia, type PoiDistancia } from "@/lib/geo/distancia";
+import { CATEGORIA_POI_LABEL, formatDistancia, nomePoi, type PoiDistancia } from "@/lib/geo/distancia";
 import { Box, ChevronRight, Navigation, Radar } from "lucide-react";
 import { BotaoFechar, IconePoi } from "@/components/map/UiMapa";
 
@@ -194,7 +194,7 @@ export default function PainelImovel({
                     <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-superficie-2 text-texto-2">
                       <IconePoi categoria={p.categoria} className="size-3.5" />
                     </span>
-                    <span className="truncate text-texto">{p.nome ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>
+                    <span className="truncate text-texto">{nomePoi(p.nome) ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>
                   </span>
                   <span className="font-semibold tabular-nums text-texto shrink-0">{formatDistancia(p.distancia_m)}</span>
                 </li>

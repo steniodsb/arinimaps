@@ -7,7 +7,7 @@ import { Etiqueta } from "@/components/ui/Pagina";
 import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor } from "@/components/admin/Painel";
 import { CODIGO, TABELA, TABELA_CAIXA, TBODY, TD, TH, THEAD, TR } from "@/components/admin/estilos";
 
-const ORIGEM: Record<string, string> = { pagina: "Página do imóvel", whatsapp: "WhatsApp", mapa: "Mapa", indicacao: "Indicação" };
+import { LEAD_ORIGEM_LABEL as ORIGEM } from "@/lib/funil";
 
 /**
  * Marketing: de onde vêm os interessados, o que mais atrai e que material de

@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { exigirSetor } from "@/lib/setores-servidor";
 import { Filter, Handshake, Home, X } from "lucide-react";
 import { CAMPO, CabecalhoPagina, Etiqueta, ROTULO } from "@/components/ui/Pagina";
+import { humanizarCodigo } from "@/lib/textoTecnico";
 
 const ENTIDADES = ["properties", "opportunities", "leads", "proposals", "visits", "contracts", "sales", "commissions", "invoices", "subscriptions", "partners", "owners", "settings", "profiles", "property_documents", "cartography_layers", "municipalities"];
 
@@ -76,7 +77,7 @@ export default async function AdminAuditoria({ searchParams }: PageProps<"/admin
                     {new Date(l.created_at).toLocaleString("pt-BR")}
                   </td>
                   <td className="px-5 py-3.5 font-semibold text-texto">{(l.usuario as unknown as { nome: string } | null)?.nome ?? "sistema"}</td>
-                  <td className="px-5 py-3.5 font-mono text-sm text-texto">{l.acao}</td>
+                  <td className="px-5 py-3.5 text-sm text-texto" title={l.acao}>{humanizarCodigo(l.acao)}</td>
                   <td className="px-5 py-3.5"><Etiqueta tom="neutro" className="font-mono">{l.entidade}</Etiqueta></td>
                   <td className="px-5 py-3.5 text-sm">
                     <span className="flex flex-wrap gap-3">

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 import { ator, podeOperarOportunidade } from "@/lib/authz";
-import { ETAPAS } from "@/lib/funil";
+import { CONTRATO_LABEL, ETAPAS, ETAPA_LABEL, RESPONSAVEL_LABEL } from "@/lib/funil";
 import { sendEmail, ariniEmail } from "@/lib/notify";
 
 async function contexto(id: string) {
@@ -37,7 +37,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/oportunida
       return NextResponse.json({ error: "Etapa inválida." }, { status: 400 });
     }
     await admin.from("opportunities").update({ etapa }).eq("id", id);
-    await evento(id, "mudanca_etapa", `Etapa: ${antes.etapa} → ${etapa}`, a!.userId);
+    await evento(id, "mudanca_etapa", `Etapa: ${ETAPA_LABEL[antes.etapa] ?? antes.etapa} → ${ETAPA_LABEL[etapa] ?? etapa}`, a!.userId);
     // imóvel acompanha o funil: proposta em diante = em negociação
     if (["proposta_enviada", "contraproposta", "negociacao", "aceite", "contrato"].includes(etapa)) {
       await admin.from("properties").update({ status: "em_negociacao" }).eq("id", antes.property_id).eq("status", "publicado");
@@ -61,7 +61,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/oportunida
       responsavel_partner_id: responsavel_tipo === "parceiro" ? responsavel_partner_id ?? null : null,
       partner_comprador_id: partner_comprador_id ?? null,
     }).eq("id", id);
-    await evento(id, "encaminhamento", `Encaminhada para ${responsavel_tipo}`, a!.userId);
+    await evento(id, "encaminhamento", `Encaminhada para ${RESPONSAVEL_LABEL[responsavel_tipo] ?? responsavel_tipo}`, a!.userId);
     await logAudit({ user_id: a!.userId, acao: "oportunidade_encaminhada", entidade: "opportunities", entidade_id: id, opportunity_id: id, dados_depois: { responsavel_tipo, responsavel_partner_id, partner_comprador_id } });
 
     // avisa o parceiro encaminhado
@@ -110,7 +110,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/oportunidad
         .insert({ opportunity_id: id, data_hora: body.data_hora, responsavel: a!.userId })
         .select("id").single();
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-      await evento(id, "anotacao", `Visita agendada para ${new Date(body.data_hora).toLocaleString("pt-BR")}`, a!.userId);
+      await evento(id, "anotacao", `Visita agendada para ${new Date(body.data_hora).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" })}`, a!.userId);
       await logAudit({ user_id: a!.userId, acao: "visita_agendada", entidade: "visits", entidade_id: v.id, opportunity_id: id, property_id: opp.property_id });
       return NextResponse.json({ ok: true });
     }
@@ -171,7 +171,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/oportunidad
       await admin.from("contracts").upsert(
         { opportunity_id: id, status, assinado_at: status === "assinado" ? new Date().toISOString() : undefined },
         { onConflict: "opportunity_id" });
-      await evento(id, "anotacao", `Contrato: ${status}`, a!.userId);
+      await evento(id, "anotacao", `Contrato: ${(CONTRATO_LABEL[status] ?? status).toLowerCase()}`, a!.userId);
       await logAudit({ user_id: a!.userId, acao: `contrato_${status}`, entidade: "contracts", opportunity_id: id, property_id: opp.property_id });
       return NextResponse.json({ ok: true });
     }

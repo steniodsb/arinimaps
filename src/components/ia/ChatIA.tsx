@@ -230,9 +230,9 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
     <>
       {flutuante && !aberto && (
         <button type="button" onClick={abrir} aria-label="Pergunte à Arini"
-          className="group fixed bottom-5 right-5 z-50 flex h-14 items-center rounded-full pl-[17px] pr-[17px] text-[#06140D] shadow-[0_14px_34px_-12px_rgba(63,207,127,0.75)] ring-1 ring-black/10 transition-[padding] hover:pr-5 focus-visible:pr-5"
+          className="group fixed bottom-3 right-3 z-50 flex h-12 items-center rounded-full pl-[14px] pr-[14px] sm:bottom-5 sm:right-5 sm:h-14 sm:pl-[17px] sm:pr-[17px] text-[#06140D] shadow-[0_14px_34px_-12px_rgba(63,207,127,0.75)] ring-1 ring-black/10 transition-[padding] hover:pr-5 focus-visible:pr-5"
           style={{ background: "linear-gradient(180deg, #45D98A 0%, #2FA866 100%)" }}>
-          <Sparkles aria-hidden className="size-[22px] shrink-0" />
+          <Sparkles aria-hidden className="size-5 shrink-0 sm:size-[22px]" />
           <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-bold transition-[max-width,margin] duration-300 group-hover:ml-2 group-hover:max-w-40 group-focus-visible:ml-2 group-focus-visible:max-w-40">
             Pergunte à Arini
           </span>
@@ -370,7 +370,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
               </div>
               <p className="px-1 text-[10px] text-texto-2 leading-snug">
                 Respostas automáticas: confira na ficha do imóvel. Não envie dados pessoais. Conversas ficam registradas.
-                {restante != null && ` · ${restante} pergunta(s) restante(s) no mês.`}
+                {restante != null && ` · ${restante === 1 ? "1 pergunta restante" : `${restante} perguntas restantes`} no mês.`}
               </p>
             </form>
           )}

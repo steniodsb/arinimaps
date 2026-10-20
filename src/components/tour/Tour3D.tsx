@@ -188,7 +188,7 @@ export default function Tour3D(dados: TourData) {
               features: dados.pois.map((p) => ({
                 type: "Feature",
                 geometry: { type: "Point", coordinates: [p.lng, p.lat] },
-                properties: { rotulo: p.nome ?? CATEGORIA_NOME[p.categoria] ?? p.categoria },
+                properties: { rotulo: (p.nome ? p.nome.split(";").map((s) => s.trim()).join(" / ") : null) ?? CATEGORIA_NOME[p.categoria] ?? p.categoria },
               })),
             },
           });
@@ -208,7 +208,7 @@ export default function Tour3D(dados: TourData) {
           const el = document.createElement("div");
           el.className = "tour-etiqueta";
           el.innerHTML =
-            `<b>${ponto(CATEGORIA_COR[p.categoria] ?? "#FFFFFF")}${(p.nome ?? CATEGORIA_NOME[p.categoria] ?? p.categoria).replace(/[<>&]/g, "")}</b>` +
+            `<b>${ponto(CATEGORIA_COR[p.categoria] ?? "#FFFFFF")}${((p.nome ? p.nome.split(";").map((s) => s.trim()).join(" / ") : null) ?? CATEGORIA_NOME[p.categoria] ?? p.categoria).replace(/[<>&]/g, "")}</b>` +
             `<span>${distancia(p.distancia_m)}</span>`;
           new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, -8] }).setLngLat([p.lng, p.lat]).addTo(map);
         }

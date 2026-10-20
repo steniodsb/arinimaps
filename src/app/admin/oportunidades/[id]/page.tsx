@@ -1,3 +1,4 @@
+import { LEAD_ORIGEM_LABEL } from "@/lib/funil";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -48,7 +49,7 @@ export default async function OportunidadeAdmin({ params }: PageProps<"/admin/op
           <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[0.95rem] text-texto-2">
             {lead?.telefone && <span className="inline-flex items-center gap-1.5"><Phone className="size-4" />{lead.telefone}</span>}
             {lead?.email && <span className="inline-flex items-center gap-1.5"><Mail className="size-4" />{lead.email}</span>}
-            <span className="inline-flex items-center gap-1.5"><Radio className="size-4" />origem: {lead?.origem}</span>
+            <span className="inline-flex items-center gap-1.5"><Radio className="size-4" />origem: {lead?.origem ? LEAD_ORIGEM_LABEL[lead.origem] ?? lead.origem : "—"}</span>
           </p>
           {lead?.mensagem && <p className="mt-3 text-base leading-relaxed text-texto-2">“{lead.mensagem}”</p>}
         </div>

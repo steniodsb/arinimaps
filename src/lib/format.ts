@@ -20,3 +20,11 @@ export const STATUS_LABEL: Record<string, string> = {
   em_negociacao: "Em negociação", vendido: "Vendido", historico: "Histórico",
   suspenso: "Suspenso", inativo: "Inativo", reprovado: "Reprovado", leilao: "Leilão",
 };
+
+/**
+ * "1 registro" / "3 registros" — no lugar do "registro(s)" que aparecia na tela.
+ * O plural padrão é singular + "s"; passe o plural quando for irregular.
+ */
+export function plural(n: number, singular: string, pluralForma = `${singular}s`): string {
+  return `${n.toLocaleString("pt-BR")} ${Math.abs(n) === 1 ? singular : pluralForma}`;
+}

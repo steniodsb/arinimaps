@@ -4,7 +4,8 @@ import type { Lacuna } from "@/lib/ia/conhecimento";
 import { Etiqueta } from "@/components/ui/Pagina";
 import { FilePen, HelpCircle, X } from "lucide-react";
 
-const dataBR = (d: string) => new Date(d).toLocaleDateString("pt-BR");
+// data sem hora ancorada ao meio-dia: senão cai no dia anterior no horário de Brasília
+const dataBR = (d: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d}T12:00:00` : d).toLocaleDateString("pt-BR");
 
 /**
  * "Perguntas sem resposta": o que o assistente não soube responder, das mais

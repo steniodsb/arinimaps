@@ -9,6 +9,7 @@ import {
 import { AvisoErro } from "@/components/ui/Aviso";
 import { CAMPO, Etiqueta, ROTULO, Vazio } from "@/components/ui/Pagina";
 import { ChevronDown, Layers, Plus, Save, Star, Users, X } from "lucide-react";
+import { plural } from "@/lib/format";
 
 const GRUPOS = Object.keys(GRUPO_RECURSO_LABEL) as Recurso["grupo"][];
 const input = CAMPO + " disabled:opacity-60";
@@ -91,7 +92,7 @@ function FormPlano({
             {novo ? "Novo plano" : f.nome || f.id}
             {!novo && <span className="ml-2 font-mono text-xs font-normal text-texto-2">{f.id}</span>}
           </p>
-          {!novo && <p className="mt-0.5 text-sm text-texto-2 tabular-nums">{f.recursos.length} recurso(s) · ordem {f.ordem}</p>}
+          {!novo && <p className="mt-0.5 text-sm text-texto-2 tabular-nums">{plural(f.recursos.length, "recurso")} · ordem {f.ordem}</p>}
         </div>
         {!novo && (
           <>
@@ -99,7 +100,7 @@ function FormPlano({
             <Etiqueta tom={f.ativo ? "verde" : "neutro"}>
               {f.ativo ? "ativo" : "inativo"}
             </Etiqueta>
-            <Etiqueta tom="neutro" className="tabular-nums"><Users className="size-3.5" /> {contas} conta(s)</Etiqueta>
+            <Etiqueta tom="neutro" className="tabular-nums"><Users className="size-3.5" /> {plural(contas, "conta")}</Etiqueta>
           </>
         )}
         <ChevronDown className={"size-5 text-texto-2 transition-transform " + (aberto ? "rotate-180" : "")} aria-hidden />

@@ -60,7 +60,7 @@ export default function BotaoConsultarArea({
     const falharam = Array.isArray(data.falharam) ? data.falharam : [];
     setMsg(
       falharam.length
-        ? `${falharam.length} fonte(s) não responderam e aparecem como indisponíveis.`
+        ? (falharam.length === 1 ? "1 fonte não respondeu e aparece como indisponível." : `${falharam.length} fontes não responderam e aparecem como indisponíveis.`)
         : data.consultadas === 0 ? "Os dados já estavam atualizados." : ""
     );
     router.refresh();

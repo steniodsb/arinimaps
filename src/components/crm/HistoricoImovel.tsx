@@ -6,6 +6,8 @@ import { CAMPO_REVISAO_LABEL, valorRevisao } from "@/lib/imovel/revisao";
 import ValidarGeometria from "./ValidarGeometria";
 import { Fingerprint, Layers, GitCompare, ScrollText, Eye, type LucideIcon } from "lucide-react";
 import { Etiqueta } from "@/components/ui/Pagina";
+import { formatPerimetro } from "@/lib/geo/distancia";
+import { humanizarCodigo, resumoCampos } from "@/lib/textoTecnico";
 
 /**
  * Histórico e rastreabilidade do imóvel (requisitos cartográficos §1.1–1.5):
@@ -73,12 +75,7 @@ const quando = (d: string | null | undefined) =>
 /** Resumo curto de um registro da auditoria (sem despejar o JSON inteiro). */
 function resumoAuditoria(a: Auditoria): string {
   const d = (a.dados_depois ?? a.dados_antes) as Record<string, unknown> | null;
-  if (!d || typeof d !== "object") return a.entidade;
-  const partes = Object.entries(d)
-    .filter(([, v]) => v !== null && v !== undefined && v !== "" && typeof v !== "object")
-    .slice(0, 4)
-    .map(([k, v]) => `${k.replace(/_/g, " ")}: ${String(v).slice(0, 60)}`);
-  return partes.length ? partes.join(" · ") : a.entidade;
+  return resumoCampos(d) || humanizarCodigo(a.entidade);
 }
 
 export default async function HistoricoImovel({ propertyId, modo, tipoImovel = "rural" }: Props) {
@@ -196,7 +193,7 @@ export default async function HistoricoImovel({ propertyId, modo, tipoImovel = "
                 </Etiqueta>
                 <span className="text-[0.95rem] font-semibold tabular-nums text-texto">{formatArea(v.area_m2, tipoImovel)}</span>
                 {v.perimeter_m != null && (
-                  <span className="text-xs text-texto-2 tabular-nums">perímetro {(Number(v.perimeter_m) / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} km</span>
+                  <span className="text-xs text-texto-2 tabular-nums">perímetro {formatPerimetro(v.perimeter_m)}</span>
                 )}
                 <span className="text-xs text-texto-2">{ORIGEM_DADO_LABEL[v.origem] ?? v.origem} · {v.fonte}</span>
                 <span className="ml-auto text-xs text-texto-2 tabular-nums">{quando(v.created_at)}{v.responsavel ? ` · ${nome(v.responsavel)}` : ""}</span>
@@ -262,7 +259,7 @@ export default async function HistoricoImovel({ propertyId, modo, tipoImovel = "
           <ul className="max-h-96 divide-y divide-linha overflow-y-auto rounded-xl border border-linha">
             {audit.map((a) => (
               <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 py-3">
-                <span className="text-[0.95rem] font-semibold text-texto">{a.acao.replace(/_/g, " ")}</span>
+                <span className="text-[0.95rem] font-semibold text-texto">{humanizarCodigo(a.acao)}</span>
                 <span className="text-xs text-texto-2">{nome(a.user_id)}</span>
                 <span className="ml-auto text-xs text-texto-2 tabular-nums">{quando(a.created_at)}</span>
                 <p className="w-full truncate text-xs text-texto-2" title={resumoAuditoria(a)}>{resumoAuditoria(a)}</p>
@@ -286,7 +283,7 @@ export default async function HistoricoImovel({ propertyId, modo, tipoImovel = "
                   {e.ip && <span className="font-mono text-xs text-texto-2">{e.ip}</span>}
                   {e.detalhe && Object.keys(e.detalhe).length > 0 && (
                     <span className="max-w-xs truncate text-xs text-texto-2">
-                      {Object.entries(e.detalhe).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}: ${String(v)}`).join(" · ")}
+                      {resumoCampos(e.detalhe as Record<string, unknown>)}
                     </span>
                   )}
                   <span className="ml-auto text-xs text-texto-2 tabular-nums">{quando(e.created_at)}</span>

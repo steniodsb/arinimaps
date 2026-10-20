@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
+import { ETAPAS, ETAPA_LABEL, LEAD_ORIGEM_LABEL } from "@/lib/funil";
 import { formatBRL } from "@/lib/format";
 import { exigirSetor } from "@/lib/setores-servidor";
 import {
@@ -78,7 +78,7 @@ export default async function AdminRelatorios() {
           <div className="cartao p-6 text-[0.95rem]">
             {[...porOrigem.entries()].map(([origem, n]) => (
               <p key={origem} className="flex justify-between gap-3 border-b border-linha py-2.5 last:border-0">
-                <span className="capitalize text-texto-2">{origem}</span>
+                <span className="text-texto-2">{LEAD_ORIGEM_LABEL[origem] ?? origem}</span>
                 <span className="font-semibold tabular-nums text-texto">{n}</span>
               </p>
             ))}

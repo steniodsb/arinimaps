@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { urlArquivo } from "@/lib/seguranca/link-arquivo";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { formatBRL, formatArea, STATUS_LABEL } from "@/lib/format";
+import { formatBRL, formatArea, STATUS_LABEL, plural } from "@/lib/format";
 import MiniMapa from "@/components/map/MiniMapa";
 import DecisaoBotoes from "./DecisaoBotoes";
 import RevisaoBotoes from "./RevisaoBotoes";
@@ -194,7 +194,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
               {divergencia > 0.1 && " — confirmar com o anunciante"}
             </Item>
           )}
-          <Item estado={media?.length ? "ok" : "aviso"}>{media?.length ?? 0} foto(s)</Item>
+          <Item estado={media?.length ? "ok" : "aviso"}>{plural(media?.length ?? 0, "foto")}</Item>
           <Item estado={matriculaConferida ? "ok" : temMatricula ? "espera" : "erro"}>
             {ehLeilao ? "Documento do leilão" : "Comprovação de propriedade"}:{" "}
             {matriculaConferida

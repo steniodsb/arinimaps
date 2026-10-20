@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ETAPAS, ETAPA_LABEL } from "@/lib/funil";
+import { CONTRATO_LABEL, ETAPAS, ETAPA_LABEL, humanizarEvento } from "@/lib/funil";
 import { Workflow, CalendarDays, HandCoins, FileSignature, BadgeDollarSign, MessagesSquare, Paperclip, Download, type LucideIcon } from "lucide-react";
 import { CAMPO, Etiqueta } from "@/components/ui/Pagina";
 
@@ -123,7 +123,7 @@ export default function OportunidadeClient(props: Props) {
         <div className="space-y-2">
           {props.visitas.map((v) => (
             <div key={v.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-superficie-2 px-4 py-3 text-[0.95rem]">
-              <span className="flex-1">{new Date(v.data_hora).toLocaleString("pt-BR")} — <strong>{v.status}</strong>{v.feedback ? ` · ${v.feedback}` : ""}</span>
+              <span className="flex-1">{new Date(v.data_hora).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })} — <strong>{v.status}</strong>{v.feedback ? ` · ${v.feedback}` : ""}</span>
               {v.status === "agendada" && (
                 <span className="flex gap-1">
                   {(["realizada", "remarcada", "nao_compareceu"] as const).map((s) => (
@@ -202,12 +202,12 @@ export default function OportunidadeClient(props: Props) {
           <div className="space-y-2">
             <Titulo icone={FileSignature}>Contrato</Titulo>
             <div className="flex flex-wrap gap-2 items-center text-sm">
-              <span>Status: <strong>{props.contrato?.status ?? "sem contrato"}</strong></span>
+              <span>Status: <strong>{props.contrato ? CONTRATO_LABEL[props.contrato.status] ?? props.contrato.status : "sem contrato"}</strong></span>
               {(["em_elaboracao", "assinado", "registrado"] as const).map((s) => (
                 <button key={s} disabled={ocupado}
                   className="btn-contorno px-2.5 py-1.5 text-xs"
                   onClick={() => chamar("POST", { tipo: "contrato_status", status: s })}>
-                  {s.replace("_", " ")}
+                  {CONTRATO_LABEL[s]}
                 </button>
               ))}
             </div>
@@ -296,7 +296,7 @@ export default function OportunidadeClient(props: Props) {
               <span className="text-xs text-texto-2 tabular-nums shrink-0 w-32">
                 {new Date(e.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
               </span>
-              <span className="flex-1">{e.descricao}{e.autor ? <span className="text-texto-2"> — {e.autor}</span> : null}</span>
+              <span className="flex-1">{humanizarEvento(e.descricao)}{e.autor ? <span className="text-texto-2"> — {e.autor}</span> : null}</span>
             </li>
           ))}
           {!props.eventos.length && <p className="text-xs text-texto-2">Sem eventos ainda.</p>}

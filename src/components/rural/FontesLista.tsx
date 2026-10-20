@@ -16,6 +16,7 @@
 import { LinhaOrigem, SeloClassificacao, SeloSituacao, type OrigemItem } from "./Selos";
 import { Etiqueta } from "@/components/ui/Pagina";
 import { CircleCheck, CircleDashed, Database, TriangleAlert } from "lucide-react";
+import { detalhesRegistro } from "@/lib/rural/detalhes";
 
 export type ItemFonte = {
   titulo: string; detalhe?: string;
@@ -90,10 +91,7 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
                     {i.detalhe && <p className="text-sm text-texto-2">{i.detalhe}</p>}
                     {i.extra && (
                       <p className="text-[11px] text-texto-2">
-                        {Object.entries(i.extra)
-                          .filter(([, v]) => v !== "" && v != null)
-                          .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)
-                          .join(" · ")}
+                        {detalhesRegistro(i.extra)}
                       </p>
                     )}
                     {/* item com origem própria (diferente da do bloco) mostra a dele */}

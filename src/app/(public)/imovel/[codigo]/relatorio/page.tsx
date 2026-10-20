@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { formatBRL, formatArea } from "@/lib/format";
+import { formatBRL, formatArea, plural } from "@/lib/format";
 import { lerConfiguracoes, texto } from "@/lib/settings";
 import BotoesRelatorio from "./BotoesRelatorio";
 import { currentUser } from "@/lib/supabase/server";
 import { registrarEventoImovel } from "@/lib/imovel/eventos";
+import { formatDistancia, formatPerimetro, nomePoi, poisOrdenados } from "@/lib/geo/distancia";
+import { detalhesRegistro } from "@/lib/rural/detalhes";
 
 export const metadata: Metadata = { title: "Relatório Territorial" };
 
@@ -47,13 +49,13 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
 
   const municipio = imovel.municipality as unknown as { nome: string; uf: string } | null;
   const fontes = ((relatorio as { fontes?: Fonte[] } | null)?.fontes ?? []);
-  const pois = ((tour as { pois?: { nome: string | null; categoria: string; distancia_m: number }[] } | null)?.pois ?? []);
+  const pois = poisOrdenados((tour as { pois?: { nome: string | null; categoria: string; distancia_m: number }[] } | null)?.pois ?? []);
   const consultadoEm = fontes.map((f) => f.consulta?.consultado_em).filter(Boolean).sort().at(-1);
   const benfeitorias = (imovel.caracteristicas as { benfeitorias?: string[] } | null)?.benfeitorias ?? [];
 
   const resumo = [
     { rotulo: "Área total", valor: formatArea(geo?.area_m2 ?? null, imovel.tipo as "urbano" | "rural") },
-    { rotulo: "Perímetro", valor: geo?.perimeter_m ? `${(geo.perimeter_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} km` : "—" },
+    { rotulo: "Perímetro", valor: formatPerimetro(geo?.perimeter_m) },
     { rotulo: "Município", valor: municipio ? `${municipio.nome} / ${municipio.uf}` : "—" },
     { rotulo: "Valor anunciado", valor: formatBRL(imovel.valor) },
   ];
@@ -123,7 +125,7 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
                 const itens = c?.resultado?.itens ?? [];
                 const estado = !c ? "sem consulta"
                   : c.erro ? "fonte indisponível"
-                  : c.quantidade > 0 ? `${c.quantidade} registro(s)`
+                  : c.quantidade > 0 ? plural(c.quantidade, "registro")
                   : "nenhuma incidência";
                 return (
                   <div key={f.id} className="cartao p-5 md:p-6 print:border print:border-gray-300 print:bg-white print:p-4 break-inside-avoid">
@@ -155,17 +157,14 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
                             {i.detalhe && <p className="text-xs text-texto-2 print:text-gray-600">{i.detalhe}</p>}
                             {i.extra && (
                               <p className="text-[11px] text-texto-2 print:text-gray-500">
-                                {Object.entries(i.extra)
-                                  .filter(([, v]) => v !== "" && v != null)
-                                  .map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`)
-                                  .join(" · ")}
+                                {detalhesRegistro(i.extra)}
                               </p>
                             )}
                           </li>
                         ))}
                         {itens.length > 12 && (
                           <li className="text-xs text-texto-2 print:text-gray-600">
-                            … e mais {itens.length - 12} registro(s) no sistema.
+                            … e mais {plural(itens.length - 12, "registro")} no sistema.
                           </li>
                         )}
                       </ul>
@@ -193,9 +192,9 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
             <div className="grid gap-3 sm:grid-cols-2 print:gap-2">
               {pois.slice(0, 12).map((p, i) => (
                 <div key={i} className="cartao flex justify-between gap-3 px-5 py-3.5 text-[15px] print:border print:border-gray-300 print:bg-white print:px-3.5 print:py-2 print:text-sm">
-                  <span>{p.nome ?? CATEGORIA_LABEL[p.categoria] ?? p.categoria}</span>
+                  <span>{nomePoi(p.nome) ?? CATEGORIA_LABEL[p.categoria] ?? p.categoria}</span>
                   <span className="shrink-0 font-semibold tabular-nums text-texto-2 print:font-normal print:text-gray-600">
-                    {(p.distancia_m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km
+                    {formatDistancia(p.distancia_m)}
                   </span>
                 </div>
               ))}
@@ -225,10 +224,15 @@ export default async function RelatorioTerritorial({ params }: PageProps<"/imove
             <h2 className="lp-display mb-4 text-xl text-texto md:text-2xl print:mb-3 print:text-xs print:font-semibold print:uppercase print:tracking-[0.18em] print:text-gray-700">
               Fontes não incluídas nesta análise
             </h2>
+            {/* a `observacao` da fonte é anotação da equipe (reCAPTCHA, "definir com o Carlos"…):
+                no relatório do cliente vai só o nome e o órgão */}
+            <p className="mb-3 text-[15px] text-texto-2 print:mb-2 print:text-sm print:text-gray-600">
+              Estas bases ainda não estão integradas ao sistema e não foram consultadas para este imóvel.
+            </p>
             <ul className="space-y-2 text-[15px] print:space-y-1.5 print:text-sm">
               {pendentes.map((f) => (
                 <li key={f.id} className="text-texto-2 print:text-gray-600">
-                  <strong className="text-texto print:text-black">{f.nome}</strong> ({f.orgao}) — {f.observacao}
+                  <strong className="text-texto print:text-black">{f.nome}</strong> ({f.orgao})
                 </li>
               ))}
             </ul>

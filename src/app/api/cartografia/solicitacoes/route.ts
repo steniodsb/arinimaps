@@ -152,7 +152,7 @@ export async function POST(request: Request) {
     descricao: [
       descricao || null,
       referenciaRotulo ? `Referência: ${referenciaRotulo}` : null,
-      salvos.length ? `${salvos.length} arquivo(s) anexado(s)` : null,
+      salvos.length ? (salvos.length === 1 ? "1 arquivo anexado" : `${salvos.length} arquivos anexados`) : null,
       `Abrir: /admin/cartografia/solicitacoes/${req.id}`,
     ].filter(Boolean).join("\n").slice(0, 4000),
     setor: "cartografia",

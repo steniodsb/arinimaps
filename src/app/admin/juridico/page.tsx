@@ -7,6 +7,7 @@ import { ExternalLink, FilePen, FileSignature, Shield, TriangleAlert } from "luc
 import { Etiqueta } from "@/components/ui/Pagina";
 import { CabecalhoSetor, Indicadores, Secao, TarefasDoSetor, contar, dataBR, dataHoraBR } from "@/components/admin/Painel";
 import { CODIGO, LISTA, LISTA_VAZIA, TABELA, TABELA_CAIXA, TBODY, TH, THEAD, TR } from "@/components/admin/estilos";
+import { plural } from "@/lib/format";
 
 const CONDICAO: Record<string, string> = {
   autorizacao: "Autorização de venda", exclusividade: "Exclusividade Arini", parceiro: "Imóvel de parceiro",
@@ -77,13 +78,13 @@ export default async function PainelJuridico() {
               </Link>
               <Etiqueta>versão {d.versao} · desde {d.vigencia}</Etiqueta>
               <span className="text-sm font-semibold text-texto tabular-nums w-28 text-right">
-                {aceites.get(`${d.id}@${d.versao}`) ?? 0} conta(s)
+                {plural(aceites.get(`${d.id}@${d.versao}`) ?? 0, "conta")}
               </span>
             </div>
           ))}
         </div>
         <p className="text-sm leading-relaxed text-texto-2 max-w-4xl">
-          A contagem é de contas que aceitaram a versão vigente no cadastro. {semAceite} conta(s) externas são anteriores
+          A contagem é de contas que aceitaram a versão vigente no cadastro. {plural(semAceite, "conta externa", "contas externas")} são anteriores
           aos termos e não têm aceite registrado. Autorização, exclusividade e remuneração são aceitas por imóvel (abaixo).
           Para mudar um texto, o desenvolvedor sobe a versão: quem já aceitou continua ligado à versão que leu.
         </p>

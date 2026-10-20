@@ -10,6 +10,7 @@ import type { ErroApi } from "@/lib/api/enviar";
 import {
   ARQUIVOS_ACEITOS, TIPO_SOLICITACAO_LABEL, TIPOS_SOLICITACAO, tamanhoLegivel, type TipoSolicitacao,
 } from "@/lib/cartografia/solicitacoes";
+import { plural } from "@/lib/format";
 
 const DesenhoMapa = dynamic(() => import("@/components/map/DesenhoMapa"), { ssr: false });
 
@@ -225,7 +226,7 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
                   onClick={() => setArquivos((atuais) => atuais.filter((_, j) => j !== i))}><X className="size-3.5" /> remover</button>
               </li>
             ))}
-            <li className="px-4 text-xs text-texto-2">{arquivos.length} arquivo(s) · {tamanhoLegivel(totalBytes)}</li>
+            <li className="px-4 text-xs text-texto-2">{plural(arquivos.length, "arquivo")} · {tamanhoLegivel(totalBytes)}</li>
           </ul>
         )}
       </div>

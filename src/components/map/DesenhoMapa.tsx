@@ -5,6 +5,7 @@ import type { Map as MLMap, MapMouseEvent, GeoJSONSource } from "maplibre-gl";
 import { ESTILO_BASE, CENTRO_REGIAO } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { Eraser, MapPin, PenLine, Upload } from "lucide-react";
+import { plural } from "@/lib/format";
 
 export type GeometriaEscolhida = {
   geometry: GeoJSON.Geometry;
@@ -123,7 +124,7 @@ export default function DesenhoMapa({ onChange, inicial }: Props) {
           const novos = [...verticesRef.current, lngLat];
           setVertices(novos);
           render(null, novos);
-          setMsg(`${novos.length} vértice(s) — duplo clique para fechar o polígono.`);
+          setMsg(`${plural(novos.length, "vértice")} — duplo clique para fechar o polígono.`);
         }
       });
 

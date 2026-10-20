@@ -49,7 +49,7 @@ export default function ConfiguracoesForm({
     const data = await res.json().catch(() => ({}));
     setSalvando(false);
     if (res.ok) {
-      setMsg(`${data.salvos} configuração(ões) salva(s). As mudanças já valem no site.`);
+      setMsg(`${data.salvos === 1 ? "1 configuração salva" : `${data.salvos} configurações salvas`}. As mudanças já valem no site.`);
       setSujo(new Set());
       router.refresh();
     } else setErro(data.error ?? "Falha ao salvar.");

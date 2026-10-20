@@ -5,7 +5,7 @@ import Moldura from "@/components/shell/Moldura";
 import { BotaoLink, CabecalhoPagina, Conteudo, Etiqueta, Vazio } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
-import { formatArea } from "@/lib/format";
+import { formatArea, plural } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -80,8 +80,8 @@ export default async function Relatorios() {
                         <>
                           <Etiqueta tom={info.incidencias ? "ouro" : "verde"} className="!whitespace-normal">
                             {info.incidencias
-                              ? `${info.incidencias} incidência(s) em ${info.fontes} fonte(s)`
-                              : `sem incidências em ${info.fontes} fonte(s)`}
+                              ? `${plural(info.incidencias, "incidência")} em ${plural(info.fontes, "fonte")}`
+                              : `sem incidências em ${plural(info.fontes, "fonte")}`}
                           </Etiqueta>
                           {info.ultima && (
                             <span className="text-xs text-texto-2">

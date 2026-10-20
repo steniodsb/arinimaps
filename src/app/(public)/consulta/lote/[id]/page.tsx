@@ -8,7 +8,7 @@ import { IconePoi } from "@/components/map/UiMapa";
 import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica, Secao } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
-import { CATEGORIA_POI_LABEL, formatDistancia, type PoiDistancia } from "@/lib/geo/distancia";
+import { CATEGORIA_POI_LABEL, formatDistancia, nomePoi, type PoiDistancia } from "@/lib/geo/distancia";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Consulta de lote urbano" };
@@ -116,7 +116,7 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-texto">
-                        {poi.nome ?? CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}
+                        {nomePoi(poi.nome) ?? CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}
                       </span>
                       {poi.nome && <span className="block text-xs text-texto-2">{CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}</span>}
                     </span>

@@ -46,6 +46,8 @@ export default async function Moldura({
       <SiteHeader />
       <main className="flex flex-1 flex-col">{children}</main>
       <RodapeSite marca={texto(cfg, "nome_sistema", "Arini Imóveis Brasil")} contato={contato} />
+      {/* respiro no fim da página: o botão flutuante do assistente não cobre o rodapé */}
+      <div aria-hidden className="h-16 sm:h-0" />
       <ChatIA flutuante />
     </div>
   );

@@ -149,6 +149,12 @@ export async function TarefasDoSetor({ setor, souEu }: { setor: SetorId; souEu: 
   );
 }
 
-export const dataBR = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—");
+/**
+ * Data sem hora ("2026-08-25", coluna `date`) vira meia-noite UTC no `new Date`
+ * e aparecia como o dia ANTERIOR no horário de Brasília (venda em 24/08 numa
+ * tela e 25/08 na outra). Ancorada ao meio-dia, cai no dia certo em qualquer fuso.
+ */
+export const paraData = (d: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d}T12:00:00` : d);
+export const dataBR = (d: string | null | undefined) => (d ? paraData(d).toLocaleDateString("pt-BR") : "—");
 export const dataHoraBR = (d: string | null | undefined) =>
   d ? new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";

@@ -6,6 +6,7 @@ import { PAPEL_LABEL } from "@/lib/perfis";
 import PlanosAdmin from "./PlanosAdmin";
 import { CabecalhoPagina, Etiqueta, Secao } from "@/components/ui/Pagina";
 import { Users } from "lucide-react";
+import { plural } from "@/lib/format";
 
 /**
  * Planos e nichos (pedido do Carlos, 05/10/2026). O que cada plano libera é
@@ -65,7 +66,7 @@ export default async function AdminPlanos() {
                   </p>
                 </div>
                 <Etiqueta tom="neutro" className="tabular-nums">
-                  <Users className="size-3.5" /> {porNicho[n.id] ?? 0} conta(s)
+                  <Users className="size-3.5" /> {plural(porNicho[n.id] ?? 0, "conta")}
                 </Etiqueta>
               </div>
             );

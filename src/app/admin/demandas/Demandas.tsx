@@ -25,7 +25,8 @@ type Membro = { user_id: string; nome: string };
 
 const SITUACAO: Record<string, string> = { aberta: "Aberta", atendida: "Atendida", cancelada: "Cancelada" };
 const brl = (v: number | null) => (v == null ? null : Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }));
-const dataBR = (d: string | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—");
+// data sem hora ancorada ao meio-dia: senão cai no dia anterior no horário de Brasília
+const dataBR = (d: string | null) => (d ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d}T12:00:00` : d).toLocaleDateString("pt-BR") : "—");
 
 function faixa(min: number | null, max: number | null, fmt: (v: number | null) => string | null) {
   if (min == null && max == null) return null;

@@ -36,3 +36,25 @@ export function distanciaM(a: [number, number], b: [number, number]): number {
 }
 
 export type PoiDistancia = { nome: string | null; categoria: string; distancia_m: number; destaque?: boolean };
+
+/** Perímetro: metros inteiros abaixo de 1 km ("87 m", não "0,09 km"). */
+export function formatPerimetro(metros: number | null | undefined): string {
+  if (metros == null || !Number.isFinite(Number(metros))) return "—";
+  const m = Number(metros);
+  if (m < 1000) return `${Math.round(m).toLocaleString("pt-BR")} m`;
+  return `${(m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} km`;
+}
+
+/**
+ * Nome do ponto como veio do OpenStreetMap: rodovia com várias siglas chega
+ * como "BR-497;MG-497" (o ";" é separador do OSM, não texto).
+ */
+export function nomePoi(nome: string | null | undefined): string | null {
+  if (!nome) return null;
+  return nome.split(";").map((s) => s.trim()).filter(Boolean).join(" / ");
+}
+
+/** Mais perto primeiro: a lista vinha na ordem do job que gerou os pontos. */
+export function poisOrdenados<T extends { distancia_m: number }>(pois: T[]): T[] {
+  return [...pois].sort((a, b) => Number(a.distancia_m) - Number(b.distancia_m));
+}

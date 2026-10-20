@@ -6,6 +6,7 @@ import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
 import { CAMPO, ROTULO } from "@/components/ui/Pagina";
 import { Check, CheckCheck, CheckCircle2, FlaskConical, Play } from "lucide-react";
+import { plural } from "@/lib/format";
 
 const BOTAO = "btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2 text-sm disabled:opacity-50";
 const BOTAO_VERDE = "btn-verde inline-flex items-center gap-2 px-5 py-3 text-sm disabled:opacity-50";
@@ -48,7 +49,7 @@ export function BotoesRetencao({ executar }: { executar: boolean }) {
     if (!r.ok) { setErro(r.erro); return; }
     if (acao === "simular") {
       const logs = Object.values(r.dados.logs ?? {}).reduce((s, n) => s + Number(n), 0);
-      setResultado(`Simulação: ${r.dados.selfies ?? 0} selfie(s), ${r.dados.documentos ?? 0} documento(s) e ${logs} registro(s) de acesso passaram do prazo. Nada foi apagado.`);
+      setResultado(`Simulação: ${plural(r.dados.selfies ?? 0, "selfie")}, ${plural(r.dados.documentos ?? 0, "documento")} e ${plural(logs, "registro")} de acesso passaram do prazo. Nada foi apagado.`);
     } else {
       setResultado(executar ? "Rotina na fila: o worker descarta na próxima rodada." : "Rotina na fila: o worker registra a simulação na próxima rodada.");
     }

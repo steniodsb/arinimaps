@@ -1044,9 +1044,14 @@ export default function MapaRegional({
             {FAIXAS_PRECO.map((f, i) => <option key={f.label} value={i}>{f.label}</option>)}
           </select>
 
-          <p className="text-sm text-texto-2">
-            <span className="font-display text-base font-bold text-texto tabular-nums">{ativos}</span>{" "}
-            {ativos === 1 ? "imóvel disponível" : "imóveis disponíveis"}
+          {/* antes de a lista chegar, "0 imóveis disponíveis" parecia mapa vazio */}
+          <p className="text-sm text-texto-2" aria-live="polite">
+            {pronto ? (
+              <>
+                <span className="font-display text-base font-bold text-texto tabular-nums">{ativos}</span>{" "}
+                {ativos === 1 ? "imóvel disponível" : "imóveis disponíveis"}
+              </>
+            ) : "Carregando imóveis…"}
           </p>
         </div>
 

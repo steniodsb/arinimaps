@@ -58,7 +58,7 @@ Serviços externos e bases oficiais que alimentam o mapa, os avisos e o relatór
 
 | # | Pendência | Situação | Quem | Depende de | Origem |
 |---|---|---|---|---|---|
-| 3.1 | **Satélite licenciado (Esri)** — Decidido em 23/09 (Esri Location Platform; 2 milhões de tiles/mês grátis). Conta e chave restrita ao domínio; depois, conferir nuvem em cada município. | Pendente | Stênio | 1.3 | — |
+| 3.1 | **Satélite licenciado (Esri)** — Decidido em 23/09 (Esri Location Platform; 2 milhões de tiles/mês grátis). Conta "arinimaps" no ArcGIS Location Platform (pagamento por uso desligado) e chave criada em 19/10/2026 (Mapas Base, referenciadores arinibrasil.com.br, www e localhost:3000; **vence em 18/10/2027**, renovar antes). Falta conferir nuvem em cada município. | Parcial | Stênio | 1.3 | — |
 | 3.2 | **E-mails automáticos (Resend)** — Novo interessado, imóvel aprovado, recuperação de senha e alertas. | Bloqueado | Stênio | 1.3 | — |
 | 3.3 | **Cobrança (Asaas)** — Mensalidade do anúncio e assinatura da consulta, com baixa automática. | Bloqueado | Carlos | 8.3 | Call |
 | 3.4 | **SIGEF, IBAMA embargos, quilombolas e IPHAN** — Consultados ao vivo no relatório territorial: SIGEF e SNCI pelo serviço do INCRA, embargos pelo ArcGIS do IBAMA, quilombolas pela base do INCRA republicada pelo IBAMA e patrimônio pelo serviço do IPHAN. Na região de Iturama: 4.170 parcelas SIGEF, 21 embargos, 19 bens do IPHAN, nenhum território quilombola. O serviço do INCRA declara “vedado o uso comercial”: validar com o jurídico. | Validar | Stênio e Carlos | — | APIs |
@@ -69,7 +69,7 @@ Serviços externos e bases oficiais que alimentam o mapa, os avisos e o relatór
 | 3.9 | **Rodovias (DNIT e DER/MG)** — Federais (versão vigente do cadastro nacional) e estaduais (base que o DNIT publica, com as do DER/MG) entram ao vivo no relatório; 15 rodovias na região. O DER/MG não publica serviço próprio. | Validar | Stênio | — | APIs |
 | 3.10 | **ANEEL e ANM** — A ANM voltou a responder (127 processos na região). A ANEEL agora traz linhas de transmissão e subestações, além das usinas (7 linhas e a UHE Água Vermelha na região). | Validar | Stênio | — | APIs |
 | 3.11 | **API de avaliação de imóveis** — Base para a pré-avaliação de valor. | Bloqueado | Carlos | 8.4 | Call · Melhorias 18 |
-| 3.12 | **Chave de inteligência artificial** — Modelo decidido em 08/10: Claude Haiku 5.5 (~R$ 0,005 por pergunta), com cotas por plano (20 a 2.000/mês) e limite de conversas simultâneas. Falta a conta e a chave da Anthropic. | Bloqueado | Carlos | — | Call |
+| 3.12 | **Chave de inteligência artificial** — Modelo decidido em 08/10: Claude Haiku 5.5 (~R$ 0,005 por pergunta), com cotas por plano (20 a 2.000/mês) e limite de conversas simultâneas. Chave da Anthropic na Vercel desde 19/10/2026. | Validar | Stênio | — | Call |
 | 3.13 | **Busca por matrícula** — “Fazenda Santa Maria, matrícula X”: definir a fonte, já que matrícula fica nos cartórios. | Bloqueado | Stênio e Carlos | 8.12 | Call · Melhorias 16 |
 | 3.14 | **Matriz técnica das fontes** — Para cada fonte: órgão, endereço oficial, tipo de acesso, autenticação, custo, limites, licença, atualização, campos e situação medida. Em docs/FONTES.md e na tela Fontes oficiais (Cartografia). | Validar | Stênio e Carlos | — | APIs · Melhorias 19 |
 | 3.15 | **Origem e data de cada informação** — Cada bloco do relatório mostra órgão, base, selo (oficial, terceiro, derivado ou informado pelo usuário), data da consulta e, quando o órgão informa, a data ou versão da base. | Validar | Stênio e Carlos | — | APIs · Melhorias 19 |

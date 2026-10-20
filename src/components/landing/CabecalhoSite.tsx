@@ -16,7 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
-import { ArrowRight, LogIn, Mail, Menu, MessageCircle, X } from "lucide-react";
+import { ArrowRight, LogIn, Mail, Menu, MessageCircle, UserRound, X } from "lucide-react";
 import { Logo } from "@/components/shell/AppShell";
 import BotaoTema from "@/components/shell/BotaoTema";
 import { formatarTelefone } from "./telefone";
@@ -145,7 +145,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
               href={usuario?.href ?? "/entrar"}
               className="hidden items-center gap-2 rounded-[10px] px-3 py-2.5 text-[15px] font-semibold text-texto transition hover:text-verde sm:inline-flex"
             >
-              <LogIn className="size-4" /> {usuario?.nome ?? "Entrar"}
+              {usuario ? <UserRound className="size-4" /> : <LogIn className="size-4" />} {usuario?.nome ?? "Entrar"}
             </Link>
             <Link href="/painel/novo" className="lp-btn lp-btn-verde hidden px-4 py-3 text-[15px] md:inline-flex">
               Anunciar imóvel
@@ -192,7 +192,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
                 Anunciar imóvel <ArrowRight />
               </Link>
               <Link href={usuario?.href ?? "/entrar"} onClick={fechar} className="lp-btn lp-btn-contorno w-full">
-                <LogIn /> {usuario?.nome ?? "Entrar"}
+                {usuario ? <UserRound /> : <LogIn />} {usuario?.nome ?? "Entrar"}
               </Link>
               <div className="space-y-3 pt-4 text-base text-texto-2">
                 {wa && (

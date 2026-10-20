@@ -24,7 +24,7 @@ export default async function AdminRelatorios() {
   const totalOpps = opps?.length ?? 0;
   const fechadas = (porEtapa.get("fechado") ?? 0) + (porEtapa.get("pos_venda") ?? 0);
   const perdidas = porEtapa.get("perdido") ?? 0;
-  const conversao = totalOpps ? ((fechadas / totalOpps) * 100).toFixed(1) : "0";
+  const conversao = totalOpps ? ((fechadas / totalOpps) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) : "0";
 
   const somaVendas = (vendas ?? []).reduce((s, v) => s + Number(v.valor_final), 0);
   const somaComissao = (st: string[]) => (comissoes ?? []).filter((c) => st.includes(c.status)).reduce((s, c) => s + Number(c.valor), 0);

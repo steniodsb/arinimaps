@@ -37,7 +37,7 @@ export default async function MinhaConta() {
     { href: "/conta/seguranca", rotulo: "Segurança da conta", texto: "senha, segundo fator e histórico de acessos", icone: ShieldCheck },
     ...(!daEquipe ? [{
       href: "/painel/organizacao", rotulo: "Organização", icone: Users,
-      texto: vinculo ? `${vinculo.org.nome} (${PAPEL_ORG_LABEL[vinculo.membro.papel_org]})` : "você ainda não faz parte de uma",
+      texto: vinculo ? `${vinculo.org.nome} (${PAPEL_ORG_LABEL[vinculo.membro.papel_org]})` : "você ainda não faz parte de nenhuma",
     }] : []),
     { href: "/planos", rotulo: "Planos", texto: "o que o seu plano libera", icone: BadgeCheck },
     { href: "/suporte", rotulo: "Suporte", texto: "fale com a equipe; dados pessoais (LGPD) também por lá", icone: LifeBuoy },

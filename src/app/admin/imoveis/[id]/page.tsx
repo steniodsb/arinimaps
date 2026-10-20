@@ -190,7 +190,7 @@ export default async function AnaliseImovel({ params }: PageProps<"/admin/imovei
           {divergencia != null && (
             <Item estado={divergencia > 0.1 ? "aviso" : "ok"}>
               Área medida vs declarada:{" "}
-              <span className="tabular-nums">{(divergencia * 100).toFixed(1)}%</span> de diferença
+              <span className="tabular-nums">{(divergencia * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</span> de diferença
               {divergencia > 0.1 && " — confirmar com o anunciante"}
             </Item>
           )}

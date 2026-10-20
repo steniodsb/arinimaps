@@ -12,7 +12,7 @@ type Mes = {
 };
 
 const nomeMes = (m: string) =>
-  new Date(m + "-15T12:00:00").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+  new Date(m + "-15T12:00:00").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(" de ", "/").replace(".", "");
 
 /** Financeiro: receita por mês, o que falta receber e o que está vencido. */
 export default async function PainelFinanceiro() {

@@ -120,8 +120,8 @@ export default function ConfereSatelite() {
                 ) : (
                   <span className={`text-sm font-semibold tabular-nums ${ruim ? "text-alerta" : "text-verde"}`}>
                     {ruim
-                      ? `${m.acimaDoLimite} de ${m.tiles} tiles com nuvem · pior ${m.pior.toFixed(1)}%`
-                      : `limpo · pior ${m.pior.toFixed(1)}%`}
+                      ? `${m.acimaDoLimite} de ${m.tiles} tiles com nuvem · pior ${m.pior.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`
+                      : `limpo · pior ${m.pior.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
                   </span>
                 )}
               </div>

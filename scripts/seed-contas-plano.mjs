@@ -2,7 +2,8 @@
 // que cada plano libera e bloqueia sem mexer nas contas do seed principal.
 // Cada conta nasce com o papel e o nicho do plano, assinatura "ativa" por um
 // ano (plan_origem = assinatura) e, nos planos de organização, uma organização
-// de teste com a conta como administradora. Senha: SEED_USER_PASSWORD.
+// de teste com a conta como administradora. Senha: PLANO_TESTE_SENHA do
+// .env.local (cai na SEED_USER_PASSWORD se faltar), regravada a cada rodada.
 // Idempotente: rodar de novo só reafirma plano, validade e vínculos.
 //
 // Uso: node scripts/seed-contas-plano.mjs
@@ -19,6 +20,7 @@ for (const line of readFileSync(join(root, ".env.local"), "utf8").split("\n")) {
 const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+const SENHA = process.env.PLANO_TESTE_SENHA || process.env.SEED_USER_PASSWORD;
 const falha = (rotulo, error) => { if (error) throw new Error(`${rotulo}: ${error.message}`); };
 
 // plano → conta. `parceiro`/`dono` criam o cadastro que o papel pede para usar as telas.
@@ -47,10 +49,12 @@ for (const c of CONTAS) {
   let user = lista.users.find((u) => u.email === email);
   if (!user) {
     const { data, error } = await supa.auth.admin.createUser({
-      email, password: process.env.SEED_USER_PASSWORD, email_confirm: true, user_metadata: { nome: c.nome, role: c.role },
+      email, password: SENHA, email_confirm: true, user_metadata: { nome: c.nome, role: c.role },
     });
     falha(email, error);
     user = data.user;
+  } else {
+    falha("senha", (await supa.auth.admin.updateUserById(user.id, { password: SENHA })).error);
   }
 
   // papel e nicho primeiro (o gatilho põe o plano padrão); depois o plano como assinatura
@@ -99,4 +103,4 @@ for (const c of CONTAS) {
 }
 
 console.table(feitas);
-console.log("Senha de todas: a mesma das contas de teste do seed (SEED_USER_PASSWORD no .env.local).");
+console.log(`Senha de todas: ${process.env.PLANO_TESTE_SENHA ? "PLANO_TESTE_SENHA" : "SEED_USER_PASSWORD"} do .env.local.`);

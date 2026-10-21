@@ -69,7 +69,7 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
           <BotaoLink href={`/painel/novo?car=${encodeURIComponent(p.cod)}`} variante="ouro">Esta área é minha — anunciar</BotaoLink>
         )}
       >
-        <p className="font-mono text-xs text-texto-2 break-all">{p.cod}</p>
+        <p className="text-xs text-texto-2 break-all">Código do CAR: <span className="font-mono">{p.cod}</span></p>
       </CabecalhoPagina>
 
       <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">

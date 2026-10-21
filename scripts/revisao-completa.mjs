@@ -35,6 +35,15 @@ const dono = donoUser.users.find((u) => u.email === emailDono);
 const owner = dono ? await um(admin.from("owners").select("id").eq("profile_id", dono.id).limit(1)) : null;
 const imovelDono = owner ? await um(admin.from("properties").select("id").eq("owner_id", owner.id).limit(1)) : null;
 const opp = await um(admin.from("opportunities").select("id, property_id").limit(1));
+// o tema salvo na conta vence o do sistema: sem isto, uma conta de teste com
+// "claro" gravado faz o modo escuro sair claro. Volta ao que era no fim.
+const contasRevisao = donoUser.users.filter((u) => [emailDono, "admin@arinibrasil.com.br"].includes(u.email));
+const prefsOriginais = [];
+for (const u of contasRevisao) {
+  const { data } = await admin.from("profiles").select("preferencias").eq("user_id", u.id).single();
+  prefsOriginais.push([u.id, data?.preferencias ?? {}]);
+  await admin.from("profiles").update({ preferencias: { ...(data?.preferencias ?? {}), tema: "sistema" } }).eq("user_id", u.id);
+}
 const car = await um(admin.from("car_imoveis").select("cod_imovel").limit(1));
 const lote = await um(admin.from("urban_lots").select("id").not("numero", "is", null).limit(1));
 
@@ -198,6 +207,7 @@ for (const id of criados.solicitacoes) {
 }
 for (const c of criados.areas) { await admin.from("consultas_area").delete().eq("chave", c); }
 if (opp && oppOriginal) await admin.from("opportunities").update({ responsavel_tipo: oppOriginal.responsavel_tipo }).eq("id", opp.id);
+for (const [id, prefs] of prefsOriginais) await admin.from("profiles").update({ preferencias: prefs }).eq("user_id", id);
 await b.close();
 
 writeFileSync(join(OUT, "relatorio.json"), JSON.stringify(relatorio, null, 1));

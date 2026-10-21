@@ -54,9 +54,7 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
         titulo={tamanho}
         destaque={area.municipio ? `em ${area.municipio}` : undefined}
         subtitulo="Área desenhada no mapa · consulta de área"
-      >
-        <p className="font-mono text-[11px] text-texto-2 break-all">{chave}</p>
-      </CabecalhoPagina>
+      />
 
       <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

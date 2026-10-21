@@ -44,7 +44,7 @@ const feitas = [];
 for (const c of CONTAS) {
   const plano = planos.find((p) => p.id === c.plano);
   if (!plano) { console.log(`– plano ${c.plano} não existe no banco, pulado`); continue; }
-  const email = `plano.${c.plano.replace(/_/g, "-")}@arinimaps.com.br`;
+  const email = `plano.${c.plano.replace(/_/g, "-")}@arinibrasil.com.br`;
 
   let user = lista.users.find((u) => u.email === email);
   if (!user) {

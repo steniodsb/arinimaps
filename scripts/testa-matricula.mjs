@@ -42,12 +42,12 @@ try {
   }, corpo);
 
   // 1. anunciante não confere matrícula
-  const dono = await sessao("proprietario.teste@arinimaps.com.br");
+  const dono = await sessao("proprietario.teste@arinibrasil.com.br");
   const negado = await api(dono, { property_id: imovel.id, numero: NUMERO, conferir: true });
   ok("anunciante não marca matrícula como conferida (403)", negado.status === 403, negado.status);
 
   // 2. Matriz grava e confere
-  const matriz = await sessao("admin@arinimaps.com.br");
+  const matriz = await sessao("admin@arinibrasil.com.br");
   const gravou = await api(matriz, { property_id: imovel.id, numero: NUMERO, cartorio: "CRI de Teste", conferir: true });
   ok("Matriz grava e confere a matrícula", gravou.status === 200 && !!gravou.json?.matricula?.conferida_em, JSON.stringify(gravou.json));
   const mudou = await api(matriz, { property_id: imovel.id, numero: NUMERO + "1", cartorio: "CRI de Teste", conferir: false });

@@ -57,7 +57,7 @@ try {
   const loteId = href.split("lote=")[1];
   await p.goto(`${BASE}/entrar`, { waitUntil: "networkidle2" });
   await p.evaluate(async (senha) => {
-    await fetch("/api/auth/entrar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "proprietario.teste@arinimaps.com.br", senha }) });
+    await fetch("/api/auth/entrar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "proprietario.teste@arinibrasil.com.br", senha }) });
   }, process.env.SEED_USER_PASSWORD);
   await p.goto(`${BASE}/painel/novo?lote=${loteId}`, { waitUntil: "networkidle2", timeout: 120000 });
   await espera(9000);

@@ -108,7 +108,7 @@ Na ordem, porque cada uma isola uma camada diferente:
 4. Botão **Satélite** → os tiles devem vir de `wayback.maptiles.arcgis.com/...
    /tile/20512/...`. É esse release fixo que tira a nuvem; se a URL estiver
    apontando para `server.arcgisonline.com` ou `clarity.`, o build é antigo.
-5. Entrar com `admin@arinimaps.com.br` → **auth ok**.
+5. Entrar com `admin@arinibrasil.com.br` → **auth ok**.
 6. Admin › Cartografia › **Calibrar sobre o satélite**: arrastar a planta deve
    acompanhar o cursor. Se arrastar aos solavancos, o build é anterior a
    `f3858bd`.

@@ -47,7 +47,7 @@ for (const modo of MODOS) {
     // tema segue o aparelho: limpa escolha salva no navegador e na conta
     try { localStorage.clear(); } catch { /* */ }
     await fetch("/api/conta/preferencias", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tema: "sistema" }) });
-  }, process.env.SITE_SENHA ?? "", "admin@arinimaps.com.br", process.env.SEED_USER_PASSWORD);
+  }, process.env.SITE_SENHA ?? "", "admin@arinibrasil.com.br", process.env.SEED_USER_PASSWORD);
   mkdirSync(join(OUT, modo.nome), { recursive: true });
   for (const [nome, rota] of TELAS) {
     try {

@@ -33,7 +33,7 @@ await p.goto(`${BASE}/entrar`, { waitUntil: "networkidle2", timeout: 90000 });
 console.log("login senha errada :", await api("/api/auth/entrar", { email: "ninguem@exemplo.com", senha: "errada12345" }));
 console.log("recuperar          :", await api("/api/auth/recuperar", { email: "ninguem@exemplo.com" }));
 console.log("senha fraca        :", await api("/api/cadastro", { email: "x@y.com", senha: "12345678", nome: "T", role: "comprador", cpf: "52998224725", aceite_termos: true }));
-console.log("login admin        :", await api("/api/auth/entrar", { email: "admin@arinimaps.com.br", senha: process.env.SEED_USER_PASSWORD }));
+console.log("login admin        :", await api("/api/auth/entrar", { email: "admin@arinibrasil.com.br", senha: process.env.SEED_USER_PASSWORD }));
 
 await p.goto(`${BASE}/mapa`, { waitUntil: "domcontentloaded", timeout: 90000 });
 await espera(18000);

@@ -17,7 +17,7 @@ for (const line of readFileSync(join(root, ".env.local"), "utf8").split("\n")) {
 
 const [, , municipio = "Iturama", saida = ".capturas/calibracao.png", esperaMs = "12000"] = process.argv;
 const BASE = process.env.SCREENSHOT_BASE ?? "http://localhost:3000";
-const EMAIL = process.env.ADMIN_EMAIL ?? "admin@arinimaps.com.br";
+const EMAIL = process.env.ADMIN_EMAIL ?? "admin@arinibrasil.com.br";
 const SENHA = process.env.SEED_USER_PASSWORD;
 
 const browser = await puppeteer.launch({

@@ -69,7 +69,7 @@ try {
     }, process.env.SITE_SENHA);
   }
   await page.goto(`${BASE}/entrar`, { waitUntil: "networkidle2", timeout: 60000 });
-  await page.type('input[type="email"]', "admin@arinimaps.com.br");
+  await page.type('input[type="email"]', "admin@arinibrasil.com.br");
   await page.type('input[type="password"]', process.env.SEED_USER_PASSWORD);
   await Promise.all([
     page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 }).catch(() => {}),

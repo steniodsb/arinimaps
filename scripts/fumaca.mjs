@@ -18,7 +18,7 @@ const imovel = await um(admin.from("properties").select("id, codigo").in("status
 const opp = await um(admin.from("opportunities").select("id").limit(1));
 const lote = await um(admin.from("urban_lots").select("id").not("numero", "is", null).limit(1));
 
-const V = null, P = "proprietario.teste@arinimaps.com.br", A = "admin@arinimaps.com.br";
+const V = null, P = "proprietario.teste@arinibrasil.com.br", A = "admin@arinibrasil.com.br";
 const ROTAS = [
   ["/", V], ["/mapa", V], ["/imoveis?q=Iturama", V], ["/relatorios", V], ["/termos/termos-de-uso", V],
   imovel && [`/imovel/${imovel.codigo}`, V], imovel && [`/imovel/${imovel.codigo}/relatorio`, V],

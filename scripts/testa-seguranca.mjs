@@ -125,7 +125,7 @@ const formDoc = (f, tipo = "matricula") => { const fd = new FormData(); fd.set("
 
 // ---------------------------------------------------------------- dados de teste
 const SENHA = `Seg${randomUUID().slice(0, 8)}Teste9x`;
-const EMAIL = (p) => `seg-teste.${p}@arinimaps.com.br`;
+const EMAIL = (p) => `seg-teste.${p}@arinibrasil.com.br`;
 const criados = { usuarios: [], props: [], caminhos: [], regiao: null, tickets: [], reqs: [], opps: [], leads: [] };
 
 async function criarUsuario(chave, role, extra = {}) {

@@ -14,7 +14,7 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) {
 }
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-const EMAIL = "consulta.teste@arinimaps.com.br";
+const EMAIL = "consulta.teste@arinibrasil.com.br";
 const SENHA = "ConsultaTeste2026x";
 let falhas = 0;
 const ok = (rotulo, cond, extra = "") => { if (!cond) falhas++; console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + String(extra).slice(0, 220) : ""}`); };
@@ -86,7 +86,7 @@ try {
 
   // ---------- 3. Diretoria troca o plano da conta ----------
   const a = await nova();
-  ok("login da diretoria", (await api(a, "/api/auth/entrar", { email: "admin@arinimaps.com.br", senha: process.env.SEED_USER_PASSWORD })).status === 200);
+  ok("login da diretoria", (await api(a, "/api/auth/entrar", { email: "admin@arinibrasil.com.br", senha: process.env.SEED_USER_PASSWORD })).status === 200);
   const troca = await api(a, "/api/admin/usuarios", { user_id: userId, plan_id: "consulta_profissional", plan_origem: "manual" }, "PATCH");
   ok("diretoria define plano profissional", troca.status === 200, troca.corpo);
   const { data: perfil2 } = await admin.from("profiles").select("plan_id, plan_origem").eq("user_id", userId).single();

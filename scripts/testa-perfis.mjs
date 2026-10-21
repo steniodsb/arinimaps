@@ -13,7 +13,7 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) {
 }
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-const EMAIL = "leiloeiro.teste@arinimaps.com.br";
+const EMAIL = "leiloeiro.teste@arinibrasil.com.br";
 const SENHA = "LeilaoTeste2026x";
 const ok = (rotulo, cond, extra = "") => console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + extra : ""}`);
 
@@ -115,7 +115,7 @@ try {
 
   // ---------- análise: edital conferido ----------
   const a = await nova();
-  await api(a, "/api/auth/entrar", { email: "admin@arinimaps.com.br", senha: process.env.SEED_USER_PASSWORD });
+  await api(a, "/api/auth/entrar", { email: "admin@arinibrasil.com.br", senha: process.env.SEED_USER_PASSWORD });
   await api(a, "/api/admin/decisao", { alvo: "imovel", id: lei.json?.id, acao: "em_analise" });
   const cedo = await api(a, "/api/admin/decisao", { alvo: "imovel", id: lei.json?.id, acao: "aprovado" });
   ok("aprovar leilão sem edital conferido é recusado", cedo.status === 400 && /edital/i.test(cedo.corpo), cedo.corpo);
@@ -131,7 +131,7 @@ try {
 
   // ---------- selfie na exclusividade ----------
   const q = await nova();
-  await api(q, "/api/auth/entrar", { email: "proprietario.teste@arinimaps.com.br", senha: process.env.SEED_USER_PASSWORD });
+  await api(q, "/api/auth/entrar", { email: "proprietario.teste@arinibrasil.com.br", senha: process.env.SEED_USER_PASSWORD });
   const semSelfie = await anunciar(q, { tipo: "rural", titulo: "TESTE exclusividade", condicao: "exclusividade", aceite_termos: true }, [["doc_matricula", "matricula.pdf", "application/pdf"]]);
   ok("exclusividade sem selfie é recusada", semSelfie.status === 400 && /selfie/i.test(semSelfie.corpo), semSelfie.corpo);
   const { count: orfaos } = await admin.from("properties").select("id", { count: "exact", head: true }).eq("titulo", "TESTE exclusividade");

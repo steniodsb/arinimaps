@@ -30,7 +30,7 @@ try {
   const login = await p.evaluate(async (email, senha) => {
     const r = await fetch("/api/auth/entrar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, senha }) });
     return r.status;
-  }, "admin@arinimaps.com.br", process.env.SEED_USER_PASSWORD);
+  }, "admin@arinibrasil.com.br", process.env.SEED_USER_PASSWORD);
   ok("login da diretoria", login === 200, login);
 
   // 1. Painel de configurações

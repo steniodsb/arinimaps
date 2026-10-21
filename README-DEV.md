@@ -14,9 +14,21 @@ node scripts/seed.mjs      # idempotente: região, municípios IBGE, usuários, 
 
 | E-mail | Perfil | Vai para |
 |---|---|---|
-| admin@arinimaps.com.br | admin_central | /admin |
-| proprietario.teste@arinimaps.com.br | proprietário (ativo) | /painel |
-| corretor.teste@arinimaps.com.br | corretor (ativo) | /painel |
+| admin@arinibrasil.com.br | admin_central | /admin |
+| proprietario.teste@arinibrasil.com.br | proprietário (ativo) | /painel |
+| corretor.teste@arinibrasil.com.br | corretor (ativo) | /painel |
+
+Uma conta por plano, com assinatura ativa por um ano (senha: a `PLANO_TESTE_SENHA`
+do `.env.local`; recria ou reafirma com `node scripts/seed-contas-plano.mjs`):
+
+| E-mail | Plano | Perfil |
+|---|---|---|
+| plano.consulta-basica@arinibrasil.com.br | Consulta básica | consulta |
+| plano.consulta-profissional@arinibrasil.com.br | Consulta profissional | engenheiro |
+| plano.anunciante@arinibrasil.com.br | Anunciante | proprietário |
+| plano.parceiro@arinibrasil.com.br | Parceiro profissional | corretor |
+| plano.organizacao@arinibrasil.com.br | Organização | empresa/holding (admin da "Holding Teste Arini") |
+| plano.franquia@arinibrasil.com.br | Franquia | franqueado (admin da "Franquia Teste Arini") |
 
 ## 08/10: página inicial no estilo do site do Grupo Cordeiro
 

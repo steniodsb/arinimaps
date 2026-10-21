@@ -30,7 +30,7 @@ const executar = process.argv.includes("--executar");
 
 // códigos novos desde a migration 0044; os antigos ficam por garantia
 const DEMO = ["AIB-000001", "AIB-000002", "AIB-000003", "ARINI-MAP-000001", "ARINI-MAP-000002", "ARINI-MAP-000003"];
-const CONTAS_TESTE = ["proprietario.teste@arinimaps.com.br", "corretor.teste@arinimaps.com.br"];
+const CONTAS_TESTE = ["proprietario.teste@arinibrasil.com.br", "corretor.teste@arinibrasil.com.br"];
 
 const c = new pg.Client({
   host: `db.${process.env.SUPABASE_PROJECT_REF}.supabase.co`, port: 5432, user: "postgres",

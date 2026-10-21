@@ -84,9 +84,9 @@ async function ensureUser(email, nome, role) {
   return user.id;
 }
 
-const adminId = await ensureUser("admin@arinimaps.com.br", "Arini Central", "admin_central");
-const propId = await ensureUser("proprietario.teste@arinimaps.com.br", "Proprietário Teste", "proprietario");
-const corrId = await ensureUser("corretor.teste@arinimaps.com.br", "Corretor Teste", "corretor");
+const adminId = await ensureUser("admin@arinibrasil.com.br", "Arini Central", "admin_central");
+const propId = await ensureUser("proprietario.teste@arinibrasil.com.br", "Proprietário Teste", "proprietario");
+const corrId = await ensureUser("corretor.teste@arinibrasil.com.br", "Corretor Teste", "corretor");
 
 let { rows: [owner] } = await db.query(`select id from owners where profile_id = $1`, [propId]);
 if (!owner) ({ rows: [owner] } = await db.query(

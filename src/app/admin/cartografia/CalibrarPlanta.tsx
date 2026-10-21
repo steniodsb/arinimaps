@@ -303,7 +303,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
       brutoRef.current = bruto;
       centroRef.current = centroDe(bruto);
 
-      map.on("load", () => {
+      const aoCarregar = () => {
         // a primeira montagem já separa as partes; daqui em diante é o redesenhar()
         membrosRef.current = { chave: ajustesRef.current.map((a) => a.id).join("|"), m: calcularMembros(bruto, ajustesRef.current) };
         const d0 = montar(bruto, centroRef.current, inicial, new Set(camada.layers_ocultos ?? []), ajustesRef.current, null, membrosRef.current.m);
@@ -393,7 +393,11 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
 
         map.jumpTo({ center: centroRef.current, zoom: 15.5 });
         setCarregando(false);
-      });
+      };
+      // o GeoJSON chega depois do mapa criado: se o satélite já carregou, o
+      // "load" já passou e esperar por ele deixaria a tela em "carregando a planta…"
+      if (map.isStyleLoaded()) aoCarregar();
+      else map.once("load", aoCarregar);
 
       /* ---- arrastar a planta ----
        *

@@ -30,7 +30,7 @@ const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUP
 const um = async (q) => (await q).data?.[0] ?? null;
 const imovel = await um(admin.from("properties").select("id, codigo").in("status", ["publicado", "em_negociacao"]).limit(1));
 const { data: donoUser } = await admin.auth.admin.listUsers({ perPage: 500 });
-const emailDono = "proprietario.teste@arinimaps.com.br";
+const emailDono = "proprietario.teste@arinibrasil.com.br";
 const dono = donoUser.users.find((u) => u.email === emailDono);
 const owner = dono ? await um(admin.from("owners").select("id").eq("profile_id", dono.id).limit(1)) : null;
 const imovelDono = owner ? await um(admin.from("properties").select("id").eq("owner_id", owner.id).limit(1)) : null;
@@ -86,7 +86,7 @@ async function sessao(email) {
   await ctx.close();
 }
 {
-  const { ctx, p } = await sessao("admin@arinimaps.com.br");
+  const { ctx, p } = await sessao("admin@arinibrasil.com.br");
   const a = await p.evaluate(async () => {
     const g = { type: "Polygon", coordinates: [[[-50.22, -19.74], [-50.20, -19.74], [-50.20, -19.72], [-50.22, -19.72], [-50.22, -19.74]]] };
     const r = await fetch("/api/consulta/area", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ geometria: g }) });
@@ -100,7 +100,7 @@ const solic = criados.solicitacoes[0] ?? (await um(admin.from("cartographic_requ
 const area = criados.areas[0] ?? (await um(admin.from("consultas_area").select("chave").like("chave", "geo:%").limit(1)))?.chave;
 
 // ---------- rotas: [nome, caminho, perfil] ----------
-const V = null, P = emailDono, A = "admin@arinimaps.com.br";
+const V = null, P = emailDono, A = "admin@arinibrasil.com.br";
 const ROTAS = [
   ["inicio", "/", V], ["entrar", "/entrar", V], ["redefinir-senha", "/redefinir-senha", V], ["acesso", "/acesso", V],
   ["planos", "/planos", V], ["imoveis", "/imoveis", V], ["mapa", "/mapa", V], ["relatorios", "/relatorios", V],

@@ -18,7 +18,7 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) {
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
-const EMAIL_TESTE = "teste.setor@arinimaps.com.br";
+const EMAIL_TESTE = "teste.setor@arinibrasil.com.br";
 const SENHA_TESTE = "SetorTeste2026x";
 
 /** TOTP (RFC 6238) a partir do segredo em base32 — o mesmo cálculo do aplicativo autenticador. */
@@ -56,7 +56,7 @@ const criados = { tarefas: [], tickets: [], lgpd: [], usuario: null };
 try {
   // ---------- diretoria: todas as telas ----------
   const p = await novaPagina();
-  const login = await api(p, "/api/auth/entrar", { email: "admin@arinimaps.com.br", senha: process.env.SEED_USER_PASSWORD });
+  const login = await api(p, "/api/auth/entrar", { email: "admin@arinibrasil.com.br", senha: process.env.SEED_USER_PASSWORD });
   ok("login da diretoria", login.status === 200, login.corpo);
 
   const TELAS = ["/admin", "/admin/tarefas", "/admin/operacoes", "/admin/comercial", "/admin/financeiro", "/admin/juridico",

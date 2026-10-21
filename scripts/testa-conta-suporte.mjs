@@ -16,7 +16,7 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) {
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const SENHA_SEED = process.env.SEED_USER_PASSWORD;
-const PROP = "proprietario.teste@arinimaps.com.br";
+const PROP = "proprietario.teste@arinibrasil.com.br";
 let falhas = 0;
 const ok = (rotulo, cond, extra = "") => { if (!cond) falhas++; console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + String(extra).slice(0, 220) : ""}`); };
 
@@ -93,7 +93,7 @@ try {
   ok("GET da conversa (dono)", p1.status === 200 && p1.json?.mensagens?.length === 1, p1.corpo);
   const ultima = p1.json?.mensagens?.at(-1)?.created_at;
 
-  const equipe = await sessao("admin@arinimaps.com.br", SENHA_SEED);
+  const equipe = await sessao("admin@arinibrasil.com.br", SENHA_SEED);
   const nl = await api(equipe, "/api/admin/suporte/nao-lidos", undefined, "GET");
   ok("selo de não lidos conta o chamado", nl.status === 200 && nl.json?.ids?.includes(t.json?.id), nl.corpo);
   const resp = await api(equipe, "/api/admin/suporte", { id: t.json?.id, mensagem: "Resposta da equipe" }, "PATCH");

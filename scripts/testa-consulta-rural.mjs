@@ -32,7 +32,7 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.goto(`${BASE}/entrar`, { waitUntil: "networkidle2" });
-  await page.type('input[type="email"]', "admin@arinimaps.com.br");
+  await page.type('input[type="email"]', "admin@arinibrasil.com.br");
   await page.type('input[type="password"]', process.env.SEED_USER_PASSWORD);
   await Promise.all([
     page.waitForNavigation({ waitUntil: "networkidle2" }).catch(() => {}),

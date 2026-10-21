@@ -295,6 +295,26 @@ button:disabled,
 .cartao-link:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--verde) 45%, var(--linha)); box-shadow: 0 24px 50px -30px rgb(0 0 0 / 0.6); }
 }
 
+/* Tabelas largas no celular (Central): rolam de lado dentro da caixa. A 1ª
+   coluna (o nome da linha) fica presa à esquerda para não perder o contexto, e
+   uma sombra na borda direita avisa que há mais colunas; ela some ao chegar no
+   fim (a camada "local" rola junto e cobre a sombra). */
+@media (max-width: 767px) {
+  .overflow-x-auto:has(> table) {
+    background:
+      linear-gradient(to left, var(--superficie) 40%, transparent) right center / 36px 100% no-repeat local,
+      linear-gradient(to left, rgb(0 0 0 / 0.32), transparent) right center / 14px 100% no-repeat scroll,
+      var(--superficie);
+  }
+  .overflow-x-auto > table :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--superficie);
+    box-shadow: 1px 0 0 var(--linha);
+  }
+}
+
 /* ---------- texto ---------- */
 .texto-ouro {
   background: linear-gradient(100deg, var(--ouro-claro) 0%, var(--ouro) 55%, color-mix(in srgb, var(--ouro) 80%, #000) 100%);

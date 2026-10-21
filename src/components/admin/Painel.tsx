@@ -38,9 +38,10 @@ export function Indicadores({ itens }: { itens: Indicador[] }) {
         const corpo = (
           <>
             <div className="flex items-start justify-between gap-3">
-              <p className={`lp-display text-[1.9rem] leading-none tabular-nums ${i.destaque ? "text-ouro" : "text-texto"}`}>{i.valor}</p>
+              {/* no celular o card tem ~150 px: "R$ 36.000" em 1,9rem passava por cima do ícone */}
+              <p className={`lp-display min-w-0 break-words text-[1.5rem] sm:text-[1.9rem] leading-none tabular-nums ${i.destaque ? "text-ouro" : "text-texto"}`}>{i.valor}</p>
               {Icone && (
-                <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${i.destaque ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde"}`}>
+                <span className={`hidden sm:grid size-9 shrink-0 place-items-center rounded-xl ${i.destaque ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde"}`}>
                   <Icone className="size-[18px]" />
                 </span>
               )}

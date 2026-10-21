@@ -197,8 +197,8 @@ const DEFS: Record<CamadaOficialId, Def> = {
     buscar: async (env) => {
       const desde = new Date(Date.now() - 365 * 86_400_000).toISOString().slice(0, 10);
       const filtro = encodeURIComponent(`data_hora_gmt >= '${desde}' AND BBOX(geometria,${env.xmin},${env.ymin},${env.xmax},${env.ymax})`);
-      const url = `https://terrabrasilis.dpi.inpe.br/queimadas/geoserver/ows?service=WFS&version=1.0.0&request=GetFeature` +
-        `&typeName=bdqueimadas2:focos&outputFormat=application/json&maxFeatures=3000&CQL_FILTER=${filtro}`;
+      const url = `https://data.inpe.br/queimadas/geoserver/ows?service=WFS&version=1.0.0&request=GetFeature` +
+        `&typeName=bdqueimadas:focos&outputFormat=application/json&maxFeatures=3000&CQL_FILTER=${filtro}`;
       const j = await (await pedir(url)).json();
       return ((j.features ?? []) as { geometry: GeoJSON.Geometry; properties: Record<string, unknown> }[]).map((f) => feicao(f.geometry, {
         id: s(f.properties.id_foco_bdq) ?? `${JSON.stringify((f.geometry as GeoJSON.Point).coordinates)}${s(f.properties.data_hora_gmt)}`,

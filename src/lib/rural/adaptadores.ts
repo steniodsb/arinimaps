@@ -654,7 +654,7 @@ export function consultarDeter(bbox: Bbox) {
 /**
  * INPE Programa Queimadas — focos de calor.
  *
- * A camada `bdqueimadas2:focos` é o histórico inteiro desde 1998, então:
+ * A camada `bdqueimadas:focos` é o histórico inteiro desde 1998, então:
  *  - o TOTAL vem de `resultType=hits`, não do que foi baixado (senão o teto de
  *    maxFeatures viraria "o número de focos", o que é falso);
  *  - o detalhamento baixa os mais recentes primeiro (`sortBy=data_hora_gmt D`),
@@ -666,8 +666,8 @@ const AMOSTRA_FOCOS = 2000;
 
 export function consultarQueimadas(bbox: Bbox) {
   return adaptador("inpe_queimadas", async () => {
-    const base = "https://terrabrasilis.dpi.inpe.br/queimadas/geoserver/ows";
-    const camada = "bdqueimadas2:focos";
+    const base = "https://data.inpe.br/queimadas/geoserver/ows";
+    const camada = "bdqueimadas:focos";
     const total = await wfsTotal(base, camada, bbox);
     if (total === 0) return { quantidade: 0, itens: [] };
 

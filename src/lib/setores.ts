@@ -79,6 +79,7 @@ export const SETORES: Setor[] = [
       { href: "/admin/cartografia", rotulo: "Cartografia", icone: "🗺" },
       { href: "/admin/cartografia/solicitacoes", rotulo: "Solicitações cartográficas", icone: "⚑" },
       { href: "/admin/regioes", rotulo: "Regiões e CAR", icone: "⊕" },
+      { href: "/admin/car", rotulo: "CAR: importação e cobertura", icone: "⇪" },
       { href: "/admin/fontes", rotulo: "Fontes oficiais", icone: "⇄" },
     ],
   },

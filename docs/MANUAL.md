@@ -37,6 +37,7 @@ Toda tentativa bloqueada aparece em *Segurança › Tentativas bloqueadas*.
 | Imóvel novo que casa com demanda aberta | tarefa automática no setor Comercial | Comercial |
 | Solicitação "não encontrei meu imóvel" / "mapa divergente" | Cartografia › Solicitações cartográficas | Cartografia |
 | Plantas, calibração, lotes, CAR, municípios | Cartografia, Regiões e CAR | Cartografia |
+| Camadas ambientais do CAR (APP, reserva legal…) e cobertura por município | CAR: importação e cobertura (`docs/CAR-IMPORTACAO.md`) | Cartografia |
 | Saúde das fontes oficiais, matriz técnica | Cartografia › Fontes oficiais | Cartografia |
 | Mensalidades e comissões | Financeiro | Financeiro |
 | Pedidos LGPD, termos, contratos | Jurídico | Jurídico |

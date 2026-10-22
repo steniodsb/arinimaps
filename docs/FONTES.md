@@ -22,7 +22,7 @@ por área entra **inativa**, com o motivo medido, e aparece no relatório como
 | Fonte | Órgão | Acesso | Autenticação | Custo | Situação 07/10 | Na região de Iturama |
 |---|---|---|---|---|---|---|
 | CAR — perímetro dos imóveis | SFB / SICAR | WFS por UF | não | grátis | **ativa** | 6.034 imóveis |
-| CAR — APP, reserva legal, vegetação, consolidada | SFB / SICAR | download com reCAPTCHA | reCAPTCHA | grátis | **inativa** | — |
+| CAR — APP, reserva legal, vegetação, consolidada | SFB / SICAR | download com reCAPTCHA + **importação manual** | reCAPTCHA | grátis | **ativa por importação** (22/10) | depende dos municípios importados |
 | SIGEF (parcelas certificadas) | INCRA | WFS i3geo por UF | não | grátis | **ativa** (licença a validar) | 4.170 parcelas |
 | SNCI (certificações até 2013) | INCRA | WFS i3geo por UF | não | grátis | **ativa** (licença a validar) | 279 imóveis |
 | SNCR | INCRA | sem API | acesso autorizado | — | inativa (3.7) | — |
@@ -33,7 +33,7 @@ por área entra **inativa**, com o motivo medido, e aparece no relatório como
 | Terras indígenas | FUNAI | WFS | não | grátis | ativa | 0 |
 | PRODES Cerrado | INPE | WFS | não | grátis | ativa | 1.234 polígonos |
 | DETER Cerrado | INPE | WFS | não | grátis | ativa | 6 alertas |
-| Focos de calor | INPE | WFS | não | grátis | ativa | 11.734 focos (374 em 12 meses) |
+| Focos de calor | INPE | WFS (`data.inpe.br`, desde 21/10) | não | grátis | ativa | 11.734 focos (374 em 12 meses) |
 | Unidades de conservação | MMA/CNUC (via INPE) | WFS | não | grátis | ativa | 0 |
 | Corpos d'água | INPE | WFS | não | grátis | ativa | 1.103 feições |
 | Cursos d'água | ANA | ArcGIS REST | não | grátis | ativa | 30 trechos |
@@ -65,7 +65,7 @@ referência, consulta por geometria, cache e registro de origem.
 - **Campos:** `cod_imovel, municipio, area, condicao, tipo_imovel, m_fiscal, dat_atualizacao`.
 - **Situação:** 200; publica 27 camadas, todas `sicar_imoveis_<uf>`.
 
-### CAR / SICAR — camadas ambientais (`car_ambiental`) — **inativa** (3.5)
+### CAR / SICAR — camadas ambientais (`car_ambiental`) — **ativa por importação manual** (3.5)
 - **O que se queria:** APP, reserva legal, vegetação nativa e área consolidada declaradas, com área em ha por imóvel.
 - **O que existe:** só a "Base de downloads" (`consultapublica.car.gov.br/publico/estados/downloads`), shapefile por município, com reCAPTCHA.
 - **O que foi tentado em 07/10/2026:**
@@ -73,7 +73,7 @@ referência, consulta por geometria, cache e registro de origem.
   - workspaces `car`, `temas`, `sicar_temas`, `app`, `reserva_legal`, `publico` → 404; REST do GeoServer → 401;
   - base de downloads: `https://…/downloads` responde 302 para `http://…/imoveis/index`, que responde 301 de volta para `https://` — laço; a página de `car.gov.br` carrega `angular-recaptcha`;
   - ArcGIS do IBAMA (`CAR_NACIONAL`): só "Área do Imóvel".
-- **Caminho possível:** importação manual por município (baixar com CAPTCHA, subir o zip) — exige rotina de importação e decisão do Carlos sobre frequência. Resolver CAPTCHA automaticamente está fora de questão.
+- **Caminho adotado (22/10/2026):** importação manual por município em Central › CAR: importação e cobertura. O relatório lê o banco (`car_temas`) e mostra a data da base; município não importado aparece como "ainda não importado". Procedimento, validação e alternativas oficiais em `docs/CAR-IMPORTACAO.md`. Resolver CAPTCHA automaticamente está fora de questão.
 
 ### INCRA / SIGEF (`sigef`)
 - **Endereço:** https://sigef.incra.gov.br · serviço `https://acervofundiario.incra.gov.br/i3geo/ogc.php?tema=certificada_sigef_particular_<uf>` (e `_publico_<uf>`)
@@ -137,7 +137,7 @@ referência, consulta por geometria, cache e registro de origem.
 |---|---|---|---|
 | FUNAI | `geoserver.funai.gov.br/geoserver/Funai/ows` · `Funai:tis_poligonais` | `AccessConstraints NONE` | conforme atos de demarcação |
 | PRODES / DETER / hidrografia / UCs | `terrabrasilis.dpi.inpe.br/geoserver/ows` | dados abertos INPE | anual / diária / irregular |
-| Focos de calor | `terrabrasilis.dpi.inpe.br/queimadas/geoserver/ows` · `bdqueimadas2:focos` | dados abertos INPE | várias vezes ao dia |
+| Focos de calor | `data.inpe.br/queimadas/geoserver/ows` · `bdqueimadas:focos` (endereço novo em 21/10/2026) | dados abertos INPE | várias vezes ao dia |
 | ANA | `snirh.gov.br/arcgis/rest/services/DADOSABERTOS/Curso_dÁgua` | dados abertos ANA | — |
 | OpenStreetMap | Overpass API | ODbL (atribuição obrigatória) | contínua |
 | IBGE | `servicodados.ibge.gov.br` | dados públicos | anual |

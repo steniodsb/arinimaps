@@ -4,6 +4,8 @@ import { ufsDoEnvelope } from "./ufs";
 // relativo (não "@/"): scripts/testa-apis-rurais.mjs carrega este arquivo pelo jiti, sem os aliases do Next
 import { EsperaEsgotada, fila, inteiroDoAmbiente } from "../seguranca/fila";
 import { getComCadeia } from "../geo/tlsOrgaos";
+import { supabaseAdmin } from "../supabase/admin";
+import { TEMAS_CAR, type TemaCar } from "../geo/temasCar";
 
 /**
  * Adaptadores das fontes oficiais de consulta rural.
@@ -274,6 +276,7 @@ const dataBr = (v: unknown) => {
 /** Órgão, base e tipo de cada fonte — o que o relatório mostra ao lado de cada bloco. */
 export const ORIGENS: Record<string, { orgao: string; base: string; tipo: TipoOrigem }> = {
   car: { orgao: "Serviço Florestal Brasileiro", base: "SICAR — Cadastro Ambiental Rural", tipo: "oficial" },
+  car_ambiental: { orgao: "Serviço Florestal Brasileiro", base: "SICAR — camadas ambientais (arquivo importado)", tipo: "oficial" },
   sigef: { orgao: "INCRA", base: "SIGEF — parcelas certificadas", tipo: "oficial" },
   snci: { orgao: "INCRA", base: "SNCI — imóveis certificados (até 2013)", tipo: "oficial" },
   ibama_embargos: { orgao: "IBAMA", base: "SISCOM — áreas embargadas", tipo: "oficial" },
@@ -367,7 +370,7 @@ export function consultarAnm(bbox: Bbox) {
  *
  * As camadas AMBIENTAIS do CAR (APP, reserva legal, vegetação nativa, área
  * consolidada) não estão no WFS — só na base de downloads, com reCAPTCHA
- * (sondado em 07/10/2026). Ficam como fonte `car_ambiental` inativa.
+ * (sondado em 07/10/2026). Entram por importação manual: `consultarCarAmbiental`.
  */
 export function consultarCar(bbox: Bbox) {
   return adaptador("car", async () => {
@@ -390,6 +393,54 @@ export function consultarCar(bbox: Bbox) {
           atualizado_no_sicar: dataBr(p.dat_atualizacao),
         },
       })),
+    };
+  });
+}
+
+/**
+ * CAR — camadas ambientais importadas à mão (migration 0050, Central › CAR:
+ * importação e cobertura). Não pergunta ao SICAR: lê `car_temas` no banco.
+ *
+ * Só fala do que foi importado. Se nenhum município da área tem arquivo, a
+ * fonte sai com `erro` ("ainda não importado") — regra do relatório: fonte
+ * sem dado não vale como "nada encontrado". Cobertura parcial vira um item de
+ * aviso com a porcentagem coberta.
+ */
+export function consultarCarAmbiental(bbox: Bbox) {
+  return adaptador("car_ambiental", async () => {
+    const { data, error } = await supabaseAdmin().rpc("fn_car_ambiental_envelope", {
+      p_xmin: bbox.xmin, p_ymin: bbox.ymin, p_xmax: bbox.xmax, p_ymax: bbox.ymax,
+    });
+    if (error) throw new Error(error.message);
+    const r = data as {
+      cobertura_pct: number | null;
+      municipios: { municipio: string; uf: string; data_base: string; temas: string[] }[];
+      temas: { tema: string; poligonos: number; imoveis: number; area_ha: number }[];
+    };
+    if (!r.municipios.length) {
+      throw new Error("camadas ambientais do CAR ainda não importadas para os municípios desta área");
+    }
+    const bases = r.municipios.map((m) => m.data_base).sort();
+    const pct = Number(r.cobertura_pct ?? 0);
+    const itens: ItemEncontrado[] = r.temas
+      .filter((t) => t.tema !== "area_imovel")
+      .map((t) => ({
+        titulo: `${TEMAS_CAR[t.tema as TemaCar] ?? t.tema} — ${Number(t.area_ha).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ha`,
+        detalhe: `${t.poligonos.toLocaleString("pt-BR")} polígono(s) declarado(s) por ${t.imoveis.toLocaleString("pt-BR")} imóvel(is) na área consultada`,
+        extra: { tema: t.tema, area_ha: Number(t.area_ha), poligonos: t.poligonos, imoveis: t.imoveis },
+      }));
+    if (pct < 99) {
+      itens.push({
+        titulo: `Cobertura parcial: ${pct.toLocaleString("pt-BR")}% da área está em município já importado`,
+        detalhe: `Importados: ${r.municipios.map((m) => `${m.municipio}/${m.uf}`).join(", ")}. O restante da área ainda não tem as camadas ambientais no sistema.`,
+      });
+    }
+    return {
+      quantidade: itens.filter((i) => i.extra?.tema).length,
+      incide: itens.some((i) => i.extra?.tema),
+      atualizado_em: bases.length ? `${bases[0]}T12:00:00-03:00` : null,
+      versao: r.municipios.map((m) => `${m.municipio}: base de ${new Date(`${m.data_base}T12:00:00`).toLocaleDateString("pt-BR")}`).join(" · "),
+      itens,
     };
   });
 }
@@ -931,6 +982,7 @@ export function consultarDnit(bbox: Bbox) {
 /** Todas as fontes que consultam ao vivo, na ordem do relatório. */
 export const ADAPTADORES: { id: string; fn: (b: Bbox) => Promise<ResultadoFonte> }[] = [
   { id: "car", fn: consultarCar },
+  { id: "car_ambiental", fn: consultarCarAmbiental },
   { id: "sigef", fn: consultarSigef },
   { id: "snci", fn: consultarSnci },
   { id: "ibama_embargos", fn: consultarEmbargosIbama },

@@ -16,7 +16,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3, BookOpen, Building2, ChevronDown, ChevronRight, Circle, Crown, Database, ExternalLink, Filter,
-  Flag, GitCompareArrows, Handshake, Headset, History, KeyRound, Landmark, Layers, LayoutDashboard,
+  FileUp, Flag, GitCompareArrows, Handshake, Headset, History, KeyRound, Landmark, Layers, LayoutDashboard,
   LayoutGrid, ListChecks, Map as IconeMapa, Megaphone, Menu, Package, Percent, Receipt, Scale, SearchX,
   Settings, Shield, ShieldCheck, UserCheck, UserRound, Users, UsersRound, Wallet, X,
 } from "lucide-react";
@@ -57,6 +57,7 @@ const ICONE_ITEM: Record<string, LucideIcon> = {
   "/admin/cartografia": IconeMapa,
   "/admin/cartografia/solicitacoes": Flag,
   "/admin/regioes": Layers,
+  "/admin/car": FileUp,
   "/admin/fontes": Database,
   "/admin/suporte": Headset,
   "/admin/seguranca": ShieldCheck,

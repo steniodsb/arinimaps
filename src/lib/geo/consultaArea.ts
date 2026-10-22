@@ -169,7 +169,7 @@ export async function carregarConsultaArea(chave: string, opcoes: { excluir?: st
   const excluir = new Set(opcoes.excluir ?? []);
   const porFonte = new Map((consultas ?? []).map((c) => [c.fonte_id, c]));
   const lista: FonteConsultada[] = (fontes ?? [])
-    .filter((f) => f.ativa && ["wfs", "arcgis"].includes(f.tipo) && !excluir.has(f.id))
+    .filter((f) => f.ativa && ["wfs", "arcgis", "importada"].includes(f.tipo) && !excluir.has(f.id))
     .map((f) => ({
       id: f.id, nome: f.nome, orgao: f.orgao,
       // 3.15/3.16: classificação da base e aviso de instabilidade vêm do monitor de fontes

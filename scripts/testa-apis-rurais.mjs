@@ -7,8 +7,15 @@
 //
 // Usa o jiti (já vem com o Next) para carregar o TypeScript; o "server-only"
 // é trocado por um módulo vazio porque aqui não há React Server Components.
+import { readFileSync } from "node:fs";
 import { createJiti } from "jiti";
 import { fileURLToPath } from "node:url";
+
+// a fonte car_ambiental lê o banco (car_temas): precisa das chaves do Supabase
+for (const l of readFileSync(fileURLToPath(new URL("../.env.local", import.meta.url)), "utf8").split("\n")) {
+  const m = l.match(/^([A-Z_]+)=(.*)$/);
+  if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+}
 
 const jiti = createJiti(import.meta.url, {
   alias: { "server-only": fileURLToPath(new URL("../node_modules/server-only/empty.js", import.meta.url)) },
@@ -41,7 +48,21 @@ for (const { a, r, ms } of linhas) {
   );
   if (detalhar) for (const i of r.itens.slice(0, 3)) console.log("".padEnd(33), "·", i.titulo, i.detalhe ? `— ${i.detalhe}` : "");
 }
-const falhas = linhas.filter((l) => l.r.erro).length;
+// Órgão fora do ar ou lento não é defeito do sistema: o relatório já mostra a
+// fonte como "indisponível agora". Município sem arquivo do CAR importado também
+// não. Reprova só o que é erro do nosso lado (resposta mudou, código quebrou).
+const ORGAO_FORA = /fetch failed|HTTP (5\d\d|429|404)|não respondeu|indisponível|ECONN|ETIMEDOUT|socket|TimeoutError|aborted/i;
+const NAO_IMPORTADO = /ainda não importad/i;
+const comErro = linhas.filter((l) => l.r.erro);
+const fora = comErro.filter((l) => ORGAO_FORA.test(l.r.erro));
+const semImportacao = comErro.filter((l) => NAO_IMPORTADO.test(l.r.erro));
+const falhas = comErro.filter((l) => !fora.includes(l) && !semImportacao.includes(l));
 const semOrigem = linhas.filter((l) => l.r.itens.some((i) => !i.origem?.consultado_em)).length;
-console.log(`\n${linhas.length - falhas}/${linhas.length} fontes responderam; itens sem origem carimbada: ${semOrigem}.`);
-process.exit(falhas ? 1 : 0);
+console.log(`\n${linhas.length - comErro.length}/${linhas.length} fontes responderam; itens sem origem carimbada: ${semOrigem}.`);
+if (fora.length) console.log(`aviso: órgão fora do ar ou lento agora: ${fora.map((l) => l.a.id).join(", ")}`);
+if (semImportacao.length) console.log(`aviso: sem arquivo importado nesta área: ${semImportacao.map((l) => l.a.id).join(", ")}`);
+if (falhas.length) console.log(`FALHA do sistema: ${falhas.map((l) => `${l.a.id} (${l.r.erro})`).join("; ")}`);
+// mais da metade sem resposta ao mesmo tempo costuma ser a rede daqui, não os órgãos
+const quaseTodas = fora.length > linhas.length / 2;
+if (quaseTodas) console.log("FALHA: mais da metade das fontes sem resposta — confira a internet desta máquina.");
+process.exit(falhas.length || semOrigem || quaseTodas ? 1 : 0);

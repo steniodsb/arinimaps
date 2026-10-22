@@ -14,7 +14,11 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) {
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
-const ok = (rotulo, cond, extra = "") => console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + extra : ""}`);
+// ✗ marca a saída com erro: o npm run testa precisa enxergar a falha
+const ok = (rotulo, cond, extra = "") => {
+  if (!cond) process.exitCode = 1;
+  console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + extra : ""}`);
+};
 
 const b = await puppeteer.launch({
   executablePath: process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -25,9 +29,15 @@ try {
   const p = await b.newPage();
   await p.setViewport({ width: 1440, height: 900 });
   const pedidos = [];
-  p.on("response", (r) => { if (r.url().includes("/api/geo/lotes")) pedidos.push(r.status()); });
+  p.on("response", (r) => { if (/\/api\/(geo|tiles)\/lotes/.test(r.url())) pedidos.push(r.status()); });
   const erros = [];
   p.on("pageerror", (e) => erros.push(String(e).slice(0, 160)));
+
+  // senha de bloqueio do site (fase de testes): sem ela toda rota responde "acesso restrito"
+  await p.goto(`${BASE}/acesso`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await p.evaluate(async (s) => {
+    await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: s }) });
+  }, process.env.SITE_SENHA ?? "");
 
   // centro de um bairro de Iturama, no zoom de lote
   await p.goto(`${BASE}/mapa#pos=18.6/-19.7262/-50.1985`, { waitUntil: "domcontentloaded", timeout: 120000 });
@@ -45,7 +55,8 @@ try {
   for (const [x, y] of [[1000, 480], [1080, 420], [920, 540], [1150, 520], [860, 400]]) {
     await p.mouse.click(x, y);
     await espera(2500);
-    cartao = await p.evaluate(() => [...document.querySelectorAll("div.cartao")].map((d) => d.innerText).find((t) => t.includes("Lote urbano")) ?? "");
+    // o cartão do lote é um painel de vidro sobre o mapa, achado pelo atalho de anunciar
+    cartao = await p.evaluate(() => [...document.querySelectorAll("a")].find((a) => a.textContent.includes("Este lote é meu"))?.closest("div.absolute")?.innerText ?? "");
     if (cartao) break;
   }
   ok("clique abre o cartão do lote", !!cartao, cartao.replace(/\n/g, " | ").slice(0, 150));
@@ -70,7 +81,9 @@ try {
     fd.set("dados", JSON.stringify({ tipo: "urbano", titulo: "TESTE AUTOMATIZADO — lote", condicao: "autorizacao", aceite_termos: true, lote_id: id }));
     // geometria falsa de propósito: a rota tem de ignorar e usar a do banco
     fd.set("geometria", JSON.stringify({ fonte: "lote", geometry: { type: "Point", coordinates: [0, 0] } }));
-    fd.append("doc_matricula", new File([new Uint8Array(1024)], "matricula.pdf", { type: "application/pdf" }));
+    // PDF mínimo válido: desde a 9.5 o upload confere o conteúdo, não só a extensão
+    const pdf = new TextEncoder().encode(["%PDF-1.4", "1 0 obj<<>>endobj", "trailer<<>>", "%%EOF", " ".repeat(1024)].join("\n"));
+    fd.append("doc_matricula", new File([pdf], "matricula.pdf", { type: "application/pdf" }));
     const res = await fetch("/api/imoveis", { method: "POST", body: fd });
     return { status: res.status, json: await res.json().catch(() => null) };
   }, loteId);

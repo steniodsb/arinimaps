@@ -41,7 +41,15 @@ const b = await puppeteer.launch({
 const novaPagina = async () => {
   const ctx = await b.createBrowserContext();
   const p = await ctx.newPage();
+  // IP próprio por sessão (faixa 10.251.x.x), como no testa-seguranca: em localhost não há
+  // proxy, e sem isto os limites dos formulários públicos por IP travam o teste seguinte
+  await p.setExtraHTTPHeaders({ "x-real-ip": `10.251.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
   await p.setViewport({ width: 1440, height: 900 });
+  // senha de bloqueio do site (fase de testes): sem ela toda rota responde "acesso restrito"
+  await p.goto(`${BASE}/acesso`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await p.evaluate(async (s) => {
+    await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: s }) });
+  }, process.env.SITE_SENHA ?? "");
   await p.goto(`${BASE}/entrar`, { waitUntil: "networkidle2", timeout: 120000 });
   return p;
 };
@@ -50,7 +58,11 @@ const api = (p, url, body, method = "POST") => p.evaluate(async (u, bd, m) => {
   const t = await r.text();
   return { status: r.status, corpo: t.slice(0, 220), json: (() => { try { return JSON.parse(t); } catch { return null; } })() };
 }, url, body, method);
-const ok = (rotulo, cond, extra = "") => console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + extra : ""}`);
+// ✗ marca a saída com erro: o npm run testa precisa enxergar a falha
+const ok = (rotulo, cond, extra = "") => {
+  if (!cond) process.exitCode = 1;
+  console.log(`${cond ? "✓" : "✗"} ${rotulo}${extra ? " — " + extra : ""}`);
+};
 
 const criados = { tarefas: [], tickets: [], lgpd: [], usuario: null };
 try {
@@ -130,7 +142,7 @@ try {
   const tq = await api(q, "/api/admin/tarefas", { setor: "juridico", titulo: "não deveria entrar" });
   ok("não cria tarefa em setor alheio (403)", tq.status === 403, tq.corpo);
   await q.goto(`${BASE}/admin`, { waitUntil: "networkidle2" });
-  const menu = await q.evaluate(() => [...document.querySelectorAll("aside nav p")].map((e) => e.textContent.trim()));
+  const menu = await q.evaluate(() => [...new Set([...document.querySelectorAll("aside button[aria-expanded] > span.flex-1")].map((e) => e.textContent.trim()))]);
   ok("menu mostra só Geral + Comercial", menu.join(",") === "Geral,Comercial", menu.join(","));
 
   // ---------- segundo fator ----------

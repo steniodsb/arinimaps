@@ -30,6 +30,12 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1400, height: 1000 });
 
+  // senha de bloqueio do site (fase de testes): sem ela toda rota responde "acesso restrito"
+  await page.goto(`${BASE}/acesso`, { waitUntil: "domcontentloaded", timeout: 120000 });
+  await page.evaluate(async (s) => {
+    await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: s }) });
+  }, process.env.SITE_SENHA ?? "");
+
   // login
   await page.goto(`${BASE}/entrar`, { waitUntil: "networkidle2" });
   await page.type('input[type="email"]', "admin@arinibrasil.com.br");
@@ -39,6 +45,9 @@ try {
     page.evaluate(() => [...document.querySelectorAll("button")]
       .find((b) => b.textContent.trim() === "Entrar" && b.type !== "button")?.click()),
   ]);
+
+  const { rows: antes } = await db.query(`select valor from settings where chave = 'hero_eyebrow'`);
+  const original = antes[0]?.valor ?? null;
 
   // configurações → aba Página inicial → altera a linha de topo
   await page.goto(`${BASE}/admin/configuracoes`, { waitUntil: "networkidle2" });
@@ -64,12 +73,17 @@ try {
   const { rows } = await db.query(`select valor from settings where chave = 'hero_eyebrow'`);
   const noBanco = String(rows[0]?.valor ?? "").replace(/^"|"$/g, "");
   console.log("banco:", noBanco === NOVO_EYEBROW ? `OK (${noBanco})` : `DIVERGENTE (${noBanco})`);
+  if (noBanco !== NOVO_EYEBROW) process.exitCode = 1;
 
-  const html = await (await fetch(BASE)).text();
+  // pelo navegador logado: o fetch do Node cairia na tela da senha do site
+  await page.goto(BASE, { waitUntil: "networkidle2" });
+  const html = await page.content();
   console.log("site público:", html.includes(NOVO_EYEBROW) ? "OK — refletiu na home" : "NÃO refletiu");
+  if (!html.includes(NOVO_EYEBROW)) process.exitCode = 1;
 
   // devolve ao valor original
-  await db.query(`update settings set valor = '"Pontal do Triângulo Mineiro"' where chave = 'hero_eyebrow'`);
+  if (original == null) await db.query(`delete from settings where chave = 'hero_eyebrow'`);
+  else await db.query(`update settings set valor = $1 where chave = 'hero_eyebrow'`, [JSON.stringify(original)]);
   console.log("valor restaurado");
 } finally {
   await browser.close();

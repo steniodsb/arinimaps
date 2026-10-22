@@ -26,6 +26,9 @@ const b = await puppeteer.launch({
 });
 const sessao = async (email, senha) => {
   const p = await (await b.createBrowserContext()).newPage();
+  // IP próprio por sessão (faixa 10.251.x.x), como no testa-seguranca: em localhost não há
+  // proxy, e sem isto os limites dos formulários públicos por IP travam o teste seguinte
+  await p.setExtraHTTPHeaders({ "x-real-ip": `10.251.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
   await p.goto(`${BASE}/entrar`, { waitUntil: "networkidle2", timeout: 120000 });
   if (process.env.SITE_SENHA && p.url().includes("/acesso")) {
     await p.evaluate(async (s) => { await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senha: s }) }); }, process.env.SITE_SENHA);

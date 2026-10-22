@@ -79,10 +79,16 @@ Toda tentativa bloqueada aparece em *Segurança › Tentativas bloqueadas*.
 npm run testa
 ```
 
-Roda a auditoria das rotas, as fontes oficiais e os testes de ponta a ponta (planos, mapa,
-conta e suporte, perfis). Cada teste apaga o que cria. Roteiro de homologação: `HOMOLOGACAO.md`.
+Roda 15 etapas: auditoria das rotas, fontes oficiais ao vivo, fumaça de todas as telas, Matriz
+por setores (tarefas, suporte, LGPD, segundo fator), configurações refletindo no site, lotes
+urbanos, planos, tiles do mapa, conta e suporte, perfis, segurança, calibração, ferramentas do
+mapa, matrícula e importação do CAR. Cada teste apaga o que cria. Entre as etapas, a rotina zera
+só os limites de login e de formulário das contas e IPs de teste (servidor local).
 
-Revisão visual de **todas** as telas (61 rotas + 404, em modo escuro, claro e celular, cada uma
+Órgão do governo fora do ar ou lento aparece como **aviso**, não como falha: é instabilidade
+deles e o relatório já mostra a fonte como "indisponível agora". Roteiro de homologação: `HOMOLOGACAO.md`.
+
+Revisão visual de **todas** as telas (62 rotas + 404, em modo escuro, claro e celular, cada uma
 com o perfil certo), com detector de rolagem lateral, texto estourando, erro de página e emoji:
 
 ```bash

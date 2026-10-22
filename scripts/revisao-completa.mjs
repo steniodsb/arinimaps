@@ -1,4 +1,4 @@
-// Revisão visual COMPLETA: todas as páginas do sistema (61 rotas + 404) em
+// Revisão visual COMPLETA: todas as páginas do sistema (62 rotas + 404) em
 // modo escuro, claro e celular, cada uma com o perfil certo (visitante,
 // proprietário ou diretoria). Cria os registros que faltam na base de teste
 // (chamado, solicitação cartográfica, consulta de área) e apaga no fim.
@@ -130,7 +130,7 @@ const ROTAS = [
   solic && ["painel-cartografia-item", `/painel/cartografia/${solic}`, P],
   ["painel-organizacao", "/painel/organizacao", P], ["conta", "/conta", P], ["conta-seguranca", "/conta/seguranca", P],
   ["suporte-logado", "/suporte", P],
-  ...["", "/auditoria", "/cadastros", "/cartografia", "/cartografia/solicitacoes", "/comercial", "/comissoes",
+  ...["", "/auditoria", "/cadastros", "/car", "/cartografia", "/cartografia/solicitacoes", "/comercial", "/comissoes",
     "/configuracoes", "/conhecimento", "/demandas", "/financeiro", "/fontes", "/funil", "/imoveis", "/juridico",
     "/juridico/lgpd", "/leads", "/marketing", "/mensalidades", "/operacoes", "/organizacoes", "/planos", "/regioes",
     "/relatorios", "/seguranca", "/seguranca/revisao", "/suporte", "/tarefas", "/usuarios"]

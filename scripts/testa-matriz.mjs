@@ -152,7 +152,8 @@ try {
   const segredo = await q.evaluate(() => document.querySelector("p.font-mono.select-all")?.textContent.trim());
   await q.type("#cod", totp(segredo));
   await q.evaluate(() => [...document.querySelectorAll("button")].find((x) => x.textContent.includes("Confirmar e ativar"))?.click());
-  await espera(4000);
+  // espera a confirmação na tela (com a bateria inteira, 4 s fixos não bastavam)
+  await q.waitForFunction(() => document.body.innerText.includes("Ativa desde") || !!document.querySelector(".text-critico"), { timeout: 30000 }).catch(() => null);
   const ativa = await q.evaluate(() => document.body.innerText.includes("Ativa desde"));
   ok("segundo fator ativado com TOTP", ativa);
   await q.screenshot({ path: ".capturas/conta-seguranca.png", fullPage: true });

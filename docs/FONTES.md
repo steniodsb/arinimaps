@@ -44,7 +44,7 @@ por área entra **inativa**, com o motivo medido, e aparece no relatório como
 | Municípios: malha, códigos e indicadores | IBGE | API REST + SIDRA, **copiados para o banco** (22/10) | não | grátis | ativa | Iturama: 38.295 hab. (Censo 2022) |
 | Biomas (limite oficial 1:250.000) | IBGE | WFS, **copiado para o banco** (22/10) | não | grátis | **ativa** | 97,8% Cerrado, 2,2% Mata Atlântica |
 | MapBiomas | MapBiomas | API com token | token + termos | grátis com termos | inativa (8.7) | — |
-| Sentinel-2 | Copernicus | API com conta | conta | grátis com cota | inativa (3.8) | — |
+| Sentinel-2 (cenas e NDVI) | Copernicus Data Space | catálogo STAC aberto + Sentinel Hub com conta | conta + cliente OAuth (só para imagem e NDVI) | grátis: 10.000 PU/mês | **busca ativa; imagem e NDVI aguardam a conta** (22/10) | 28 passagens em Iturama de jul a out/2026 |
 
 Números medidos com `scripts/testa-apis-rurais.mjs` no envelope acima.
 
@@ -149,6 +149,26 @@ referência, consulta por geometria, cache e registro de origem.
 - **Carga e atualização:** `node scripts/ibge-importa.mjs [biomas] [municipios] [indicadores]` (todo: ~50 s). Indicadores
   uma vez por ano, depois da estimativa de população (agosto) e do PIB dos Municípios (dezembro).
 - **Teste:** `node scripts/testa-ibge.mjs` (no `npm run testa`).
+
+### Copernicus Data Space — Sentinel-2 (`sentinel`) — 22/10/2026
+- **Catálogo (aberto, sem conta):** `POST https://stac.dataspace.copernicus.eu/v1/search`, coleção `sentinel-2-l2a`,
+  filtro CQL2 `eo:cloud_cover <= N`, ordenado por data. A nuvem é da quadrícula MGRS inteira (~110 km), não da área.
+  Na divisa de quadrícula a mesma passagem aparece duas vezes: fica a de menos nuvem.
+- **Imagem e NDVI (com conta):** Sentinel Hub do CDSE, `https://sh.dataspace.copernicus.eu/api/v1/process` (PNG do tile,
+  EPSG:3857) e `/api/v1/statistics` (média e faixas do NDVI na área). Token OAuth `client_credentials` em
+  `https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token`. Sem token: 401.
+- **Nuvem:** pixels com SCL 3 (sombra), 8, 9 (nuvem) e 10 (cirro) saem transparentes na imagem e fora da média.
+- **Faixas do NDVI:** ≤0 água/sem vegetação · ≤0,2 solo exposto · ≤0,4 vegetação baixa · ≤0,6 moderada · >0,6 densa.
+- **Cota grátis:** 10.000 unidades de processamento por mês e 300 pedidos por minuto (documentação de quotas, 22/10/2026).
+  Para economizar: tiles só do zoom 10 ao 16, só para o plano profissional, guardados 7 dias no navegador e em memória.
+- **Licença:** dados Copernicus Sentinel são livres, inclusive para uso comercial, com atribuição (a atribuição vai no
+  canto do mapa). Resolve a restrição do mosaico da EOX de 2018 em diante (CC BY-NC-SA).
+- **Ligar:** criar a conta em https://dataspace.copernicus.eu, abrir https://shapps.dataspace.copernicus.eu/dashboard/#/account/settings
+  › OAuth clients › Create (o segredo só aparece uma vez) e pôr `COPERNICUS_CLIENT_ID` e `COPERNICUS_CLIENT_SECRET` no servidor.
+  Sem elas, a busca de cenas funciona, a cena não abre (aviso no painel) e o NDVI some do relatório.
+- **Teste:** `node scripts/testa-sentinel.mjs` (no `npm run testa`); testa um modo ou outro conforme a conta exista.
+- **Não testado sem a conta:** a geração do PNG e a estatística do NDVI (Process e Statistical API) — o código segue a
+  documentação do CDSE, mas só roda de verdade depois de configurar o cliente OAuth.
 
 ### Demais fontes ativas (sem mudança em 07/10)
 | Fonte | Serviço | Licença | Atualização |

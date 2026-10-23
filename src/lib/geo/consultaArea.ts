@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
 import { ADAPTADORES, type Bbox, type ResultadoFonte } from "@/lib/rural/adaptadores";
+import { processamentoLigado } from "@/lib/sentinel/copernicus";
 import { ipDoPedido, limitar, respostaLimite } from "@/lib/seguranca/limite";
 import { EsperaEsgotada, fila, inteiroDoAmbiente, type Liberar } from "@/lib/seguranca/fila";
 import {
@@ -169,7 +170,9 @@ export async function carregarConsultaArea(chave: string, opcoes: { excluir?: st
   const excluir = new Set(opcoes.excluir ?? []);
   const porFonte = new Map((consultas ?? []).map((c) => [c.fonte_id, c]));
   const lista: FonteConsultada[] = (fontes ?? [])
-    .filter((f) => f.ativa && ["wfs", "arcgis", "importada"].includes(f.tipo) && !excluir.has(f.id))
+    .filter((f) => f.ativa && ["wfs", "arcgis", "importada", "api"].includes(f.tipo) && !excluir.has(f.id))
+    // NDVI do Sentinel-2 só quando a conta do Copernicus está configurada
+    .filter((f) => f.id !== "sentinel" || processamentoLigado())
     .map((f) => ({
       id: f.id, nome: f.nome, orgao: f.orgao,
       // 3.15/3.16: classificação da base e aviso de instabilidade vêm do monitor de fontes

@@ -32,7 +32,7 @@ export type ImagemHistorica = {
   id: string;
   rotulo: string;
   ano: number;
-  familia: "wayback" | "sentinel";
+  familia: "wayback" | "sentinel" | "copernicus";
   fonte: RasterSourceSpecification;
 };
 
@@ -86,5 +86,34 @@ export const IMAGENS_HISTORICAS: ImagemHistorica[] = [
   })),
 ];
 
-export const imagemHistoricaPorId = (id: string | null | undefined) =>
-  IMAGENS_HISTORICAS.find((i) => i.id === id) ?? null;
+/**
+ * 3. **Cena do dia pelo Copernicus Data Space** (22/10/2026): a pessoa escolhe a
+ * passagem do Sentinel-2 pela data e pela nuvem (CenasCopernicus.tsx) e vê em
+ * cor real ou NDVI. Os tiles vêm de /api/sentinel/tile (conta da Arini no
+ * Sentinel Hub). Id: `cdse:AAAA-MM-DD:cor|ndvi`. LICENÇA: dados Copernicus
+ * Sentinel, livres inclusive para uso comercial, com atribuição.
+ */
+export function imagemCdse(data: string, tipo: "cor" | "ndvi"): ImagemHistorica {
+  const origem = typeof window === "undefined" ? "" : window.location.origin;
+  return {
+    id: `cdse:${data}:${tipo}`,
+    rotulo: `${dataBr(data)} · Sentinel-2 ${tipo === "ndvi" ? "NDVI" : "cor real"}`,
+    ano: Number(data.slice(0, 4)),
+    familia: "copernicus",
+    fonte: {
+      type: "raster",
+      tiles: [`${origem}/api/sentinel/tile/${data}/${tipo}/{z}/{x}/{y}.png`],
+      tileSize: 256,
+      // o servidor só gera do zoom 10 ao 16 (10 m por pixel)
+      minzoom: 10,
+      maxzoom: 16,
+      attribution: `Contém dados Copernicus Sentinel ${data.slice(0, 4)} modificados (Copernicus Data Space Ecosystem)`,
+    },
+  };
+}
+
+export const imagemHistoricaPorId = (id: string | null | undefined) => {
+  const m = id?.match(/^cdse:(\d{4}-\d{2}-\d{2}):(cor|ndvi)$/);
+  if (m) return imagemCdse(m[1], m[2] as "cor" | "ndvi");
+  return IMAGENS_HISTORICAS.find((i) => i.id === id) ?? null;
+};

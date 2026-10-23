@@ -23,6 +23,7 @@ import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
 import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, ROTULO_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
 import ComparaImagens from "@/components/map/ComparaImagens";
+import CenasCopernicus from "@/components/map/CenasCopernicus";
 import { IMAGENS_HISTORICAS, imagemHistoricaPorId } from "@/lib/map/historico";
 import { useTema } from "@/components/shell/BotaoTema";
 import { usePreferencias } from "@/lib/usePreferencias";
@@ -1190,6 +1191,9 @@ export default function MapaRegional({
               }}
               className="w-full rounded-xl border border-linha-forte bg-superficie-2 px-3.5 py-2.5 text-sm text-texto transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30">
               <option value="">Atual (padrão)</option>
+              {imagemAno?.startsWith("cdse:") && (
+                <option value={imagemAno}>{imagemHistoricaPorId(imagemAno)?.rotulo}</option>
+              )}
               <optgroup label="Alta resolução — Esri Wayback (~0,5 m)">
                 {IMAGENS_HISTORICAS.filter((i) => i.familia === "wayback").map((i) => (
                   <option key={i.id} value={i.id}>{i.rotulo}</option>
@@ -1206,6 +1210,8 @@ export default function MapaRegional({
                 onChange={(e) => setComparar(e.target.checked)} className="size-4 accent-verde" />
               Comparar com a imagem atual (cortina)
             </label>
+            <CenasCopernicus mapa={mapaPronto} selecionada={imagemAno}
+              aoEscolher={(id) => { setImagemAno(id); if (id) setBase("satelite"); else setComparar(false); }} />
             <p className="text-xs text-texto-2 leading-relaxed border-t border-linha pt-3">
               Wayback mostra o mosaico da Esri como estava publicado no fim de cada ano — a foto de um lugar
               pode ser anterior. Sentinel-2 é um mosaico anual sem nuvens, bom para vegetação e mancha urbana,

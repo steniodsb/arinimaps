@@ -80,10 +80,10 @@ Toda tentativa bloqueada aparece em *Segurança › Tentativas bloqueadas*.
 npm run testa
 ```
 
-Roda 16 etapas: auditoria das rotas, fontes oficiais ao vivo, fumaça de todas as telas, Matriz
+Roda 17 etapas: auditoria das rotas, fontes oficiais ao vivo, fumaça de todas as telas, Matriz
 por setores (tarefas, suporte, LGPD, segundo fator), configurações refletindo no site, lotes
 urbanos, planos, tiles do mapa, conta e suporte, perfis, segurança, calibração, ferramentas do
-mapa, matrícula, importação do CAR e IBGE (biomas e indicadores). Cada teste apaga o que cria. Entre as etapas, a rotina zera
+mapa, matrícula, importação do CAR, IBGE (biomas e indicadores) e Sentinel-2 do Copernicus. Cada teste apaga o que cria. Entre as etapas, a rotina zera
 só os limites de login e de formulário das contas e IPs de teste (servidor local).
 
 Órgão do governo fora do ar ou lento aparece como **aviso**, não como falha: é instabilidade

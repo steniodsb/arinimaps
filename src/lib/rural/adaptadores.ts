@@ -6,6 +6,7 @@ import { EsperaEsgotada, fila, inteiroDoAmbiente } from "../seguranca/fila";
 import { getComCadeia } from "../geo/tlsOrgaos";
 import { supabaseAdmin } from "../supabase/admin";
 import { TEMAS_CAR, type TemaCar } from "../geo/temasCar";
+import { buscarCenas, ndviDaArea, processamentoLigado, type EstatisticaNdvi } from "../sentinel/copernicus";
 
 /**
  * Adaptadores das fontes oficiais de consulta rural.
@@ -278,6 +279,7 @@ export const ORIGENS: Record<string, { orgao: string; base: string; tipo: TipoOr
   car: { orgao: "Serviço Florestal Brasileiro", base: "SICAR — Cadastro Ambiental Rural", tipo: "oficial" },
   car_ambiental: { orgao: "Serviço Florestal Brasileiro", base: "SICAR — camadas ambientais (arquivo importado)", tipo: "oficial" },
   ibge_biomas: { orgao: "IBGE", base: "Biomas do Brasil 1:250.000 (limite oficial)", tipo: "oficial" },
+  sentinel: { orgao: "Copernicus (ESA/UE) — cálculo da Arini", base: "Sentinel-2 L2A · NDVI", tipo: "derivado" },
   sigef: { orgao: "INCRA", base: "SIGEF — parcelas certificadas", tipo: "oficial" },
   snci: { orgao: "INCRA", base: "SNCI — imóveis certificados (até 2013)", tipo: "oficial" },
   ibama_embargos: { orgao: "IBAMA", base: "SISCOM — áreas embargadas", tipo: "oficial" },
@@ -473,6 +475,59 @@ export function consultarBiomas(bbox: Bbox) {
         extra: { bioma: b.bioma, pct: Number(b.pct), area_ha: Number(b.area_ha) },
       })),
     };
+  });
+}
+
+/**
+ * Vegetação pelo NDVI do Sentinel-2 (Copernicus Data Space, migration 0052).
+ *
+ * Acha no catálogo as passagens dos últimos 120 dias e mede o NDVI na que
+ * tiver menos nuvem DENTRO da área (a nuvem do catálogo é da quadrícula de
+ * ~110 km, então tenta até 3 cenas). Depois a mesma época do ano anterior,
+ * para mostrar se a área ganhou ou perdeu vegetação — com a ressalva de que
+ * pasto e lavoura mudam com a estação e a safra.
+ */
+const fmtNdvi = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dataIso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const dataBrIso = (d: string) => d.split("-").reverse().join("/");
+
+async function melhorNdvi(b4: [number, number, number, number], de: string, ate: string): Promise<EstatisticaNdvi | null> {
+  const cenas = (await buscarCenas(b4, { de, ate, nuvemMax: 60, limite: 60 }))
+    .sort((a, b) => a.nuvem - b.nuvem || b.data.localeCompare(a.data)).slice(0, 3);
+  let melhor: EstatisticaNdvi | null = null;
+  for (const c of cenas) {
+    const e = await ndviDaArea(b4, c.data).catch(() => null);
+    if (e && (!melhor || e.nuvemPct < melhor.nuvemPct)) melhor = e;
+    if (melhor && melhor.nuvemPct < 10) break;
+  }
+  return melhor;
+}
+
+export function consultarNdvi(bbox: Bbox) {
+  return adaptador("sentinel", async () => {
+    const b4: [number, number, number, number] = [bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax];
+    const agora = Date.now();
+    const atual = await melhorNdvi(b4, dataIso(agora - 120 * 86_400_000), dataIso(agora));
+    if (!atual) throw new Error("nenhuma passagem do Sentinel-2 sem nuvem sobre a área nos últimos 120 dias");
+    const t = new Date(`${atual.data}T12:00:00Z`).getTime();
+    const anterior = await melhorNdvi(b4, dataIso(t - 410 * 86_400_000), dataIso(t - 320 * 86_400_000)).catch(() => null);
+    const principal = [...atual.faixas].sort((a, b) => b.pct - a.pct)[0];
+    const itens: ItemEncontrado[] = [{
+      titulo: `NDVI médio ${fmtNdvi(atual.media)} — ${principal.nome} em ${principal.pct}% da área`,
+      detalhe: `Passagem de ${dataBrIso(atual.data)}. ${atual.faixas.filter((f) => f.pct > 0).map((f) => `${f.nome} ${f.pct}%`).join(", ")}`
+        + (atual.nuvemPct >= 1 ? `. ${atual.nuvemPct.toLocaleString("pt-BR")}% da área sem leitura (nuvem ou sombra).` : "."),
+      extra: { ndvi_medio: atual.media, data_cena: atual.data, sem_leitura_pct: atual.nuvemPct },
+    }];
+    if (anterior) {
+      const dif = Math.round((atual.media - anterior.media) * 100) / 100;
+      itens.push({
+        titulo: `Um ano antes: NDVI médio ${fmtNdvi(anterior.media)} (${dataBrIso(anterior.data)})`,
+        detalhe: `${dif === 0 ? "Sem mudança" : dif > 0 ? `Subiu ${fmtNdvi(dif)}` : `Caiu ${fmtNdvi(-dif)}`} em relação à passagem atual. `
+          + "Pasto e lavoura variam com a estação e a safra: diferença pequena não indica desmatamento.",
+        extra: { ndvi_medio: anterior.media, data_cena: anterior.data, diferenca: dif },
+      });
+    }
+    return { quantidade: 1, incide: false, atualizado_em: `${atual.data}T12:00:00Z`, versao: "Sentinel-2 L2A", itens };
   });
 }
 
@@ -1015,6 +1070,8 @@ export const ADAPTADORES: { id: string; fn: (b: Bbox) => Promise<ResultadoFonte>
   { id: "car", fn: consultarCar },
   { id: "car_ambiental", fn: consultarCarAmbiental },
   { id: "ibge_biomas", fn: consultarBiomas },
+  // sem a conta do Copernicus a fonte fica fora (consultaArea também a esconde da lista)
+  ...(processamentoLigado() ? [{ id: "sentinel", fn: consultarNdvi }] : []),
   { id: "sigef", fn: consultarSigef },
   { id: "snci", fn: consultarSnci },
   { id: "ibama_embargos", fn: consultarEmbargosIbama },

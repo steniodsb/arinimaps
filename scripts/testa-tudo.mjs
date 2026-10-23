@@ -49,6 +49,7 @@ const PASSOS = [
   ["Matrícula do anúncio (conferência, selo, RLS, ONR)", "scripts/testa-matricula.mjs", true],
   ["Importação manual do CAR (zip do SICAR, histórico, cobertura)", "scripts/testa-car-importacao.mjs", true],
   ["IBGE: biomas no relatório e no mapa, indicadores do município", "scripts/testa-ibge.mjs", true],
+  ["Sentinel-2 pelo Copernicus: cenas por data e nuvem, tiles, NDVI", "scripts/testa-sentinel.mjs", true],
 ];
 
 const somente = process.argv[2];

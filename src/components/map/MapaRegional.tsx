@@ -1232,7 +1232,9 @@ export default function MapaRegional({
             bloqueado={!liberado("camadas_oficiais")} logado={logado}
             ativas={camadasAtivas} estado={estadoCamadas} onAlternar={alternarCamada} />
         )}
-        <Legenda extras={CAMADAS_OFICIAIS.filter((c) => camadasAtivas.has(c.id))} />
+        <Legenda extras={CAMADAS_OFICIAIS.filter((c) => camadasAtivas.has(c.id))
+          // camada com cor por valor (biomas): uma linha por valor na legenda
+          .flatMap((c) => (c.cores ? Object.entries(c.cores).map(([nome, cor]) => ({ nome, cor })) : [c]))} />
 
         <Ferramentas
           mapa={mapaPronto}

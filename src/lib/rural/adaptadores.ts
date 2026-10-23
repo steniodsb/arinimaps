@@ -277,6 +277,7 @@ const dataBr = (v: unknown) => {
 export const ORIGENS: Record<string, { orgao: string; base: string; tipo: TipoOrigem }> = {
   car: { orgao: "Serviço Florestal Brasileiro", base: "SICAR — Cadastro Ambiental Rural", tipo: "oficial" },
   car_ambiental: { orgao: "Serviço Florestal Brasileiro", base: "SICAR — camadas ambientais (arquivo importado)", tipo: "oficial" },
+  ibge_biomas: { orgao: "IBGE", base: "Biomas do Brasil 1:250.000 (limite oficial)", tipo: "oficial" },
   sigef: { orgao: "INCRA", base: "SIGEF — parcelas certificadas", tipo: "oficial" },
   snci: { orgao: "INCRA", base: "SNCI — imóveis certificados (até 2013)", tipo: "oficial" },
   ibama_embargos: { orgao: "IBAMA", base: "SISCOM — áreas embargadas", tipo: "oficial" },
@@ -441,6 +442,36 @@ export function consultarCarAmbiental(bbox: Bbox) {
       atualizado_em: bases.length ? `${bases[0]}T12:00:00-03:00` : null,
       versao: r.municipios.map((m) => `${m.municipio}: base de ${new Date(`${m.data_base}T12:00:00`).toLocaleDateString("pt-BR")}`).join(" · "),
       itens,
+    };
+  });
+}
+
+/**
+ * IBGE — bioma oficial da área (limite 1:250.000, migration 0051). Lê o banco
+ * (`ibge_biomas_partes`, carregado por scripts/ibge-importa.mjs): o WFS do IBGE
+ * devolve o bioma inteiro para qualquer envelope, pesado demais para a hora da
+ * consulta. Área na divisa entre biomas sai com a porcentagem de cada um — o
+ * que muda a regra de reserva legal e de supressão de vegetação.
+ */
+export function consultarBiomas(bbox: Bbox) {
+  return adaptador("ibge_biomas", async () => {
+    const { data, error } = await supabaseAdmin().rpc("fn_biomas_envelope", {
+      p_xmin: bbox.xmin, p_ymin: bbox.ymin, p_xmax: bbox.xmax, p_ymax: bbox.ymax,
+    });
+    if (error) throw new Error(error.message);
+    const r = data as { total_ha: number; biomas: { bioma: string; area_ha: number; pct: number }[]; importado_em: string | null };
+    if (!r.importado_em) throw new Error("limites dos biomas ainda não importados (scripts/ibge-importa.mjs)");
+    return {
+      quantidade: r.biomas.length,
+      // bioma não é restrição: é contexto — não acende o alerta de "incide"
+      incide: false,
+      // a data que temos é a da cópia para o banco, não a da edição do IBGE
+      versao: `IBGE 1:250.000 · copiado em ${new Date(r.importado_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+      itens: r.biomas.map((b) => ({
+        titulo: r.biomas.length === 1 ? b.bioma : `${b.bioma} — ${Number(b.pct).toLocaleString("pt-BR")}% da área`,
+        detalhe: `${Number(b.area_ha).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} ha na área consultada (com o raio)`,
+        extra: { bioma: b.bioma, pct: Number(b.pct), area_ha: Number(b.area_ha) },
+      })),
     };
   });
 }
@@ -983,6 +1014,7 @@ export function consultarDnit(bbox: Bbox) {
 export const ADAPTADORES: { id: string; fn: (b: Bbox) => Promise<ResultadoFonte> }[] = [
   { id: "car", fn: consultarCar },
   { id: "car_ambiental", fn: consultarCarAmbiental },
+  { id: "ibge_biomas", fn: consultarBiomas },
   { id: "sigef", fn: consultarSigef },
   { id: "snci", fn: consultarSnci },
   { id: "ibama_embargos", fn: consultarEmbargosIbama },

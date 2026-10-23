@@ -93,10 +93,16 @@ export class GerenciadorCamadasOficiais {
       }, antes);
       return;
     }
+    // cor por bioma (ou por outro valor de `nome`): expressão match do MapLibre
+    const corFill = def.cores
+      ? (["match", ["get", "nome"], ...Object.entries(def.cores).flat(), def.cor] as never)
+      : def.cor;
     this.map.addLayer({
       id: `of-${id}-fill`, type: "fill", source: fonte(id),
-      paint: { "fill-color": def.cor, "fill-opacity": 0.16 },
+      // sem antisserrilhado na camada recortada em células: senão a emenda entre células vira um fio
+      paint: { "fill-color": corFill, "fill-opacity": def.semContorno ? 0.24 : 0.16, ...(def.semContorno ? { "fill-antialias": false } : {}) },
     }, antes);
+    if (def.semContorno) return;
     this.map.addLayer({
       id: `of-${id}-linha`, type: "line", source: fonte(id),
       paint: {

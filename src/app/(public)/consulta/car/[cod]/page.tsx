@@ -9,6 +9,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
 import MatriculaSigef from "@/components/rural/MatriculaSigef";
+import IndicadoresMunicipio from "@/components/rural/IndicadoresMunicipio";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Consulta de área rural" };
@@ -100,6 +101,9 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
             </p>
           </div>
         </div>
+
+        {/* o código do CAR traz o município: UF-IBGE-... */}
+        <IndicadoresMunicipio codIbge={Number(p.cod.match(/^[A-Z]{2}-(\d{7})-/)?.[1]) || null} />
 
         <SecaoFontesOficiais
           url={`/api/consulta/car/${encodeURIComponent(p.cod)}`}

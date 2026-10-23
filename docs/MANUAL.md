@@ -38,6 +38,7 @@ Toda tentativa bloqueada aparece em *Segurança › Tentativas bloqueadas*.
 | Solicitação "não encontrei meu imóvel" / "mapa divergente" | Cartografia › Solicitações cartográficas | Cartografia |
 | Plantas, calibração, lotes, CAR, municípios | Cartografia, Regiões e CAR | Cartografia |
 | Camadas ambientais do CAR (APP, reserva legal…) e cobertura por município | CAR: importação e cobertura (`docs/CAR-IMPORTACAO.md`) | Cartografia |
+| Biomas e indicadores do IBGE (carga anual) | `node scripts/ibge-importa.mjs` (`docs/FONTES.md`, seção IBGE) | Cartografia |
 | Saúde das fontes oficiais, matriz técnica | Cartografia › Fontes oficiais | Cartografia |
 | Mensalidades e comissões | Financeiro | Financeiro |
 | Pedidos LGPD, termos, contratos | Jurídico | Jurídico |
@@ -79,10 +80,10 @@ Toda tentativa bloqueada aparece em *Segurança › Tentativas bloqueadas*.
 npm run testa
 ```
 
-Roda 15 etapas: auditoria das rotas, fontes oficiais ao vivo, fumaça de todas as telas, Matriz
+Roda 16 etapas: auditoria das rotas, fontes oficiais ao vivo, fumaça de todas as telas, Matriz
 por setores (tarefas, suporte, LGPD, segundo fator), configurações refletindo no site, lotes
 urbanos, planos, tiles do mapa, conta e suporte, perfis, segurança, calibração, ferramentas do
-mapa, matrícula e importação do CAR. Cada teste apaga o que cria. Entre as etapas, a rotina zera
+mapa, matrícula, importação do CAR e IBGE (biomas e indicadores). Cada teste apaga o que cria. Entre as etapas, a rotina zera
 só os limites de login e de formulário das contas e IPs de teste (servidor local).
 
 Órgão do governo fora do ar ou lento aparece como **aviso**, não como falha: é instabilidade

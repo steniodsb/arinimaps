@@ -48,6 +48,7 @@ const PASSOS = [
   ["Ferramentas do mapa (medir distância e área)", "scripts/testa-ferramentas-mapa.mjs", true],
   ["Matrícula do anúncio (conferência, selo, RLS, ONR)", "scripts/testa-matricula.mjs", true],
   ["Importação manual do CAR (zip do SICAR, histórico, cobertura)", "scripts/testa-car-importacao.mjs", true],
+  ["IBGE: biomas no relatório e no mapa, indicadores do município", "scripts/testa-ibge.mjs", true],
 ];
 
 const somente = process.argv[2];

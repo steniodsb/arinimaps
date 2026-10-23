@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
 import { Conteudo, Etiqueta, Secao } from "@/components/ui/Pagina";
+import IndicadoresMunicipio from "@/components/rural/IndicadoresMunicipio";
 import { currentUser } from "@/lib/supabase/server";
 import MiniMapa from "@/components/map/MiniMapa";
 import InteresseForm from "@/components/InteresseForm";
@@ -291,6 +292,8 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                 </div>
               </Secao>
             )}
+
+            {centroid && <IndicadoresMunicipio ponto={centroid} />}
 
             {pois.length > 0 && (
               <Secao eyebrow="Arredores" titulo="Pontos de interesse próximos"

@@ -9,7 +9,7 @@
  * e unidades de conservação são grandes e aparecem já na visão regional.
  */
 export type CamadaOficialId =
-  | "sigef" | "ibama_embargos" | "anm" | "funai" | "ucs" | "quilombolas" | "prodes_cerrado" | "inpe_queimadas";
+  | "sigef" | "ibama_embargos" | "anm" | "funai" | "ucs" | "quilombolas" | "prodes_cerrado" | "inpe_queimadas" | "ibge_biomas";
 
 export type CamadaOficial = {
   id: CamadaOficialId;
@@ -22,6 +22,16 @@ export type CamadaOficial = {
   ponto?: boolean;
   /** o que essa camada significa para quem negocia terra */
   ajuda: string;
+  /** cor por valor de `nome` (biomas); sem isto, tudo em `cor` */
+  cores?: Record<string, string>;
+  /** só preenchimento: a camada vem recortada em células e o contorno desenharia as emendas */
+  semContorno?: boolean;
+};
+
+/** Cores dos biomas: as mesmas famílias do mapa de biomas do IBGE, ajustadas para o tema escuro. */
+export const CORES_BIOMAS: Record<string, string> = {
+  "Amazônia": "#2E9E5B", "Caatinga": "#E0A458", "Cerrado": "#C9B23B",
+  "Mata Atlântica": "#5BC08A", "Pampa": "#A7C957", "Pantanal": "#4FA3C7",
 };
 
 export const CAMADAS_OFICIAIS: CamadaOficial[] = [
@@ -39,6 +49,9 @@ export const CAMADAS_OFICIAIS: CamadaOficial[] = [
     ajuda: "Supressão de vegetação detectada por satélite, por ano." },
   { id: "inpe_queimadas", nome: "Focos de queimada (12 meses)", orgao: "INPE", grupo: "Ambiental", cor: "#FF7B00", zoomMin: 9, ponto: true,
     ajuda: "Focos de calor detectados por satélite no último ano." },
+  { id: "ibge_biomas", nome: "Biomas (limite oficial)", orgao: "IBGE", grupo: "Ambiental", cor: "#C9B23B", zoomMin: 5,
+    cores: CORES_BIOMAS, semContorno: true,
+    ajuda: "Bioma pelo limite oficial do IBGE: define o percentual de reserva legal e as regras de supressão." },
   { id: "anm", nome: "Processos minerários", orgao: "ANM", grupo: "Infraestrutura", cor: "#B8B8B8", zoomMin: 9,
     ajuda: "Pedido ou direito de pesquisa e lavra mineral sobre a área." },
 ];
@@ -67,5 +80,7 @@ export function descreverFeicao(id: CamadaOficialId, p: Record<string, unknown>)
       return { titulo: "Foco de queimada", detalhe: junta(s(p.data) && `detectado em ${s(p.data)}`, s(p.satelite)) };
     case "prodes_cerrado":
       return { titulo: `Desmatamento ${s(p.ano)}`, detalhe: junta(ha(p.area_ha), "PRODES Cerrado") };
+    case "ibge_biomas":
+      return { titulo: s(p.nome) || "Bioma", detalhe: "Limite oficial do IBGE (1:250.000)" };
   }
 }

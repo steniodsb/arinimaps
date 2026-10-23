@@ -8,6 +8,7 @@ import { CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
+import IndicadoresMunicipio from "@/components/rural/IndicadoresMunicipio";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Consulta de área desenhada" };
@@ -82,6 +83,8 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
             </p>
           </div>
         </div>
+
+        <IndicadoresMunicipio ponto={{ lng: area.lng, lat: area.lat }} />
 
         <SecaoFontesOficiais
           url="/api/consulta/area"

@@ -10,6 +10,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { CATEGORIA_POI_LABEL, formatDistancia, nomePoi, type PoiDistancia } from "@/lib/geo/distancia";
 import BotaoMapaOnr from "@/components/rural/BotaoMapaOnr";
+import IndicadoresMunicipio from "@/components/rural/IndicadoresMunicipio";
 import { pointOnFeature } from "@turf/turf";
 
 export const dynamic = "force-dynamic";
@@ -140,6 +141,8 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
             </p>
           )}
         </Secao>
+
+        <IndicadoresMunicipio ponto={{ lng: pontoLote[0], lat: pontoLote[1] }} />
 
         <SecaoFontesOficiais
           url={`/api/consulta/lote/${p.id}`}

@@ -41,7 +41,8 @@ por área entra **inativa**, com o motivo medido, e aparece no relatório como
 | Rodovias federais e estaduais | DNIT (SNV + CIDE) | WFS | não | grátis | **ativa** | 15 rodovias |
 | Rodovias estaduais (DER/MG) | DER/MG | sem serviço | — | — | inativa (coberto pelo DNIT/CIDE) | — |
 | Pontos de interesse | OpenStreetMap | Overpass | não (User-Agent) | grátis | ativa (terceiro) | — |
-| Municípios | IBGE | API REST | não | grátis | ativa | — |
+| Municípios: malha, códigos e indicadores | IBGE | API REST + SIDRA, **copiados para o banco** (22/10) | não | grátis | ativa | Iturama: 38.295 hab. (Censo 2022) |
+| Biomas (limite oficial 1:250.000) | IBGE | WFS, **copiado para o banco** (22/10) | não | grátis | **ativa** | 97,8% Cerrado, 2,2% Mata Atlântica |
 | MapBiomas | MapBiomas | API com token | token + termos | grátis com termos | inativa (8.7) | — |
 | Sentinel-2 | Copernicus | API com conta | conta | grátis com cota | inativa (3.8) | — |
 
@@ -131,6 +132,23 @@ referência, consulta por geometria, cache e registro de origem.
 - **Estaduais:** `vgeo:vw_cide_rod_2021` — base CIDE que o DNIT publica, com as estaduais de MG (MG-255 etc.), 35 trechos.
 - **DER/MG:** sem serviço geográfico; a IDE-Sisema (`idesisema.meioambiente.mg.gov.br/geoserver`) respondeu 503. Fica inativa; as estaduais vêm da CIDE.
 - **Campos:** `Codigo_BR, Codigo_SNV, Superficie_Federal, Extensao, Versao_SNV`; CIDE `Codigo_Rodovia, Unidade_Federacao, Superficie_Estadual, Jurisdicao`.
+
+### IBGE — biomas (`ibge_biomas`) e municípios (`ibge`) — 22/10/2026
+- **Biomas:** `https://geoservicos.ibge.gov.br/geoserver/ows`, camada `CREN:lm_bioma_250` (Biomas do Brasil, 1:250.000; 6 feições, 33 MB, EPSG:4674).
+  A consulta por envelope devolve o **bioma inteiro** (o Cerrado todo), por isso a camada é copiada para o banco
+  (`ibge_biomas`, dividida em 10.723 pedaços em `ibge_biomas_partes`). O relatório mostra a porcentagem de cada bioma
+  na área; o mapa desenha a versão simplificada (~900 m) na camada "Biomas (limite oficial)", grupo Ambiental.
+  Observação: o WFS 2.0 com `bbox` em `urn:ogc:def:crs:EPSG::4326` responde `InvalidParameterValue`; o 1.1.0 funciona.
+- **Municípios:** malha `servicodados.ibge.gov.br/api/v3/malhas/paises/BR?intrarregiao=municipio&qualidade=intermediaria`
+  (5.570 municípios, 12 MB; Boa Esperança do Norte/MT ainda sem malha) e nomes pela API de localidades. Serve para achar
+  o município de qualquer ponto (`fn_municipio_no_ponto`).
+- **Indicadores (SIDRA, `apisidra.ibge.gov.br`):** tabela 4714 (Censo 2022: população, área, densidade), 6579
+  (população estimada, último ano), 5938 (PIB dos Municípios: PIB a preços correntes; participação da agropecuária
+  no valor adicionado, que por município só existe até 2021). PIB por habitante = PIB ÷ população do mesmo ano (2022).
+  Valores "...", "-" e "X" do SIDRA viram vazio. Cada indicador fica com valor, ano, unidade e tabela.
+- **Carga e atualização:** `node scripts/ibge-importa.mjs [biomas] [municipios] [indicadores]` (todo: ~50 s). Indicadores
+  uma vez por ano, depois da estimativa de população (agosto) e do PIB dos Municípios (dezembro).
+- **Teste:** `node scripts/testa-ibge.mjs` (no `npm run testa`).
 
 ### Demais fontes ativas (sem mudança em 07/10)
 | Fonte | Serviço | Licença | Atualização |

@@ -207,6 +207,18 @@ const DEFS: Record<CamadaOficialId, Def> = {
       }));
     },
   },
+  // limite oficial do IBGE já no banco (migration 0051) e já simplificado lá (~900 m);
+  // célula grande porque a camada é de visão regional
+  ibge_biomas: {
+    zCelula: 4, validadeDias: 365, tolerancia: 0,
+    buscar: async (env) => {
+      const { data, error } = await supabaseAdmin().rpc("fn_biomas_mapa", {
+        p_xmin: env.xmin, p_ymin: env.ymin, p_xmax: env.xmax, p_ymax: env.ymax,
+      });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as Feicao[];
+    },
+  },
   prodes_cerrado: {
     zCelula: 12, validadeDias: 90, tolerancia: 0.00002,
     buscar: async (env) => (await wfs("https://terrabrasilis.dpi.inpe.br/geoserver/ows", "prodes-cerrado-nb:yearly_deforestation", env, 3000)).map((f) => feicao(f.geometry, {
@@ -243,6 +255,7 @@ async function buscarCelula(id: CamadaOficialId, def: Def, x: number, y: number)
   const env = { xmin: x2lon(x, def.zCelula), xmax: x2lon(x + 1, def.zCelula), ymin: y2lat(y + 1, def.zCelula), ymax: y2lat(y, def.zCelula) };
   const brutas = await def.buscar(env);
   const feicoes = brutas.filter((f) => f.geometry).map((f) => {
+    if (!def.tolerancia) return f;
     try {
       const simples = simplify(f as GeoJSON.Feature, { tolerance: def.tolerancia, highQuality: false, mutate: false });
       return { ...f, geometry: arredondar(simples.geometry) };

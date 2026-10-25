@@ -289,8 +289,11 @@ try {
   const { rows: [qr] } = await client.query(`select count(distinct cid) quadras_com_rotulo from _rq`);
   const { rows: [tl] } = await client.query(`select count(*) filter (where tipo = 'numero' and lote_id is not null) numeros_em_lote, count(*) filter (where tipo = 'numero') numeros from _tl`);
   await client.query("commit");
+  // com quadra e número lidos, os anúncios que ficaram divergentes casam pela identidade
+  const { rows: [re] } = await client.query("select fn_reencaixar_anuncios($1) r", [cam.id]);
 
   console.log(`\n${cam.nome}`);
+  console.log(`  reencaixe dos anúncios: ${JSON.stringify(re.r)}`);
   console.log(`  números de lote no desenho: ${tl.numeros} (${tl.numeros_em_lote} caem dentro de algum lote)`);
   console.log(`  quadras físicas (lotes que se tocam): ${q.quadras} (${q.com_mais_de_um} com 2+ lotes) · com rótulo de quadra: ${qr.quadras_com_rotulo}`);
   console.log(`  lotes: ${tot.lotes} · com número: ${tot.com_numero} (${num.rowCount}) · com quadra: ${tot.com_quadra} (${qd.rowCount}) · com os dois: ${tot.com_ambos}`);

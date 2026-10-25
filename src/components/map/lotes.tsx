@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Flag, ScanSearch } from "lucide-react";
+import { ArrowRight, Flag, ListChecks, ScanSearch, X } from "lucide-react";
 import { VIDRO, BotaoFechar } from "@/components/map/UiMapa";
 
 /** A partir deste zoom os lotes urbanos aparecem e ficam clicáveis. */
@@ -10,6 +10,7 @@ export const MEDIDA_ZOOM_MIN = 18;
 export const ROTULO_ZOOM_MIN = 18;
 /** Maior lado do retângulo que /api/geo/lotes aceita, em graus. */
 export const LOTE_LADO_MAX = 0.06;
+export { LOTES_MAX } from "@/lib/geo/loteamento";
 
 export type LoteInfo = {
   id: string;
@@ -71,7 +72,7 @@ export function medidasDe(fc: GeoJSON.FeatureCollection, tela: { w: number; s: n
 }
 
 /** Cartão do lote clicado: medidas e o atalho para o dono anunciar. */
-export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () => void }) {
+export function CartaoLote({ lote, onFechar, onVarios }: { lote: LoteInfo; onFechar: () => void; onVarios?: () => void }) {
   return (
     <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-4 ${VIDRO}`}>
       <div className="flex items-start justify-between gap-3">
@@ -108,6 +109,11 @@ export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () =>
         <Link href={`/consulta/lote/${lote.id}`} className="btn-contorno flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
           <ScanSearch className="size-4" /> Consultar informações
         </Link>
+        {!lote.anuncio && onVarios && (
+          <button type="button" onClick={onVarios} className="btn-contorno flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+            <ListChecks className="size-4" /> Selecionar vários lotes (loteamento)
+          </button>
+        )}
       </div>
       <Link href={`/cartografia/solicitar?referencia=${encodeURIComponent("lote:" + lote.id)}&tipo=divergencia`}
         className="flex items-center justify-center gap-1.5 text-xs text-texto-2 hover:text-verde transition">
@@ -117,6 +123,69 @@ export function CartaoLote({ lote, onFechar }: { lote: LoteInfo; onFechar: () =>
         Medidas calculadas sobre a planta da cidade; quadra e número lidos dos textos do CAD. São
         referência: não substituem a matrícula nem o levantamento do lote. Para publicar, a Arini confere a matrícula.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Seleção de vários lotes (pedido do Carlos, 24/10/2026: "a pessoa tem um
+ * loteamento inteiro (...) selecionar vários lotes em sequência e encaminhar,
+ * sem ser um por um"). Cada clique no mapa marca ou desmarca um lote; o envio
+ * abre o cadastro com todos, que vira empreendimento + uma unidade por lote.
+ */
+export function CartaoLotes({ lotes, aviso, onRemover, onLimpar, onSair }: {
+  lotes: LoteInfo[];
+  aviso: string;
+  onRemover: (id: string) => void;
+  onLimpar: () => void;
+  onSair: () => void;
+}) {
+  const total = lotes.reduce((s, l) => s + Number(l.area_m2), 0);
+  const nome = (l: LoteInfo) =>
+    [l.quadra && `Qd. ${l.quadra}`, l.numero && `Lt. ${l.numero}`].filter(Boolean).join(" · ") || "Lote sem número";
+  return (
+    <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-4 ${VIDRO}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Loteamento</p>
+          <p className="font-display text-xl font-bold leading-tight text-texto mt-1">
+            {lotes.length} {lotes.length === 1 ? "lote selecionado" : "lotes selecionados"}
+          </p>
+          <p className="text-xs text-texto-2 mt-1">{m2(total)} m² no total</p>
+        </div>
+        <BotaoFechar onClick={onSair} rotulo="Sair da seleção" />
+      </div>
+      <p className="text-sm text-texto-2">Clique nos lotes do mapa para marcar ou desmarcar.</p>
+      {aviso && <p className="rounded-xl border border-ouro/30 bg-ouro/10 px-3 py-2 text-xs text-texto">{aviso}</p>}
+      {lotes.length > 0 && (
+        <ul className="max-h-44 overflow-y-auto rounded-xl border border-linha bg-superficie-2/60 divide-y divide-linha text-sm">
+          {lotes.map((l) => (
+            <li key={l.id} className="flex items-center justify-between gap-2 px-3 py-1.5">
+              <span className="text-texto truncate">{nome(l)}</span>
+              <span className="flex items-center gap-1.5 text-texto-2 tabular-nums">
+                {m2(l.area_m2)} m²
+                <button type="button" onClick={() => onRemover(l.id)} aria-label="Tirar da seleção" title="Tirar da seleção"
+                  className="grid size-6 place-items-center rounded-md hover:bg-superficie hover:text-texto">
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {lotes.length > 0 && (
+        <div className="space-y-2">
+          <Link href={`/painel/novo?lotes=${lotes.map((l) => l.id).join(",")}`}
+            className="btn-ouro flex w-full items-center justify-center gap-1.5 py-2.5 text-sm">
+            Anunciar {lotes.length === 1 ? "este lote" : `estes ${lotes.length} lotes`} <ArrowRight className="size-4" />
+          </Link>
+          {lotes.length > 1 && (
+            <button type="button" onClick={onLimpar} className="w-full text-xs text-texto-2 hover:text-texto transition">
+              Limpar seleção
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

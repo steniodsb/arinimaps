@@ -21,7 +21,7 @@ import { ArrowRight, ChevronLeft, ChevronRight, Flag, History, Layers, Lock, Sca
 import MatriculaSigef from "@/components/rural/MatriculaSigef";
 import Ferramentas from "@/components/map/Ferramentas";
 import { guardarCarPendente } from "@/lib/map/carPendente";
-import { CartaoLote, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, ROTULO_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
+import { CartaoLote, CartaoLotes, LOTES_MAX, LOTE_ZOOM_MIN, MEDIDA_ZOOM_MIN, ROTULO_ZOOM_MIN, type LoteInfo } from "@/components/map/lotes";
 import ComparaImagens from "@/components/map/ComparaImagens";
 import CenasCopernicus from "@/components/map/CenasCopernicus";
 import { IMAGENS_HISTORICAS, imagemHistoricaPorId } from "@/lib/map/historico";
@@ -311,6 +311,19 @@ export default function MapaRegional({
   // lotes urbanos: o lote sob o cursor e o clicado
   const loteHoverRef = useRef<string | null>(null);
   const [loteSel, setLoteSel] = useState<LoteInfo | null>(null);
+  // seleção de vários lotes (loteamento): null = desligada; o ref serve ao clique do mapa
+  const [varios, setVarios] = useState<LoteInfo[] | null>(null);
+  const variosRef = useRef<LoteInfo[] | null>(null);
+  const [avisoVarios, setAvisoVarios] = useState("");
+  const mudarVarios = useCallback((lista: LoteInfo[] | null) => {
+    const map = mapRef.current;
+    if (map?.getSource("lotes")) {
+      map.removeFeatureState({ source: "lotes", sourceLayer: "lotes" });
+      for (const l of lista ?? []) map.setFeatureState({ source: "lotes", sourceLayer: "lotes", id: l.id }, { sel: true });
+    }
+    variosRef.current = lista;
+    setVarios(lista);
+  }, []);
   // Planta completa do CAD: desligada por padrão. Pedido do Carlos em 01/10/2026
   // ("lapidar o mapa: tirar círculos, setas, nomes de rua, deixar só o essencial").
   // O essencial — a divisa de cada lote e as metragens — vem da camada de lotes,
@@ -854,8 +867,21 @@ export default function MapaRegional({
           const emAnuncio = map.queryRenderedFeatures(e.point, { layers: ["imoveis-fill", "imoveis-ponto"].filter((l) => map.getLayer(l)) });
           const id = String(e.features?.[0]?.properties?.id ?? "");
           if (emAnuncio.length || !id) return;
+          // modo loteamento: o clique marca ou desmarca, sem abrir o cartão
+          const marcados = variosRef.current;
+          if (marcados) {
+            setAvisoVarios("");
+            if (marcados.some((l) => l.id === id)) return mudarVarios(marcados.filter((l) => l.id !== id));
+            if (marcados.length >= LOTES_MAX) return setAvisoVarios(`No máximo ${LOTES_MAX} lotes por envio.`);
+          }
           const f = await fetch(`/api/geo/lotes/${id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
           if (!f?.properties) return;
+          if (variosRef.current) {
+            const lote = f.properties as LoteInfo;
+            if (lote.anuncio) return setAvisoVarios(`Esse lote já tem anúncio (${lote.anuncio}) e fica de fora.`);
+            if (!variosRef.current.some((l) => l.id === id)) mudarVarios([...variosRef.current, lote]);
+            return;
+          }
           map.removeFeatureState({ source: "lotes", sourceLayer: "lotes" });
           map.setFeatureState({ source: "lotes", sourceLayer: "lotes", id }, { sel: true });
           setLoteSel(f.properties as LoteInfo);
@@ -1226,11 +1252,17 @@ export default function MapaRegional({
 
         {carSel && <CartaoCar car={carSel} oficiais={noPonto} onFechar={() => { setCarSel(null); setNoPonto([]); }} />}
         {!carSel && noPonto.length > 0 && !loteSel && <CartaoOficiais itens={noPonto} onFechar={() => setNoPonto([])} />}
-        {loteSel && !carSel && (
+        {loteSel && !carSel && !varios && (
           <CartaoLote lote={loteSel} onFechar={() => {
             setLoteSel(null);
             mapRef.current?.removeFeatureState({ source: "lotes", sourceLayer: "lotes" });
-          }} />
+          }} onVarios={() => { setAvisoVarios(""); mudarVarios([loteSel]); setLoteSel(null); }} />
+        )}
+        {varios && !carSel && (
+          <CartaoLotes lotes={varios} aviso={avisoVarios}
+            onRemover={(id) => mudarVarios(varios.filter((l) => l.id !== id))}
+            onLimpar={() => mudarVarios([])}
+            onSair={() => { setAvisoVarios(""); mudarVarios(null); }} />
         )}
 
         {camadasAbertas && (

@@ -6,7 +6,8 @@ import { enviarJson, type ErroApi } from "@/lib/api/enviar";
 import { AvisoErro } from "@/components/ui/Aviso";
 import type { Transform, AjusteLocal } from "@/lib/geo/deslocar";
 import { Etiqueta, Vazio } from "@/components/ui/Pagina";
-import { Crosshair, Layers, Loader2, Trash2 } from "lucide-react";
+import { Crosshair, LandPlot, Layers, Loader2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Camada = {
   id: string; nome: string; municipio: string | null; tipo: string;
@@ -31,6 +32,7 @@ export default function ListaCamadas() {
   const [calibrando, setCalibrando] = useState<Camada | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const router = useRouter();
 
   // `fresco=1` + `no-store`: esta lista alimenta a tela de calibração, e ler do
   // cache de 60 s reabria a planta nos valores anteriores ao salvar — o ajuste
@@ -63,6 +65,21 @@ export default function ListaCamadas() {
     })();
     return () => { vivo = false; };
   }, [carregar]);
+
+  const [reencaixe, setReencaixe] = useState<{ id: string; texto: string } | null>(null);
+  async function reencaixar(c: Camada) {
+    if (!confirm(`Encaixar todos os anúncios de lote de ${c.municipio} nos lotes de "${c.nome}"?\n\nO que casar pela quadra/lote ou pela posição muda de divisa; o resto fica para conferir.`)) return;
+    setReencaixe({ id: c.id, texto: "Reencaixando…" });
+    const r = await enviarJson<{ ok: number; divergentes: number; sem_mudanca: number; aviso?: string }>(
+      `/api/admin/cartografia/${c.id}/reencaixe`, "POST");
+    if (!r.ok) { setReencaixe(null); setErro(r.erro); return; }
+    const d = r.dados;
+    setReencaixe({
+      id: c.id,
+      texto: d.aviso ?? `${d.ok} reencaixados · ${d.sem_mudanca} já no lugar · ${d.divergentes} para conferir`,
+    });
+    router.refresh();
+  }
 
   async function remover(c: Camada) {
     if (!confirm(`Remover a camada "${c.nome}" do mapa?`)) return;
@@ -131,6 +148,7 @@ export default function ListaCamadas() {
                         : `${fmt(c.lotes.total)} lotes clicáveis, gerados em ${new Date(c.lotes.gerados_em!).toLocaleDateString("pt-BR")}`}
                   </p>
                 )}
+                {reencaixe?.id === c.id && <p className="text-sm font-semibold text-verde">{reencaixe.texto}</p>}
               </div>
               {/* selo de estado, não botão: sem borda e sem relevo, para não
                   disputar com as duas ações que estão ao lado */}
@@ -138,6 +156,13 @@ export default function ListaCamadas() {
               {c.tipo === "vector" && (
                 <button onClick={() => setCalibrando(c)} className="btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2 text-sm">
                   <Crosshair className="size-4" /> Calibrar sobre o satélite
+                </button>
+              )}
+              {c.tipo === "vector" && !!c.lotes?.total && (
+                <button onClick={() => reencaixar(c)} disabled={reencaixe?.texto === "Reencaixando…"}
+                  title="Para quando esta planta substitui outra: encaixa os anúncios de lote do município nos lotes dela"
+                  className="btn-contorno inline-flex items-center gap-1.5 px-3.5 py-2 text-sm disabled:opacity-60">
+                  <LandPlot className="size-4" /> Reencaixar anúncios
                 </button>
               )}
               <button onClick={() => remover(c)} className="btn-perigo inline-flex items-center gap-1.5 px-3.5 py-2 text-sm">

@@ -25,6 +25,15 @@ const ACEITA_DOC = ".pdf,.jpg,.jpeg,.png,.webp,.heic";
 const MAX_DOC = 25 * 1024 * 1024;
 
 type Docs = { matricula: File[]; edital: File[]; ccir_itr: File[]; autorizacao: File[]; outro: File[] };
+type LoteDoLoteamento = {
+  id: string; area_m2: number; quadra: string | null; numero: string | null;
+  municipio: string | null; municipality_id: string | null; anuncio: string | null;
+  /** vazio = usa o preço padrão por lote */
+  valor: string;
+  matricula: string;
+};
+
+const reais = (v: string) => (v ? Number(v.replace(/\./g, "").replace(",", ".")) : null);
 
 const LEILAO_VAZIO = {
   praca1_data: "", praca1_lance: "", praca2_data: "", praca2_lance: "",
@@ -55,6 +64,34 @@ export default function NovoImovel() {
   const [car, setCar] = useState<{ cod: string; area_ha: number | null; municipio: string | null } | null>(null);
   const [inicial, setInicial] = useState<GeometriaEscolhida | null>(null);
   const [lote, setLote] = useState<{ id: string; area_m2: number; municipio: string | null } | null>(null);
+  // vários lotes selecionados no mapa: vira empreendimento + uma unidade por lote
+  const [loteamento, setLoteamento] = useState<LoteDoLoteamento[] | null>(null);
+
+  // veio de "Selecionar vários lotes" no mapa
+  useEffect(() => {
+    const ids = new URLSearchParams(window.location.search).get("lotes");
+    if (!ids) return;
+    fetch(`/api/geo/lotes?ids=${encodeURIComponent(ids)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((fc) => {
+        const feats = (fc?.features ?? []) as { geometry: GeoJSON.Polygon; properties: Omit<LoteDoLoteamento, "valor" | "matricula"> }[];
+        if (!feats.length) return;
+        const g: GeometriaEscolhida = {
+          geometry: { type: "MultiPolygon", coordinates: feats.map((f) => f.geometry.coordinates) },
+          fonte: "lote",
+        };
+        setLoteamento(feats.map((f) => ({ ...f.properties, area_m2: Number(f.properties.area_m2), valor: "", matricula: "" })));
+        setInicial(g);
+        setGeometria(g);
+        setForm((atual) => ({
+          ...atual,
+          tipo: "urbano",
+          municipality_id: atual.municipality_id || feats[0].properties.municipality_id || "",
+          area_declarada: String(Math.round(feats.reduce((s, f) => s + Number(f.properties.area_m2), 0))),
+        }));
+      })
+      .catch(() => undefined);
+  }, []);
 
   // veio de "Este lote é meu" no mapa: a divisa do lote urbano já entra pronta
   useEffect(() => {
@@ -175,7 +212,7 @@ export default function NovoImovel() {
     const fd = new FormData();
     fd.set("dados", JSON.stringify({
       ...form,
-      valor: form.valor ? Number(form.valor.replace(/\./g, "").replace(",", ".")) : null,
+      valor: reais(form.valor),
       area_declarada: form.area_declarada ? Number(form.area_declarada.replace(",", ".")) : null,
       municipality_id: form.municipality_id || null,
       caracteristicas: { unidade_area: form.tipo === "rural" ? "ha" : "m2" },
@@ -183,6 +220,8 @@ export default function NovoImovel() {
       aceite_termos: aceite,
       car_codigo: geometria.fonte === "car" ? car?.cod ?? null : null,
       lote_id: geometria.fonte === "lote" ? lote?.id ?? null : null,
+      // preço vai como digitado ("85.000,50"): o servidor lê no formato brasileiro
+      lotes: loteamento?.map((l) => ({ id: l.id, valor: l.valor.trim() || null, matricula_numero: l.matricula.trim() || null })),
       modalidade,
       leilao: emLeilao ? leilao : null,
     }));
@@ -345,18 +384,24 @@ export default function NovoImovel() {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className={label}>Valor pedido (R$)</label>
-            <input className={input} placeholder="Ex.: 3.800.000" inputMode="numeric"
+            <label className={label}>{loteamento ? "Preço padrão por lote (R$)" : "Valor pedido (R$)"}</label>
+            <input className={input} placeholder={loteamento ? "Ex.: 85.000" : "Ex.: 3.800.000"} inputMode="numeric"
               value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+            {loteamento && <p className={ajuda}>Vale para todos os lotes; troque na tabela abaixo o que tiver preço diferente.</p>}
           </div>
           <div>
-            <label className={label}>Área declarada ({form.tipo === "rural" ? "hectares" : "m²"})</label>
+            <label className={label}>{loteamento ? "Área total dos lotes (m²)" : `Área declarada (${form.tipo === "rural" ? "hectares" : "m²"})`}</label>
             <input className={input} placeholder={form.tipo === "rural" ? "Ex.: 84" : "Ex.: 420"} inputMode="decimal"
+              readOnly={!!loteamento}
               value={form.area_declarada} onChange={(e) => setForm({ ...form, area_declarada: e.target.value })} />
           </div>
         </div>
 
-        {form.tipo === "urbano" && (
+        {loteamento && (
+          <TabelaLoteamento lotes={loteamento} precoPadrao={form.valor} onChange={setLoteamento} />
+        )}
+
+        {form.tipo === "urbano" && !loteamento && (
           <div>
             <label className={label}>Faz parte de um empreendimento? (opcional)</label>
             <input className={input} placeholder="Código do imóvel principal — ex.: AIB-000010"
@@ -404,7 +449,21 @@ export default function NovoImovel() {
             </span>
           </p>
         )}
-        <DesenhoMapa onChange={setGeometria} inicial={inicial} />
+        {loteamento && (
+          <p className="flex items-start gap-2 rounded-xl border border-ouro/30 bg-ouro/10 px-4 py-3 text-sm text-texto">
+            <LandPlot className="mt-0.5 size-4 shrink-0 text-ouro" />
+            <span>
+              {loteamento.length} lotes da planta urbana{loteamento[0]?.municipio && <> de {loteamento[0].municipio}</>}. Cada
+              lote vira uma unidade com a sua divisa; o empreendimento reúne todos. Para mudar a seleção, volte ao mapa.
+            </span>
+          </p>
+        )}
+        {loteamento ? (
+          // a divisa de cada unidade é a do lote no banco: aqui só se confere
+          <DesenhoMapa onChange={() => undefined} inicial={inicial} />
+        ) : (
+          <DesenhoMapa onChange={setGeometria} inicial={inicial} />
+        )}
         {geometria && (
           <p className="flex items-center gap-1.5 text-sm font-semibold text-verde">
             <CheckCircle2 className="size-4" />
@@ -575,5 +634,57 @@ function Etapa({ id, numero, icone: Icone, titulo, subtitulo, children }: {
       </header>
       <div className="space-y-5">{children}</div>
     </section>
+  );
+}
+
+/** Lotes do loteamento: um por linha, com preço (vazio = o padrão) e matrícula. */
+function TabelaLoteamento({ lotes, precoPadrao, onChange }: {
+  lotes: LoteDoLoteamento[];
+  precoPadrao: string;
+  onChange: (l: LoteDoLoteamento[]) => void;
+}) {
+  const mudar = (id: string, campo: "valor" | "matricula", v: string) =>
+    onChange(lotes.map((l) => (l.id === id ? { ...l, [campo]: v } : l)));
+  const celula = "w-full rounded-lg border border-linha bg-superficie px-2.5 py-1.5 text-sm text-texto placeholder:text-texto-2/70 focus:border-verde focus:outline-none";
+  return (
+    <div>
+      <p className={ROTULO}>Lotes do loteamento ({lotes.length})</p>
+      <div className="max-h-96 overflow-auto rounded-xl border border-linha">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-superficie-2 text-left text-xs uppercase tracking-wide text-texto-2">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Lote</th>
+              <th className="px-3 py-2 font-semibold text-right">Área</th>
+              <th className="px-3 py-2 font-semibold">Preço (R$)</th>
+              <th className="px-3 py-2 font-semibold">Nº da matrícula</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-linha">
+            {lotes.map((l) => (
+              <tr key={l.id}>
+                <td className="px-3 py-1.5 text-texto whitespace-nowrap">
+                  {[l.quadra && `Qd. ${l.quadra}`, l.numero && `Lt. ${l.numero}`].filter(Boolean).join(" · ") || "Sem número na planta"}
+                </td>
+                <td className="px-3 py-1.5 text-right tabular-nums text-texto-2 whitespace-nowrap">
+                  {l.area_m2.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} m²
+                </td>
+                <td className="px-3 py-1.5 min-w-32">
+                  <input className={celula} inputMode="numeric" placeholder={precoPadrao || "—"} aria-label="Preço do lote"
+                    value={l.valor} onChange={(e) => mudar(l.id, "valor", e.target.value)} />
+                </td>
+                <td className="px-3 py-1.5 min-w-32">
+                  <input className={celula} placeholder="Opcional" aria-label="Número da matrícula do lote"
+                    value={l.matricula} onChange={(e) => mudar(l.id, "matricula", e.target.value)} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-1.5 text-sm text-texto-2">
+        Os documentos enviados abaixo (matrícula do loteamento, autorização) valem para todos os lotes. A matrícula
+        própria de cada lote pode ser anexada depois, na página de cada unidade.
+      </p>
+    </div>
   );
 }

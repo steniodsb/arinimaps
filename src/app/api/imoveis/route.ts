@@ -7,6 +7,7 @@ import { assinatura, ipDe } from "@/lib/juridico";
 import { ehParceiro } from "@/lib/perfis";
 import { registrarOrigemDado } from "@/lib/imovel/eventos";
 import { ACEITA, conferirArquivo, type ArquivoConferido } from "@/lib/seguranca/arquivos";
+import { LOTES_MAX } from "@/lib/geo/loteamento";
 
 // Cria imóvel (multipart): dados + geometria GeoJSON + fotos.
 // Proprietário/parceiro precisa estar aprovado/ativo; Arini também pode cadastrar.
@@ -132,7 +133,48 @@ export async function POST(request: Request) {
   // código não consegue trocar a geometria no caminho
   let carCodigo: string | null = null;
   let geometriaFinal = geometria;
-  if (geometria?.fonte === "car" && dados.car_codigo) {
+  // lote de onde veio a divisa: é o que reencaixa o anúncio quando a planta
+  // oficial substituir a atual (migration 0053, fn_reencaixar_anuncios)
+  let loteRef: LoteRef | null = null;
+  // vários lotes de uma vez (loteamento): vira empreendimento + uma unidade por lote
+  let unidades: { lote: LoteRef; geometry: GeoJSON.Polygon; valor: number | null; matricula: string | null }[] = [];
+  if (Array.isArray(dados.lotes) && dados.lotes.length > 0) {
+    const pedidos = (dados.lotes as { id?: unknown; valor?: unknown; matricula_numero?: unknown }[])
+      .filter((l) => /^[0-9a-f-]{36}$/i.test(String(l?.id ?? "")));
+    const ids = [...new Set(pedidos.map((l) => String(l.id)))];
+    if (dados.tipo !== "urbano" || !ids.length || ids.length !== dados.lotes.length) {
+      return NextResponse.json({ error: "Seleção de lotes inválida. Selecione os lotes de novo no mapa." }, { status: 400 });
+    }
+    if (ids.length > LOTES_MAX) {
+      return NextResponse.json({ error: `No máximo ${LOTES_MAX} lotes por envio. Divida o loteamento em partes.` }, { status: 400 });
+    }
+    const { data: fc } = await admin.rpc("fn_lotes_por_ids", { p_ids: ids });
+    const achados = (fc ?? []) as { geometry: GeoJSON.Polygon; properties: LoteRef & { anuncio: string | null } }[];
+    if (achados.length !== ids.length) {
+      return NextResponse.json({ error: "Algum lote não existe mais na planta. Selecione os lotes de novo no mapa." }, { status: 400 });
+    }
+    const ocupados = achados.filter((f) => f.properties.anuncio);
+    if (ocupados.length) {
+      return NextResponse.json({
+        error: `${ocupados.length === 1 ? "Um lote já tem anúncio" : `${ocupados.length} lotes já têm anúncio`} (${[...new Set(ocupados.map((f) => f.properties.anuncio))].join(", ")}). Tire-os da seleção.`,
+      }, { status: 400 });
+    }
+    if (new Set(achados.map((f) => f.properties.municipality_id)).size > 1) {
+      return NextResponse.json({ error: "Os lotes precisam ser do mesmo município." }, { status: 400 });
+    }
+    const porId = new Map(pedidos.map((l) => [String(l.id), l]));
+    unidades = achados.map((f) => ({
+      lote: f.properties,
+      geometry: f.geometry,
+      valor: dinheiro(porId.get(f.properties.id)?.valor),
+      matricula: txt(porId.get(f.properties.id)?.matricula_numero, 120),
+    }));
+    // a divisa do empreendimento é a soma dos lotes (o reencaixe a refaz a cada planta nova)
+    geometriaFinal = {
+      geometry: { type: "MultiPolygon", coordinates: unidades.map((u) => u.geometry.coordinates) },
+      fonte: "lote",
+    };
+  } else if (geometria?.fonte === "car" && dados.car_codigo) {
     const { data: car } = await admin.rpc("fn_car_imovel", { p_cod: String(dados.car_codigo) });
     if (!car?.geometry) {
       return NextResponse.json({ error: "Área do CAR não encontrada. Clique de novo na área no mapa." }, { status: 400 });
@@ -146,6 +188,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Lote não encontrado. Clique de novo no lote no mapa." }, { status: 400 });
     }
     geometriaFinal = { geometry: lote.geometry, fonte: "lote" };
+    loteRef = lote.properties as LoteRef;
   } else if (geometria?.fonte === "car" || geometria?.fonte === "lote") {
     // "car" sem código não tem como ser conferido: vale como desenho comum
     geometriaFinal = { ...geometria, fonte: "desenho" };
@@ -193,8 +236,9 @@ export async function POST(request: Request) {
       partner_id,
       titulo: dados.titulo.trim(),
       descricao: dados.descricao?.trim() || "",
-      valor: dados.valor || null,
-      area_declarada: dados.area_declarada || null,
+      // empreendimento: o preço é de cada unidade; a área, a soma dos lotes
+      valor: unidades.length ? null : dados.valor || null,
+      area_declarada: unidades.length ? Math.round(unidades.reduce((s, u) => s + Number(u.lote.area_m2), 0)) : dados.area_declarada || null,
       caracteristicas: dados.caracteristicas ?? {},
       condicoes_venda: dados.condicoes_venda?.trim() || null,
       aceita_permuta: !!dados.aceita_permuta,
@@ -205,6 +249,7 @@ export async function POST(request: Request) {
       modalidade,
       leilao,
       created_by: user.id,
+      ...camposDoLote(loteRef),
     })
     .select("id, codigo")
     .single();
@@ -304,12 +349,14 @@ export async function POST(request: Request) {
 
   // fotos → storage público
   let ordem = 0;
+  const fotosSalvas: string[] = [];
   for (const foto of fotosOk) {
     const path = `properties/${property.id}/${crypto.randomUUID()}.${foto.ext}`;
     const { error: upError } = await admin.storage
       .from("media")
       .upload(path, foto.bytes, { contentType: foto.contentType });
     if (!upError) {
+      fotosSalvas.push(path);
       await admin.from("property_media").insert({
         property_id: property.id,
         tipo: "foto",
@@ -353,9 +400,79 @@ export async function POST(request: Request) {
     dados_depois: {
       codigo: property.codigo, titulo: dados.titulo, condicao, aceite: equipe ? null : versao,
       car: carCodigo, documentos: docs.length - docsFalharam.length, documentos_falharam: docsFalharam,
-      modalidade, selfie: !!selfiePath,
+      modalidade, selfie: !!selfiePath, lotes: unidades.length || undefined,
     },
   });
 
-  return NextResponse.json({ ok: true, id: property.id, codigo: property.codigo, documentos_falharam: docsFalharam });
+  // Loteamento: o imóvel acima é o empreendimento; cada lote vira uma unidade
+  // apontando para ele, com a divisa do próprio lote, o mesmo aceite e as
+  // mesmas fotos (os arquivos não são copiados — as unidades apontam para os
+  // do empreendimento). Matrícula e documentos ficam no empreendimento; a de
+  // cada lote pode ser anexada depois na unidade.
+  const criadas: string[] = [];
+  for (const u of unidades) {
+    const rotulo = [u.lote.quadra && `Quadra ${u.lote.quadra}`, u.lote.numero && `Lote ${u.lote.numero}`].filter(Boolean).join(" · ")
+      || `Lote de ${Math.round(Number(u.lote.area_m2))} m²`;
+    const { data: un, error: unErro } = await admin.from("properties").insert({
+      tipo: "urbano", owner_id, partner_id,
+      titulo: `${dados.titulo.trim()} — ${rotulo}`.slice(0, 200),
+      descricao: dados.descricao?.trim() || "",
+      valor: u.valor ?? (dados.valor || null),
+      area_declarada: Math.round(Number(u.lote.area_m2)),
+      caracteristicas: dados.caracteristicas ?? {},
+      condicoes_venda: dados.condicoes_venda?.trim() || null,
+      aceita_permuta: !!dados.aceita_permuta,
+      aceita_financiamento: !!dados.aceita_financiamento,
+      exclusividade: condicao === "exclusividade",
+      parent_property_id: property.id,
+      municipality_id: u.lote.municipality_id,
+      modalidade, leilao,
+      created_by: user.id,
+      ...camposDoLote(u.lote),
+    }).select("id, codigo").single();
+    if (unErro || !un) continue;
+    const { error: gErro } = await admin.rpc("fn_upsert_geometry", {
+      p_property_id: un.id, p_geojson: u.geometry, p_fonte: "lote", p_origem: "fonte_oficial",
+      p_motivo: "Cadastro do loteamento", p_user_id: user.id,
+    });
+    if (gErro) { await admin.from("properties").delete().eq("id", un.id); continue; }
+    await Promise.all([
+      admin.from("property_authorizations").insert({
+        property_id: un.id, selfie_path: selfiePath, tipo: condicao,
+        validade: validade.toISOString().slice(0, 10),
+        aceite_at: equipe ? null : new Date().toISOString(), versao: equipe ? null : versao,
+        aceite_por: equipe ? null : user.id, aceite_ip: equipe ? null : ipDe(request),
+      }),
+      fotosSalvas.length
+        ? admin.from("property_media").insert(fotosSalvas.map((storage_path, i) => ({
+          property_id: un.id, tipo: "foto", storage_path, ordem: i, capa: i === 0,
+        })))
+        : Promise.resolve(),
+      u.matricula ? admin.from("property_matriculas").insert({ property_id: un.id, numero: u.matricula }) : Promise.resolve(),
+      registrarOrigemDado({
+        propertyId: un.id, campo: "geometria", userId: user.id, origem: "fonte_oficial",
+        detalhe: `Divisa do lote da base cartográfica (loteamento ${property.codigo})`,
+      }),
+    ]);
+    await admin.from("properties").update({ status: "pendente" }).eq("id", un.id);
+    criadas.push(un.codigo);
+  }
+  if (unidades.length) {
+    await logAudit({
+      user_id: user.id, acao: "loteamento_cadastrado", entidade: "properties", entidade_id: property.id, property_id: property.id,
+      dados_depois: { codigo: property.codigo, lotes: unidades.length, unidades: criadas },
+    });
+  }
+
+  return NextResponse.json({
+    ok: true, id: property.id, codigo: property.codigo, documentos_falharam: docsFalharam,
+    ...(unidades.length ? { unidades: criadas.length, unidades_falharam: unidades.length - criadas.length } : {}),
+  });
 }
+
+type LoteRef = { id: string; municipality_id: string | null; quadra: string | null; numero: string | null; area_m2: number };
+
+const camposDoLote = (l: LoteRef | null) => l ? {
+  lote_id: l.id, lote_municipality_id: l.municipality_id,
+  lote_quadra: l.quadra ?? null, lote_numero: l.numero ?? null, lote_area_m2: l.area_m2,
+} : {};

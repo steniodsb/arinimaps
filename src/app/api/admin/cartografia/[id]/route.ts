@@ -216,6 +216,8 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/admin/cart
     // numeração de quadra e lote (refazer a cidade apagaria a numeração)
     try {
       lotesMovidos = await moverLotesDasPartes(admin, id, antes, ajustesAntes, ajustesDepois);
+      // os lotes andaram no lugar (mesmo id): os anúncios deles andam junto
+      if (lotesMovidos) await admin.rpc("fn_reencaixar_anuncios", { p_layer_id: id, p_user_id: a.userId });
     } catch (e) {
       avisoLotes = e instanceof Error ? e.message : String(e);
     }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox, Layers, ListChecks } from "lucide-react";
+import { Inbox, Layers, ListChecks, TriangleAlert } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import CartografiaUpload from "./CartografiaUpload";
 import ListaCamadas from "./ListaCamadas";
@@ -8,8 +8,13 @@ import { CabecalhoPagina, Cartao, Secao } from "@/components/ui/Pagina";
 
 export default async function AdminCartografia() {
   await exigirSetor("cartografia");
-  const { data: municipios } = await supabaseAdmin()
-    .from("municipalities").select("id, nome").eq("ativo", true).order("nome");
+  const admin = supabaseAdmin();
+  const [{ data: municipios }, { data: divergentes }] = await Promise.all([
+    admin.from("municipalities").select("id, nome").eq("ativo", true).order("nome"),
+    // anúncios de lote que a troca de planta não conseguiu encaixar sozinha
+    admin.from("properties").select("id, codigo, titulo, reencaixe_motivo, reencaixe_em")
+      .eq("reencaixe_status", "divergente").order("reencaixe_em", { ascending: false }).limit(100),
+  ]);
 
   return (
     <div className="mx-auto max-w-[1280px]">
@@ -34,6 +39,29 @@ export default async function AdminCartografia() {
           <Secao eyebrow="Publicadas" titulo="Camadas no mapa">
             <ListaCamadas />
           </Secao>
+
+          {!!divergentes?.length && (
+            <Secao eyebrow="Troca de planta" titulo={`Anúncios para conferir (${divergentes.length})`}>
+              <p className="mb-3 text-[0.95rem] text-texto-2">
+                Estes anúncios não acharam com segurança o lote equivalente na planta nova — a divisa ficou como
+                estava. Confira no imóvel e redesenhe a divisa, ou corrija a numeração da planta e reencaixe de novo.
+              </p>
+              <div className="cartao divide-y divide-linha">
+                {divergentes.map((p) => (
+                  <Link key={p.id} href={`/admin/imoveis/${p.id}`}
+                    className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-superficie-2/60">
+                    <TriangleAlert className="mt-0.5 size-4 shrink-0 text-alerta" />
+                    <span className="min-w-0">
+                      <span className="block font-semibold text-texto truncate">
+                        <span className="font-mono text-sm text-texto-2">{p.codigo}</span> · {p.titulo}
+                      </span>
+                      <span className="block text-sm text-texto-2">{p.reencaixe_motivo}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </Secao>
+          )}
         </div>
 
         <aside className="lg:sticky lg:top-6">

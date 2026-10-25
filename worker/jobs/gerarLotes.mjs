@@ -167,7 +167,12 @@ export async function gerarLotes(payload, db) {
       [cam.id, ins.rowCount, assinaturaDe(cam)]);
     await client.query("commit");
     console.log(`[lotes] ${cam.nome}: ${linhas} linhas → ${ins.rowCount} lotes`);
-    return { planta: cam.nome, linhas, lotes: ins.rowCount };
+
+    // os lotes antigos sumiram: cada anúncio de lote é encaixado no equivalente
+    // da planta nova (migration 0053); o que não casar vai para o admin conferir
+    const { rows: [re] } = await client.query("select fn_reencaixar_anuncios($1) r", [cam.id]);
+    console.log(`[lotes] ${cam.nome}: reencaixe ${JSON.stringify(re.r)}`);
+    return { planta: cam.nome, linhas, lotes: ins.rowCount, reencaixe: re.r };
   } catch (e) {
     await client.query("rollback").catch(() => undefined);
     throw e;

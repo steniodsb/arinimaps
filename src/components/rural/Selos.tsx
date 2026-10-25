@@ -18,7 +18,7 @@ const CLASSIFICACAO: Record<Classificacao, { rotulo: string; dica: string; cor: 
 export function SeloClassificacao({ valor }: { valor?: string | null }) {
   const c = CLASSIFICACAO[(valor as Classificacao) ?? "oficial"] ?? CLASSIFICACAO.oficial;
   return (
-    <span title={c.dica} className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${c.cor}`}>
+    <span title={c.dica} className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${c.cor}`}>
       {c.rotulo}
     </span>
   );
@@ -33,7 +33,7 @@ const SITUACAO: Record<Situacao, { rotulo: string; cor: string }> = {
 export function SeloSituacao({ valor, soProblema = false }: { valor?: string | null; soProblema?: boolean }) {
   const s = SITUACAO[(valor as Situacao) ?? "sem_verificacao"] ?? SITUACAO.sem_verificacao;
   if (soProblema && valor !== "instavel") return null;
-  return <span className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${s.cor}`}>{s.rotulo}</span>;
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold ${s.cor}`}>{s.rotulo}</span>;
 }
 
 /** Origem carimbada pelo adaptador em cada item (src/lib/rural/adaptadores.ts). */

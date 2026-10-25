@@ -13,7 +13,7 @@ const COR_BOTAO: Partial<Record<StatusSolicitacao, string>> = {
   rejeitada: "border-critico/50 text-critico hover:bg-critico/10",
   cancelada: "border-critico/50 text-critico hover:bg-critico/10",
   aprovada: "border-verde text-verde hover:bg-verde/10",
-  publicada: "bg-verde text-white border-verde hover:bg-verde-escuro",
+  publicada: "bg-verde text-fundo border-verde hover:bg-verde-escuro",
 };
 
 /**

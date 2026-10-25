@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ExpressionSpecification, Map as MLMap } from "maplibre-gl";
-import { CENTRO_REGIAO, ESTILO_BASE, STATUS_CORES } from "@/lib/map/config";
+import { CENTRO_REGIAO, ESTILO_BASE } from "@/lib/map/config";
+import { RADAR_ANEL, STATUS_MAPA } from "./statusMapa";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 
 export type ItemMapaBusca = {
@@ -57,7 +58,7 @@ export default function MapaBusca({ itens, listaId }: { itens: ItemMapaBusca[]; 
         if (iniciado || !m.isStyleLoaded()) return;
         iniciado = true;
         m.off("styledata", iniciar);
-        const cor = (i: ItemMapaBusca) => i.leilao ? STATUS_CORES.leilao : STATUS_CORES[i.status] ?? STATUS_CORES.publicado;
+        const cor = (i: ItemMapaBusca) => i.leilao ? STATUS_MAPA.leilao : STATUS_MAPA[i.status] ?? STATUS_MAPA.publicado;
         const comDivisa = itens.filter((i) => i.geom);
         const divisas: GeoJSON.FeatureCollection = {
           type: "FeatureCollection",
@@ -95,14 +96,25 @@ export default function MapaBusca({ itens, listaId }: { itens: ItemMapaBusca[]; 
         });
         m.addLayer({
           id: "divisa-linha", type: "line", source: "divisas", minzoom: 11,
-          paint: { "line-color": ["case", aceso, "#FFFFFF", ["get", "cor"]], "line-width": ["case", aceso, 3.5, 2] },
+          paint: { "line-color": ["case", aceso, "#F2F2EC", ["get", "cor"]], "line-width": ["case", aceso, 3.5, 2] },
+        });
+        // radar do manual: anel Oliva em volta do ponto de status
+        m.addLayer({
+          id: "ponto-anel", type: "circle", source: "pontos", maxzoom: 13,
+          paint: {
+            "circle-color": "rgba(0,0,0,0)",
+            "circle-radius": ["case", aceso, 15, 11],
+            "circle-stroke-color": RADAR_ANEL,
+            "circle-stroke-width": 1.5,
+            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 13, 0],
+          },
         });
         m.addLayer({
           id: "ponto", type: "circle", source: "pontos", maxzoom: 13,
           paint: {
             "circle-color": ["get", "cor"],
             "circle-radius": ["case", aceso, 9, 6],
-            "circle-stroke-color": "#FFFFFF",
+            "circle-stroke-color": "#F2F2EC",
             "circle-stroke-width": ["case", aceso, 3, 1.5],
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 13, 0],
             "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 13, 0],

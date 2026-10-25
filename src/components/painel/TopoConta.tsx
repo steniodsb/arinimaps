@@ -14,7 +14,7 @@ export default function TopoConta({ daEquipe }: { daEquipe: boolean }) {
         <Link href="/" aria-label="Arini Imóveis Brasil — início"><Logo /></Link>
         <div className="flex items-center gap-2 sm:gap-4">
           <Link href={daEquipe ? "/admin" : "/painel"}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-texto-2 transition-colors hover:text-verde">
+            className="inline-flex items-center gap-1.5 rounded-full border border-linha-forte px-3.5 py-1.5 text-sm font-semibold text-texto-2 transition-colors hover:text-verde">
             <ArrowLeft className="size-4" />
             <span>Voltar {daEquipe ? "à Central" : "ao painel"}</span>
           </Link>

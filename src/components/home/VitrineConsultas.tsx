@@ -14,6 +14,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { CENAS } from "@/components/map/cenasVitrine";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 
 const MapaVitrine = dynamic(() => import("@/components/map/MapaVitrine"), { ssr: false });
 
@@ -115,11 +116,11 @@ export default function VitrineConsultas({ consultas }: Props) {
     // tema escuro aqui dentro, com o site em qualquer tema
     <section id="consultas" className="lp-escuro lp-malha-escura relative isolate overflow-hidden scroll-mt-20">
       <div className="lp-grade pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
-      <div className="lp-container py-24">
+      <div className="lp-container py-20 md:py-28">
         {/* a faixa é sempre escura: o fundo dela é o satélite, em qualquer tema */}
         <div
           ref={faixaRef}
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0A2219] text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]"
+          className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0A2219] text-white"
         >
           {/* ---------- mapa (bloco de 260px no celular; fundo inteiro no desktop) ---------- */}
           <div className="relative h-[260px] lg:absolute lg:inset-0 lg:h-auto">
@@ -141,7 +142,7 @@ export default function VitrineConsultas({ consultas }: Props) {
             <div className="pointer-events-none absolute bottom-4 left-4 z-20 flex items-center gap-3 sm:left-6 lg:bottom-6 lg:left-10">
               <div
                 key={cena}
-                className="vitrine-legenda inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs text-white backdrop-blur"
+                className="vitrine-legenda inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#0A2219]/90 px-3 py-1.5 text-xs text-white"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6FB08F] opacity-70" />
@@ -166,15 +167,15 @@ export default function VitrineConsultas({ consultas }: Props) {
           {/* ---------- conteúdo (sobre o mapa no desktop) ---------- */}
           <div className="relative z-10 grid lg:min-h-[520px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:pointer-events-none">
             <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-12 lg:pb-20 lg:pointer-events-auto">
-              <p className="lp-eyebrow">Consultas</p>
-              <h2 className="lp-display mt-3 text-4xl text-balance md:text-[3.2rem]">
-                Entre na área de <span className="text-[#FFE299]">consultas</span>
+              <p className="lp-eyebrow">05 · Consultas</p>
+              <h2 className="lp-display mt-3 text-[2.6rem] text-balance md:text-[3.4rem]">
+                Entre na área de <span className="text-ouro">consultas</span>
               </h2>
               <p className="mt-5 max-w-md text-lg leading-relaxed text-white/85">
                 Mapa, busca de imóveis e relatórios ficam numa área própria, com menu lateral e atalhos para cada camada oficial.
               </p>
               <div className="mt-7">
-                <Link href="/mapa" className="lp-btn lp-btn-verde">Abrir o mapa</Link>
+                <Link href="/mapa" className={BTN_ACAO}>Abrir o mapa</Link>
               </div>
             </div>
 
@@ -184,16 +185,16 @@ export default function VitrineConsultas({ consultas }: Props) {
                   key={c.rotulo}
                   href={c.href}
                   className={
-                    "group flex items-start gap-3 rounded-2xl border p-3.5 text-texto backdrop-blur transition duration-200 " +
-                    "hover:-translate-y-0.5 hover:border-verde hover:shadow-[0_12px_28px_-14px_rgba(63,207,127,0.5)] " +
+                    "group flex items-start gap-3 rounded-2xl border p-3.5 text-texto transition duration-200 " +
+                    "hover:-translate-y-0.5 hover:border-verde " +
                     (c.destaque
-                      ? "border-verde/60 bg-superficie/90 lg:col-span-2"
-                      : "border-linha bg-superficie/80")
+                      ? "border-verde/60 bg-superficie lg:col-span-2"
+                      : "border-linha bg-superficie")
                   }
                 >
                   <span
                     className={
-                      "mt-0.5 inline-grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors " +
+                      "mt-0.5 inline-grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors " +
                       (c.destaque ? "bg-verde text-fundo" : "bg-verde/12 text-verde group-hover:bg-verde/20")
                     }
                   >

@@ -12,6 +12,7 @@ import { nichoPadrao, nichosDoPapel } from "@/lib/planos";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import TelaDividida from "@/components/publico/TelaDividida";
 import { CAMPO, ROTULO as ROTULO_KIT } from "@/components/ui/Pagina";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 
 const PERFIS = [
   { value: "comprador", label: "Quero comprar / procurar imóvel" },
@@ -304,7 +305,7 @@ export default function Entrar() {
           {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
           {aviso && <p className="rounded-xl border border-verde/30 bg-verde/10 px-4 py-3 text-sm text-verde">{aviso}</p>}
 
-          <button disabled={carregando} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
+          <button disabled={carregando} className={`${BTN_ACAO} w-full disabled:opacity-60`}>
             {carregando ? "Aguarde…"
               : <>{modo === "login" ? "Entrar"
                 : modo === "cadastro" ? "Criar conta"

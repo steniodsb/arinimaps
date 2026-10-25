@@ -41,16 +41,17 @@ export function Indicadores({ itens }: { itens: Indicador[] }) {
               {/* no celular o card tem ~150 px: "R$ 36.000" em 1,9rem passava por cima do ícone */}
               <p className={`lp-display min-w-0 break-words text-[1.5rem] sm:text-[1.9rem] leading-none tabular-nums ${i.destaque ? "text-ouro" : "text-texto"}`}>{i.valor}</p>
               {Icone && (
-                <span className={`hidden sm:grid size-9 shrink-0 place-items-center rounded-xl ${i.destaque ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde"}`}>
+                <span className={`hidden sm:grid size-9 shrink-0 place-items-center rounded-full border ${i.destaque ? "border-[#D9BD6F] text-ouro" : "border-linha-forte text-verde"}`}>
                   <Icone className="size-[18px]" />
                 </span>
               )}
             </div>
-            <p className="mt-2.5 text-sm font-medium text-texto-2 leading-snug">{i.rotulo}</p>
+            <span aria-hidden className="fio-ouro mt-4 !w-6" />
+            <p className="mt-2.5 text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-texto-2 leading-snug">{i.rotulo}</p>
             {i.nota && <p className="mt-1 text-xs text-texto-2/80">{i.nota}</p>}
           </>
         );
-        const classe = `cartao block border-l-4 p-5 ${i.destaque ? "border-l-ouro" : "border-l-verde"}`;
+        const classe = `cartao block p-5 ${i.destaque ? "!border-[#D9BD6F]" : ""}`;
         return i.href
           ? <Link key={i.rotulo} href={i.href} className={classe + " cartao-link"}>{corpo}</Link>
           : <div key={i.rotulo} className={classe}>{corpo}</div>;
@@ -66,12 +67,12 @@ export function CabecalhoSetor({ setor, children }: { setor: SetorId; children?:
   return (
     <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
       <div className="flex items-start gap-4 min-w-0">
-        <span className="hidden sm:grid size-14 shrink-0 place-items-center rounded-2xl bg-verde/12 text-verde">
+        <span className="hidden sm:grid size-14 shrink-0 place-items-center rounded-full border border-linha-forte text-verde">
           <Icone className="size-7" />
         </span>
         <div className="min-w-0 max-w-3xl">
-          <p className="lp-eyebrow text-xs">Setor</p>
-          <h1 className="lp-display mt-2 text-3xl md:text-[2.5rem] text-texto text-balance">{s.nome}</h1>
+          <p className="lp-eyebrow text-xs">Setor · {s.nome}</p>
+          <h1 className="lp-display mt-3 text-3xl md:text-[2.5rem] text-verde text-balance">{s.nome}</h1>
           <p className="mt-3 text-base md:text-lg leading-relaxed text-texto-2">{s.descricao}</p>
         </div>
       </div>

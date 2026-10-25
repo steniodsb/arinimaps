@@ -4,11 +4,12 @@ import type { Metadata } from "next";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft, ArrowRight, Bath, BedDouble, Building, CalendarDays, Car, Check, ChevronRight, Cross, DoorOpen,
-  ExternalLink, FileText, Fuel, Gavel, GraduationCap, Hash, Hospital, Landmark, MapPin, Navigation, Rotate3d,
+  ExternalLink, FileText, Fuel, Gavel, GraduationCap, Hospital, Landmark, MapPin, Navigation, Rotate3d,
   Route, Ruler, ShieldCheck, ShoppingCart, Sprout,
 } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
-import { Conteudo, Etiqueta, Secao } from "@/components/ui/Pagina";
+import { Conteudo, Etiqueta, PilulaPonto, Secao } from "@/components/ui/Pagina";
+import MarcaArini from "@/components/marca/MarcaArini";
 import IndicadoresMunicipio from "@/components/rural/IndicadoresMunicipio";
 import { currentUser } from "@/lib/supabase/server";
 import MiniMapa from "@/components/map/MiniMapa";
@@ -173,12 +174,13 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
     <Moldura usuario={usuario}>
       {/* ---------- topo em faixa escura: trilha, selos, título e preço ---------- */}
       <header className="lp-escuro lp-malha-escura relative overflow-hidden">
-        <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+        <MarcaArini variante="radar" titulo=""
+          className="pointer-events-none absolute right-5 top-5 hidden w-9 md:right-8 md:top-7 md:block" />
         <Conteudo className="relative pt-8 pb-10 md:pt-10 md:pb-14">
-          <nav aria-label="Trilha" className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-texto-2">
+          <nav aria-label="Trilha" className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-texto-2 md:pr-16">
             <Link href="/" className="transition hover:text-verde">Home</Link>
             <ChevronRight className="size-3.5 shrink-0 opacity-60" />
-            <Link href="/mapa" className="transition hover:text-verde">Imóveis</Link>
+            <Link href="/imoveis" className="transition hover:text-verde">Imóveis</Link>
             <ChevronRight className="size-3.5 shrink-0 opacity-60" />
             <span className="min-w-0 truncate font-semibold text-texto">{imovel.titulo}</span>
           </nav>
@@ -187,29 +189,27 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             <ArrowLeft className="size-4" /> Voltar para o mapa
           </Link>
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${vendido ? "bg-white/10 text-texto-2" : leilao ? "bg-[#B18CFF] text-[#160B2E]" : "bg-verde text-fundo"}`}>
-              {vendido ? "Vendido" : leilao ? "Leilão" : "Disponível"}
-            </span>
-            <span className="flex items-center gap-1.5 text-[15px] text-texto-2">
-              <MapPin className="size-4 text-verde" />
-              {imovel.municipio ? `${imovel.municipio.nome} / ${imovel.municipio.uf}` : "Região piloto"}
-            </span>
-            <span className="flex items-center gap-1 font-mono text-sm text-texto-2">
-              <Hash className="size-3.5" />{imovel.codigo}
-            </span>
-            <span className="rounded-md border border-linha-forte px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-texto-3">
-              {imovel.tipo}
-            </span>
-          </div>
+          <p className="lp-eyebrow mt-8 flex w-fit">{imovel.tipo === "rural" ? "Imóvel rural" : "Imóvel urbano"} · {imovel.codigo}</p>
 
-          <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <h1 className="lp-display max-w-3xl text-balance text-3xl text-texto sm:text-4xl md:text-[3.25rem]">
-              {imovel.titulo}
-            </h1>
-            <div className="shrink-0 md:text-right">
-              <p className="lp-eyebrow !text-xs">{leilao ? "Lance inicial" : "Venda"}</p>
-              <p className="lp-display mt-1.5 text-4xl text-[var(--ouro-claro)] md:text-[2.75rem]">{formatBRL(imovel.valor)}</p>
+          <div className="mt-4 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div className="min-w-0 max-w-3xl">
+              <h1 className="lp-display text-balance text-4xl text-texto sm:text-5xl md:text-[4rem]">
+                {imovel.titulo}
+              </h1>
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+                <PilulaPonto className={vendido ? "opacity-70" : ""}>
+                  {vendido ? "Vendido" : leilao ? "Leilão" : "Disponível"}
+                </PilulaPonto>
+                <span className="flex items-center gap-1.5 text-[15px] text-texto-2">
+                  <MapPin className="size-4 text-verde" />
+                  {imovel.municipio ? `${imovel.municipio.nome} / ${imovel.municipio.uf}` : "Região piloto"}
+                </span>
+              </div>
+            </div>
+            {/* número de destaque: fio dourado e preço na fonte de título */}
+            <div className="shrink-0 border-t border-[#D9BD6F]/70 pt-4 md:min-w-[17rem] md:text-right">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-texto-2">{leilao ? "Lance inicial" : "Valor de venda"}</p>
+              <p className={`lp-display mt-2 text-[2.9rem] leading-none text-[var(--ouro-claro)] md:text-[3.6rem] ${vendido ? "line-through opacity-60" : ""}`}>{formatBRL(imovel.valor)}</p>
             </div>
           </div>
         </Conteudo>
@@ -224,31 +224,33 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                 {slides.length > 0 && <GaleriaImovel slides={slides} titulo={imovel.titulo} />}
 
                 {ficha.length > 0 && (
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-                    {ficha.map((f) => {
-                      const Icone = f.icone;
-                      return (
-                        <div key={f.rotulo} className="cartao !border-l-4 !border-l-verde p-5">
-                          <span className="grid size-10 place-items-center rounded-xl bg-verde/12 text-verde">
-                            <Icone className="size-5" />
-                          </span>
-                          <p className="lp-display mt-4 break-words text-2xl leading-tight text-texto">{f.valor}</p>
-                          <p className="mt-1.5 text-sm text-texto-2">{f.rotulo}</p>
-                        </div>
-                      );
-                    })}
+                  <div className="cartao !p-0 overflow-hidden">
+                    <p className="border-b border-linha px-5 py-3.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-texto-2 md:px-6">Ficha técnica</p>
+                    <dl className="grid sm:grid-cols-2 sm:[&>div:nth-child(odd)]:border-r sm:[&>div]:border-linha">
+                      {ficha.map((f) => {
+                        const Icone = f.icone;
+                        return (
+                          <div key={f.rotulo} className="flex items-center justify-between gap-4 border-b border-linha px-5 py-3.5 last:border-b-0 md:px-6">
+                            <dt className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-texto-2">
+                              <Icone className="size-4 text-verde" /> {f.rotulo}
+                            </dt>
+                            <dd className="lp-display break-words text-right text-2xl leading-none text-texto">{f.valor}</dd>
+                          </div>
+                        );
+                      })}
+                    </dl>
                   </div>
                 )}
               </div>
             )}
 
             {benfeitorias.length > 0 && (
-              <Secao eyebrow="Benfeitorias" titulo="Diferenciais">
+              <Secao eyebrow="01 · Benfeitorias" titulo="Diferenciais">
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {benfeitorias.map((b) => (
-                    <li key={b} className="cartao flex items-center gap-3 px-5 py-4 text-base">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-ouro/15 text-ouro">
-                        <Check className="size-4" strokeWidth={3} />
+                    <li key={b} className="flex items-center gap-3 border-t border-linha-forte py-3.5 text-base">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full border border-[#D9BD6F] text-ouro">
+                        <Check className="size-3.5" strokeWidth={3} />
                       </span>
                       <span className="capitalize text-texto">{b}</span>
                     </li>
@@ -257,21 +259,34 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
               </Secao>
             )}
 
-            <Secao titulo="Sobre o imóvel">
+            <Secao eyebrow="02 · Descrição" titulo="Sobre o imóvel">
               <div className="max-w-[68ch] whitespace-pre-line text-[17px] leading-relaxed text-texto-3">
                 {imovel.descricao || "Descrição não informada."}
               </div>
             </Secao>
 
             {imovel.geometry && (
-              <Secao eyebrow="Divisa no mapa" titulo="Localização e área">
+              <Secao eyebrow="03 · Divisa no mapa" titulo="Localização e área">
                 <MiniMapa geometry={imovel.geometry} status={imovel.status}
                   className="h-80 w-full overflow-hidden rounded-[20px] border border-linha md:h-[26rem]" />
-                <p className="text-[15px] leading-relaxed text-texto-2">
-                  Área medida no mapa: <strong className="text-texto">{formatArea(imovel.area_m2, imovel.tipo)}</strong>
-                  {imovel.perimeter_m ? ` · perímetro ${formatPerimetro(imovel.perimeter_m)}` : null}
-                  {imovel.area_declarada ? ` · área declarada pelo anunciante: ${imovel.area_declarada.toLocaleString("pt-BR")} ${imovel.tipo === "rural" ? "ha" : "m²"}` : null}
-                </p>
+                <dl className="cartao divide-y divide-linha !p-0 text-[15px]">
+                  <div className="flex items-center justify-between gap-4 px-5 py-3.5">
+                    <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">Área medida no mapa</dt>
+                    <dd className="lp-display text-2xl text-verde">{formatArea(imovel.area_m2, imovel.tipo)}</dd>
+                  </div>
+                  {imovel.perimeter_m ? (
+                    <div className="flex items-center justify-between gap-4 px-5 py-3.5">
+                      <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">Perímetro</dt>
+                      <dd className="font-semibold text-texto">{formatPerimetro(imovel.perimeter_m)}</dd>
+                    </div>
+                  ) : null}
+                  {imovel.area_declarada ? (
+                    <div className="flex items-center justify-between gap-4 px-5 py-3.5">
+                      <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">Área declarada pelo anunciante</dt>
+                      <dd className="font-semibold text-texto">{imovel.area_declarada.toLocaleString("pt-BR")} {imovel.tipo === "rural" ? "ha" : "m²"}</dd>
+                    </div>
+                  ) : null}
+                </dl>
               </Secao>
             )}
 
@@ -279,7 +294,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             <CartaoAvaliacaoPublico propertyId={propId?.id} tipo={imovel.tipo} status={imovel.status} />
 
             {!!unidades?.length && (
-              <Secao eyebrow="Empreendimento" titulo="Unidades deste empreendimento">
+              <Secao eyebrow="04 · Empreendimento" titulo="Unidades deste empreendimento">
                 <div className="cartao divide-y divide-linha overflow-hidden !p-0">
                   {unidades.map((u) => (
                     <Link key={u.codigo} href={`/imovel/${u.codigo}`}
@@ -296,15 +311,15 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             {centroid && <IndicadoresMunicipio ponto={centroid} />}
 
             {pois.length > 0 && (
-              <Secao eyebrow="Arredores" titulo="Pontos de interesse próximos"
+              <Secao eyebrow="05 · Arredores" titulo="Pontos de interesse próximos"
                 subtitulo="Distâncias em linha reta, do centro do imóvel. Fonte: OpenStreetMap, atualizada periodicamente.">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="cartao grid gap-x-8 !p-2 sm:grid-cols-2 md:!p-3">
                   {pois.map((p, i) => {
                     const Icone = POI_ICONE[p.categoria] ?? MapPin;
                     return (
-                      <div key={i} className="cartao flex items-center gap-3.5 px-4 py-3.5">
-                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
-                          <Icone className="size-5" />
+                      <div key={i} className="flex items-center gap-3.5 border-b border-linha px-3 py-3.5 last:border-b-0">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-full border border-linha-forte text-verde">
+                          <Icone className="size-4" />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[15px] font-semibold text-texto">
@@ -321,12 +336,12 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             )}
 
             {leilao && (
-              <section className="cartao space-y-5 !border-[#B18CFF]/40 p-6 md:p-7">
+              <section className="cartao space-y-5 !border-[#D9BD6F]/60 p-6 md:p-7">
                 <div className="flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-xl bg-[#B18CFF]/15 text-[#B18CFF]">
+                  <span className="grid size-11 place-items-center rounded-full border border-[#D9BD6F] text-ouro">
                     <Gavel className="size-5" />
                   </span>
-                  <h2 className="lp-display text-2xl text-texto md:text-[1.75rem]">Leilão</h2>
+                  <div><p className="lp-eyebrow text-xs">06 · Leilão</p><h2 className="lp-display mt-2 text-3xl text-texto">Praças e condições</h2></div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {[1, 2].map((n) => {
@@ -334,10 +349,10 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
                     const lance = n === 1 ? leilao.praca1_lance : leilao.praca2_lance;
                     if (!data && lance == null) return null;
                     return (
-                      <div key={n} className="rounded-xl border border-linha bg-superficie-2 p-5">
-                        <p className="text-xs font-bold uppercase tracking-wider text-texto-2">{n}ª praça</p>
+                      <div key={n} className="item-numerado">
+                        <p className="numero !tracking-[0.2em] uppercase">{n}ª praça</p>
                         <p className="mt-1.5 flex items-center gap-2 font-semibold text-texto">
-                          <CalendarDays className="size-4 shrink-0 text-[#B18CFF]" /> {data ?? "Data a definir"}
+                          <CalendarDays className="size-4 shrink-0 text-ouro" /> {data ?? "Data a definir"}
                         </p>
                         {lance != null && <p className="mt-1 text-[15px] font-semibold text-ouro">Lance mínimo {formatBRL(Number(lance))}</p>}
                       </div>
@@ -361,7 +376,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             )}
 
             {imovel.condicoes_venda && (
-              <Secao titulo="Condições de venda">
+              <Secao eyebrow="07 · Negociação" titulo="Condições de venda">
                 <p className="text-[17px] leading-relaxed text-texto-3">{imovel.condicoes_venda}</p>
                 {(imovel.aceita_permuta || imovel.aceita_financiamento) && (
                   <div className="flex flex-wrap gap-2">
@@ -385,7 +400,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             )}
 
             {imovel.geometry && (
-              <Link href={`/imovel/${imovel.codigo}/tour`} className="lp-btn lp-btn-verde w-full">
+              <Link href={`/imovel/${imovel.codigo}/tour`} className="lp-btn btn-verde w-full !py-3.5">
                 <Rotate3d /> Ver tour 3D da propriedade
               </Link>
             )}
@@ -401,7 +416,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
             {centroid && (
               <a href={`https://www.google.com/maps/dir/?api=1&destination=${centroid.lat},${centroid.lng}`}
                 target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 rounded-[10px] border border-linha-forte bg-superficie py-3 text-sm font-bold text-texto transition hover:border-verde hover:text-verde">
+                className="flex items-center justify-center gap-2 rounded-full border-[1.5px] border-linha-forte py-3 text-sm font-bold text-texto transition hover:border-verde hover:text-verde">
                 <Navigation className="size-4" /> Como chegar até o imóvel
               </a>
             )}
@@ -439,6 +454,28 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
           </aside>
         </div>
       </Conteudo>
+
+      {/* faixa de conversão: Verde Profundo com linhas de mapa e o radar do manual */}
+      {!vendido && (
+        <section className="lp-escuro fundo-curvas-escuro relative overflow-hidden" aria-label="Falar com a Arini">
+          <MarcaArini variante="radar" titulo=""
+            className="pointer-events-none absolute right-5 top-5 w-9 md:right-8 md:top-7" />
+          <Conteudo className="relative flex flex-col gap-8 py-14 md:flex-row md:items-end md:justify-between md:py-20">
+            <div className="max-w-2xl">
+              <p className="lp-eyebrow">Próximo passo</p>
+              <h2 className="lp-display mt-4 text-4xl text-texto md:text-[3.25rem]">
+                Gostou do <span className="text-ouro">{imovel.tipo === "rural" ? "território" : "imóvel"}?</span> Vamos conversar.
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-texto-2">
+                A equipe da Arini mostra a divisa conferida, os documentos e agenda a visita.
+              </p>
+            </div>
+            <a href="#interesse" className="lp-btn lp-btn-verde shrink-0 self-start md:self-end">
+              Falar com a Arini <ArrowRight />
+            </a>
+          </Conteudo>
+        </section>
+      )}
     </Moldura>
   );
 }

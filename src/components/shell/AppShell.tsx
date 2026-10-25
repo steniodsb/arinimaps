@@ -125,9 +125,9 @@ export default function AppShell({
   return (
     <div className={`${cheia ? "h-dvh overflow-hidden" : "min-h-screen"} bg-fundo flex`}>
       {/* ---------- sidebar (desktop) ---------- */}
-      <aside className={`hidden lg:flex w-64 shrink-0 flex-col border-r border-linha bg-superficie ${cheia ? "overflow-y-auto" : ""}`}>
-        <Link href="/" aria-label="Arini Imóveis Brasil — início" className="flex h-[4.5rem] items-center border-b border-linha px-6">
-          <Logo />
+      <aside className={`lp-escuro lp-malha-escura hidden lg:flex w-64 shrink-0 flex-col ${cheia ? "overflow-y-auto" : ""}`}>
+        <Link href="/" aria-label="Arini Imóveis Brasil — início" className="flex h-[4.5rem] items-center border-b border-linha-forte/60 px-6">
+          <Logo negativa />
         </Link>
 
         <nav aria-label="Principal" className="space-y-1 px-3 pt-5">
@@ -137,13 +137,13 @@ export default function AppShell({
             return (
               <Link key={m.href} href={m.href} aria-current={on ? "page" : undefined}
                 className={
-                  "relative flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 font-display text-[15px] font-semibold transition " +
+                  "relative flex items-center gap-3 rounded-full px-4 py-2.5 text-[15px] font-semibold transition " +
                   (on
-                    ? "bg-verde/12 text-verde"
-                    : "text-texto-3 hover:bg-superficie-2 hover:text-texto")
+                    ? "bg-texto/12 text-texto"
+                    : "text-texto-3 hover:bg-texto/8 hover:text-texto")
                 }>
-                {on && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-verde" aria-hidden />}
-                <Icone className="size-[18px] shrink-0" />
+                {on && <span className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-ouro" aria-hidden />}
+                <Icone className={"size-[18px] shrink-0 " + (on ? "text-ouro" : "")} />
                 {m.rotulo}
               </Link>
             );
@@ -155,26 +155,26 @@ export default function AppShell({
           <div className="space-y-0.5">
             {ATALHOS.map((a) => (
               <Link key={a.rotulo} href={a.href}
-                className="group flex items-center justify-between rounded-[10px] px-3.5 py-2 text-sm text-texto-2 transition hover:bg-superficie-2 hover:text-texto">
+                className="group flex items-center justify-between rounded-full px-4 py-2 text-sm text-texto-2 transition hover:bg-texto/8 hover:text-texto">
                 {a.rotulo}
-                <ChevronRight className="size-4 text-texto-2/60 transition group-hover:text-verde" />
+                <ChevronRight className="size-4 text-texto-2/60 transition group-hover:text-ouro" />
               </Link>
             ))}
           </div>
         </div>
 
         <div className="mt-auto p-4">
-          <div className="lp-escuro lp-malha-escura relative overflow-hidden rounded-2xl p-5">
-            <div className="lp-grade pointer-events-none absolute inset-0 opacity-70" aria-hidden />
-            <div className="relative">
-              <p className="lp-display text-lg leading-snug text-texto">
-                Transforme dados em <span className="text-verde">boas decisões</span>.
-              </p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-texto-2">Inteligência territorial para o seu negócio.</p>
-              <Link href="/entrar" className="lp-btn lp-btn-ouro mt-4 !px-4 !py-2.5 text-sm">
-                Saiba mais <ArrowRight />
-              </Link>
-            </div>
+          <div className="relative overflow-hidden rounded-2xl border border-linha-forte/70 bg-fundo/40 p-5">
+            <MarcaArini variante="radar" titulo=""
+              className="pointer-events-none absolute right-3.5 top-3.5 w-7" />
+            <p className="lp-eyebrow !text-[11px]">Arini</p>
+            <p className="lp-display mt-3 text-xl leading-snug text-texto">
+              Dados em <span className="text-ouro">boas decisões</span>
+            </p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-texto-2">Inteligência territorial para o seu negócio.</p>
+            <Link href="/entrar" className="lp-btn lp-btn-ouro mt-4 !px-4 !py-2.5 text-sm">
+              Saiba mais <ArrowRight />
+            </Link>
           </div>
         </div>
       </aside>
@@ -183,7 +183,7 @@ export default function AppShell({
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-linha bg-superficie px-4 lg:h-[4.5rem] lg:px-6">
           <button onClick={() => setMenuAberto(!menuAberto)} type="button"
-            className="lg:hidden grid size-10 place-items-center rounded-[10px] border border-linha text-texto transition hover:border-verde"
+            className="lg:hidden grid size-10 place-items-center rounded-full border border-linha-forte text-texto transition hover:border-verde"
             aria-label={menuAberto ? "Fechar menu" : "Abrir menu"} aria-expanded={menuAberto}>
             {menuAberto ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -200,7 +200,7 @@ export default function AppShell({
                 placeholder="Buscar imóvel, código, município ou coordenada"
                 aria-label="Buscar imóvel, código, município ou coordenada"
                 title="Ex.: AIB-000029, Iturama, -19.73, -50.19 — Enter para buscar"
-                className="w-full rounded-xl border border-linha-forte bg-superficie-2 py-2.5 pl-10 pr-3 text-[15px] text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30"
+                className="w-full rounded-full border border-linha-forte bg-superficie-2 py-2.5 pl-10 pr-4 text-[15px] text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30"
               />
             </form>
           )}
@@ -233,7 +233,7 @@ export default function AppShell({
               className="relative grid size-10 place-items-center rounded-[10px] text-texto-2 transition hover:bg-superficie-2 hover:text-texto"
               aria-label="Notificações">
               <Bell className="size-[18px]" />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-ouro ring-2 ring-superficie" />
+              <span className="absolute right-2 top-2 size-2 rounded-full bg-[#D9BD6F] ring-2 ring-superficie" />
             </button>
             {usuario ? (
               <Link href="/painel" className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-superficie-2">

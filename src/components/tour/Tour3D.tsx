@@ -287,28 +287,29 @@ export default function Tour3D(dados: TourData) {
 
       {!dados.record && (
         <>
-          <div className="absolute top-4 left-4 rounded-xl bg-black/60 text-white px-4 py-3 backdrop-blur">
-            <p className="font-mono text-[10px] text-white/60">{dados.codigo}</p>
-            <p className="font-semibold">{dados.titulo}</p>
-            <p className="text-sm text-ouro-claro">{brl} · {dados.areaLabel}</p>
-            {dados.municipio && <p className="text-xs text-white/60">{dados.municipio.nome}</p>}
+          <div className="absolute top-4 left-4 max-w-[min(22rem,calc(100vw-2rem))] rounded-[20px] bg-[#0A2219]/92 px-5 py-4 text-[#F2F2EC]">
+            <span className="block h-0.5 w-7 rounded bg-[#D9BD6F]" aria-hidden />
+            <p className="mt-2.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#D3DCD2]">Tour 3D · {dados.codigo}</p>
+            <p className="lp-display mt-1.5 text-3xl text-[#F2F2EC]">{dados.titulo}</p>
+            <p className="lp-display mt-2 text-2xl text-[#FFE299]">{brl}</p>
+            <p className="mt-1 text-xs text-[#B3C3B8]">{dados.areaLabel}{dados.municipio ? ` · ${dados.municipio.nome}` : ""}</p>
           </div>
 
           {(fase === "pausado" || fase === "fim") && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               <button
-                className="rounded-full bg-ouro text-fundo font-medium px-5 py-2.5 shadow-lg hover:bg-ouro-claro"
+                className="rounded-full border-[1.5px] border-[#F2F2EC]/80 bg-[#0A2219]/85 text-[#F2F2EC] font-semibold px-5 py-2.5 hover:bg-[#F2F2EC] hover:text-[#124431]"
                 onClick={() => window.location.reload()}>
                 <RotateCcw className="mr-1.5 inline size-4 -translate-y-px" />Repetir tour
               </button>
               <a href={`/imovel/${dados.codigo}`}
-                className="rounded-full bg-verde text-white font-medium px-5 py-2.5 shadow-lg hover:bg-verde-escuro">
+                className="rounded-full bg-[#D80B0B] text-white font-semibold px-5 py-2.5 shadow-[0_0_0_5px_rgba(216,11,11,0.22)] hover:brightness-110">
                 Ver o imóvel
               </a>
             </div>
           )}
           {fase === "carregando" && (
-            <div className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-sm">
+            <div className="absolute inset-0 grid place-items-center bg-[#0A2219]/80">
               <div className="text-center text-white space-y-3">
                 <div className="mx-auto h-9 w-9 rounded-full border-2 border-white/25 border-t-ouro-claro animate-spin" />
                 <p className="text-sm">{etapa}</p>
@@ -316,7 +317,7 @@ export default function Tour3D(dados: TourData) {
             </div>
           )}
           {fase === "tocando" && (
-            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 text-xs bg-black/40 rounded-full px-4 py-1.5">
+            <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[#F2F2EC] text-xs bg-[#0A2219]/85 rounded-full px-4 py-1.5">
               Toque no mapa para explorar livremente
             </p>
           )}

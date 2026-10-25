@@ -8,6 +8,7 @@ import { SENHA_MIN, validarSenha } from "@/lib/seguranca/senha";
 import { ArrowRight, CircleCheck, KeyRound, LoaderCircle, LogOut, ShieldCheck } from "lucide-react";
 import TelaDividida from "@/components/publico/TelaDividida";
 import { CAMPO, ROTULO } from "@/components/ui/Pagina";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 
 const INPUT = CAMPO;
 
@@ -111,7 +112,7 @@ export default function RedefinirSenha() {
               <p className="text-[15px] leading-relaxed text-texto-2">
                 Este link expirou ou já foi usado. Cada link vale por 1 hora e funciona uma única vez.
               </p>
-              <Link href="/entrar?recuperar=1" className="lp-btn lp-btn-verde w-full">Pedir um link novo <ArrowRight /></Link>
+              <Link href="/entrar?recuperar=1" className={`${BTN_ACAO} w-full`}>Pedir um link novo <ArrowRight /></Link>
             </>
           )}
 
@@ -139,7 +140,7 @@ export default function RedefinirSenha() {
                 </div>
               )}
               {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
-              <button disabled={ocupado} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
+              <button disabled={ocupado} className={`${BTN_ACAO} w-full disabled:opacity-60`}>
                 {ocupado ? "Salvando…" : <>Salvar senha nova <ArrowRight /></>}
               </button>
               <p className="text-sm text-texto-2">

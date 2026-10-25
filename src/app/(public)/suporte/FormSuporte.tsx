@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, Send } from "lucide-react";
 import { CAMPO, ROTULO } from "@/components/ui/Pagina";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 
 const input = CAMPO;
 const rotulo = ROTULO;
@@ -113,7 +114,7 @@ export default function FormSuporte({
           <CircleCheck className="mt-0.5 size-4 shrink-0" /> {ok}
         </p>
       )}
-      <button disabled={estado === "enviando"} className="lp-btn lp-btn-verde disabled:opacity-60">
+      <button disabled={estado === "enviando"} className={`${BTN_ACAO} disabled:opacity-60`}>
         {estado === "enviando" ? "Enviando…" : <>Enviar <Send /></>}
       </button>
     </form>

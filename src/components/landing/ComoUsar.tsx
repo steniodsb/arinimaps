@@ -13,6 +13,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowRight, Gavel, Handshake, Megaphone, ScanSearch, Search } from "lucide-react";
 import MosaicoSatelite from "./MosaicoSatelite";
 import { EASE } from "./movimento";
+import { BTN_ACAO } from "./Titulo";
 
 type Aba = {
   id: string;
@@ -93,13 +94,13 @@ export default function ComoUsar() {
                 if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); setAtiva((ativa - 1 + ABAS.length) % ABAS.length); }
               }}
               className={`group relative flex shrink-0 items-center gap-4 rounded-xl px-4 py-3.5 text-left transition lg:px-5 lg:py-5 ${
-                sel ? "bg-superficie shadow-[0_18px_40px_-28px_rgba(0,0,0,.5)]" : "hover:bg-superficie/60"
+                sel ? "bg-superficie shadow-sm ring-1 ring-linha" : "hover:bg-superficie/60"
               }`}
             >
               {sel && (
                 <motion.span
                   layoutId="como-usar-marca"
-                  className="absolute inset-y-3 left-0 w-1 rounded-full bg-verde"
+                  className="absolute inset-y-3 left-0 w-1 rounded-full bg-[#D9BD6F]"
                   transition={{ duration: reduce ? 0 : 0.4, ease: EASE }}
                 />
               )}
@@ -151,7 +152,7 @@ export default function ComoUsar() {
             transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
             className="absolute inset-x-0 bottom-0 p-6 text-white md:p-10"
           >
-            <p className="lp-eyebrow">{aba.rotulo}</p>
+            <p className="lp-eyebrow">{String(ativa + 1).padStart(2, "0")} · {aba.rotulo}</p>
             <h3 className="lp-display mt-3 text-3xl md:text-[2.6rem]">{aba.frase}</h3>
             <p className="mt-4 max-w-2xl text-lg leading-relaxed text-white/90">{aba.texto}</p>
             <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-base text-white/85">
@@ -161,7 +162,7 @@ export default function ComoUsar() {
                 </li>
               ))}
             </ul>
-            <Link href={aba.link.href} className="lp-btn lp-btn-verde mt-7">
+            <Link href={aba.link.href} className={`${BTN_ACAO} mt-7`}>
               {aba.link.rotulo} <ArrowRight />
             </Link>
           </motion.div>

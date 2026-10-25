@@ -15,7 +15,7 @@ export type Slide =
   | { tipo: "tour"; href: string; poster: string | null };
 
 const SETA =
-  "absolute top-1/2 -translate-y-1/2 grid size-11 place-items-center rounded-full bg-black/55 text-white backdrop-blur transition hover:bg-black/75 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100";
+  "absolute top-1/2 -translate-y-1/2 grid size-11 place-items-center rounded-full bg-[#0A2219]/70 text-[#F2F2EC] transition hover:bg-[#0A2219]/90 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100";
 
 export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; titulo: string }) {
   const [atual, setAtual] = useState(0);
@@ -87,7 +87,7 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
               <button onClick={() => ir(1)} aria-label="Próxima imagem" className={`${SETA} right-4`}>
                 <ChevronRight className="size-6" />
               </button>
-              <span className="absolute bottom-4 right-4 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold tabular-nums tracking-wider text-white backdrop-blur">
+              <span className="absolute bottom-4 right-4 rounded-full bg-[#0A2219]/80 px-3 py-1 text-xs font-semibold tabular-nums tracking-wider text-[#F2F2EC]">
                 {atual + 1} / {total}
               </span>
             </>
@@ -95,7 +95,7 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
 
           {slide.tipo === "foto" && (
             <button onClick={() => setCheia(true)} aria-label="Ver em tela cheia"
-              className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur transition hover:bg-black/80">
+              className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-[#0A2219]/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#F2F2EC] transition hover:bg-[#0A2219]">
               <Expand className="size-3.5" /> Ampliar
             </button>
           )}
@@ -106,7 +106,7 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
             {slides.map((s, i) => (
               <button key={i} onClick={() => setAtual(i)}
                 aria-label={`Ir para mídia ${i + 1}`}
-                className={`relative h-[4.5rem] w-28 shrink-0 overflow-hidden rounded-xl ring-2 transition
+                className={`relative h-[4.5rem] w-28 shrink-0 overflow-hidden rounded-2xl ring-2 transition
                   ${i === atual ? "ring-verde" : "ring-transparent opacity-70 hover:opacity-100"}`}>
                 {s.tipo === "foto" && (
                   // eslint-disable-next-line @next/next/no-img-element

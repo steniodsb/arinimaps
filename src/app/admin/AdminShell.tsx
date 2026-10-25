@@ -86,9 +86,9 @@ const ICONE_SETOR: Record<SetorId | "geral", LucideIcon> = {
 type Grupo = { id: SetorId | "geral"; titulo: string; itens: ItemMenu[] };
 
 const LINK_RODAPE =
-  "flex flex-col items-center gap-1 rounded-lg border border-linha px-2 py-2 text-texto-2 transition-colors hover:border-verde hover:text-verde";
+  "flex flex-col items-center gap-1 rounded-2xl border border-linha-forte/70 px-2 py-2 text-texto-2 transition-colors hover:border-ouro hover:text-ouro";
 const LINK_TOPO =
-  "items-center gap-2 rounded-[10px] border border-linha-forte px-3.5 py-2 text-sm font-semibold text-texto-2 transition-colors hover:border-verde hover:text-verde";
+  "items-center gap-2 rounded-full border border-linha-forte px-4 py-2 text-sm font-semibold text-texto-2 transition-colors hover:border-verde hover:text-verde";
 
 export default function AdminShell({
   children, nome, papel, setores, avatar = null,
@@ -130,7 +130,7 @@ export default function AdminShell({
           <div key={g.id} className="pb-1">
             <button type="button" aria-expanded={!fechado}
               onClick={() => setRecolhidos((r) => ({ ...r, [g.id]: !r[g.id] }))}
-              className={"flex w-full items-center gap-2.5 rounded-lg px-3 pt-3 pb-1.5 text-left text-[11px] font-bold uppercase tracking-[0.16em] transition-colors " +
+              className={"flex w-full items-center gap-2.5 rounded-lg px-3 pt-4 pb-1.5 text-left text-[11px] font-bold uppercase tracking-[0.22em] transition-colors " +
                 (temAtivo ? "text-ouro" : "text-texto-2 hover:text-texto")}>
               <IconeGrupo className="size-3.5 shrink-0" />
               <span className="flex-1 truncate">{g.titulo}</span>
@@ -146,16 +146,16 @@ export default function AdminShell({
                     <Link key={g.id + i.href} href={i.href} onClick={() => setAberto(false)}
                       aria-current={ligado ? "page" : undefined}
                       className={
-                        "relative flex items-center gap-3 rounded-lg px-3 py-2 text-[0.92rem] transition-colors " +
+                        "relative flex items-center gap-3 rounded-full px-3.5 py-2 text-[0.92rem] transition-colors " +
                         (ligado
-                          ? "bg-verde/12 text-verde font-semibold"
-                          : "text-texto-2 font-medium hover:text-texto hover:bg-superficie-2")
+                          ? "bg-texto/12 text-texto font-semibold"
+                          : "text-texto-2 font-medium hover:text-texto hover:bg-texto/8")
                       }>
-                      {ligado && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-verde" aria-hidden />}
-                      <Icone className="size-[18px] shrink-0" />
+                      {ligado && <span className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-ouro" aria-hidden />}
+                      <Icone className={"size-[18px] shrink-0 " + (ligado ? "text-ouro" : "")} />
                       <span className="truncate">{i.rotulo}</span>
                       {!!selo[i.href] && (
-                        <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-ouro text-fundo text-[10px] font-bold grid place-items-center tabular-nums"
+                        <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-ouro text-[#124431] text-[10px] font-bold grid place-items-center tabular-nums"
                           title="Chamados com mensagem nova do cliente">
                           {selo[i.href] > 99 ? "99+" : selo[i.href]}
                         </span>
@@ -172,7 +172,7 @@ export default function AdminShell({
   );
 
   const rodape = (
-    <div className="border-t border-linha p-4">
+    <div className="border-t border-linha-forte/60 p-4">
       <div className="flex items-center gap-3 min-w-0">
         <Avatar nome={nome} url={avatar} tamanho={38} />
         <div className="min-w-0">
@@ -196,8 +196,8 @@ export default function AdminShell({
 
   const marca = (
     <Link href="/" className="flex w-full items-center gap-3 min-w-0">
-      <Logo />
-      <span className="ml-auto rounded-md border border-ouro/40 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ouro">
+      <Logo negativa />
+      <span className="ml-auto rounded-full border border-ouro/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-ouro">
         Central
       </span>
     </Link>
@@ -205,8 +205,8 @@ export default function AdminShell({
 
   return (
     <div className="min-h-screen bg-fundo flex">
-      <aside className="hidden lg:flex w-[264px] shrink-0 flex-col bg-superficie border-r border-linha sticky top-0 h-screen">
-        <div className="px-5 h-[72px] flex items-center border-b border-linha">{marca}</div>
+      <aside className="lp-escuro lp-malha-escura hidden lg:flex w-[264px] shrink-0 flex-col sticky top-0 h-screen">
+        <div className="px-5 h-[72px] flex items-center border-b border-linha-forte/60">{marca}</div>
         <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Menu da Central">{navegacao}</nav>
         {rodape}
       </aside>
@@ -215,11 +215,11 @@ export default function AdminShell({
       {aberto && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/60" onClick={() => setAberto(false)} />
-          <aside className="relative w-[284px] max-w-[85vw] bg-superficie border-r border-linha flex flex-col">
-            <div className="px-5 h-16 flex items-center gap-2 border-b border-linha">
+          <aside className="lp-escuro lp-malha-escura relative w-[284px] max-w-[85vw] flex flex-col">
+            <div className="px-5 h-16 flex items-center gap-2 border-b border-linha-forte/60">
               <div className="flex-1 min-w-0">{marca}</div>
               <button type="button" onClick={() => setAberto(false)} aria-label="Fechar menu"
-                className="grid size-9 place-items-center rounded-lg text-texto-2 hover:text-texto hover:bg-superficie-2 transition-colors">
+                className="grid size-9 place-items-center rounded-lg text-texto-2 hover:text-texto hover:bg-texto/8 transition-colors">
                 <X className="size-5" />
               </button>
             </div>
@@ -236,17 +236,17 @@ export default function AdminShell({
             <Menu className="size-5" />
           </button>
           <div className="flex items-center gap-3 min-w-0">
-            <span className="hidden sm:grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
+            <span className="hidden sm:grid size-10 shrink-0 place-items-center rounded-full border border-linha-forte text-verde">
               <TituloIcone className="size-5" />
             </span>
             <div className="min-w-0">
-              <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.16em] text-texto-2 min-w-0">
+              <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-texto-2 min-w-0">
                 <span className="shrink-0">Central Arini</span>
                 {grupoAtual && grupoAtual.id !== "geral" && (
                   <><ChevronRight className="size-3 shrink-0" /><span className="text-ouro truncate">{grupoAtual.titulo}</span></>
                 )}
               </p>
-              <p className="font-display text-base md:text-lg font-bold leading-tight text-texto truncate">{titulo}</p>
+              <p className="lp-display text-xl md:text-2xl text-texto truncate">{titulo}</p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -259,7 +259,7 @@ export default function AdminShell({
             </Link>
             <Link href="/conta" aria-label="Minha conta" title="Minha conta" className="lg:hidden">
               {avatar ? <Avatar nome={nome} url={avatar} tamanho={36} /> : (
-                <span className="w-9 h-9 rounded-full bg-verde-escuro border border-verde/30 grid place-items-center text-xs font-bold text-verde">
+                <span className="w-9 h-9 rounded-full bg-[#124431] ring-1 ring-[#D9BD6F]/70 grid place-items-center text-xs font-bold text-[#F2F2EC]">
                   {(nome || "A").slice(0, 1).toUpperCase()}
                 </span>
               )}

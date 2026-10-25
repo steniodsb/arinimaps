@@ -1,6 +1,37 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Corpo HTML no padrão "Assinatura de e-mail · 600 px" do manual (prancha 22):
+ * fundo off-white, cartão branco, assinatura no topo, fio dourado, texto em
+ * Verde Arini e rodapé com o sinal de localização. Só tabelas e estilos em
+ * linha (compatível com Gmail/Outlook); Quicksand cai para fontes do sistema.
+ * O texto puro segue indo junto, como alternativa.
+ */
+export function emailHtml(assunto: string, texto: string): string {
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "https://arinibrasil.com.br";
+  const corpo = esc(texto)
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#124431;font-weight:600;text-decoration:underline;">$1</a>')
+    .replace(/\n/g, "<br>");
+  const fonte = "Quicksand,'Trebuchet MS','Segoe UI',Arial,sans-serif";
+  return `<!doctype html><html lang="pt-BR"><body style="margin:0;padding:0;background:#F2F2EC;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F2EC;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#FFFFFF;border:1px solid #DADCD0;border-radius:16px;font-family:${fonte};">
+<tr><td style="padding:28px 32px 0 32px;">
+<a href="${site}" style="text-decoration:none;font-family:${fonte};font-size:24px;font-weight:700;letter-spacing:0.14em;color:#124431;">ARINI</a>
+<span style="font-size:10px;letter-spacing:0.22em;color:#55655A;text-transform:uppercase;font-weight:600;">&nbsp;&nbsp;Imóveis Brasil</span>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td width="40" height="2" style="background:#D9BD6F;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+</td></tr>
+<tr><td style="padding:22px 32px 6px 32px;font-size:20px;line-height:1.25;font-weight:700;color:#124431;text-transform:uppercase;letter-spacing:0.02em;">${esc(assunto)}</td></tr>
+<tr><td style="padding:8px 32px 28px 32px;font-size:15px;line-height:1.65;color:#0E2A20;">${corpo}</td></tr>
+<tr><td style="background:#0A2219;border-radius:0 0 15px 15px;padding:18px 32px;font-size:11px;line-height:1.5;color:#B3C3B8;letter-spacing:0.04em;">
+<span style="color:#D9BD6F;">&#9679;</span>&nbsp; Arini Imóveis Brasil · Inteligência territorial &nbsp;·&nbsp; <a href="${site}" style="color:#F2F2EC;text-decoration:none;">${site.replace(/^https?:\/\//, "")}</a>
+</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
 /** E-mail via Resend. Sem RESEND_API_KEY, vira no-op silencioso (nunca lança). */
 export async function sendEmail(to: string | null | undefined, subject: string, text: string) {
   if (!process.env.RESEND_API_KEY || !to) return;
@@ -16,6 +47,7 @@ export async function sendEmail(to: string | null | undefined, subject: string, 
         to: [to],
         subject,
         text,
+        html: emailHtml(subject, text),
       }),
     });
   } catch (e) {

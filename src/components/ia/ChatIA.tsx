@@ -16,7 +16,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Database, FileText, Home, LoaderCircle, Lock, SendHorizontal, Sparkles, SquarePen, X } from "lucide-react";
+import { ArrowRight, Database, FileText, Home, LoaderCircle, Lock, SendHorizontal, SquarePen, X } from "lucide-react";
+import MarcaArini from "@/components/marca/MarcaArini";
 
 type Fonte = { tipo: "imovel" | "car" | "conhecimento"; rotulo: string; href?: string };
 /** `aviso`: recado neutro do sistema (assistente ocupado), não falha — aparece sem o vermelho de erro. */
@@ -230,9 +231,9 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
     <>
       {flutuante && !aberto && (
         <button type="button" onClick={abrir} aria-label="Pergunte à Arini"
-          className="group fixed bottom-3 right-3 z-50 flex h-12 items-center rounded-full pl-[14px] pr-[14px] sm:bottom-5 sm:right-5 sm:h-14 sm:pl-[17px] sm:pr-[17px] text-[#124431] shadow-[0_14px_34px_-12px_rgba(63,207,127,0.75)] ring-1 ring-black/10 transition-[padding] hover:pr-5 focus-visible:pr-5"
-          style={{ background: "#D9BD6F" }}>
-          <Sparkles aria-hidden className="size-5 shrink-0 sm:size-[22px]" />
+          className="group fixed bottom-3 right-3 z-50 flex h-12 items-center rounded-full pl-[14px] pr-[14px] sm:bottom-5 sm:right-5 sm:h-14 sm:pl-[17px] sm:pr-[17px] text-[#F2F2EC] shadow-[0_1px_2px_rgba(10,34,25,0.25),0_12px_24px_-14px_rgba(10,34,25,0.5)] ring-1 ring-[#D9BD6F]/50 transition-[padding] hover:pr-5 focus-visible:pr-5"
+          style={{ background: "#124431" }}>
+          <MarcaArini variante="radar" titulo="" className="size-5 shrink-0 sm:size-6" />
           <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-bold transition-[max-width,margin] duration-300 group-hover:ml-2 group-hover:max-w-40 group-focus-visible:ml-2 group-focus-visible:max-w-40">
             Pergunte à Arini
           </span>
@@ -241,24 +242,24 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
 
       {aberto && (
         <div role="dialog" aria-label="Assistente Arini"
-          className="fixed z-50 inset-x-2 bottom-20 top-20 sm:inset-x-auto sm:right-4 sm:top-auto sm:w-[420px] sm:h-[620px] sm:max-h-[calc(100vh-7rem)] lg:bottom-6 flex flex-col overflow-hidden rounded-[20px] border border-linha bg-superficie shadow-[0_30px_80px_-30px_rgb(0_0_0/0.8)]">
+          className="fixed z-50 inset-x-2 bottom-20 top-20 sm:inset-x-auto sm:right-4 sm:top-auto sm:w-[420px] sm:h-[620px] sm:max-h-[calc(100vh-7rem)] lg:bottom-6 flex flex-col overflow-hidden rounded-3xl border border-linha bg-superficie shadow-[0_1px_2px_var(--sombra-botao),0_24px_56px_-24px_var(--sombra-popup)]">
           <div className="lp-escuro lp-malha-escura relative flex items-center gap-3 px-4 py-3.5 shrink-0">
             <div className="lp-grade pointer-events-none absolute inset-0 opacity-50" aria-hidden />
-            <span className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-verde/30 bg-verde/15 text-verde" aria-hidden>
-              <Sparkles className="size-5" />
+            <span className="relative grid size-10 shrink-0 place-items-center rounded-full border border-[#D9BD6F]/40 bg-[#124431]" aria-hidden>
+              <MarcaArini variante="radar" titulo="" className="size-6" />
             </span>
             <div className="relative flex-1 min-w-0 leading-tight">
-              <p className="font-display text-base font-bold text-texto">Assistente Arini</p>
+              <p className="lp-display text-xl text-texto">Assistente Arini</p>
               <p className="mt-0.5 truncate text-[11px] text-texto-2">IA · imóveis publicados, CAR e base de conhecimento</p>
             </div>
             {msgs.length > 0 && (
               <button type="button" onClick={novaConversa} title="Nova conversa"
-                className="relative inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-semibold text-texto-2 transition hover:bg-white/10 hover:text-texto">
+                className="relative inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-texto-2 transition hover:bg-white/10 hover:text-texto">
                 <SquarePen className="size-3.5" /> Nova
               </button>
             )}
             <button type="button" onClick={() => setAberto(false)} aria-label="Fechar"
-              className="relative grid size-9 place-items-center rounded-[10px] text-texto-2 transition hover:bg-white/10 hover:text-texto">
+              className="relative grid size-9 place-items-center rounded-full text-texto-2 transition hover:bg-white/10 hover:text-texto">
               <X className="size-[18px]" />
             </button>
           </div>
@@ -270,7 +271,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
 
             {estado && !estado.ligado && (
               <div className="rounded-2xl border border-linha bg-superficie-2 p-4 space-y-1.5">
-                <p className="font-display font-bold text-texto">{estado.motivo === "desligado" ? "Assistente desligado" : "Assistente em configuração"}</p>
+                <p className="lp-display text-xl text-verde">{estado.motivo === "desligado" ? "Assistente desligado" : "Assistente em configuração"}</p>
                 <p className="text-texto-2 leading-relaxed">
                   {estado.motivo === "desligado"
                     ? "A Arini desligou o assistente por enquanto."
@@ -283,7 +284,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
 
             {estado?.ligado && !estado.permitido && estado.negacao && (
               <div className="rounded-2xl border border-ouro/30 bg-ouro/8 p-4 space-y-2">
-                <p className="flex items-start gap-2 font-display font-bold text-texto">
+                <p className="flex items-start gap-2 font-bold text-texto">
                   <Lock className="mt-0.5 size-4 shrink-0 text-ouro" /> {estado.negacao.mensagem}
                 </p>
                 <p className="text-texto-2 leading-relaxed">{estado.negacao.solucao}</p>
@@ -296,7 +297,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
             {estado?.ligado && estado.permitido && msgs.length === 0 && (
               <div className="space-y-4">
                 <div>
-                  <p className="font-display text-lg font-bold text-texto">Como posso ajudar?</p>
+                  <p className="lp-display text-2xl text-verde">Como posso ajudar?</p>
                   <p className="mt-1 text-texto-2 leading-relaxed">
                     Pergunte sobre imóveis publicados, uma área do CAR ou como o Arini Imóveis Brasil funciona.
                   </p>
@@ -304,7 +305,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
                 <div className="grid gap-2">
                   {SUGESTOES.map((s) => (
                     <button key={s} type="button" onClick={() => enviar(s)} disabled={!podeConversar}
-                      className="group flex items-center justify-between gap-3 rounded-xl border border-linha bg-superficie-2 px-3.5 py-2.5 text-left text-sm text-texto-3 transition hover:border-verde/50 hover:text-texto disabled:opacity-50">
+                      className="group flex items-center justify-between gap-3 rounded-full border border-linha-forte bg-superficie px-4 py-2.5 text-left text-sm text-texto-3 transition hover:border-verde/50 hover:text-texto disabled:opacity-50">
                       {s}
                       <ArrowRight className="size-4 shrink-0 text-texto-2 transition group-hover:translate-x-0.5 group-hover:text-verde" />
                     </button>
@@ -316,14 +317,14 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
             {msgs.map((m, i) => (
               <div key={i} className={m.papel === "user" ? "flex justify-end" : "flex gap-2.5"}>
                 {m.papel === "assistant" && (
-                  <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-verde/12 text-verde" aria-hidden>
-                    <Sparkles className="size-3.5" />
+                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-[#124431]" aria-hidden>
+                    <MarcaArini variante="radar" titulo="" className="size-5" />
                   </span>
                 )}
                 <div className={
                   m.papel === "user"
-                    ? "max-w-[85%] rounded-2xl rounded-br-md bg-verde/15 border border-verde/20 text-texto px-3.5 py-2.5 whitespace-pre-wrap"
-                    : "min-w-0 max-w-[92%] text-texto-3 leading-relaxed " + (m.erro ? "text-critico" : m.aviso ? "text-texto-2 italic" : "")
+                    ? "max-w-[85%] rounded-2xl rounded-br-md bg-[#124431] border border-[#1F4535] text-[#F2F2EC] px-4 py-2.5 whitespace-pre-wrap"
+                    : "min-w-0 max-w-[92%] rounded-2xl rounded-bl-md border border-linha bg-superficie-2 px-4 py-2.5 text-texto-3 leading-relaxed " + (m.erro ? "text-critico" : m.aviso ? "text-texto-2 italic" : "")
                 }>
                   {m.papel === "user" ? m.texto : <Markdown texto={m.texto} />}
                   {m.status && (
@@ -336,12 +337,12 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
                       {m.fontes.slice(0, 8).map((f, j) => {
                         const Icone = f.tipo === "imovel" ? Home : f.tipo === "car" ? FileText : Database;
                         return f.href ? (
-                          <Link key={j} href={f.href} className="inline-flex items-center gap-1 rounded-md border border-linha bg-superficie-2 px-2 py-1 text-[11px] text-texto-2 transition hover:border-verde/50 hover:text-texto">
+                          <Link key={j} href={f.href} className="inline-flex items-center gap-1 rounded-full border border-linha bg-superficie px-2.5 py-1 text-[11px] text-texto-2 transition hover:border-verde/50 hover:text-texto">
                             <Icone className="size-3 shrink-0" />
                             {f.tipo === "car" ? "CAR" : f.tipo === "imovel" ? "Imóvel" : "Base"} · {f.rotulo.length > 42 ? f.rotulo.slice(0, 42) + "…" : f.rotulo}
                           </Link>
                         ) : (
-                          <span key={j} className="inline-flex items-center gap-1 rounded-md border border-linha bg-superficie-2 px-2 py-1 text-[11px] text-texto-2">
+                          <span key={j} className="inline-flex items-center gap-1 rounded-full border border-linha bg-superficie px-2.5 py-1 text-[11px] text-texto-2">
                             <Database className="size-3 shrink-0" /> Base · {f.rotulo}
                           </span>
                         );
@@ -356,7 +357,7 @@ export default function ChatIA({ flutuante = false }: { flutuante?: boolean }) {
 
           {estado?.ligado && estado.permitido && (
             <form onSubmit={(e) => { e.preventDefault(); enviar(texto); }} className="border-t border-linha bg-superficie p-3 space-y-2 shrink-0">
-              <div className="flex items-end gap-2 rounded-xl border border-linha-forte bg-superficie-2 p-1.5 transition focus-within:border-verde focus-within:ring-2 focus-within:ring-verde/30">
+              <div className="flex items-end gap-2 rounded-3xl border border-linha-forte bg-superficie-2 p-1.5 transition focus-within:border-verde focus-within:ring-2 focus-within:ring-verde/30">
                 <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={1} maxLength={1500}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(texto); } }}
                   placeholder={restante === 0 ? "Cota do mês esgotada" : "Escreva sua pergunta…"}

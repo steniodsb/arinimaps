@@ -1,12 +1,15 @@
 import type { StyleSpecification, RasterSourceSpecification } from "maplibre-gl";
 
-/** Cores por status no mapa (legenda fixa). */
+/**
+ * Cores por status no mapa (legenda fixa), na paleta do Manual v1.0: Verde
+ * Mapa (publicado), Amarelo Claro (em negociação), Dourado (leilão, cor
+ * própria no mapa, na legenda e no filtro) e cinza-verde neutro (vendido).
+ */
 export const STATUS_CORES: Record<string, string> = {
   publicado: "#6FB08F",
-  em_negociacao: "#E0B341",
+  em_negociacao: "#FFE299",
   vendido: "#7E9187",
-  // imóvel de leilão disponível: cor própria no mapa, na legenda e no filtro
-  leilao: "#B18CFF",
+  leilao: "#D9BD6F",
 };
 
 export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama

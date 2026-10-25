@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, Lock } from "lucide-react";
 import { CAMPO } from "@/components/ui/Pagina";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 
 const INPUT = CAMPO;
 
@@ -45,7 +46,7 @@ export default function FormAcesso() {
         aria-label="Senha de acesso" placeholder="Senha de acesso" className={INPUT}
         value={senha} onChange={(e) => setSenha(e.target.value)} />
       {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico" role="alert">{erro}</p>}
-      <button type="submit" disabled={ocupado} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
+      <button type="submit" disabled={ocupado} className={`${BTN_ACAO} w-full disabled:opacity-60`}>
         {ocupado ? "Conferindo…" : <>Entrar <ArrowRight /></>}
       </button>
     </form>

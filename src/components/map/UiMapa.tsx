@@ -10,9 +10,9 @@ import {
   ArrowRight, Fuel, GraduationCap, Hospital, Landmark, Layers, LoaderCircle, Lock, MapPin, Pill, Route, ShoppingCart, X,
   type LucideIcon,
 } from "lucide-react";
-import { STATUS_CORES } from "@/lib/map/config";
 import { STATUS_LABEL } from "@/lib/format";
 import { CAMADAS_OFICIAIS, type CamadaOficialId } from "@/lib/map/camadasOficiais";
+import { STATUS_MAPA, RADAR_ANEL } from "./statusMapa";
 import type { EstadoCamada } from "./camadasOficiaisMapa";
 
 /**
@@ -21,7 +21,17 @@ import type { EstadoCamada } from "./camadasOficiaisMapa";
  * os tokens do tema e continua legível nos dois.
  */
 export const VIDRO =
-  "rounded-2xl border border-linha-forte/70 bg-superficie/85 backdrop-blur-xl shadow-[0_24px_60px_-28px_rgb(0_0_0/0.75)]";
+  "rounded-2xl border border-linha bg-superficie/95 backdrop-blur-md shadow-[0_1px_2px_var(--sombra-botao),0_14px_32px_-22px_var(--sombra-popup)]";
+
+export { STATUS_MAPA, RADAR_ANEL };
+
+/**
+ * Cores que ficam FORA da paleta, de propósito: o laranja cartográfico do CAR
+ * separa o rural do urbano à primeira vista sobre o satélite (pedido do
+ * cliente) e o Amarelo Claro marca o lote urbano.
+ */
+const COR_CAR = "#FF9D3D";
+const COR_LOTE_LEGENDA = "#FFE299";
 
 /** Botão "fechar" dos painéis do mapa (ícone X, alvo de 32 px). */
 export function BotaoFechar({ onClick, rotulo = "Fechar" }: { onClick: () => void; rotulo?: string }) {
@@ -65,16 +75,16 @@ export function PainelCamadas({
     <div className={`absolute top-16 left-3 z-10 w-[22rem] max-w-[calc(100%-1.5rem)] max-h-[72%] overflow-y-auto p-5 space-y-5 ${VIDRO}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="grid size-9 place-items-center rounded-xl bg-verde/12 text-verde">
+          <span className="grid size-9 place-items-center rounded-full bg-verde/12 text-verde">
             <Layers className="size-[18px]" />
           </span>
-          <p className="font-display text-lg font-bold text-texto">Camadas e Dados</p>
+          <p className="lp-display text-2xl text-verde">Camadas e Dados</p>
         </div>
         <BotaoFechar onClick={onFechar} rotulo="Fechar camadas" />
       </div>
 
       {bloqueado && (
-        <div className="rounded-xl border border-ouro/40 bg-ouro/10 p-3.5 text-sm text-texto space-y-1.5">
+        <div className="rounded-2xl border border-ouro/40 bg-ouro/10 p-3.5 text-sm text-texto space-y-1.5">
           <p className="flex items-center gap-2 font-semibold">
             <Lock className="size-4 shrink-0 text-ouro" /> Camadas oficiais na consulta profissional
           </p>
@@ -89,11 +99,11 @@ export function PainelCamadas({
 
       {grupos.map((g) => (
         <div key={g} className="space-y-1">
-          <p className="text-[11px] font-bold tracking-[0.16em] uppercase text-ouro">{g}</p>
+          <p className="lp-eyebrow !text-[10px] !tracking-[0.2em] !text-ouro mb-1">{g}</p>
           {g === "Fundiário" && (
-            <p className="flex items-center justify-between gap-3 py-1.5 text-sm">
+            <p className="flex items-center justify-between gap-3 border-t border-linha py-2 text-sm">
               <span className="flex items-center gap-2.5 text-texto-3">
-                <span className="inline-block size-3 rounded-sm" style={{ background: "#FF9D3D" }} /> Imóveis rurais (CAR)
+                <span className="inline-block size-3 rounded-sm" style={{ background: COR_CAR }} /> Imóveis rurais (CAR)
               </span>
               <span className="text-[11px] font-semibold text-texto-2">botão na barra</span>
             </p>
@@ -102,7 +112,7 @@ export function PainelCamadas({
             const on = ativas.has(c.id);
             const e = estado[c.id];
             return (
-              <div key={c.id} className={"py-1.5" + (bloqueado ? " opacity-60" : "")}>
+              <div key={c.id} className={"border-t border-linha py-2" + (bloqueado ? " opacity-60" : "")}>
                 <label className={"flex items-center justify-between gap-3 text-sm " + (bloqueado ? "cursor-not-allowed" : "cursor-pointer")}>
                   <span className="flex min-w-0 items-center gap-2.5 text-texto-3">
                     <span className={"inline-block size-3 shrink-0 " + (c.ponto ? "rounded-full" : "rounded-sm")} style={{ background: c.cor }} />
@@ -142,19 +152,19 @@ export function PainelCamadas({
 export function Legenda({ extras = [] }: { extras?: { cor: string; nome: string; ponto?: boolean }[] }) {
   return (
     <div className={`absolute bottom-36 lg:bottom-32 left-3 px-4 py-3 text-xs space-y-1.5 ${VIDRO}`}>
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Legenda</p>
-      {Object.entries(STATUS_CORES).map(([status, cor]) => (
+      <p className="lp-eyebrow !text-[10px] !tracking-[0.2em] !text-ouro">Legenda</p>
+      {Object.entries(STATUS_MAPA).map(([status, cor]) => (
         <p key={status} className="flex items-center gap-2 text-texto-3">
-          <span className="inline-block size-2.5 rounded-full ring-2 ring-black/10" style={{ background: cor }} />
+          <span className="inline-block size-2.5 rounded-full ring-1 ring-linha-forte" style={{ background: cor }} />
           {STATUS_LABEL[status]}
         </p>
       ))}
       <p className="flex items-center gap-2 text-texto-3 pt-1.5 border-t border-linha">
-        <span className="inline-block w-3.5 h-0.5 rounded-full" style={{ background: "#FF9D3D" }} />
+        <span className="inline-block w-3.5 h-0.5 rounded-full" style={{ background: COR_CAR }} />
         Imóvel rural (CAR)
       </p>
       <p className="flex items-center gap-2 text-texto-3">
-        <span className="inline-block w-3.5 h-0.5 rounded-full" style={{ background: "#FFE299" }} />
+        <span className="inline-block w-3.5 h-0.5 rounded-full" style={{ background: COR_LOTE_LEGENDA }} />
         Lote urbano
       </p>
       {extras.map((c) => (

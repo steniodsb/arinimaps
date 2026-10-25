@@ -59,9 +59,9 @@ export default function BotaoFavorito({ codigo, inicial, variante = "cartao" }: 
   if (variante === "ficha") {
     return (
       <button type="button" onClick={alternar} aria-pressed={marcado} title={rotulo}
-        className={`flex w-full items-center justify-center gap-2 rounded-[10px] border py-3 text-sm font-bold transition ${marcado
-          ? "border-[#FF6B81]/50 bg-[#FF6B81]/12 text-[#FF8A9B]"
-          : "border-linha-forte bg-superficie text-texto hover:border-[#FF6B81]/60 hover:text-[#FF8A9B]"}`}>
+        className={`flex w-full items-center justify-center gap-2 rounded-full border-[1.5px] py-3 text-sm font-bold transition ${marcado
+          ? "border-critico/60 bg-critico/10 text-critico"
+          : "border-linha-forte bg-superficie text-texto hover:border-critico/60 hover:text-critico"}`}>
         <Heart className={`size-4 ${marcado ? "fill-current" : ""}`} />
         {marcado ? "Salvo nos favoritos" : "Favoritar"}
       </button>
@@ -70,8 +70,8 @@ export default function BotaoFavorito({ codigo, inicial, variante = "cartao" }: 
   return (
     <button type="button" onClick={alternar} aria-pressed={marcado} aria-label={rotulo} title={rotulo}
       className={`grid size-10 place-items-center rounded-full backdrop-blur transition active:scale-90 ${marcado
-        ? "bg-white text-[#E5304F]"
-        : "bg-black/45 text-white hover:bg-black/65"}`}>
+        ? "bg-[#F2F2EC] text-[#D80B0B]"
+        : "bg-[#0A2219]/60 text-[#F2F2EC] hover:bg-[#0A2219]/80"}`}>
       <Heart className={`size-5 ${marcado ? "fill-current" : ""}`} />
     </button>
   );

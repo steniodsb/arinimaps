@@ -104,7 +104,7 @@ export default function ConfiguracoesForm({
                 <li key={g.id} className="shrink-0">
                   <button onClick={() => setAba(g.id)} aria-current={ativo ? "page" : undefined}
                     className={`flex w-full items-center gap-3 rounded-xl border px-4 py-2.5 text-left text-sm font-semibold transition-colors
-                      ${ativo ? "border-verde bg-verde text-white" : "border-transparent text-texto-2 hover:bg-superficie-2 hover:text-texto"}`}>
+                      ${ativo ? "border-verde bg-verde text-fundo" : "border-transparent text-texto-2 hover:bg-superficie-2 hover:text-texto"}`}>
                     <IconeGrupo id={g.id} className="size-4 shrink-0" /> {g.titulo}
                   </button>
                 </li>

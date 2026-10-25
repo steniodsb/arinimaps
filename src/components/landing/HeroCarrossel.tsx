@@ -26,6 +26,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Supergrafico } from "@/components/ui/Pagina";
 import { EASE } from "./movimento";
 
 const MapaVitrine = dynamic(() => import("@/components/map/MapaVitrine"), { ssr: false });
@@ -220,6 +221,10 @@ export default function HeroCarrossel({ slides, h1 }: { slides: SlideHero[]; h1:
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(7,17,13,.45)_0%,rgba(7,17,13,.15)_28%,rgba(7,17,13,.72)_66%,rgba(7,17,13,.96)_100%)]" />
       <div className="absolute inset-0 -z-10 hidden bg-[linear-gradient(90deg,rgba(7,17,13,.8)_0%,rgba(7,17,13,.45)_45%,rgba(7,17,13,0)_75%)] md:block" />
 
+      {/* linhas de mapa e supergráfico do radar (capa do manual) por cima da foto */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[url('/img/marca/curvas-nivel.svg')] bg-cover bg-center opacity-35 mix-blend-screen" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 hidden overflow-hidden opacity-30 lg:block"><Supergrafico /></div>
+
       {/* ---------- setas ---------- */}
       {n > 1 && (
         <>
@@ -332,7 +337,7 @@ function TextoSlide({ s, animar }: { s: SlideHero; animar: boolean }) {
         {todas.map(({ p, d }, k) => (
           <span key={k} className="inline-block overflow-hidden pb-[0.1em] align-bottom" aria-hidden>
             <motion.span
-              className={`inline-block ${d ? "text-[#FFE299]" : ""}`}
+              className={`inline-block ${d ? "text-ouro" : ""}`}
               initial={animar ? { y: "110%" } : false}
               animate={{ y: "0%" }}
               transition={{ duration: 0.8, delay: k * 0.05, ease: EASE }}

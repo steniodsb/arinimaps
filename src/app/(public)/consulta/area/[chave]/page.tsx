@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { CalendarDays, Crosshair, MapPin, PenLine } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
-import { CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
+import { CabecalhoPagina, Conteudo, PilulaPonto, Secao } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
@@ -51,29 +50,26 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
     <Moldura usuario={consulta.usuario}>
       <CabecalhoPagina
         variante="faixa"
-        eyebrow="Consulta territorial"
+        eyebrow="01 · Consulta territorial"
         titulo={tamanho}
         destaque={area.municipio ? `em ${area.municipio}` : undefined}
         subtitulo="Área desenhada no mapa · consulta de área"
-      />
+      >
+        <PilulaPonto>Área aproximada</PilulaPonto>
+      </CabecalhoPagina>
 
       <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <Estatistica icone={PenLine} valor={tamanho} rotulo="Área desenhada" />
-          <Estatistica icone={MapPin} valor={municipio} rotulo="Município" />
-          <Estatistica icone={Crosshair} valor={<span className="text-xl tabular-nums">{centro}</span>} rotulo="Ponto central" />
-          <Estatistica icone={CalendarDays} valor={desenhadaEm} rotulo="Desenhada em" />
-        </div>
-
+        <Secao eyebrow="02 · Divisa no mapa" titulo="Dados da área">
         <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <MiniMapa geometry={area.geometry} status="publicado"
             className="h-80 lg:h-full lg:min-h-80 w-full rounded-[20px] overflow-hidden border border-linha" />
           <div className="cartao p-6 space-y-5">
-            <h2 className="lp-display text-xl text-texto">Dados da área</h2>
-            <dl className="text-[0.95rem] divide-y divide-linha">
+            <p className="lp-display text-5xl leading-none text-verde">{tamanho}</p>
+            <dl className="divide-y divide-linha border-y border-linha">
               {dados.map(([r, v]) => (
-                <div key={r} className="flex justify-between gap-4 py-3">
-                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto font-medium text-right">{v}</dd>
+                <div key={r} className="flex items-baseline justify-between gap-4 py-3">
+                  <dt className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">{r}</dt>
+                  <dd className="text-right text-[0.95rem] font-semibold text-texto">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -83,6 +79,7 @@ export default async function ConsultaAreaDesenhada({ params }: PageProps<"/cons
             </p>
           </div>
         </div>
+        </Secao>
 
         <IndicadoresMunicipio ponto={{ lng: area.lng, lat: area.lat }} />
 

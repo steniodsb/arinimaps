@@ -69,17 +69,17 @@ export default function Ferramentas({
       mapa.addLayer({
         id: "medicao-area", type: "fill", source: "medicao",
         filter: ["==", ["geometry-type"], "Polygon"],
-        paint: { "fill-color": "#6FB08F", "fill-opacity": 0.22 },
+        paint: { "fill-color": "#D9BD6F", "fill-opacity": 0.22 },
       });
       mapa.addLayer({
         id: "medicao-linha", type: "line", source: "medicao",
         filter: ["!=", ["geometry-type"], "Point"],
-        paint: { "line-color": "#6FB08F", "line-width": 2.5, "line-dasharray": [2, 1] },
+        paint: { "line-color": "#D9BD6F", "line-width": 2.5, "line-dasharray": [2, 1] },
       });
       mapa.addLayer({
         id: "medicao-pontos", type: "circle", source: "medicao",
         filter: ["==", ["geometry-type"], "Point"],
-        paint: { "circle-color": "#0A2219", "circle-radius": 4.5, "circle-stroke-color": "#6FB08F", "circle-stroke-width": 2 },
+        paint: { "circle-color": "#F2F2EC", "circle-radius": 4.5, "circle-stroke-color": "#D9BD6F", "circle-stroke-width": 2 },
       });
     } else {
       for (const id of CAMADAS_MEDICAO) if (mapa.getLayer(id)) mapa.moveLayer(id);
@@ -244,7 +244,7 @@ export default function Ferramentas({
 
   const botaoLimpar = (
     <button onClick={limpar}
-      className="inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-xs font-semibold text-texto-2 transition hover:bg-superficie-2 hover:text-texto">
+      className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-texto-2 transition hover:bg-superficie-2 hover:text-texto">
       <X className="size-3.5" /> limpar
     </button>
   );
@@ -265,7 +265,7 @@ export default function Ferramentas({
         <div className={`px-4 py-3 text-sm space-y-2 ${VIDRO}`}>
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-texto-2">Área desenhada</span>
-            <span className="font-display text-lg font-bold text-verde tabular-nums">
+            <span className="lp-display text-2xl text-verde tabular-nums">
               {consultaPronta.ha.toLocaleString("pt-BR", { maximumFractionDigits: consultaPronta.ha < 10 ? 2 : 0 })} ha
             </span>
             {consultaPronta.ha > CONSULTA_MAX_HA ? (
@@ -294,20 +294,20 @@ export default function Ferramentas({
               : modo === "consulta" ? "Desenhe a área a consultar (qualquer lugar do Brasil); duplo clique fecha."
               : "Medição"}
           </span>
-          {resultado && <span className="ml-auto font-display text-lg font-bold text-verde tabular-nums">{resultado}</span>}
+          {resultado && <span className="ml-auto lp-display text-2xl text-verde tabular-nums">{resultado}</span>}
           {botaoLimpar}
         </div>
       )}
 
       <div className={`px-2.5 py-2 ${VIDRO}`}>
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-ouro px-2 pt-0.5 mb-1">Ferramentas</p>
+        <p className="lp-eyebrow !text-[10px] !tracking-[0.2em] !text-ouro px-2 pt-0.5 mb-2">Ferramentas</p>
         <div className="flex items-center justify-between gap-1 overflow-x-auto">
           {FERRAMENTAS.map((f) => {
             const ativo = modo === f.id;
             const pode = liberado(f.recurso);
             const Icone = pode ? f.icone : Lock;
             const classe =
-              "flex flex-col items-center gap-1.5 rounded-[10px] px-3 py-2 min-w-[76px] text-[11px] font-medium transition " +
+              "flex flex-col items-center gap-1.5 rounded-full px-3 py-2 min-w-[76px] text-[11px] font-medium transition " +
               (ativo ? "bg-verde/15 text-verde ring-1 ring-verde/40" : "text-texto-2 hover:text-texto hover:bg-superficie-2") +
               (pode ? "" : " opacity-60");
             const miolo = <><Icone className="size-[18px]" strokeWidth={1.9} />{f.rotulo}</>;
@@ -337,7 +337,7 @@ export default function Ferramentas({
           {/* assistente de IA: no mapa fica aqui, não flutuando sobre a escala */}
           <span className="mx-1 h-10 w-px shrink-0 bg-linha" aria-hidden />
           <button onClick={abrirAssistente}
-            className="flex min-w-[76px] flex-col items-center gap-1.5 rounded-[10px] px-3 py-2 text-[11px] font-semibold text-verde transition hover:bg-verde/10">
+            className="flex min-w-[76px] flex-col items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-semibold text-verde transition hover:bg-verde/10">
             <Sparkles className="size-[18px]" strokeWidth={1.9} />Perguntar
           </button>
         </div>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, BadgeCheck, Check, CreditCard } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 import { CabecalhoPagina, Conteudo, Vazio } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { currentUser } from "@/lib/supabase/server";
@@ -57,7 +58,7 @@ export default async function Planos() {
             uma conta a qualquer momento. A mensalidade por anúncio publicado é cobrada à parte, por imóvel.
           </p>
           {acesso.planNome && (
-            <p className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-linha bg-superficie/70 px-4 py-3 text-[15px] text-texto backdrop-blur">
+            <p className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-linha-forte bg-superficie px-5 py-3 text-[15px] text-texto">
               <BadgeCheck className="size-5 text-verde" />
               Seu plano atual: <strong>{acesso.planNome}</strong>
               {acesso.nicho && <span className="text-texto-2"> · perfil {NICHO_LABEL[acesso.nicho] ?? acesso.nicho}</span>}
@@ -79,11 +80,11 @@ export default async function Planos() {
               const cotas = COTAS.filter((c) => p.cotas?.[c.id] != null);
               return (
                 <article key={p.id}
-                  className={"cartao relative flex flex-col gap-6 p-6 md:p-7 " + (p.destaque ? "!border-ouro/60 ring-1 ring-ouro/40 shadow-xl" : "")}>
+                  className={"cartao relative flex flex-col gap-6 p-6 md:p-7 " + (p.destaque ? "!border-[#D9BD6F] ring-1 ring-[#D9BD6F]/60" : "")}>
                   {(p.destaque || atual) && (
                     <div className="absolute -top-3 left-6 flex gap-2">
-                      {p.destaque && <span className="rounded-md bg-ouro px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-fundo">Mais completo</span>}
-                      {atual && <span className="rounded-md bg-verde px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-fundo">Seu plano</span>}
+                      {p.destaque && <span className="rounded-full bg-[#D9BD6F] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#124431]">Mais completo</span>}
+                      {atual && <span className="rounded-full bg-verde px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-fundo">Seu plano</span>}
                     </div>
                   )}
                   <div className="space-y-2 pt-1">
@@ -102,11 +103,11 @@ export default async function Planos() {
                       if (!itens.length) return null;
                       return (
                         <div key={g}>
-                          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-texto-2">{GRUPO_RECURSO_LABEL[g]}</p>
+                          <p className="lp-eyebrow mb-3 !text-[0.68rem]">{GRUPO_RECURSO_LABEL[g]}</p>
                           <ul className="space-y-2 text-[15px]">
                             {itens.map((r) => (
                               <li key={r.id} className="flex items-start gap-2.5">
-                                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-verde/15 text-verde">
+                                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-verde/15 text-verde">
                                   <Check className="size-3.5" strokeWidth={3} />
                                 </span>
                                 <span className="text-texto">
@@ -121,7 +122,7 @@ export default async function Planos() {
                     })}
                     {cotas.length > 0 && (
                       <div>
-                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-texto-2">Limites</p>
+                        <p className="lp-eyebrow mb-3 !text-[0.68rem]">Limites</p>
                         <ul className="divide-y divide-linha rounded-xl border border-linha text-[15px]">
                           {cotas.map((c) => (
                             <li key={c.id} className="flex justify-between gap-3 px-4 py-2.5 text-texto-2">
@@ -138,7 +139,7 @@ export default async function Planos() {
                     <span className="lp-btn lp-btn-contorno w-full cursor-default opacity-70">Plano atual</span>
                   ) : (
                     <Link href={`/suporte?assunto=${encodeURIComponent(`plano:${p.id}`)}`}
-                      className={"lp-btn w-full " + (p.destaque ? "lp-btn-ouro" : "lp-btn-verde")}>
+                      className={"w-full " + (p.destaque ? "lp-btn lp-btn-ouro" : BTN_ACAO)}>
                       Falar com a Arini <ArrowRight />
                     </Link>
                   )}

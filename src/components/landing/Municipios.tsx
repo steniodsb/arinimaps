@@ -38,13 +38,13 @@ export default function Municipios({ municipios }: { municipios: MunicipioCartao
         >
           <Link
             href={`/imoveis?municipio=${m.id}`}
-            className="spotlight lp-escuro group relative block aspect-[16/10] overflow-hidden rounded-xl bg-[#124431] ring-1 ring-linha transition hover:ring-2 hover:ring-[#6FB08F]"
+            className="spotlight lp-escuro group relative block aspect-[16/10] overflow-hidden rounded-2xl bg-[#124431] ring-1 ring-linha transition hover:ring-2 hover:ring-[#6FB08F]"
           >
             <div className="absolute inset-0 transition duration-700 ease-out group-hover:scale-[1.07]">
               <MosaicoSatelite lng={m.lng} lat={m.lat} z={13} alt={`Satélite de ${m.nome}`} />
             </div>
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,13,0)_30%,rgba(7,17,13,.55)_62%,rgba(7,17,13,.95)_100%)]" />
-            <span className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-black/35 text-white opacity-0 backdrop-blur transition duration-300 group-hover:rotate-45 group-hover:opacity-100">
+            <span className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-black/45 text-white opacity-0 transition duration-300 group-hover:rotate-45 group-hover:opacity-100">
               <ArrowUpRight className="size-5" />
             </span>
             <span className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-4 text-white md:p-5">

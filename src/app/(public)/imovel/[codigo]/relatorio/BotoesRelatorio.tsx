@@ -15,7 +15,7 @@ export default function BotoesRelatorio({ codigo }: { codigo: string }) {
 
   return (
     <div className="mb-10 flex flex-wrap gap-3 print:hidden">
-      <button onClick={() => window.print()} className="lp-btn lp-btn-ouro !px-5 !py-3 text-[0.95rem]">
+      <button onClick={() => window.print()} className="lp-btn btn-verde !px-5 !py-3 text-[0.95rem]">
         <Download /> Baixar relatório (PDF)
       </button>
       <button

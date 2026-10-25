@@ -9,7 +9,9 @@
  *  · Entrar + Anunciar imóvel; gaveta no celular; botão de tema.
  *
  * Enquanto transparente, o cabeçalho usa `.lp-escuro` (variáveis do tema
- * escuro), porque o fundo é sempre a foto/mapa escuro do hero.
+ * escuro) e a assinatura negativa, porque o fundo é sempre a foto/mapa escuro
+ * do hero. Depois de rolar (ou fora da home) ele é chapado: off-white com a
+ * assinatura positiva no tema claro, como nas pranchas do manual.
  */
 
 import Link from "next/link";
@@ -108,7 +110,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
         className={`transition-[background-color,box-shadow,border-color] duration-300 ${
           transparente
             ? "border-b border-white/10 bg-transparent"
-            : "border-b border-linha bg-superficie/85 shadow-[0_10px_30px_-18px_rgba(0,0,0,.45)] backdrop-blur-md"
+            : "border-b border-linha bg-fundo shadow-[0_6px_18px_-14px_rgba(10,34,25,.35)]"
         }`}
       >
         <div className="lp-container flex h-16 items-center gap-4 lg:h-20">
@@ -129,7 +131,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
                   >
                     {n.rotulo}
                     <span
-                      className={`absolute inset-x-3 -bottom-0.5 h-0.5 origin-left rounded bg-verde transition-transform duration-300 ${
+                      className={`absolute inset-x-3 -bottom-0.5 h-0.5 origin-left rounded bg-[#D9BD6F] transition-transform duration-300 ${
                         ativo(n) ? "scale-x-100" : "scale-x-0"
                       }`}
                     />
@@ -143,7 +145,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
             <BotaoTema compacto />
             <Link
               href={usuario?.href ?? "/entrar"}
-              className="hidden items-center gap-2 rounded-[10px] px-3 py-2.5 text-[15px] font-semibold text-texto transition hover:text-verde sm:inline-flex"
+              className="hidden items-center gap-2 rounded-full border-[1.5px] border-current px-4 py-2.5 text-[15px] font-semibold text-texto transition hover:border-verde hover:text-verde sm:inline-flex"
             >
               {usuario ? <UserRound className="size-4" /> : <LogIn className="size-4" />} {usuario?.nome ?? "Entrar"}
             </Link>
@@ -152,7 +154,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
             </Link>
             <button
               type="button"
-              className="grid size-11 place-items-center rounded-[10px] border border-linha text-texto transition hover:border-verde lg:hidden"
+              className="grid size-11 place-items-center rounded-full border border-linha-forte text-texto transition hover:border-verde lg:hidden"
               aria-label={aberto ? "Fechar menu" : "Abrir menu"}
               aria-expanded={aberto}
               onClick={() => setAberto((v) => !v)}
@@ -172,7 +174,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-x-0 top-full h-[calc(100dvh-100%)] overflow-y-auto overscroll-contain bg-superficie lg:hidden"
+            className="absolute inset-x-0 top-full h-[calc(100dvh-100%)] overflow-y-auto overscroll-contain bg-fundo lg:hidden"
           >
             <ul className="lp-container divide-y divide-linha">
               {NAV_SITE.map((n) => (
@@ -180,7 +182,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
                   <Link
                     href={n.href}
                     onClick={fechar}
-                    className={`flex items-center justify-between py-4 text-xl font-bold ${ativo(n) ? "text-verde" : "text-texto"}`}
+                    className={`lp-display flex items-center justify-between py-4 text-3xl ${ativo(n) ? "text-verde" : "text-texto"}`}
                   >
                     {n.rotulo} <ArrowRight className="size-5 text-verde" />
                   </Link>

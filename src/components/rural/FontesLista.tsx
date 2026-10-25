@@ -58,7 +58,7 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
           <div key={f.id} className="cartao p-5 md:p-6 break-inside-avoid">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="min-w-0">
-                <p className="font-display text-lg font-bold leading-snug text-texto">{f.nome}</p>
+                <p className="lp-display text-2xl leading-none text-texto">{f.nome}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-texto-2">
                   {f.orgao}
                   <SeloClassificacao valor={origem?.tipo ?? f.classificacao} />
@@ -84,11 +84,11 @@ export default function FontesLista({ fontes, alvo = "a área" }: { fontes: Font
             )}
 
             {itens.length > 0 && (
-              <ul className="mt-4 divide-y divide-linha rounded-xl border border-linha bg-superficie-2/50 px-4 text-[0.95rem]">
+              <ul className="mt-4 divide-y divide-linha border-y border-linha px-1 text-[0.95rem]">
                 {itens.slice(0, 8).map((i, n) => (
                   <li key={n} className="py-3 space-y-0.5">
                     <p className="font-medium text-texto">{i.titulo}</p>
-{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-md border border-ouro/40 bg-ouro/10 px-2 py-0.5 text-xs font-semibold text-texto tabular-nums">Matrícula nº {String(i.extra.matricula)}</p> : null}
+{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-full border border-[#D9BD6F]/70 px-2.5 py-0.5 text-xs font-semibold text-texto tabular-nums">Matrícula nº {String(i.extra.matricula)}</p> : null}
                     {i.detalhe && <p className="text-sm text-texto-2">{i.detalhe}</p>}
                     {i.extra && (
                       <p className="text-[11px] text-texto-2">

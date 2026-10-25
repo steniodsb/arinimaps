@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Hash, MapPin, Ruler, Square } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
 import { IconePoi } from "@/components/map/UiMapa";
-import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica, Secao } from "@/components/ui/Pagina";
+import { BotaoLink, CabecalhoPagina, Conteudo, PilulaPonto, Secao } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { CATEGORIA_POI_LABEL, formatDistancia, nomePoi, type PoiDistancia } from "@/lib/geo/distancia";
@@ -68,7 +67,7 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
     <Moldura usuario={consulta.usuario}>
       <CabecalhoPagina
         variante="faixa"
-        eyebrow="Consulta territorial"
+        eyebrow="01 · Consulta territorial"
         titulo={identificacao || `${m2(p.area_m2)} m²`}
         destaque={p.municipio ? `em ${p.municipio}` : undefined}
         subtitulo={identificacao
@@ -79,25 +78,22 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
         ) : (
           <BotaoLink href={`/painel/novo?lote=${p.id}`} variante="ouro">Este lote é meu — anunciar</BotaoLink>
         )}
-      />
+      >
+        <PilulaPonto>Lote urbano</PilulaPonto>
+      </CabecalhoPagina>
 
       <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <Estatistica icone={Square} valor={`${m2(p.area_m2)} m²`} rotulo="Área do lote" />
-          <Estatistica icone={Ruler} valor={`${metros(p.perimetro_m)} m`} rotulo="Perímetro" />
-          <Estatistica icone={Hash} valor={[p.quadra && `Q ${p.quadra}`, p.numero && `L ${p.numero}`].filter(Boolean).join(" · ") || "—"} rotulo="Quadra e lote" />
-          <Estatistica icone={MapPin} valor={p.municipio ?? "—"} rotulo="Município" />
-        </div>
-
+        <Secao eyebrow="02 · Lote no mapa" titulo="Dados da planta">
         <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <MiniMapa geometry={lote.geometry} status="publicado"
             className="h-80 lg:h-full lg:min-h-96 w-full rounded-[20px] overflow-hidden border border-linha" />
           <div className="cartao p-6 space-y-5">
-            <h2 className="lp-display text-xl text-texto">Dados da planta</h2>
-            <dl className="text-[0.95rem] divide-y divide-linha">
+            <p className="lp-display text-5xl leading-none text-verde">{m2(p.area_m2)} m²</p>
+            <dl className="divide-y divide-linha border-y border-linha">
               {dados.map(([r, v]) => (
-                <div key={r} className="flex justify-between gap-4 py-3">
-                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto font-medium text-right tabular-nums">{v}</dd>
+                <div key={r} className="flex items-baseline justify-between gap-4 py-3">
+                  <dt className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">{r}</dt>
+                  <dd className="text-right text-[0.95rem] font-semibold tabular-nums text-texto">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -107,21 +103,22 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
             </p>
             {/* lote urbano não tem fonte gratuita de matrícula: o mapa oficial dos cartórios (ONR) pode ter */}
             <div className="border-t border-linha pt-4 space-y-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Matrícula do lote</p>
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-texto-2">Matrícula do lote</p>
               <BotaoMapaOnr lat={pontoLote[1]} lng={pontoLote[0]} />
             </div>
           </div>
         </div>
+        </Secao>
 
-        <Secao eyebrow="Entorno" titulo="Pontos de referência próximos"
+        <Secao eyebrow="03 · Entorno" titulo="Pontos de referência próximos"
           subtitulo={`Distância em linha reta do centro do lote, até ${formatDistancia(raio)}.`}>
           {pois.length ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="cartao grid gap-x-8 !p-2 sm:grid-cols-2 md:!p-3">
               {pois.map((poi, i) => (
-                <div key={i} className="cartao flex items-center justify-between gap-3 p-4">
+                <div key={i} className="flex items-center justify-between gap-3 border-b border-linha px-3 py-3.5 last:border-b-0">
                   <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-verde/12 text-verde">
-                      <IconePoi categoria={poi.categoria} className="size-5" />
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full border border-linha-forte text-verde">
+                      <IconePoi categoria={poi.categoria} className="size-4" />
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-texto">
@@ -130,7 +127,7 @@ export default async function ConsultaLote({ params }: PageProps<"/consulta/lote
                       {poi.nome && <span className="block text-xs text-texto-2">{CATEGORIA_POI_LABEL[poi.categoria] ?? poi.categoria}</span>}
                     </span>
                   </span>
-                  <span className="font-display text-lg font-bold tabular-nums text-texto shrink-0">{formatDistancia(poi.distancia_m)}</span>
+                  <span className="lp-display shrink-0 text-xl tabular-nums text-texto">{formatDistancia(poi.distancia_m)}</span>
                 </div>
               ))}
             </div>

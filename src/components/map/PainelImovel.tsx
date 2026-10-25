@@ -108,7 +108,7 @@ export default function PainelImovel({
   };
 
   return (
-    <aside className="w-[340px] shrink-0 h-full overflow-y-auto bg-superficie border-l border-linha">
+    <aside className="w-[340px] max-w-full shrink-0 h-full overflow-y-auto bg-superficie border-l border-linha">
       <div className="p-5 space-y-6">
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] text-texto-2">{imovel.codigo}</span>
@@ -122,14 +122,14 @@ export default function PainelImovel({
 
         <div>
           <div className="flex items-start gap-3">
-            <h2 className="font-display text-[1.375rem] font-bold text-texto leading-tight flex-1 text-balance">{imovel.titulo}</h2>
-            <span className="shrink-0 rounded-md border border-verde/25 bg-verde/14 px-2.5 py-1 text-xs font-semibold text-verde capitalize">
+            <h2 className="lp-display text-[1.75rem] text-verde flex-1 text-balance">{imovel.titulo}</h2>
+            <span className="pilula-ponto shrink-0 !px-3 !py-1 !text-xs font-semibold capitalize">
               {imovel.status === "publicado" ? "Ativo" : imovel.status.replace("_", " ")}
             </span>
           </div>
-          <div className="mt-4 border-l-4 border-l-verde pl-3.5">
-            <p className="lp-display text-3xl leading-none text-texto tabular-nums">{formatArea(imovel.area_m2, imovel.tipo)}</p>
-            <p className="mt-1.5 text-xs text-texto-2">Área total</p>
+          <div className="mt-4 border-t border-linha-forte pt-3">
+            <p className="lp-display text-4xl leading-none text-verde tabular-nums">{formatArea(imovel.area_m2, imovel.tipo)}</p>
+            <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-texto-2">Área total</p>
           </div>
         </div>
 
@@ -147,12 +147,12 @@ export default function PainelImovel({
         </dl>
 
         <Link href={`/imovel/${imovel.codigo}`}
-          className="group flex items-center justify-between w-full rounded-xl border border-linha-forte bg-superficie-2 px-4 py-3.5 text-sm font-semibold text-texto hover:border-verde hover:text-verde transition">
+          className="group flex items-center justify-between w-full rounded-full border border-linha-forte bg-superficie px-5 py-3 text-sm font-semibold text-texto hover:border-verde hover:text-verde transition">
           Ver detalhes do imóvel <ChevronRight className="size-4 text-texto-2 transition group-hover:translate-x-0.5 group-hover:text-verde" />
         </Link>
 
         <div className="space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Consulta territorial</p>
+          <p className="lp-eyebrow !text-[11px] !text-ouro">Consulta territorial</p>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {ABAS.map((a) => (
               <button key={a} onClick={() => setAba(a)} data-ativo={aba === a}
@@ -162,11 +162,11 @@ export default function PainelImovel({
             ))}
           </div>
 
-          <div className="divide-y divide-linha rounded-xl border border-linha px-3.5">
+          <div className="divide-y divide-linha rounded-2xl border border-linha bg-superficie px-4">
             {indicadores[aba].map((i) => (
               <div key={i.rotulo} className="flex items-center justify-between py-3 text-sm">
                 <span className="text-texto-3">{i.rotulo}</span>
-                <span className={"font-display text-base font-bold tabular-nums " + corTom(i.tom, i.valor)}>{i.valor}</span>
+                <span className={"text-base font-bold tabular-nums " + corTom(i.tom, i.valor)}>{i.valor}</span>
               </div>
             ))}
           </div>
@@ -181,7 +181,7 @@ export default function PainelImovel({
         </div>
 
         <div className="space-y-2">
-          <p className="font-display text-lg font-bold text-texto">Pontos de referência</p>
+          <p className="lp-display text-2xl text-verde">Pontos de referência</p>
           {pois === null ? (
             <p className="text-xs text-texto-2">Carregando…</p>
           ) : !pois.length ? (
@@ -191,7 +191,7 @@ export default function PainelImovel({
               {pois.slice(0, 8).map((p, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                   <span className="flex min-w-0 items-center gap-2.5">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-superficie-2 text-texto-2">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-superficie-2 text-texto-2">
                       <IconePoi categoria={p.categoria} className="size-3.5" />
                     </span>
                     <span className="truncate text-texto">{nomePoi(p.nome) ?? CATEGORIA_POI_LABEL[p.categoria] ?? p.categoria}</span>
@@ -208,8 +208,8 @@ export default function PainelImovel({
         </div>
 
         <div className="cartao p-5 space-y-2">
-          <p className="flex items-center gap-2 font-display text-base font-bold text-texto">
-            <Radar className="size-4 text-verde" /> Raio de análise
+          <p className="flex items-center gap-2">
+            <Radar className="size-4 text-ouro" /> <span className="lp-display text-xl text-verde">Raio de análise</span>
           </p>
           <p className="text-xs text-texto-2">Veja o que existe no entorno do imóvel.</p>
           <div className="flex flex-wrap gap-1.5 pt-1">

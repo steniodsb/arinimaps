@@ -9,13 +9,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MLMap, MapLayerMouseEvent, GeoJSONSource, Popup, VectorTileSource } from "maplibre-gl";
-import { STATUS_CORES, CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
+import { CENTRO_REGIAO, SATELITE } from "@/lib/map/config";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 import { formatBRL, formatArea } from "@/lib/format";
 import { transformarGeoJSON, centroDe, TRANSFORM_ZERO, type Transform, type AjusteLocal } from "@/lib/geo/deslocar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PainelImovel from "@/components/map/PainelImovel";
+import { RADAR_ANEL, STATUS_MAPA } from "@/components/map/statusMapa";
 import { PainelCamadas, Legenda, VIDRO, BotaoFechar } from "@/components/map/UiMapa";
 import { ArrowRight, ChevronLeft, ChevronRight, Flag, History, Layers, Lock, ScanSearch, Search } from "lucide-react";
 import MatriculaSigef from "@/components/rural/MatriculaSigef";
@@ -121,7 +122,7 @@ function CartaoOficiais({ itens, onFechar }: { itens: FeicaoNoPonto[]; onFechar:
   return (
     <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] max-h-[70%] overflow-y-auto p-5 space-y-3 ${VIDRO}`}>
       <div className="flex items-start justify-between gap-3">
-        <p className="font-display text-lg font-bold leading-tight text-texto">Neste ponto</p>
+        <p className="lp-display text-2xl text-verde">Neste ponto</p>
         <BotaoFechar onClick={onFechar} />
       </div>
       <ListaOficiais itens={itens} />
@@ -135,8 +136,8 @@ function CartaoCar({ car, onFechar, oficiais = [] }: { car: CarProps; onFechar: 
     <div className={`absolute top-16 left-3 z-10 w-80 max-w-[calc(100%-1.5rem)] max-h-[calc(100%-5rem)] overflow-y-auto p-5 space-y-4 ${VIDRO}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">{CAR_TIPO[car.tipo ?? ""] ?? "Imóvel rural"} · CAR</p>
-          <p className="font-display text-xl font-bold leading-tight text-texto mt-1">
+          <p className="lp-eyebrow !text-[10px] !tracking-[0.2em] !text-ouro">{CAR_TIPO[car.tipo ?? ""] ?? "Imóvel rural"} · CAR</p>
+          <p className="lp-display text-2xl text-verde mt-2">
             {Number.isFinite(area) && area > 0 ? formatArea(area * 10_000, "rural") : "Área não informada"}
           </p>
         </div>
@@ -153,7 +154,7 @@ function CartaoCar({ car, onFechar, oficiais = [] }: { car: CarProps; onFechar: 
       <MatriculaSigef cod={car.cod} compacto />
       {oficiais.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Também neste ponto</p>
+          <p className="lp-eyebrow !text-[10px] !tracking-[0.2em] !text-ouro">Também neste ponto</p>
           <ListaOficiais itens={oficiais} />
         </div>
       )}
@@ -214,11 +215,11 @@ function centrosDe(features: GeoJSON.Feature[]): GeoJSON.FeatureCollection {
 const CORES_MATCH: unknown[] = [
   // `cor` vem do banco: é o status, ou "leilao" para leilão ainda disponível
   "match", ["coalesce", ["get", "cor"], ["get", "status"]],
-  "leilao", STATUS_CORES.leilao,
-  "publicado", STATUS_CORES.publicado,
-  "em_negociacao", STATUS_CORES.em_negociacao,
-  "vendido", STATUS_CORES.vendido,
-  "#2E9E6B",
+  "leilao", STATUS_MAPA.leilao,
+  "publicado", STATUS_MAPA.publicado,
+  "em_negociacao", STATUS_MAPA.em_negociacao,
+  "vendido", STATUS_MAPA.vendido,
+  "#6FB08F",
 ];
 
 const FAIXAS_PRECO: { label: string; min: number; max: number | null }[] = [
@@ -761,7 +762,7 @@ export default function MapaRegional({
             "circle-color": CORES_MATCH as never,
             "circle-radius": ["case", ["boolean", ["feature-state", "hover"], false], 7, 5] as never,
             "circle-stroke-width": 1.5,
-            "circle-stroke-color": "#0A2219",
+            "circle-stroke-color": RADAR_ANEL,
           },
         });
 
@@ -770,6 +771,18 @@ export default function MapaRegional({
         // Abaixo do zoom em que a divisa aparece, cada imóvel vira um marcador
         // no centro dele, na cor do status.
         map.addSource("imoveis-centros", { type: "geojson", data: centrosDe(imoveis.features ?? []) });
+        // Radar do manual (prancha 09): o pino é um ponto com anel Oliva em volta
+        // (em tamanho pequeno vale só anel + ponto, sem as tarjas).
+        map.addLayer({
+          id: "imoveis-marcador-anel", type: "circle", source: "imoveis-centros", maxzoom: ZOOM_MARCADOR,
+          paint: {
+            "circle-color": "rgba(0,0,0,0)",
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 6.5, 9, 8, 12, 10] as never,
+            "circle-stroke-width": 1.5,
+            "circle-stroke-color": RADAR_ANEL,
+            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0.95, 12.5, 0.3] as never,
+          },
+        });
         map.addLayer({
           id: "imoveis-marcador", type: "circle", source: "imoveis-centros", maxzoom: ZOOM_MARCADOR,
           paint: {
@@ -778,7 +791,7 @@ export default function MapaRegional({
             // cidade); some aos poucos perto do zoom em que a divisa já aparece
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 3, 9, 4, 12, 5] as never,
             "circle-stroke-width": 1.5,
-            "circle-stroke-color": "#FFFFFF",
+            "circle-stroke-color": "#F2F2EC",
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 12.5, 0.35] as never,
             "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 1, 12.5, 0.35] as never,
           },
@@ -818,9 +831,9 @@ export default function MapaRegional({
           popup
             .setLngLat(e.lngLat)
             .setHTML(
-              `<div style="padding:10px 12px;font-family:inherit">
-                 <p style="font-weight:600;font-size:13px;color:#E9F1EB;margin:0">${escaparHtml(p.titulo)}</p>
-                 <p style="font-size:12px;color:#6FB08F;font-weight:600;margin:2px 0 0">${escaparHtml(formatBRL(p.valor))}</p>
+              `<div style="padding:10px 14px;font-family:inherit;border-top:2px solid #D9BD6F">
+                 <p style="font-weight:600;font-size:13px;color:var(--texto);margin:0">${escaparHtml(p.titulo)}</p>
+                 <p style="font-size:12px;color:var(--verde);font-weight:700;margin:2px 0 0">${escaparHtml(formatBRL(p.valor))}</p>
                </div>`
             )
             .addTo(map);
@@ -1047,13 +1060,13 @@ export default function MapaRegional({
           <div className="relative">
             <input value={busca} onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por imóvel, município ou código"
-              className="w-full rounded-xl border border-linha-forte bg-superficie-2 pl-10 pr-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30" />
+              className="w-full rounded-full border border-linha-forte bg-superficie-2 pl-10 pr-3 py-2.5 text-sm text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30" />
             <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-texto-2" />
           </div>
 
           {municipioSugerido && (
             <button onClick={irParaMunicipio}
-              className="flex w-full items-center justify-between gap-2 text-left text-sm rounded-[10px] border border-verde/25 bg-verde/12 text-verde px-3.5 py-2.5 hover:bg-verde/20 transition">
+              className="flex w-full items-center justify-between gap-2 text-left text-sm rounded-full border border-verde/25 bg-verde/12 text-verde px-3.5 py-2.5 hover:bg-verde/20 transition">
               <span>Ir para <strong>{municipioSugerido.nome}</strong></span>
               <ArrowRight className="size-4 shrink-0" />
             </button>
@@ -1099,7 +1112,7 @@ export default function MapaRegional({
                 src={p.capa ? mediaUrl(p.capa) : p.tipo === "rural" ? "/img/aerea-campo.jpg" : "/img/fazenda-gado.jpg"}
                 alt="" className="w-24 h-[72px] rounded-xl object-cover shrink-0" />
               <span className="min-w-0 flex-1">
-                <span className="block font-display font-bold text-[0.95rem] leading-snug text-texto truncate">{p.titulo}</span>
+                <span className="block lp-display text-[1.1rem] leading-tight text-verde truncate">{p.titulo}</span>
                 <span className="block text-xs text-texto-2 mt-0.5">
                   {p.municipio ?? "—"} · {formatArea(p.area_m2, p.tipo)}
                 </span>
@@ -1109,8 +1122,8 @@ export default function MapaRegional({
                     : formatBRL(p.valor)}
                 </span>
               </span>
-              <span className="mt-1 w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ background: STATUS_CORES[p.status] ?? STATUS_CORES.publicado }} />
+              <span className="mt-1.5 mr-1 w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ background: STATUS_MAPA[p.status] ?? STATUS_MAPA.publicado, boxShadow: `0 0 0 2px var(--superficie), 0 0 0 3.5px ${RADAR_ANEL}` }} />
             </button>
           ))}
           {!lista.length && pronto && (
@@ -1203,8 +1216,8 @@ export default function MapaRegional({
           <div className={`absolute top-14 left-3 z-20 w-80 max-w-[calc(100%-1.5rem)] p-5 space-y-3.5 max-h-[70%] overflow-y-auto ${VIDRO}`}>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="grid size-9 place-items-center rounded-xl bg-verde/12 text-verde"><History className="size-[18px]" /></span>
-                <p className="font-display text-lg font-bold text-texto">Imagem do ano</p>
+                <span className="grid size-9 place-items-center rounded-full bg-verde/12 text-verde"><History className="size-[18px]" /></span>
+                <p className="lp-display text-2xl text-verde">Imagem do ano</p>
               </div>
               <BotaoFechar onClick={() => setSeletorAno(false)} />
             </div>

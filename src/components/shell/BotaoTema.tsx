@@ -32,16 +32,19 @@ try {
   var aplica = function (claro) {
     if (claro) h.setAttribute("data-tema", "claro"); else h.removeAttribute("data-tema");
   };
-  if (t === "claro" || t === "escuro") aplica(t === "claro");
-  else if (mq) {
+  // sem escolha salva: claro. O manual (v1.0) faz do off-white o fundo
+  // principal; o escuro fica como opção da pessoa (botão ou conta).
+  if (t === "escuro") aplica(false);
+  else if (t === "claro") aplica(true);
+  else if (t === "sistema" && mq) {
     aplica(mq.matches);
     var segue = function (e) {
       var s = null;
       try { s = localStorage.getItem("${CHAVE_TEMA}"); } catch (x) {}
-      if (s !== "claro" && s !== "escuro") aplica(e.matches);
+      if (s === "sistema") aplica(e.matches);
     };
     if (mq.addEventListener) mq.addEventListener("change", segue); else if (mq.addListener) mq.addListener(segue);
-  }
+  } else aplica(true);
 } catch (e) {}
 `;
 
@@ -70,14 +73,15 @@ export function useTema(): Tema {
 }
 
 /**
- * Aplica a preferência de tema da conta (5.10). "sistema" apaga a escolha do
- * navegador e volta a seguir o aparelho — o script do <head> já deixou o
- * ouvinte do prefers-color-scheme ligado, que respeita a ausência da chave.
+ * Aplica a preferência de tema da conta (5.10). "sistema" grava "sistema" e
+ * volta a seguir o aparelho (sem chave nenhuma, o padrão agora é o claro do
+ * manual) — o script do <head> liga o ouvinte do prefers-color-scheme no
+ * próximo carregamento.
  */
 export function aplicarTemaPreferido(t: TemaPreferido) {
   const h = document.documentElement;
   if (t === "sistema") {
-    try { localStorage.removeItem(CHAVE_TEMA); } catch { /* storage bloqueado */ }
+    try { localStorage.setItem(CHAVE_TEMA, "sistema"); } catch { /* storage bloqueado */ }
     const claro = !!window.matchMedia?.("(prefers-color-scheme: light)").matches;
     if (claro) h.setAttribute("data-tema", "claro"); else h.removeAttribute("data-tema");
     return;

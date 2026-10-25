@@ -81,7 +81,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
             ))}
           </select>
         </div>
-        <button onClick={consultar} disabled={rodando} className="btn-ouro inline-flex items-center gap-2 px-6 py-3 disabled:opacity-60">
+        <button onClick={consultar} disabled={rodando} className="btn-verde inline-flex items-center gap-2 px-6 py-3 disabled:opacity-60">
           {rodando ? <LoaderCircle className="size-4 animate-spin" /> : <Radar className="size-4" />}
           {rodando ? "Consultando…" : "Executar consulta territorial"}
         </button>
@@ -96,9 +96,9 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
             ["Município", dados.imovel.municipio ?? "—"],
             ["Tipo", dados.imovel.tipo],
           ].map(([r, v]) => (
-            <div key={r} className="cartao border-l-4 border-l-verde p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-2">{r}</p>
-              <p className="lp-display mt-2 text-xl leading-tight text-texto capitalize">{v}</p>
+            <div key={r} className="item-numerado">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">{r}</p>
+              <p className="lp-display mt-2 text-3xl leading-none text-verde capitalize">{v}</p>
             </div>
           ))}
         </div>
@@ -123,7 +123,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
               <button onClick={() => setAberta(aberta === f.id ? null : f.id)}
                 className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-superficie-2 transition">
                 <div className="flex-1 min-w-0">
-                  <p className="font-display font-bold text-base text-texto flex flex-wrap items-center gap-1.5">
+                  <p className="lp-display text-xl text-texto flex flex-wrap items-center gap-1.5">
                     {f.nome}
                     <SeloClassificacao valor={origem?.tipo ?? f.classificacao} />
                     <SeloSituacao valor={f.situacao} soProblema />
@@ -134,7 +134,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                     {c?.raio_m ? ` · raio ${c.raio_m / 1000} km` : null}
                   </p>
                 </div>
-                <span className={`shrink-0 whitespace-nowrap rounded-md border px-2.5 py-1 text-xs font-semibold ${cor}`}>{estado}</span>
+                <span className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${cor}`}>{estado}</span>
                 {!!c && <ChevronDown aria-hidden className={`size-4 shrink-0 text-texto-2 transition-transform ${aberta === f.id ? "rotate-180" : ""}`} />}
               </button>
 
@@ -148,7 +148,7 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
                   {itens.map((i, n) => (
                     <div key={n} className="text-sm border-b border-linha/60 last:border-0 pb-2">
                       <p className="font-medium text-texto">{i.titulo}</p>
-{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-md border border-ouro/40 bg-ouro/10 px-2 py-0.5 text-xs font-semibold text-texto tabular-nums">Matrícula nº {String(i.extra.matricula)}</p> : null}
+{i.extra?.matricula ? <p className="mt-1 inline-flex items-center rounded-full border border-[#D9BD6F]/70 px-2.5 py-0.5 text-xs font-semibold text-texto tabular-nums">Matrícula nº {String(i.extra.matricula)}</p> : null}
                       {i.detalhe && <p className="text-texto-2 text-xs">{i.detalhe}</p>}
                       {i.extra && (
                         <p className="text-[11px] text-texto-2">
@@ -177,8 +177,8 @@ export default function ConsultaRural({ propertyId }: { propertyId: string }) {
       </div>
 
       {!!pendentes.length && (
-        <div className="rounded-2xl border border-linha bg-superficie-2 p-5 space-y-2.5">
-          <p className="flex items-center gap-2 font-display text-base font-bold text-texto">
+        <div className="rounded-[20px] border border-linha bg-superficie p-5 space-y-2.5">
+          <p className="flex items-center gap-2 lp-display text-xl text-texto">
             <FileText className="size-4 text-ouro" /> Fontes que dependem de importação de arquivo
           </p>
           <p className="text-xs text-texto-2">

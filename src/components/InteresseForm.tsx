@@ -35,12 +35,12 @@ export default function InteresseForm({
     : null;
 
   return (
-    <div className="space-y-3">
+    <div id="interesse" className="scroll-mt-24 space-y-3">
       {estado === "ok" ? (
         <div className="lp-escuro lp-malha-escura relative overflow-hidden rounded-[20px] p-7 text-center">
           <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
           <div className="relative">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-verde/15 text-verde">
+            <span className="mx-auto grid size-14 place-items-center rounded-full border border-[#D9BD6F]/60 text-[#D9BD6F]">
               <CircleCheck className="size-7" />
             </span>
             <p className="lp-display mt-4 text-2xl text-texto">Interesse registrado!</p>
@@ -48,10 +48,10 @@ export default function InteresseForm({
           </div>
         </div>
       ) : (
-        <form onSubmit={enviar} className="cartao space-y-4 p-6">
+        <form onSubmit={enviar} className="cartao space-y-4 p-6 md:p-7">
           <div>
             <p className="lp-eyebrow !text-xs">Tenho interesse</p>
-            <p className="lp-display mt-2 text-2xl text-texto">Receba todos os detalhes</p>
+            <p className="lp-display mt-3 text-[1.9rem] text-texto">Receba todos os detalhes</p>
             <p className="mt-1.5 text-[15px] leading-relaxed text-texto-2">
               Preencha seus dados e falaremos com você pelo WhatsApp.
             </p>
@@ -89,7 +89,7 @@ export default function InteresseForm({
 
           {erro && <p className="rounded-xl border border-critico/30 bg-critico/10 px-4 py-3 text-sm text-critico">{erro}</p>}
 
-          <button disabled={estado === "enviando"} className="lp-btn lp-btn-ouro w-full disabled:opacity-60">
+          <button disabled={estado === "enviando"} className="lp-btn lp-btn-verde w-full disabled:opacity-60">
             {estado === "enviando" ? "Enviando…" : <>Quero saber mais <Send /></>}
           </button>
         </form>
@@ -97,7 +97,7 @@ export default function InteresseForm({
 
       {linkWhats && (
         <a href={linkWhats} target="_blank" rel="noreferrer"
-          className="lp-btn w-full bg-[#25D366] text-white shadow-[0_8px_22px_-10px_rgba(37,211,102,0.6)] hover:brightness-95">
+          className="lp-btn lp-btn-contorno w-full">
           <MessageCircle /> Chamar no WhatsApp
         </a>
       )}

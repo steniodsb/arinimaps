@@ -22,12 +22,12 @@ export default async function CartaoAvaliacaoPublico({ propertyId, tipo, status 
   return (
     <section className="cartao p-6 md:p-7 space-y-5">
       <div className="flex items-start gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-verde/12 text-verde" aria-hidden>
+        <span className="grid size-12 shrink-0 place-items-center rounded-full border border-linha-forte text-verde" aria-hidden>
           {pre ? <Calculator className="size-6" /> : <Sprout className="size-6" />}
         </span>
         <div className="min-w-0">
           <p className="lp-eyebrow text-xs">Inteligência Arini</p>
-          <h2 className="lp-display mt-1.5 text-2xl md:text-[1.75rem] text-texto">
+          <h2 className="lp-display mt-2 text-3xl text-texto">
             {pre ? "Pré-avaliação de valor" : "Aptidão territorial"}
           </h2>
           <p className="mt-1.5 text-base leading-relaxed text-texto-2">

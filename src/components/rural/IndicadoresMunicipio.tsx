@@ -1,6 +1,5 @@
-import { Banknote, Landmark, Maximize2, Sprout, Users, UsersRound } from "lucide-react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { Estatistica, Secao } from "@/components/ui/Pagina";
+import { Secao } from "@/components/ui/Pagina";
 
 type Indicador = { valor: number; ano: number; unidade: string; fonte: string };
 type Municipio = {
@@ -45,20 +44,26 @@ export default async function IndicadoresMunicipio({ codIbge, ponto }: {
   if (!m || !Object.keys(i).length) return null;
 
   const cartoes = [
-    i.populacao_censo && { icone: Users, valor: num(i.populacao_censo.valor), rotulo: `Habitantes (Censo ${i.populacao_censo.ano})` },
-    i.populacao_estimada && { icone: UsersRound, valor: num(i.populacao_estimada.valor), rotulo: `População estimada ${i.populacao_estimada.ano}` },
-    i.area_km2 && { icone: Maximize2, valor: `${num(i.area_km2.valor, 1)} km²`, rotulo: i.densidade ? `Área · ${num(i.densidade.valor, 1)} hab/km²` : "Área do município" },
-    i.pib_mil_reais && { icone: Landmark, valor: reaisMil(i.pib_mil_reais.valor), rotulo: `PIB ${i.pib_mil_reais.ano}` },
-    i.pib_per_capita && { icone: Banknote, valor: `R$ ${num(i.pib_per_capita.valor)}`, rotulo: `PIB por habitante (${i.pib_per_capita.ano})` },
-    i.agropecuaria_pct && { icone: Sprout, valor: `${num(i.agropecuaria_pct.valor, 1)}%`, rotulo: `Agropecuária no PIB (${i.agropecuaria_pct.ano})` },
-  ].filter(Boolean) as { icone: typeof Users; valor: string; rotulo: string }[];
+    i.populacao_censo && { valor: num(i.populacao_censo.valor), rotulo: `Habitantes (Censo ${i.populacao_censo.ano})` },
+    i.populacao_estimada && { valor: num(i.populacao_estimada.valor), rotulo: `População estimada ${i.populacao_estimada.ano}` },
+    i.area_km2 && { valor: `${num(i.area_km2.valor, 1)} km²`, rotulo: i.densidade ? `Área · ${num(i.densidade.valor, 1)} hab/km²` : "Área do município" },
+    i.pib_mil_reais && { valor: reaisMil(i.pib_mil_reais.valor), rotulo: `PIB ${i.pib_mil_reais.ano}` },
+    i.pib_per_capita && { valor: `R$ ${num(i.pib_per_capita.valor)}`, rotulo: `PIB por habitante (${i.pib_per_capita.ano})` },
+    i.agropecuaria_pct && { valor: `${num(i.agropecuaria_pct.valor, 1)}%`, rotulo: `Agropecuária no PIB (${i.agropecuaria_pct.ano})` },
+  ].filter(Boolean) as { valor: string; rotulo: string }[];
 
   return (
     <Secao eyebrow="Contexto do município · IBGE" titulo={`${m.nome}/${m.uf}`}
       subtitulo="Números oficiais do IBGE, cada um com o ano de referência.">
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {cartoes.map((c) => <Estatistica key={c.rotulo} icone={c.icone} valor={c.valor} rotulo={c.rotulo} />)}
-      </div>
+      {/* tabela de especificações: rótulo à esquerda em caixa alta, número à direita */}
+      <dl className="cartao grid gap-x-10 !p-2 sm:grid-cols-2 md:!p-3">
+        {cartoes.map((c) => (
+          <div key={c.rotulo} className="flex items-baseline justify-between gap-4 border-b border-linha px-3 py-3.5">
+            <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-texto-2">{c.rotulo}</dt>
+            <dd className="lp-display shrink-0 text-2xl leading-none text-verde">{c.valor}</dd>
+          </div>
+        ))}
+      </dl>
       <p className="text-xs leading-relaxed text-texto-2">
         Fonte: IBGE (Censo Demográfico 2022, Estimativas da População e PIB dos Municípios), código {m.cod_ibge}.
         {m.indicadores_em && <> Copiado do IBGE em {new Date(m.indicadores_em).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}.</>}

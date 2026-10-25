@@ -6,7 +6,7 @@ import { formatBRL, STATUS_LABEL } from "@/lib/format";
 import { Secao, Estatistica, Vazio, Etiqueta, BotaoLink } from "@/components/ui/Pagina";
 import MiniaturaDivisa, { type GeoDivisa } from "@/components/imovel/MiniaturaDivisa";
 
-type Tom = "verde" | "ouro" | "alerta" | "critico" | "neutro" | "roxo";
+type Tom = "verde" | "ouro" | "alerta" | "critico" | "neutro";
 const STATUS_TOM: Record<string, Tom> = {
   rascunho: "neutro",
   pendente: "alerta",

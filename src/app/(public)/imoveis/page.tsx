@@ -168,14 +168,14 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
     geom: (extraDe.get(p.codigo)?.geo?.geom as ItemMapaBusca["geom"]) ?? null,
   }));
   const botaoBarra = (on: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${on ? "bg-verde/15 text-verde" : "text-texto-2 hover:text-texto"}`;
+    `inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${on ? "bg-verde/15 text-verde" : "text-texto-2 hover:text-texto"}`;
 
   return (
     <Moldura usuario={usuario}>
       <CabecalhoPagina
         variante="faixa"
         compacta
-        eyebrow="Imóveis à venda"
+        eyebrow="01 · Imóveis à venda"
         titulo="Encontre seu"
         destaque="imóvel"
         subtitulo="Fazendas, sítios e lotes da região com a área medida e a divisa conferida no mapa."
@@ -196,15 +196,15 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
           })}
           <Link href={com({ favoritos: soFavoritos ? null : "1" })} aria-current={soFavoritos ? "true" : undefined}
             className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition ${soFavoritos
-              ? "border-[#FF6B81] bg-[#FF6B81] text-[#2A0A10]"
-              : "border-linha-forte bg-superficie/60 text-texto-3 hover:border-[#FF6B81]/60 hover:text-texto"}`}>
+              ? "border-critico bg-critico text-fundo"
+              : "border-linha-forte bg-superficie/60 text-texto-3 hover:border-critico/60 hover:text-texto"}`}>
             <Heart className={`size-4 ${soFavoritos ? "fill-current" : ""}`} /> Favoritos
             {favoritos.size > 0 && <span className="tabular-nums opacity-80">({favoritos.size})</span>}
           </Link>
         </nav>
 
         {/* demais filtros (GET, funcionam sem JS) */}
-        <form className="grid gap-4 rounded-2xl border border-linha bg-superficie/70 p-5 backdrop-blur sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_auto] lg:items-end">
+        <form className="grid gap-4 rounded-[20px] border border-linha bg-superficie p-5 shadow-[0_10px_30px_-22px_rgb(10_34_25/0.3)] sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_auto] lg:items-end">
           {tipo !== "todos" && <input type="hidden" name="tipo" value={tipo} />}
           {ordem !== "recentes" && <input type="hidden" name="ordem" value={ordem} />}
           {vista !== "grade" && <input type="hidden" name="vista" value={vista} />}
@@ -239,7 +239,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
               <input name="area_max" inputMode="decimal" defaultValue={str("area_max")} placeholder="máx." aria-label={`Área máxima em ${unidadeArea}`} className={CAMPO} />
             </div>
           </fieldset>
-          <button className="lp-btn lp-btn-verde !py-3 self-end text-[0.95rem]">
+          <button className="btn-verde inline-flex items-center justify-center gap-2 self-end !px-6 !py-3 text-[0.95rem]">
             <SlidersHorizontal /> Filtrar
           </button>
         </form>
@@ -249,7 +249,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
         {/* barra de resultados: contagem e filtros ativos à esquerda, ordem e visualização à direita */}
         <div className="mb-7 flex flex-col gap-4 border-b border-linha pb-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="mr-2 font-display text-lg font-bold text-texto">
+            <p className="lp-display mr-2 text-2xl text-texto">
               {disponiveis.length} {disponiveis.length === 1 ? "imóvel disponível" : "imóveis disponíveis"}
             </p>
             {ativos.map((a) => (
@@ -266,14 +266,14 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <nav aria-label="Ordenar" className="flex flex-wrap gap-1 rounded-xl border border-linha bg-superficie p-1">
+            <nav aria-label="Ordenar" className="flex flex-wrap gap-1 rounded-full border border-linha bg-superficie p-1">
               {ORDENS.map((o) => (
                 <Link key={o.id} href={com({ ordem: o.id })} aria-current={ordem === o.id ? "true" : undefined} className={botaoBarra(ordem === o.id)}>
                   {o.rotulo}
                 </Link>
               ))}
             </nav>
-            <nav aria-label="Visualização" className="flex gap-1 rounded-xl border border-linha bg-superficie p-1">
+            <nav aria-label="Visualização" className="flex gap-1 rounded-full border border-linha bg-superficie p-1">
               <Link href={com({ vista: "grade" })} aria-current={vista === "grade" ? "true" : undefined} title="Grade" className={botaoBarra(vista === "grade")}>
                 <LayoutGrid className="size-4" /> <span className="hidden sm:inline">Grade</span>
               </Link>
@@ -336,7 +336,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
               )}
               {vendidosVisiveis.length > 0 && (
                 <section aria-labelledby="titulo-vendidos" className="space-y-5">
-                  <h2 id="titulo-vendidos" className="lp-display text-2xl text-texto">Vendidos recentemente</h2>
+                  <div><p className="lp-eyebrow">02 · Histórico</p><h2 id="titulo-vendidos" className="lp-display mt-2 text-3xl text-texto">Vendidos recentemente</h2></div>
                   <div className={grade}>{vendidosVisiveis.map(cartao)}</div>
                 </section>
               )}
@@ -349,7 +349,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
 }
 
 const botaoPagina = (on: boolean) =>
-  `inline-flex min-w-10 items-center justify-center gap-1 rounded-xl border px-3 py-2 text-sm font-semibold tabular-nums transition ${on
+  `inline-flex min-w-10 items-center justify-center gap-1 rounded-full border px-3 py-2 text-sm font-semibold tabular-nums transition ${on
     ? "border-verde bg-verde text-fundo"
     : "border-linha bg-superficie text-texto-2 hover:border-verde/60 hover:text-texto"}`;
 
@@ -392,71 +392,79 @@ function CartaoImovel({ p, extra, area, mun, lista, favorito }: {
     fotos > 0 && { icone: Camera, rotulo: `${fotos} ${fotos === 1 ? "foto" : "fotos"}` },
   ].filter(Boolean) as { icone: typeof ShieldCheck; rotulo: string }[];
 
+  const numeroCartao = vendido ? "text-texto-2 line-through" : p.valor == null ? "text-texto" : "text-verde";
   return (
     // o coração fica fora do link (botão dentro de <a> não é HTML válido), por cima da foto
     <div data-codigo={p.codigo} className="relative h-full">
     <Link href={`/imovel/${p.codigo}`}
-      className={`lp-lift group flex h-full overflow-hidden rounded-[20px] bg-superficie ring-1 ring-linha hover:ring-verde/60 ${lista ? "flex-col sm:flex-row" : "flex-col"}`}>
+      className={`lp-lift group flex h-full overflow-hidden rounded-[20px] border border-linha bg-superficie shadow-[0_1px_2px_rgb(10_34_25/0.04),0_10px_30px_-22px_rgb(10_34_25/0.25)] hover:border-verde/50 ${lista ? "flex-col sm:flex-row" : "flex-col"}`}>
       <div className={`relative shrink-0 overflow-hidden bg-superficie-2 ${lista ? "aspect-[16/10] sm:aspect-auto sm:min-h-52 sm:w-80" : "aspect-[16/10]"}`}>
         {capa ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={mediaUrl(capa.storage_path)} alt={p.titulo} loading="lazy" decoding="async"
-            className={"absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.06] " + (vendido ? "grayscale" : "")} />
+            className={"absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.04] " + (vendido ? "grayscale" : "")} />
         ) : geom ? (
           // sem foto: o próprio terreno visto do satélite, com a divisa
           <MiniaturaDivisa geom={geom}
-            className={"absolute inset-0 h-full w-full transition duration-700 ease-out group-hover:scale-[1.04] " + (vendido ? "grayscale" : "")} />
+            className={"absolute inset-0 h-full w-full transition duration-700 ease-out group-hover:scale-[1.03] " + (vendido ? "grayscale" : "")} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={rural ? "/img/aerea-campo.jpg" : "/img/fazenda-gado.jpg"} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         )}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
-        {leilao ? (
-          <span className="absolute left-4 top-4 rounded-md bg-[#B18CFF] px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-[#160B2E]">Leilão</span>
-        ) : (
-          <span className="absolute left-4 top-4 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur">
-            {rural ? "Rural" : p.tipo === "urbano" ? "Urbano" : p.tipo}
+        {/* pílulas de status: tipo/leilão à esquerda, vendido ao lado */}
+        <div className="absolute left-3.5 top-3.5 flex flex-wrap gap-1.5 pr-14">
+          <span className="pilula-ponto !border-transparent !bg-[#F2F2EC] !px-3 !py-1 !text-xs !font-semibold uppercase tracking-wider !text-[#124431]">
+            {leilao ? "Leilão" : rural ? "Rural" : p.tipo === "urbano" ? "Urbano" : p.tipo}
           </span>
-        )}
-        {vendido && (
-          <span className="absolute right-16 top-4 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white/85 backdrop-blur">
-            {STATUS_LABEL[p.status]}
-          </span>
-        )}
+          {vendido && (
+            <span className="inline-flex items-center rounded-full bg-[#0A2219]/85 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#F2F2EC]">
+              {STATUS_LABEL[p.status]}
+            </span>
+          )}
+        </div>
         {/* com foto, o formato do terreno vai num selo no canto */}
         {capa && geom && (
-          <span className="absolute bottom-3 left-3 grid size-12 place-items-center rounded-lg bg-black/55 p-1.5 backdrop-blur" title="Formato do terreno">
+          <span className="absolute bottom-3 left-3 grid size-12 place-items-center rounded-xl bg-[#F2F2EC]/92 p-1.5" title="Formato do terreno">
             <MiniaturaDivisa geom={geom} soContorno proporcao={1} className="size-full" />
           </span>
         )}
-        <span className="absolute bottom-3 right-4 font-mono text-xs text-white/85">{p.codigo}</span>
       </div>
 
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className="lp-display text-xl leading-snug text-texto transition group-hover:text-verde">{p.titulo}</h3>
-        <p className="mt-2 flex items-center gap-1.5 text-base text-texto-2">
+      <div className="flex flex-1 flex-col p-5 md:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="lp-display text-[1.65rem] leading-[0.98] text-texto transition group-hover:text-verde">{p.titulo}</h3>
+          <span className="mt-1 shrink-0 font-mono text-[0.7rem] tracking-wider text-texto-2">{p.codigo}</span>
+        </div>
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-texto-2">
           <MapPin className="size-4 shrink-0 text-verde" /> {mun ? `${mun.nome} / ${mun.uf}` : "—"}
         </p>
-        {selos.length > 0 && (
-          <ul className="mt-4 flex flex-wrap gap-1.5">
-            {selos.map(({ icone: Icone, rotulo }) => (
-              <li key={rotulo} className="inline-flex items-center gap-1 rounded-md bg-superficie-2 px-2 py-1 text-xs font-semibold text-texto-2">
-                <Icone className="size-3.5 text-verde" /> {rotulo}
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-          <div className="min-w-0">
-            <span className={"lp-display block text-2xl " + (vendido ? "text-texto-2 line-through" : p.valor == null ? "text-texto" : "text-verde")}>
-              {formatBRL(p.valor)}
-            </span>
-            {porUnidade && !vendido && <span className="mt-0.5 block text-sm text-texto-2">{porUnidade}</span>}
-          </div>
-          <span className="flex shrink-0 items-center gap-1.5 text-right text-[15px] font-semibold text-texto">
-            <Ruler className="size-4 text-texto-2" /> {formatArea(area || null, rural ? "rural" : "urbano")}
-          </span>
+
+        {/* número de destaque */}
+        <div className="mt-5">
+          <span className={`lp-display block text-[2.1rem] leading-none ${numeroCartao}`}>{formatBRL(p.valor)}</span>
+          {porUnidade && !vendido && <span className="mt-1.5 block text-xs text-texto-2">{porUnidade}</span>}
         </div>
+
+        {/* especificações em linhas finas, como a tabela do manual */}
+        <dl className="mt-5 divide-y divide-linha border-y border-linha text-sm">
+          <div className="flex items-center justify-between gap-3 py-2">
+            <dt className="flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-texto-2"><Ruler className="size-3.5" /> Área</dt>
+            <dd className="font-semibold text-texto">{formatArea(area || null, rural ? "rural" : "urbano")}</dd>
+          </div>
+          {selos.length > 0 && (
+            <div className="flex items-start justify-between gap-3 py-2">
+              <dt className="pt-0.5 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-texto-2">Verificado</dt>
+              <dd className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs font-semibold text-texto">
+                {selos.map(({ icone: Icone, rotulo }) => (
+                  <span key={rotulo} className="inline-flex items-center gap-1"><Icone className="size-3.5 text-verde" /> {rotulo}</span>
+                ))}
+              </dd>
+            </div>
+          )}
+        </dl>
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-verde">
+          Ver imóvel <ChevronRight className="size-4 transition group-hover:translate-x-1" />
+        </span>
       </div>
     </Link>
     <div className="absolute right-3 top-3">

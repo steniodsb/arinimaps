@@ -67,8 +67,8 @@ export default function ComoFunciona() {
               >
                 <p.icone className="size-5" strokeWidth={1.9} />
               </span>
-              <p className="lp-display mt-0 text-sm tracking-[0.18em] text-[#FFE299] lg:mt-6">PASSO {k + 1}</p>
-              <h3 className="lp-display mt-2 text-2xl text-white">{p.titulo}</h3>
+              <p className="mt-0 border-t border-white/20 pt-3 text-xs font-semibold tabular-nums tracking-[0.08em] text-ouro lg:mt-6">{String(k + 1).padStart(2, "0")}</p>
+              <h3 className="lp-display mt-2 text-[1.7rem] text-white">{p.titulo}</h3>
               <p className="mt-3 text-[17px] leading-relaxed text-white/80">{p.texto}</p>
             </motion.li>
           );

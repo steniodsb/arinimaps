@@ -10,7 +10,9 @@ import ComoFunciona from "@/components/landing/ComoFunciona";
 import FontesMarquee from "@/components/landing/FontesMarquee";
 import MosaicoSatelite from "@/components/landing/MosaicoSatelite";
 import RodapeSite, { PreRodape } from "@/components/landing/RodapeSite";
-import { MaisLink, TituloSecao } from "@/components/landing/Titulo";
+import { BTN_ACAO, MaisLink, TituloSecao } from "@/components/landing/Titulo";
+import MarcaArini from "@/components/marca/MarcaArini";
+import { ItemNumerado, PilulaPonto } from "@/components/ui/Pagina";
 import {
   ClipReveal, Counter, Parallax, Reveal, RolagemSuave, SpotlightTracker, Stagger,
 } from "@/components/landing/movimento";
@@ -24,8 +26,9 @@ import { formatBRL, formatArea } from "@/lib/format";
  * leva para a área de consultas (/mapa, /imoveis, /relatorios), que é onde a
  * sidebar do AppShell existe. Aqui não há sidebar.
  *
- * Visual no molde do site de referência (grupocordeiro): carrossel de tela
- * cheia, faixas claras e escuras alternadas, títulos grandes na fonte de título do manual,
+ * Visual do Manual de Identidade Visual v1.0: carrossel de tela cheia com
+ * linhas de mapa, faixas off-white e Verde Profundo alternadas, títulos
+ * grandes em caixa alta, rótulos de seção numerados ("03 · A FERRAMENTA") e
  * entradas ao rolar. Faixas escuras usam `.lp-escuro` (ver globals.css) e
  * ficam legíveis nos dois temas.
  */
@@ -216,20 +219,18 @@ export default async function Home() {
 
         {/* ---------- faixa de números ---------- */}
         {faixa.length > 0 && (
-          <section aria-label="A Arini em números" className="lp-escuro border-t border-white/10 bg-[#0A2219]">
+          <section aria-label="A Arini em números" className="lp-escuro border-t border-white/10 bg-[#124431]">
             <div className="lp-container grid grid-cols-2 lg:grid-cols-4">
               {faixa.map((f, k) => (
                 <div
                   key={f.rotulo}
                   className={`flex flex-col items-start gap-3 py-6 md:flex-row md:items-center md:gap-4 md:py-8 ${
-                    k % 2 ? "border-l border-white/10 pl-5" : "pr-4"
-                  } ${k > 1 ? "border-t border-white/10 lg:border-t-0" : ""} ${k ? "lg:border-l lg:pl-7" : "lg:pl-0"}`}
+                    k % 2 ? "border-l border-white/15 pl-5" : "pr-4"
+                  } ${k > 1 ? "border-t border-white/15 lg:border-t-0" : ""} ${k ? "lg:border-l lg:pl-7" : "lg:pl-0"}`}
                 >
-                  <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-[#6FB08F]/15 text-[#6FB08F] ring-1 ring-[#6FB08F]/25">
-                    <f.icone className="size-6" strokeWidth={1.8} />
-                  </span>
+                  <f.icone className="size-8 shrink-0 text-ouro" strokeWidth={1.5} />
                   <div className="min-w-0">
-                    <Counter value={mil(f.valor)} className="lp-display block text-3xl leading-none text-white md:text-[2.2rem]" />
+                    <Counter value={mil(f.valor)} className="lp-display block text-3xl leading-none text-white md:text-[2.4rem]" />
                     <p className="mt-2 text-base leading-snug text-white/80">{f.rotulo}</p>
                   </div>
                 </div>
@@ -238,12 +239,42 @@ export default async function Home() {
           </section>
         )}
 
+        {/* ---------- posicionamento: do anúncio à decisão ---------- */}
+        <section id="posicionamento" className="lp-clara relative scroll-mt-24 overflow-hidden py-20 md:py-28">
+          <div className="fundo-curvas pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
+          <MarcaArini variante="radar" titulo="" className="pointer-events-none absolute right-5 top-6 hidden w-9 md:right-8 md:block" />
+          <div className="lp-container relative">
+            <TituloSecao
+              eyebrow="02 · Posicionamento"
+              titulo="Do anúncio à decisão."
+              destaque={1}
+              subtitulo="Mais do que um portal de anúncios: a Arini leva o imóvel do mapa à escritura, com o território conferido em cada etapa."
+            />
+            <Reveal delay={0.2} className="mt-6 flex flex-wrap gap-2.5">
+              <PilulaPonto>Inteligência</PilulaPonto>
+              <PilulaPonto>Segurança</PilulaPonto>
+              <PilulaPonto>Transparência</PilulaPonto>
+            </Reveal>
+            <Stagger className="mt-12 grid gap-5 md:grid-cols-3" gap={0.12} itemClassName="h-full">
+              {[
+                { t: "Imóveis urbanos e rurais", d: "Lotes, casas, fazendas e sítios no mesmo mapa, cada um com a divisa real e a área medida sobre o satélite." },
+                { t: "Inteligência territorial", d: "CAR, embargos, queimadas e processos minerários cruzados com a divisa, com a data e a fonte de cada consulta." },
+                { t: "Transação intermediada", d: "Todo anúncio é conferido antes de ir ao ar e todo interessado passa pela central, do primeiro contato à escritura." },
+              ].map((p, k) => (
+                <div key={p.t} className="cartao h-full p-6 md:p-7">
+                  <ItemNumerado numero={k + 1} titulo={p.t}>{p.d}</ItemNumerado>
+                </div>
+              ))}
+            </Stagger>
+          </div>
+        </section>
+
         {/* ---------- a ferramenta: como você usa ---------- */}
-        <section id="ferramenta" className="lp-clara scroll-mt-24 py-24 md:py-28">
+        <section id="ferramenta" className="lp-branca scroll-mt-24 py-20 md:py-28">
           <div className="lp-container">
             <div className="flex flex-wrap items-end justify-between gap-6">
               <TituloSecao
-                eyebrow="A ferramenta"
+                eyebrow="03 · A ferramenta"
                 titulo="Como você usa a Arini"
                 destaque={1}
                 subtitulo={`O ${marca} reúne num só lugar o que hoje exige dezenas de sites e visitas: a divisa do imóvel, a cartografia oficial da cidade e as consultas aos órgãos públicos.`}
@@ -256,10 +287,11 @@ export default async function Home() {
 
         {/* ---------- municípios atendidos ---------- */}
         {municipios.length > 0 && (
-          <section id="municipios" className="lp-branca scroll-mt-24 py-24 md:py-28">
+          <section id="municipios" className="lp-clara scroll-mt-24 py-20 md:py-28">
             <div className="lp-container">
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <TituloSecao
+                  eyebrow="04 · Cobertura"
                   titulo="Municípios atendidos"
                   subtitulo="O Pontal do Triângulo Mineiro inteiro no satélite, com a malha do CAR e as plantas urbanas oficiais."
                 />
@@ -274,35 +306,35 @@ export default async function Home() {
         <VitrineConsultas consultas={CONSULTAS} />
 
         {/* ---------- por que a Arini ---------- */}
-        <section className="lp-clara overflow-hidden py-24 md:py-32">
+        <section className="lp-branca overflow-hidden py-20 md:py-28">
           <div className="lp-container grid gap-16 lg:grid-cols-2 lg:items-center">
             <div>
               <TituloSecao
+                eyebrow="06 · Diferenciais"
                 titulo="Por que a Arini"
                 subtitulo="Território conferido antes da negociação: divisa medida, cartografia oficial e consulta aos órgãos públicos, com uma imobiliária da região conduzindo do primeiro contato à escritura."
               />
               <Stagger className="mt-12 grid grid-cols-2 gap-x-8 gap-y-10" gap={0.12}>
                 {porQue.map((s) => (
-                  <div key={s.rotulo} className="border-l-4 border-verde pl-5">
-                    <Counter value={s.valor} className="lp-display block text-4xl text-texto xl:text-5xl" />
+                  <div key={s.rotulo} className="item-numerado">
+                    <Counter value={s.valor} className="lp-display block text-4xl text-verde xl:text-5xl" />
                     <p className="mt-2 text-base leading-snug text-texto-2 md:text-[17px]">{s.rotulo}</p>
                   </div>
                 ))}
               </Stagger>
               <Reveal delay={0.2}>
-                <Link href="/mapa" className="lp-btn lp-btn-verde mt-12">Conhecer a ferramenta <ArrowRight /></Link>
+                <Link href="/mapa" className={`${BTN_ACAO} mt-12`}>Conhecer a ferramenta <ArrowRight /></Link>
               </Reveal>
             </div>
             <div className="relative">
-              <div className="absolute -right-4 -top-4 h-40 w-40 rounded-xl bg-ouro md:-right-6 md:-top-6" aria-hidden="true" />
-              <ClipReveal from="right" className="relative overflow-hidden rounded-xl">
+              <ClipReveal from="right" className="relative overflow-hidden rounded-2xl">
                 <Parallax className="aspect-[5/5.4]" strength={50}>
                   <Image src="/img/fazenda-gado.jpg" alt="Propriedade rural na região de Iturama" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
                 </Parallax>
               </ClipReveal>
               {n.municipios > 0 && (
                 <Reveal delay={0.4} className="absolute -bottom-8 -left-2 md:-left-10">
-                  <div className="rounded-xl bg-superficie p-6 shadow-2xl ring-1 ring-linha">
+                  <div className="rounded-2xl bg-superficie p-6 shadow-md ring-1 ring-linha">
                     <Counter value={String(n.municipios)} className="lp-display block text-5xl text-texto" />
                     <p className="mt-1 text-base font-semibold text-texto-2">municípios do Pontal no mapa</p>
                   </div>
@@ -313,10 +345,10 @@ export default async function Home() {
         </section>
 
         {/* ---------- últimos publicados ---------- */}
-        <section id="imoveis" className="lp-branca scroll-mt-24 py-24 md:py-28">
+        <section id="imoveis" className="lp-clara scroll-mt-24 py-20 md:py-28">
           <div className="lp-container">
             <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
-              <TituloSecao titulo="Últimos publicados" destaque={1} subtitulo="Imóveis aprovados pela conferência da Arini." />
+              <TituloSecao eyebrow="07 · Vitrine" titulo="Últimos publicados" destaque={1} subtitulo="Imóveis aprovados pela conferência da Arini." />
               <MaisLink href="/imoveis">Ver todos os imóveis</MaisLink>
             </div>
             {imoveis.length > 0 ? (
@@ -331,7 +363,7 @@ export default async function Home() {
                     <Link
                       key={p.codigo}
                       href={`/imovel/${p.codigo}`}
-                      className="spotlight lp-lift group flex h-full flex-col overflow-hidden rounded-xl bg-superficie ring-1 ring-linha hover:ring-verde/60"
+                      className="lp-lift group flex h-full flex-col overflow-hidden rounded-2xl bg-superficie ring-1 ring-linha hover:ring-verde/60"
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-superficie-2">
                         {/* foto enviada pelo anunciante (Storage do Supabase): <img> com proporção fixa, sem salto */}
@@ -343,12 +375,11 @@ export default async function Home() {
                           decoding="async"
                           className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.07]"
                         />
-                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
-                        <span className="absolute left-4 top-4 rounded-md bg-black/60 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur">
+                        <span className="absolute left-4 top-4 rounded-full bg-[#124431] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#F2F2EC]">
                           {p.tipo === "rural" ? "Rural" : "Urbano"}
                         </span>
                         {leilao && (
-                          <span className="absolute right-4 top-4 rounded-md bg-[#B18CFF] px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-[#160B2E]">
+                          <span className="absolute right-4 top-4 rounded-full bg-[#D9BD6F] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#124431]">
                             Leilão
                           </span>
                         )}
@@ -372,7 +403,7 @@ export default async function Home() {
                 })}
               </Stagger>
             ) : (
-              <p className="rounded-xl border border-dashed border-linha p-10 text-center text-lg text-texto-2">
+              <p className="rounded-2xl border border-dashed border-linha p-10 text-center text-lg text-texto-2">
                 Os imóveis aprovados pela Arini aparecem aqui. Enquanto isso,{" "}
                 <Link href="/mapa" className="font-semibold text-verde hover:underline">explore o mapa</Link>.
               </p>
@@ -381,12 +412,12 @@ export default async function Home() {
         </section>
 
         {/* ---------- como funciona ---------- */}
-        <section id="como-funciona" className="lp-escuro lp-malha-escura relative isolate scroll-mt-24 overflow-hidden py-24 md:py-32">
-          <div className="lp-grade pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+        <section id="como-funciona" className="lp-escuro lp-malha-escura relative isolate scroll-mt-24 overflow-hidden py-20 md:py-28">
+          <MarcaArini variante="radar" titulo="" className="pointer-events-none absolute right-5 top-6 hidden w-9 md:right-8 md:block" />
           <div className="lp-container">
             <TituloSecao
               claro
-              eyebrow="Do cadastro à escritura"
+              eyebrow="08 · Do cadastro à escritura"
               titulo="Como funciona"
               subtitulo="Cada anúncio passa pela Arini antes de ir ao ar, e cada interessado passa pela central antes de chegar ao proprietário."
             />
@@ -395,7 +426,7 @@ export default async function Home() {
         </section>
 
         {/* ---------- fontes oficiais ---------- */}
-        <section aria-labelledby="titulo-fontes" className="lp-clara border-b border-linha py-14 md:py-16">
+        <section aria-labelledby="titulo-fontes" className="lp-clara border-b border-linha py-12 md:py-14">
           <div className="lp-container mb-8 flex flex-wrap items-baseline justify-between gap-3">
             <h2 id="titulo-fontes" className="lp-display text-2xl text-texto md:text-3xl">Fontes oficiais consultadas</h2>
             <p className="text-base text-texto-2">Fonte fora do ar aparece como indisponível, nunca como &ldquo;nada encontrado&rdquo;.</p>
@@ -404,10 +435,10 @@ export default async function Home() {
         </section>
 
         {/* ---------- sobre a Arini ---------- */}
-        <section id="sobre" className="lp-branca scroll-mt-24 overflow-hidden py-24 md:py-32">
+        <section id="sobre" className="lp-branca scroll-mt-24 overflow-hidden py-20 md:py-28">
           <div className="lp-container grid gap-14 lg:grid-cols-[1fr_1.05fr] lg:items-center">
             <div className="relative order-2 lg:order-1">
-              <ClipReveal from="left" className="relative aspect-[4/3.4] overflow-hidden rounded-xl ring-1 ring-linha">
+              <ClipReveal from="left" className="relative aspect-[4/3.4] overflow-hidden rounded-2xl ring-1 ring-linha">
                 <MosaicoSatelite lng={-50.196} lat={-19.728} z={14} alt="Iturama vista do satélite" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                 <div className="lp-escuro absolute bottom-0 p-7">
@@ -417,13 +448,13 @@ export default async function Home() {
               </ClipReveal>
             </div>
             <div className="order-1 lg:order-2">
-              <TituloSecao eyebrow="A Arini" titulo={texto(cfg, "sobre_titulo", "Quem está por trás do mapa")} />
+              <TituloSecao eyebrow="09 · A Arini" titulo={texto(cfg, "sobre_titulo", "Quem está por trás do mapa")} />
               <Reveal delay={0.15}>
                 <div className="mt-6 space-y-4 text-lg leading-relaxed text-texto-2">
                   {paragrafosSobre.map((p, i) => <p key={i}>{p}</p>)}
                 </div>
                 <div className="mt-9 flex flex-wrap gap-3">
-                  <Link href="/suporte" className="lp-btn lp-btn-verde">Falar com a Arini <ArrowRight /></Link>
+                  <Link href="/suporte" className={BTN_ACAO}>Falar com a Arini <ArrowRight /></Link>
                   {siteArini && (
                     <a href={siteArini} target="_blank" rel="noopener noreferrer" className="lp-btn lp-btn-contorno">
                       Site da imobiliária

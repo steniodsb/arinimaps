@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { CalendarDays, MapPin, Ruler, ShieldCheck } from "lucide-react";
 import Moldura from "@/components/shell/Moldura";
 import MiniMapa from "@/components/map/MiniMapa";
 import SecaoFontesOficiais from "@/components/map/SecaoFontesOficiais";
-import { BotaoLink, CabecalhoPagina, Conteudo, Estatistica } from "@/components/ui/Pagina";
+import { BotaoLink, CabecalhoPagina, Conteudo, PilulaPonto, Secao } from "@/components/ui/Pagina";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { carregarConsultaArea } from "@/lib/geo/consultaArea";
 import { formatArea } from "@/lib/format";
@@ -60,7 +59,7 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
     <Moldura usuario={consulta.usuario}>
       <CabecalhoPagina
         variante="faixa"
-        eyebrow="Consulta territorial"
+        eyebrow="01 · Consulta territorial"
         titulo={p.area_ha ? formatArea(Number(p.area_ha) * 10_000, "rural") : "Área rural"}
         destaque={p.municipio ? `em ${p.municipio}` : undefined}
         subtitulo="Cadastro Ambiental Rural · consulta de área"
@@ -70,26 +69,24 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
           <BotaoLink href={`/painel/novo?car=${encodeURIComponent(p.cod)}`} variante="ouro">Esta área é minha — anunciar</BotaoLink>
         )}
       >
-        <p className="text-xs text-texto-2 break-all">Código do CAR: <span className="font-mono">{p.cod}</span></p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <PilulaPonto>{situacao}</PilulaPonto>
+          <p className="text-xs text-texto-2 break-all">Código do CAR: <span className="font-mono">{p.cod}</span></p>
+        </div>
       </CabecalhoPagina>
 
       <Conteudo className="py-12 md:py-16 space-y-12 md:space-y-16">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <Estatistica icone={Ruler} valor={area} rotulo="Área declarada" />
-          <Estatistica icone={MapPin} valor={p.municipio ?? "—"} rotulo="Município" />
-          <Estatistica icone={ShieldCheck} valor={situacao} rotulo="Situação do cadastro" />
-          <Estatistica icone={CalendarDays} valor={atualizado} rotulo="Atualizado no SICAR" />
-        </div>
-
+        <Secao eyebrow="02 · Cadastro no mapa" titulo="Dados do cadastro">
         <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
           <MiniMapa geometry={car.geometry} status="publicado"
             className="h-80 lg:h-full lg:min-h-96 w-full rounded-[20px] overflow-hidden border border-linha" />
           <div className="cartao p-6 space-y-5">
-            <h2 className="lp-display text-xl text-texto">Dados do cadastro</h2>
-            <dl className="text-[0.95rem] divide-y divide-linha">
+            <p className="lp-display text-5xl leading-none text-verde">{area}</p>
+            <dl className="divide-y divide-linha border-y border-linha">
               {dados.map(([r, v]) => (
-                <div key={r} className="flex justify-between gap-4 py-3">
-                  <dt className="text-texto-2 shrink-0">{r}</dt><dd className="text-texto font-medium text-right">{v}</dd>
+                <div key={r} className="flex items-baseline justify-between gap-4 py-3">
+                  <dt className="shrink-0 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-texto-2">{r}</dt>
+                  <dd className="text-right text-[0.95rem] font-semibold text-texto">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -101,6 +98,7 @@ export default async function ConsultaCar({ params }: PageProps<"/consulta/car/[
             </p>
           </div>
         </div>
+        </Secao>
 
         {/* o código do CAR traz o município: UF-IBGE-... */}
         <IndicadoresMunicipio codIbge={Number(p.cod.match(/^[A-Z]{2}-(\d{7})-/)?.[1]) || null} />

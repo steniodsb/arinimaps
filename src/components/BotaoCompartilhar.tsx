@@ -12,7 +12,7 @@ export default function BotaoCompartilhar({ codigo, titulo }: { codigo: string; 
     <div className="flex gap-2.5">
       <button
         type="button"
-        className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-linha-forte bg-superficie py-3 text-sm font-bold text-texto transition hover:border-verde hover:text-verde"
+        className="flex flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-verde bg-transparent py-3 text-sm font-bold text-verde transition hover:bg-verde hover:text-fundo"
         onClick={async () => {
           const url = montarUrl();
           if (navigator.share) {
@@ -26,7 +26,7 @@ export default function BotaoCompartilhar({ codigo, titulo }: { codigo: string; 
       </button>
       <button
         type="button"
-        className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-[#25D366] py-3 text-sm font-bold text-white transition hover:brightness-95"
+        className="flex flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-verde bg-transparent py-3 text-sm font-bold text-verde transition hover:bg-verde hover:text-fundo"
         onClick={() => {
           const texto = `${titulo} — veja no mapa da Arini: ${montarUrl()}`;
           window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");

@@ -15,7 +15,8 @@
 import { useEffect, useRef } from "react";
 import type { GeoJSONSource, Map as MLMap, StyleSpecification } from "maplibre-gl";
 import { carregarMaplibre } from "@/lib/map/maplibre";
-import { SATELITE, STATUS_CORES } from "@/lib/map/config";
+import { SATELITE } from "@/lib/map/config";
+import { RADAR_ANEL, STATUS_MAPA } from "./statusMapa";
 import { CENAS } from "./cenasVitrine";
 
 type Props = {
@@ -48,8 +49,8 @@ const VAZIO: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: 
 /** Cor do imóvel pelo status (a `cor` já vem calculada do banco; `status` é o reserva). */
 const CORES_STATUS = [
   "match", ["coalesce", ["get", "cor"], ["get", "status"]],
-  ...Object.entries(STATUS_CORES).flat(),
-  STATUS_CORES.publicado,
+  ...Object.entries(STATUS_MAPA).flat(),
+  STATUS_MAPA.publicado,
 ];
 
 const linear = (t: number) => t;
@@ -196,16 +197,25 @@ export default function MapaVitrine({ onCena, onPronto, cena, ativo = true }: Pr
             filter: ["==", ["geometry-type"], "Point"],
             paint: {
               "circle-color": CORES_STATUS as never, "circle-radius": 4.5,
-              "circle-stroke-width": 1.5, "circle-stroke-color": "#0A2219",
+              "circle-stroke-width": 1.5, "circle-stroke-color": RADAR_ANEL,
             },
           },
           // de longe o polígono some; cada imóvel vira um marcador na cor do status
+          // radar do manual: anel Oliva em volta do ponto (sem tarjas em tamanho pequeno)
+          {
+            id: "imoveis-marcador-anel", type: "circle", source: "imoveis-centros", maxzoom: 12.5,
+            paint: {
+              "circle-color": "rgba(0,0,0,0)",
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 7, 12, 10] as never,
+              "circle-stroke-width": 1.5, "circle-stroke-color": RADAR_ANEL,
+            },
+          },
           {
             id: "imoveis-marcador", type: "circle", source: "imoveis-centros", maxzoom: 12.5,
             paint: {
               "circle-color": CORES_STATUS as never,
               "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 3.5, 12, 5] as never,
-              "circle-stroke-width": 1.5, "circle-stroke-color": "#FFFFFF",
+              "circle-stroke-width": 1.5, "circle-stroke-color": "#F2F2EC",
             },
           },
         ],

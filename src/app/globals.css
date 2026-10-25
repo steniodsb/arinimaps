@@ -61,7 +61,8 @@
 */
 :root[data-tema="claro"] {
   --fundo: #F2F2EC;
-  --superficie: #FAFAF6;
+  /* cartões brancos sobre o off-white, como as pranchas do manual */
+  --superficie: #FFFFFF;
   --superficie-2: #E9EAE1;
   --linha: #DADCD0;
   --linha-forte: #C2C7B6;
@@ -455,16 +456,71 @@ button:disabled,
   line-height: 0.96;
   letter-spacing: 0.01em;
 }
-/* linha acima do título: só texto, sem formato de botão */
+/* Rótulo de seção do manual ("03 · A MARCA"): fio dourado curto em cima,
+   caixa alta bem espaçada, na cor do texto. O fio é Dourado de verdade nos
+   dois temas (é grafismo, não texto). */
 .lp-eyebrow {
-  display: inline-block;
-  font-size: 0.875rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--ouro);
+  color: var(--texto-3);
 }
-.lp-escuro .lp-eyebrow { color: var(--ouro-claro); }
+.lp-eyebrow::before {
+  content: "";
+  width: 1.75rem;
+  height: 2px;
+  border-radius: 2px;
+  background: #D9BD6F;
+}
+.lp-escuro .lp-eyebrow { color: var(--ouro); }
+
+/* ---------- elementos gráficos do manual ---------- */
+
+/* Linhas de mapa (curvas de nível). Sobre claro: Verde Arini 25–50%; sobre o
+   Verde Profundo: Verde Mapa 45–85%. Aplicar no fundo da faixa/cartão. */
+.fundo-curvas {
+  background-image: url("/img/marca/curvas-nivel-claro.svg");
+  background-size: cover;
+  background-position: center;
+}
+.fundo-curvas-escuro {
+  background:
+    url("/img/marca/curvas-nivel.svg") center / cover no-repeat,
+    #0A2219;
+}
+
+/* fio dourado (separador curto, assinatura de e-mail, papel timbrado) */
+.fio-ouro { display: block; width: 2.5rem; height: 2px; border-radius: 2px; background: #D9BD6F; }
+
+/* Pílula com ponto dourado ("• Inteligência" na prancha 03) */
+.pilula-ponto {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, #D9BD6F 70%, transparent);
+  border-radius: 999px;
+  padding: 0.4rem 0.95rem;
+  font-size: 0.85rem; font-weight: 500;
+  color: var(--texto);
+}
+.pilula-ponto::before { content: ""; width: 0.4rem; height: 0.4rem; border-radius: 999px; background: #D9BD6F; }
+
+/* Item numerado com fio em cima (prancha 04: 01 / 02 / 03) */
+.item-numerado { border-top: 1px solid var(--linha-forte); padding-top: 1rem; }
+.item-numerado > .numero {
+  display: block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em;
+  color: var(--ouro); font-variant-numeric: tabular-nums;
+}
+
+/* Rodapé de prancha: "Arini · ..." à esquerda, versão à direita, fio em cima */
+.rodape-prancha {
+  display: flex; justify-content: space-between; gap: 1rem;
+  border-top: 1px solid var(--linha); padding-top: 0.9rem;
+  font-size: 0.7rem; color: var(--texto-2);
+}
 
 /* ---------- faixas ---------- */
 .lp-clara { background: var(--fundo); }

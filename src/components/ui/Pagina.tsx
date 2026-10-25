@@ -11,6 +11,40 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight } from "lucide-react";
+import MarcaArini from "@/components/marca/MarcaArini";
+
+/** Pílula com ponto dourado (prancha 03 do manual: "• Inteligência"). */
+export function PilulaPonto({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <span className={`pilula-ponto ${className}`}>{children}</span>;
+}
+
+/**
+ * Item numerado com fio em cima (prancha 04: 01 / 02 / 03). O título vai na
+ * fonte de título, em caixa alta; o texto em Quicksand.
+ */
+export function ItemNumerado({ numero, titulo, children, className = "" }: {
+  numero: number | string; titulo: React.ReactNode; children?: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={`item-numerado ${className}`}>
+      <span className="numero">{typeof numero === "number" ? String(numero).padStart(2, "0") : numero}</span>
+      <p className="lp-display mt-2 text-2xl text-texto">{titulo}</p>
+      {children && <div className="mt-2 text-sm leading-relaxed text-texto-2">{children}</div>}
+    </div>
+  );
+}
+
+/**
+ * Supergráfico (prancha 20): recorte do radar em grande escala. Colocar dentro
+ * de um bloco `relative overflow-hidden` escuro; o corte deixa o ponto central
+ * e pelo menos três das cinco tarjas à vista.
+ */
+export function Supergrafico({ className = "" }: { className?: string }) {
+  return (
+    <MarcaArini variante="radar" titulo=""
+      className={`pointer-events-none absolute -right-[12%] top-1/2 w-[70%] max-w-[640px] -translate-y-1/2 ${className}`} />
+  );
+}
 
 /** Largura e respiro padrão (o mesmo da landing: 1280 px, 20/32 px de lado). */
 export function Conteudo({ children, className = "", estreito = false }: {
@@ -63,9 +97,12 @@ export function CabecalhoPagina({
   if (variante === "simples") {
     return <header className="mb-8 md:mb-10">{corpo}</header>;
   }
+  // faixa = capa de prancha do manual: Verde Profundo, linhas de mapa e o
+  // radar no canto superior direito
   return (
     <header className="lp-escuro lp-malha-escura relative overflow-hidden">
-      <div className="lp-grade pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+      <MarcaArini variante="radar" titulo=""
+        className="pointer-events-none absolute right-5 top-5 hidden w-9 md:right-8 md:top-7 md:block" />
       <Conteudo className={`relative ${compacta ? "pt-9 pb-8 md:pt-11 md:pb-9" : "pt-16 pb-12 md:pt-20 md:pb-16"}`}>
         {corpo}
         {children && <div className={compacta ? "mt-6" : "mt-8"}>{children}</div>}
@@ -108,22 +145,28 @@ export function Cartao({ children, className = "", href, padding = "p-6" }: {
   return <div className={`cartao ${padding} ${className}`}>{children}</div>;
 }
 
-/** Número em destaque com ícone e borda de acento à esquerda (como "Soluções integradas" do site). */
+/**
+ * Número em destaque (manual: "números de destaque" na fonte de título). Fio
+ * dourado curto e rótulo em caixa alta espaçada, ícone num círculo à direita
+ * — o mesmo desenho dos indicadores da Central.
+ */
 export function Estatistica({ icone: Icone, valor, rotulo, href, urgente = false }: {
   icone?: LucideIcon; valor: React.ReactNode; rotulo: string; href?: string; urgente?: boolean;
 }) {
   const miolo = (
     <>
-      {Icone && (
-        <span className={`grid size-10 place-items-center rounded-xl ${urgente ? "bg-ouro/15 text-ouro" : "bg-verde/12 text-verde"}`}>
-          <Icone className="size-5" />
-        </span>
-      )}
-      <p className={`lp-display mt-4 text-3xl leading-none ${urgente ? "text-ouro" : "text-texto"}`}>{valor}</p>
-      <p className="mt-2 text-sm text-texto-2">{rotulo}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="lp-eyebrow !text-[0.68rem] !tracking-[0.2em]">{rotulo}</p>
+        {Icone && (
+          <span className={`grid size-9 shrink-0 place-items-center rounded-full ${urgente ? "bg-ouro/15 text-ouro" : "bg-verde/10 text-verde"}`}>
+            <Icone className="size-[18px]" />
+          </span>
+        )}
+      </div>
+      <p className={`lp-display mt-3 text-4xl leading-none ${urgente ? "text-ouro" : "text-texto"}`}>{valor}</p>
     </>
   );
-  const classe = `cartao block border-l-4 p-5 ${urgente ? "border-l-ouro" : "border-l-verde"}`;
+  const classe = `cartao block p-5 ${urgente ? "!border-ouro/60" : ""}`;
   return href
     ? <Link href={href} className={`${classe} cartao-link`}>{miolo}</Link>
     : <div className={classe}>{miolo}</div>;
@@ -153,7 +196,6 @@ const TONS = {
   alerta: "bg-alerta/14 text-alerta border-alerta/30",
   critico: "bg-critico/12 text-critico border-critico/30",
   neutro: "bg-superficie-2 text-texto-2 border-linha",
-  roxo: "bg-[#B18CFF]/14 text-[#B18CFF] border-[#B18CFF]/30",
 } as const;
 
 /** Etiqueta de status (substitui os `rounded-full px-2 …` soltos pelas telas). */
@@ -163,7 +205,7 @@ export function Etiqueta({ tom = "neutro", children, className = "", quebra = fa
   quebra?: boolean;
 }) {
   return (
-    <span className={`inline-flex max-w-full items-center gap-1 ${quebra ? "whitespace-normal" : "whitespace-nowrap"} rounded-md border px-2.5 py-1 text-xs font-semibold ${TONS[tom]} ${className}`}>
+    <span className={`inline-flex max-w-full items-center gap-1 ${quebra ? "whitespace-normal" : "whitespace-nowrap"} rounded-full border px-2.5 py-1 text-xs font-semibold ${TONS[tom]} ${className}`}>
       {children}
     </span>
   );

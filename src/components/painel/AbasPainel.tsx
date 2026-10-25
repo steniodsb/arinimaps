@@ -30,19 +30,19 @@ export default function AbasPainel() {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <nav aria-label="Área do cliente" className="border-b border-linha">
-      <div className="-mb-px flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <nav aria-label="Área do cliente">
+      <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {ABAS.map(({ href, rotulo, icone: Icone }) => {
           const ativo = href === ativa;
           return (
             <Link key={href} href={href} aria-current={ativo ? "page" : undefined}
               className={
-                "flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 py-3 text-[0.95rem] transition-colors " +
+                "flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-[0.92rem] transition-colors " +
                 (ativo
-                  ? "border-verde text-texto font-semibold"
-                  : "border-transparent text-texto-2 hover:text-texto hover:border-linha-forte")
+                  ? "border-[#F2F2EC] bg-[#F2F2EC] text-[#124431] font-semibold"
+                  : "border-linha-forte text-texto-3 hover:border-ouro hover:text-texto")
               }>
-              <Icone className={`size-[18px] ${ativo ? "text-verde" : ""}`} />
+              <Icone className="size-[17px]" />
               {rotulo}
             </Link>
           );

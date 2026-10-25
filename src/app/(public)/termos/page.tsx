@@ -32,10 +32,10 @@ export default async function Termos() {
             {docs.map((d) => (
               <Link key={d.id} href={`/termos/${d.id}`}
                 className="cartao cartao-link group flex flex-col p-6">
-                <span className="grid size-11 place-items-center rounded-xl bg-verde/12 text-verde">
+                <span className="grid size-11 place-items-center rounded-full bg-verde/12 text-verde">
                   <ScrollText className="size-5" />
                 </span>
-                <p className="mt-5 text-xs font-bold uppercase tracking-wider text-texto-2">{d.paraQuem}</p>
+                <p className="lp-eyebrow mt-5 !text-[0.68rem]">{d.paraQuem}</p>
                 <h2 className="lp-display mt-2 text-xl text-texto transition group-hover:text-verde">{d.titulo}</h2>
                 <p className="mt-2 flex-1 text-[15px] leading-relaxed text-texto-2">{d.resumo}</p>
                 <div className="mt-5 flex items-center justify-between gap-3 border-t border-linha pt-4">

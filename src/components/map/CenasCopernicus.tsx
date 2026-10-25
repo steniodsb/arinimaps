@@ -18,7 +18,7 @@ type Cena = { id: string; data: string; nuvem: number; satelite: string; quadric
 const hoje = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 const diasAtras = (n: number) => new Date(Date.now() - n * 86_400_000).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 const dataBr = (d: string) => d.split("-").reverse().join("/");
-const CAMPO = "w-full rounded-lg border border-linha-forte bg-superficie-2 px-2.5 py-2 text-sm text-texto focus:border-verde focus:outline-none";
+const CAMPO = "w-full rounded-xl border border-linha-forte bg-superficie-2 px-2.5 py-2 text-sm text-texto focus:border-verde focus:outline-none";
 
 /**
  * Cenas do Sentinel-2 pelo Copernicus Data Space (22/10/2026), dentro do
@@ -67,7 +67,7 @@ export default function CenasCopernicus({ mapa, selecionada, aoEscolher }: {
   return (
     <div className="space-y-3 border-t border-linha pt-3.5">
       <div className="flex items-center gap-2">
-        <Satellite className="size-4 text-verde" />
+        <Satellite className="size-4 text-ouro" />
         <p className="text-sm font-semibold text-texto">Cena do dia — Sentinel-2 (Copernicus)</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -93,10 +93,10 @@ export default function CenasCopernicus({ mapa, selecionada, aoEscolher }: {
           ? <p className="text-xs text-texto-2">Nenhuma passagem com até {nuvem}% de nuvem no período. Aumente a nuvem ou o período.</p>
           : (
             <>
-              <div className="flex rounded-lg border border-linha p-0.5 text-xs" role="group" aria-label="Como ver a cena">
+              <div className="flex rounded-full border border-linha p-0.5 text-xs" role="group" aria-label="Como ver a cena">
                 {(["cor", "ndvi"] as const).map((t) => (
                   <button key={t} onClick={() => { setTipo(t); if (atual) abrir(atual[1], t); }}
-                    className={"flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 " + (tipo === t ? "bg-verde/15 font-semibold text-verde" : "text-texto-2")}>
+                    className={"flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 " + (tipo === t ? "bg-verde/15 font-semibold text-verde" : "text-texto-2")}>
                     {t === "cor" ? <><CloudSun className="size-3.5" /> Cor real</> : <><Leaf className="size-3.5" /> Vegetação (NDVI)</>}
                   </button>
                 ))}

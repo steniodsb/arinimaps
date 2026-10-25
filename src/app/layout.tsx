@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     default: "Arini Imóveis Brasil — imóveis pelo mapa",
     template: "%s · Arini Imóveis Brasil",
   },
-  // barra do navegador no celular no Verde Profundo da marca
-  other: { "theme-color": "#0A2219" },
+  // barra do navegador no celular no Verde Arini, a cor principal da marca
+  other: { "theme-color": "#124431" },
   description:
     "Marketplace imobiliário regional: fazendas, sítios e imóveis urbanos direto no mapa, com intermediação da Arini Negócios Imobiliários.",
 };

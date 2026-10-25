@@ -11,6 +11,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, BadgeCheck, MapPinned, ShieldCheck } from "lucide-react";
 import { Logo } from "@/components/shell/AppShell";
+import MarcaArini from "@/components/marca/MarcaArini";
 import BotaoTema from "@/components/shell/BotaoTema";
 
 export type Beneficio = { icone: LucideIcon; titulo: string; texto: string };
@@ -40,19 +41,21 @@ export default function TelaDividida({
   children: React.ReactNode;
 }) {
   const marca = linkSite
-    ? <Link href="/" aria-label="Arini Imóveis Brasil — início"><Logo /></Link>
-    : <Logo />;
+    ? <Link href="/" aria-label="Arini Imóveis Brasil — início"><Logo negativa /></Link>
+    : <Logo negativa />;
 
   return (
     <div className="min-h-screen bg-fundo lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* ---------- faixa da marca ---------- */}
       <aside className="lp-escuro relative isolate overflow-hidden bg-[#0A2219]">
         <Image src="/img/aerea-campo.jpg" alt="" fill priority sizes="(min-width: 1024px) 50vw, 100vw"
-          className="-z-20 object-cover opacity-45" />
+          className="-z-20 object-cover opacity-35" />
         <div className="lp-malha-escura absolute inset-0 -z-10 opacity-85" aria-hidden />
         <div className="lp-grade pointer-events-none absolute inset-0 -z-10 opacity-60" aria-hidden />
 
-        <div className="flex h-full flex-col px-5 py-6 md:px-8 lg:min-h-screen lg:px-14 lg:py-12">
+        <div className="relative flex h-full flex-col px-5 py-6 md:px-8 lg:min-h-screen lg:px-14 lg:py-12">
+          <MarcaArini variante="radar" titulo=""
+            className="pointer-events-none absolute right-5 top-6 hidden w-9 lg:right-14 lg:top-12 lg:block" />
           <div className="flex items-center justify-between gap-3">
             {marca}
             <span className="lg:hidden"><BotaoTema compacto /></span>
@@ -61,20 +64,18 @@ export default function TelaDividida({
           <div className="hidden max-w-lg flex-1 flex-col justify-center py-12 lg:flex">
             <p className="lp-eyebrow">{eyebrow}</p>
             <h2 className="lp-display mt-4 text-balance text-[2.75rem] text-texto xl:text-[3.25rem]">
-              {titulo} <span className="text-verde">{destaque}</span>
+              {titulo} <span className="text-ouro">{destaque}</span>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-texto-2">{subtitulo}</p>
 
-            <ul className="mt-10 space-y-5">
-              {beneficios.map(({ icone: Icone, titulo: t, texto }) => (
-                <li key={t} className="flex gap-4">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-verde backdrop-blur">
-                    <Icone className="size-5" />
+            <ul className="mt-10 space-y-6">
+              {beneficios.map(({ icone: Icone, titulo: t, texto }, i) => (
+                <li key={t} className="item-numerado">
+                  <span className="numero flex items-center gap-2">
+                    {String(i + 1).padStart(2, "0")} <Icone className="size-3.5" aria-hidden />
                   </span>
-                  <span>
-                    <span className="lp-display block text-lg text-texto">{t}</span>
-                    <span className="mt-0.5 block text-[15px] leading-relaxed text-texto-2">{texto}</span>
-                  </span>
+                  <span className="lp-display mt-1.5 block text-2xl text-texto">{t}</span>
+                  <span className="mt-1 block text-[15px] leading-relaxed text-texto-2">{texto}</span>
                 </li>
               ))}
             </ul>

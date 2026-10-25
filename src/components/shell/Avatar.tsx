@@ -11,12 +11,12 @@ export default function Avatar({
     return (
       // eslint-disable-next-line @next/next/no-img-element -- foto pequena do Storage público, sem otimização
       <img src={url} alt={nome ? `Foto de ${nome}` : "Foto do perfil"} style={estilo} loading="lazy"
-        className={"shrink-0 rounded-full object-cover ring-2 ring-verde/25 bg-superficie-2 " + className} />
+        className={"shrink-0 rounded-full object-cover ring-1 ring-linha-forte bg-superficie-2 " + className} />
     );
   }
   return (
     <span aria-hidden style={{ ...estilo, fontSize: Math.max(10, Math.round(tamanho * 0.42)) }}
-      className={"shrink-0 rounded-full bg-verde/15 text-verde ring-2 ring-verde/20 grid place-items-center font-display font-bold " + className}>
+      className={"shrink-0 rounded-full bg-[#124431] text-[#F2F2EC] ring-1 ring-[#D9BD6F]/70 grid place-items-center font-display font-bold " + className}>
       {inicial}
     </span>
   );

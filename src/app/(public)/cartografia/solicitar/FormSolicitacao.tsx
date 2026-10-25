@@ -11,6 +11,7 @@ import {
   ARQUIVOS_ACEITOS, TIPO_SOLICITACAO_LABEL, TIPOS_SOLICITACAO, tamanhoLegivel, type TipoSolicitacao,
 } from "@/lib/cartografia/solicitacoes";
 import { plural } from "@/lib/format";
+import { BTN_ACAO } from "@/components/landing/Titulo";
 
 const DesenhoMapa = dynamic(() => import("@/components/map/DesenhoMapa"), { ssr: false });
 
@@ -148,7 +149,7 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
           </p>
         )}
         <div className="flex flex-wrap gap-3">
-          <Link href={`/painel/cartografia/${resultado.id}`} className="lp-btn lp-btn-verde !px-5 !py-3 text-[0.95rem]">Ver a solicitação <ArrowRight /></Link>
+          <Link href={`/painel/cartografia/${resultado.id}`} className={`${BTN_ACAO} !px-5 !py-3 text-[0.95rem]`}>Ver a solicitação <ArrowRight /></Link>
           <Link href="/painel/cartografia" className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">Minhas solicitações</Link>
           <Link href="/mapa" className="lp-btn lp-btn-contorno !px-5 !py-3 text-[0.95rem]">Voltar ao mapa</Link>
         </div>
@@ -249,7 +250,7 @@ export default function FormSolicitacao({ tipoInicial, centro, referencia, munic
         </div>
       )}
 
-      <button disabled={enviando} className="lp-btn lp-btn-verde disabled:opacity-60">
+      <button disabled={enviando} className={`${BTN_ACAO} disabled:opacity-60`}>
         {enviando ? "Enviando…" : <>Abrir solicitação <Send /></>}
       </button>
     </form>

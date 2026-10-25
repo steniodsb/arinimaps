@@ -332,12 +332,12 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         map.addSource("partes", { type: "geojson", data: d0.contornos });
         map.addLayer({
           id: "partes-fundo", type: "fill", source: "partes",
-          paint: { "fill-color": "#F08A24", "fill-opacity": ["case", ["get", "ativa"], 0.12, 0.04] as never },
+          paint: { "fill-color": "#D9BD6F", "fill-opacity": ["case", ["get", "ativa"], 0.12, 0.04] as never },
         });
         map.addLayer({
           id: "partes-linha", type: "line", source: "partes",
           paint: {
-            "line-color": "#F08A24",
+            "line-color": "#D9BD6F",
             "line-width": ["case", ["get", "ativa"], 2.5, 1.2] as never,
             "line-dasharray": [3, 2],
           },
@@ -356,7 +356,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         map.addLayer({
           id: "planta-parte", type: "line", source: "planta-parte",
           paint: {
-            "line-color": "#FFB35C",
+            "line-color": "#FFE299",
             "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1.2, 16, 2, 19, 3] as never,
             "line-opacity": 0.95,
           },
@@ -367,19 +367,19 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         map.addLayer({
           id: "desenho-linha", type: "line", source: "desenho",
           filter: ["==", ["geometry-type"], "LineString"],
-          paint: { "line-color": "#F08A24", "line-width": 2, "line-dasharray": [2, 1] },
+          paint: { "line-color": "#D9BD6F", "line-width": 2, "line-dasharray": [2, 1] },
         });
         map.addLayer({
           id: "desenho-pontos", type: "circle", source: "desenho",
           filter: ["==", ["geometry-type"], "Point"],
-          paint: { "circle-radius": 5, "circle-color": "#F08A24", "circle-stroke-width": 2, "circle-stroke-color": "#0B140F" },
+          paint: { "circle-radius": 5, "circle-color": "#D9BD6F", "circle-stroke-width": 2, "circle-stroke-color": "#0B140F" },
         });
 
         map.addSource("controle", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         map.addLayer({
           id: "controle-liga", type: "line", source: "controle",
           filter: ["==", ["get", "tipo"], "liga"],
-          paint: { "line-color": "#E0B341", "line-width": 1.5, "line-dasharray": [2, 2] },
+          paint: { "line-color": "#D9BD6F", "line-width": 1.5, "line-dasharray": [2, 2] },
         });
         map.addLayer({
           id: "controle-pontos", type: "circle", source: "controle",
@@ -933,7 +933,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
               {ajustes.map((a) => (
                 <button key={a.id} className={chip(ativa === a.id)} onClick={() => { selecionarParte(a.id); setModo("mover"); }}
                   title={`Mover só ${a.nome}`}>
-                  <span className="size-2 rounded-full bg-[#F08A24]" aria-hidden /> {a.nome}
+                  <span className="size-2 rounded-full bg-[#D9BD6F]" aria-hidden /> {a.nome}
                 </button>
               ))}
               {modo === "parte" && (

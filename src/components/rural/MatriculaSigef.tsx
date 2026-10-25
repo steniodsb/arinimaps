@@ -33,7 +33,7 @@ export default function MatriculaSigef({ cod, compacto = false }: { cod: string;
     return () => ctl.abort();
   }, [cod]);
 
-  const rotulo = <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-ouro">Matrícula do imóvel</p>;
+  const rotulo = <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-texto-2">Matrícula do imóvel</p>;
 
   if (estado === "carregando") {
     return (
@@ -70,8 +70,8 @@ export default function MatriculaSigef({ cod, compacto = false }: { cod: string;
       {rotulo}
       <ul className="space-y-2">
         {lista.slice(0, compacto ? 2 : 6).map((m, i) => (
-          <li key={i} className="rounded-xl border border-ouro/40 bg-ouro/10 px-3.5 py-2.5">
-            <p className="flex items-center gap-2 font-display text-lg font-bold text-texto tabular-nums">
+          <li key={i} className="rounded-2xl border border-[#D9BD6F]/70 px-3.5 py-2.5">
+            <p className="flex items-center gap-2 lp-display text-2xl text-texto tabular-nums">
               <FileText className="size-4 shrink-0 text-ouro" aria-hidden />
               {m.matriculas.length > 1 ? `Matrículas nº ${m.matriculas.join(", ")}` : `Matrícula nº ${m.matricula}`}
             </p>

@@ -98,23 +98,23 @@ export default function ComparaImagens({
             if (e.key === "ArrowLeft") setPos((p) => Math.max(2, p - 4));
             if (e.key === "ArrowRight") setPos((p) => Math.min(98, p + 4));
           }}
-          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-10 rounded-full bg-white text-[#0A2219] shadow-xl ring-4 ring-black/15 flex items-center justify-center cursor-ew-resize select-none focus:outline-none focus-visible:ring-verde">
+          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-10 rounded-full bg-white text-[#124431] shadow-xl ring-4 ring-[#D9BD6F]/50 flex items-center justify-center cursor-ew-resize select-none focus:outline-none focus-visible:ring-verde">
           <ChevronsLeftRight className="size-5" />
         </div>
       </div>
 
-      <span className="absolute bottom-40 lg:bottom-36 rounded-[10px] border border-linha-forte/70 bg-superficie/85 backdrop-blur-md px-2.5 py-1 text-[11px] font-semibold text-texto shadow-lg"
+      <span className="absolute bottom-40 lg:bottom-36 rounded-full border border-linha bg-superficie/95 backdrop-blur-md px-3 py-1 text-[11px] font-semibold text-texto shadow-lg"
         style={{ right: `calc(${100 - pos}% + 8px)` }}>
         Atual
       </span>
-      <span className="absolute bottom-40 lg:bottom-36 rounded-[10px] border border-linha-forte/70 bg-superficie/85 backdrop-blur-md px-2.5 py-1 text-[11px] font-semibold text-texto shadow-lg"
+      <span className="absolute bottom-40 lg:bottom-36 rounded-full border border-linha bg-superficie/95 backdrop-blur-md px-3 py-1 text-[11px] font-semibold text-texto shadow-lg"
         style={{ left: `calc(${pos}% + 8px)` }}>
         {imagem.rotulo}
       </span>
 
       <div className={`pointer-events-auto absolute top-16 right-14 px-4 py-3 text-xs max-w-64 space-y-1.5 ${VIDRO}`}>
         <div className="flex items-center justify-between gap-3">
-          <span className="font-display text-sm font-bold text-texto">Comparando com {imagem.ano}</span>
+          <span className="lp-display text-lg text-verde">Comparando com {imagem.ano}</span>
           <BotaoFechar onClick={onFechar} rotulo="Sair da comparação" />
         </div>
         <p

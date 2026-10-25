@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import type { Map as MLMap } from "maplibre-gl";
-import { ESTILO_BASE, STATUS_CORES } from "@/lib/map/config";
+import { ESTILO_BASE } from "@/lib/map/config";
+import { RADAR_ANEL, STATUS_MAPA } from "./statusMapa";
 import { carregarMaplibre } from "@/lib/map/maplibre";
 
 type Props = {
@@ -43,12 +44,17 @@ export default function MiniMapa({ geometry, status, className }: Props) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
       map.on("load", () => {
-        const cor = STATUS_CORES[status] ?? STATUS_CORES.publicado;
+        const cor = STATUS_MAPA[status] ?? STATUS_MAPA.publicado;
         map.addSource("imovel", { type: "geojson", data: { type: "Feature", geometry, properties: {} } });
         if (geometry.type === "Point") {
+          // radar do manual: ponto de status com anel Oliva em volta
+          map.addLayer({
+            id: "imovel-ponto-anel", type: "circle", source: "imovel",
+            paint: { "circle-color": "rgba(0,0,0,0)", "circle-radius": 17, "circle-stroke-width": 2, "circle-stroke-color": RADAR_ANEL },
+          });
           map.addLayer({
             id: "imovel-ponto", type: "circle", source: "imovel",
-            paint: { "circle-color": cor, "circle-radius": 9, "circle-stroke-width": 2.5, "circle-stroke-color": "#fff" },
+            paint: { "circle-color": cor, "circle-radius": 9, "circle-stroke-width": 2.5, "circle-stroke-color": "#F2F2EC" },
           });
           map.jumpTo({ center: geometry.coordinates as [number, number], zoom: 16 });
         } else {

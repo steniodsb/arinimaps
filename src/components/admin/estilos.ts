@@ -11,8 +11,8 @@ export const TABELA_CAIXA = "cartao overflow-x-auto";
 // palavra por linha (Mensalidades e Comissões ficavam ilegíveis em 390 px)
 export const TABELA = "w-full min-w-[640px] text-[0.92rem]";
 /** Linha de cabeçalho: caixa alta pequena, espaçada. */
-export const THEAD = "border-b border-linha bg-superficie-2/60 text-left";
-export const TH = "px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-texto-2 whitespace-nowrap";
+export const THEAD = "border-b border-linha-forte bg-fundo/60 text-left";
+export const TH = "px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-texto-2 whitespace-nowrap";
 export const TR = "transition-colors hover:bg-superficie-2/70";
 export const TD = "px-4 py-3.5 align-middle";
 export const TBODY = "divide-y divide-linha";
@@ -26,8 +26,8 @@ export const LISTA_VAZIA = "px-5 py-10 text-center text-[0.95rem] text-texto-2";
 export const CODIGO = "font-mono text-xs text-texto-2 tabular-nums";
 
 /** Abas de filtro (link): base + estado. */
-export const ABA = "inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors";
-export const ABA_ATIVA = "border-verde bg-verde/12 text-verde";
+export const ABA = "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors";
+export const ABA_ATIVA = "border-verde bg-verde text-fundo";
 export const ABA_INATIVA = "border-linha bg-superficie text-texto-2 hover:border-linha-forte hover:text-texto";
 export const aba = (ativa: boolean) => `${ABA} ${ativa ? ABA_ATIVA : ABA_INATIVA}`;
 
@@ -36,5 +36,5 @@ export const LINK_ACAO = "inline-flex items-center gap-1.5 text-sm font-semibold
 
 /** Campo compacto (filtros e edição em linha, onde CAMPO seria grande demais). */
 export const CAMPO_COMPACTO =
-  "rounded-lg border border-linha-forte bg-superficie-2 px-3 py-2 text-sm text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30";
+  "rounded-xl border border-linha-forte bg-superficie-2 px-3 py-2 text-sm text-texto placeholder:text-texto-2/70 transition focus:border-verde focus:outline-none focus:ring-2 focus:ring-verde/30";
 

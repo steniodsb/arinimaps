@@ -58,7 +58,7 @@ export default function MiniMapa({ geometry, status, className }: Props) {
           });
           map.addLayer({
             id: "imovel-linha", type: "line", source: "imovel",
-            paint: { "line-color": "#C9A14E", "line-width": 3 },
+            paint: { "line-color": "#D9BD6F", "line-width": 3 },
           });
           const coords: [number, number][] = [];
           const walk = (c: unknown): void => {

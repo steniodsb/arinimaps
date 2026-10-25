@@ -1,6 +1,6 @@
 /**
  * Kit de página do sistema (redesign de 08/10/2026), com a cara da página
- * inicial: títulos grandes em Urbanist, linha de topo em texto (nunca em
+ * inicial: títulos grandes na fonte de título do manual, linha de topo em texto (nunca em
  * formato de botão), espaçamento generoso, cartões com canto de 20 px e
  * faixa escura em malha para o topo das páginas públicas.
  *

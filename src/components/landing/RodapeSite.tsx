@@ -31,13 +31,13 @@ export function PreRodape({ contato }: { contato: Contato }) {
             <p className="lp-display text-2xl md:text-3xl">Central Arini</p>
           )}
           <p className="text-center text-lg font-semibold md:text-left">Fale com a central: atendimento humano, sem robô.</p>
-          <Link href="/suporte" className="lp-btn bg-[#07130E] text-white hover:bg-black">
+          <Link href="/suporte" className="lp-btn bg-[#0A2219] text-white hover:bg-black">
             Falar com a Arini <ArrowRight />
           </Link>
         </div>
       </div>
 
-      <div className="relative isolate overflow-hidden bg-[#07130E] py-24">
+      <div className="relative isolate overflow-hidden bg-[#0A2219] py-24">
         <Parallax className="!absolute inset-0 -z-10" strength={80}>
           <Image src="/img/aerea-campo.jpg" alt="" fill sizes="100vw" className="object-cover opacity-30" />
         </Parallax>
@@ -46,7 +46,7 @@ export function PreRodape({ contato }: { contato: Contato }) {
           <Reveal>
             <p className="lp-eyebrow">Para proprietários e corretores</p>
             <h2 className="lp-display mt-3 text-4xl text-white md:text-5xl">
-              Tem um imóvel na região? <span className="text-[#5FE09A]">Coloque ele no mapa.</span>
+              Tem um imóvel na região? <span className="text-[#FFE299]">Coloque ele no mapa.</span>
             </h2>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/painel/novo" className="lp-btn lp-btn-verde">Anunciar imóvel <ArrowRight /></Link>
@@ -56,7 +56,7 @@ export function PreRodape({ contato }: { contato: Contato }) {
           <Stagger className="grid gap-10 md:grid-cols-3" gap={0.12}>
             {recursos.map((r) => (
               <div key={r.titulo}>
-                <span className="grid size-14 place-items-center rounded-xl bg-[#3FCF7F]/15 text-[#3FCF7F] ring-1 ring-[#3FCF7F]/30">
+                <span className="grid size-14 place-items-center rounded-xl bg-[#6FB08F]/15 text-[#6FB08F] ring-1 ring-[#6FB08F]/30">
                   <r.icone className="size-7" strokeWidth={1.7} />
                 </span>
                 <h3 className="lp-display mt-5 text-2xl text-white">{r.titulo}</h3>
@@ -116,21 +116,21 @@ export default function RodapeSite({ marca, contato }: { marca: string; contato:
             {contato.whatsapp && (
               <li>
                 <a href={wa(contato.whatsapp)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 transition hover:text-white">
-                  <MessageCircle className="size-5 text-[#3FCF7F]" /> {formatarTelefone(contato.whatsapp)}
+                  <MessageCircle className="size-5 text-[#6FB08F]" /> {formatarTelefone(contato.whatsapp)}
                 </a>
               </li>
             )}
             {contato.telefone && (
-              <li className="flex items-center gap-3"><Phone className="size-5 text-[#3FCF7F]" /> {contato.telefone}</li>
+              <li className="flex items-center gap-3"><Phone className="size-5 text-[#6FB08F]" /> {contato.telefone}</li>
             )}
             {contato.email && (
               <li>
                 <a href={`mailto:${contato.email}`} className="flex items-center gap-3 transition hover:text-white">
-                  <Mail className="size-5 text-[#3FCF7F]" /> {contato.email}
+                  <Mail className="size-5 text-[#6FB08F]" /> {contato.email}
                 </a>
               </li>
             )}
-            <li className="flex items-center gap-3"><BadgeCheck className="size-5 text-[#3FCF7F]" /> Iturama · MG</li>
+            <li className="flex items-center gap-3"><BadgeCheck className="size-5 text-[#6FB08F]" /> Iturama · MG</li>
           </ul>
         </div>
 
@@ -140,7 +140,7 @@ export default function RodapeSite({ marca, contato }: { marca: string; contato:
             <ul className="space-y-3 text-base">
               {c.links.map((l) => (
                 <li key={l.rotulo}>
-                  <Link href={l.href} className="group inline-flex items-center gap-1.5 transition hover:text-[#5FE09A]">
+                  <Link href={l.href} className="group inline-flex items-center gap-1.5 transition hover:text-[#FFE299]">
                     {l.rotulo}
                     <ArrowUpRight className="size-4 opacity-0 transition group-hover:opacity-100" />
                   </Link>
@@ -148,7 +148,7 @@ export default function RodapeSite({ marca, contato }: { marca: string; contato:
               ))}
               {c.titulo === "Institucional" && contato.site && (
                 <li>
-                  <a href={contato.site} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-1.5 transition hover:text-[#5FE09A]">
+                  <a href={contato.site} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-1.5 transition hover:text-[#FFE299]">
                     Site da imobiliária <ArrowUpRight className="size-4" />
                   </a>
                 </li>

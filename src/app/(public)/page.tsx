@@ -25,7 +25,7 @@ import { formatBRL, formatArea } from "@/lib/format";
  * sidebar do AppShell existe. Aqui não há sidebar.
  *
  * Visual no molde do site de referência (grupocordeiro): carrossel de tela
- * cheia, faixas claras e escuras alternadas, títulos grandes em Urbanist,
+ * cheia, faixas claras e escuras alternadas, títulos grandes na fonte de título do manual,
  * entradas ao rolar. Faixas escuras usam `.lp-escuro` (ver globals.css) e
  * ficam legíveis nos dois temas.
  */
@@ -216,7 +216,7 @@ export default async function Home() {
 
         {/* ---------- faixa de números ---------- */}
         {faixa.length > 0 && (
-          <section aria-label="A Arini em números" className="lp-escuro border-t border-white/10 bg-[#07130E]">
+          <section aria-label="A Arini em números" className="lp-escuro border-t border-white/10 bg-[#0A2219]">
             <div className="lp-container grid grid-cols-2 lg:grid-cols-4">
               {faixa.map((f, k) => (
                 <div
@@ -225,7 +225,7 @@ export default async function Home() {
                     k % 2 ? "border-l border-white/10 pl-5" : "pr-4"
                   } ${k > 1 ? "border-t border-white/10 lg:border-t-0" : ""} ${k ? "lg:border-l lg:pl-7" : "lg:pl-0"}`}
                 >
-                  <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-[#3FCF7F]/15 text-[#3FCF7F] ring-1 ring-[#3FCF7F]/25">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-[#6FB08F]/15 text-[#6FB08F] ring-1 ring-[#6FB08F]/25">
                     <f.icone className="size-6" strokeWidth={1.8} />
                   </span>
                   <div className="min-w-0">

@@ -118,7 +118,7 @@ const CATEGORIA_NOME: Record<string, string> = {
 /* Marcador da etiqueta do tour: ponto colorido por categoria, em vez de emoji
    (que muda de desenho em cada sistema e sai diferente no vídeo gravado). */
 const CATEGORIA_COR: Record<string, string> = {
-  combustivel: "#E4C77E", farmacia: "#5FE09A", supermercado: "#7CC4FF", hospital: "#FF8A80",
+  combustivel: "#FFE299", farmacia: "#FFE299", supermercado: "#7CC4FF", hospital: "#FF8A80",
   escola: "#B18CFF", centro: "#FFFFFF", acesso_rodovia: "#FFB74D",
 };
 const ponto = (cor: string) =>
@@ -174,10 +174,10 @@ export default function Tour3D(dados: TourData) {
       map.on("load", async () => {
         map.addSource("imovel", { type: "geojson", data: { type: "Feature", geometry: dados.geometry, properties: {} } });
         if (dados.geometry.type !== "Point") {
-          map.addLayer({ id: "imovel-fill", type: "fill", source: "imovel", paint: { "fill-color": "#C9A14E", "fill-opacity": 0.22 } });
-          map.addLayer({ id: "imovel-linha", type: "line", source: "imovel", paint: { "line-color": "#C9A14E", "line-width": 3.5 } });
+          map.addLayer({ id: "imovel-fill", type: "fill", source: "imovel", paint: { "fill-color": "#D9BD6F", "fill-opacity": 0.22 } });
+          map.addLayer({ id: "imovel-linha", type: "line", source: "imovel", paint: { "line-color": "#D9BD6F", "line-width": 3.5 } });
         } else {
-          map.addLayer({ id: "imovel-ponto", type: "circle", source: "imovel", paint: { "circle-color": "#C9A14E", "circle-radius": 10, "circle-stroke-color": "#fff", "circle-stroke-width": 3 } });
+          map.addLayer({ id: "imovel-ponto", type: "circle", source: "imovel", paint: { "circle-color": "#D9BD6F", "circle-radius": 10, "circle-stroke-color": "#fff", "circle-stroke-width": 3 } });
         }
 
         if (dados.pois.length) {

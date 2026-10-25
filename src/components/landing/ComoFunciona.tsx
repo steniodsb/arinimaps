@@ -40,11 +40,11 @@ export default function ComoFunciona() {
       <div aria-hidden="true" className="absolute left-[22px] top-0 h-full w-[3px] rounded bg-white/12 lg:left-0 lg:top-[22px] lg:h-[3px] lg:w-full">
         <motion.div
           style={reduce ? undefined : { scaleY: escala }}
-          className="h-full w-full origin-top rounded bg-[#3FCF7F] lg:hidden"
+          className="h-full w-full origin-top rounded bg-[#6FB08F] lg:hidden"
         />
         <motion.div
           style={reduce ? undefined : { scaleX: escala }}
-          className="hidden h-full w-full origin-left rounded bg-[#3FCF7F] lg:block"
+          className="hidden h-full w-full origin-left rounded bg-[#6FB08F] lg:block"
         />
       </div>
 
@@ -62,12 +62,12 @@ export default function ComoFunciona() {
             >
               <span
                 className={`absolute left-0 top-0 grid size-[47px] place-items-center rounded-full border-2 transition-colors duration-500 lg:relative ${
-                  on ? "border-[#3FCF7F] bg-[#3FCF7F] text-[#0A1F14]" : "border-white/25 bg-[#0C2419] text-white/70"
+                  on ? "border-[#6FB08F] bg-[#6FB08F] text-[#124431]" : "border-white/25 bg-[#0A2219] text-white/70"
                 }`}
               >
                 <p.icone className="size-5" strokeWidth={1.9} />
               </span>
-              <p className="lp-display mt-0 text-sm tracking-[0.18em] text-[#E4C77E] lg:mt-6">PASSO {k + 1}</p>
+              <p className="lp-display mt-0 text-sm tracking-[0.18em] text-[#FFE299] lg:mt-6">PASSO {k + 1}</p>
               <h3 className="lp-display mt-2 text-2xl text-white">{p.titulo}</h3>
               <p className="mt-3 text-[17px] leading-relaxed text-white/80">{p.texto}</p>
             </motion.li>

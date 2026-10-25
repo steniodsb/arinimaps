@@ -155,7 +155,7 @@ export default function AdminShell({
                       <Icone className="size-[18px] shrink-0" />
                       <span className="truncate">{i.rotulo}</span>
                       {!!selo[i.href] && (
-                        <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-ouro text-[#06140D] text-[10px] font-bold grid place-items-center tabular-nums"
+                        <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-ouro text-fundo text-[10px] font-bold grid place-items-center tabular-nums"
                           title="Chamados com mensagem nova do cliente">
                           {selo[i.href] > 99 ? "99+" : selo[i.href]}
                         </span>

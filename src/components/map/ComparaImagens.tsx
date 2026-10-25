@@ -47,7 +47,7 @@ export default function ComparaImagens({
           version: 8,
           sources: { historico: imagem.fonte },
           layers: [
-            { id: "fundo", type: "background", paint: { "background-color": "#0A1310" } },
+            { id: "fundo", type: "background", paint: { "background-color": "#0A2219" } },
             { id: "historico", type: "raster", source: "historico" },
           ],
         },
@@ -98,7 +98,7 @@ export default function ComparaImagens({
             if (e.key === "ArrowLeft") setPos((p) => Math.max(2, p - 4));
             if (e.key === "ArrowRight") setPos((p) => Math.min(98, p + 4));
           }}
-          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-10 rounded-full bg-white text-[#0A1310] shadow-xl ring-4 ring-black/15 flex items-center justify-center cursor-ew-resize select-none focus:outline-none focus-visible:ring-verde">
+          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-10 rounded-full bg-white text-[#0A2219] shadow-xl ring-4 ring-black/15 flex items-center justify-center cursor-ew-resize select-none focus:outline-none focus-visible:ring-verde">
           <ChevronsLeftRight className="size-5" />
         </div>
       </div>

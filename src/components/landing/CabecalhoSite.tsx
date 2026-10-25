@@ -85,17 +85,17 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
           initial={false}
           animate={{ height: rolou ? 0 : 40 }}
           transition={{ duration: 0.3 }}
-          className={`hidden overflow-hidden text-sm md:block ${transparente ? "bg-black/35 text-white/85" : "lp-escuro bg-[#07130E] text-white/85"}`}
+          className={`hidden overflow-hidden text-sm md:block ${transparente ? "bg-black/35 text-white/85" : "lp-escuro bg-[#0A2219] text-white/85"}`}
         >
           <div className="lp-container flex h-10 items-center gap-6">
             {wa && (
               <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition hover:text-white">
-                <MessageCircle className="size-4 text-[#3FCF7F]" /> WhatsApp da central · {formatarTelefone(whatsapp!)}
+                <MessageCircle className="size-4 text-[#6FB08F]" /> WhatsApp da central · {formatarTelefone(whatsapp!)}
               </a>
             )}
             {email && (
               <a href={`mailto:${email}`} className="flex items-center gap-2 transition hover:text-white">
-                <Mail className="size-4 text-[#3FCF7F]" /> {email}
+                <Mail className="size-4 text-[#6FB08F]" /> {email}
               </a>
             )}
             <span className="ml-auto text-white/60">Pontal do Triângulo Mineiro</span>
@@ -113,7 +113,7 @@ export default function CabecalhoSite({ sobreHero = false, whatsapp, email, usua
       >
         <div className="lp-container flex h-16 items-center gap-4 lg:h-20">
           <Link href="/" onClick={fechar} aria-label="Arini Imóveis Brasil — início" className="shrink-0">
-            <Logo />
+            <Logo negativa={transparente} />
           </Link>
 
           <nav aria-label="Principal" className="ml-auto hidden lg:block">

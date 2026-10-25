@@ -31,7 +31,7 @@ export default function MosaicoSatelite({ lng, lat, z = 13, className = "", alt 
     tiles.push({ k: `${i}-${j}`, src: urlTileAtivo(z, x0 + i, y0 + j) });
   }
   return (
-    <div className={`absolute inset-0 overflow-hidden bg-[#0E2C1E] ${className}`} role={alt ? "img" : undefined} aria-label={alt || undefined}>
+    <div className={`absolute inset-0 overflow-hidden bg-[#124431] ${className}`} role={alt ? "img" : undefined} aria-label={alt || undefined}>
       <div
         className="absolute left-1/2 top-1/2 grid aspect-square w-[150%] grid-cols-3"
         style={{ transform: `translate(calc(-50% + ${dx.toFixed(2)}%), calc(-50% + ${dy.toFixed(2)}%))` }}

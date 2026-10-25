@@ -102,12 +102,12 @@ export default function DesenhoMapa({ onChange, inicial }: Props) {
         map.addLayer({
           id: "desenho-linha", type: "line", source: "desenho",
           filter: ["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "LineString"]],
-          paint: { "line-color": "#C9A14E", "line-width": 2.5 },
+          paint: { "line-color": "#D9BD6F", "line-width": 2.5 },
         });
         map.addLayer({
           id: "desenho-vertices", type: "circle", source: "desenho",
           filter: ["==", ["geometry-type"], "Point"],
-          paint: { "circle-color": "#fff", "circle-radius": 4.5, "circle-stroke-color": "#C9A14E", "circle-stroke-width": 2 },
+          paint: { "circle-color": "#fff", "circle-radius": 4.5, "circle-stroke-color": "#D9BD6F", "circle-stroke-width": 2 },
         });
         setPronto(true);
       });

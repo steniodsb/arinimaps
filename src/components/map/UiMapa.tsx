@@ -154,7 +154,7 @@ export function Legenda({ extras = [] }: { extras?: { cor: string; nome: string;
         Imóvel rural (CAR)
       </p>
       <p className="flex items-center gap-2 text-texto-3">
-        <span className="inline-block w-3.5 h-0.5 rounded-full" style={{ background: "#FFE9A8" }} />
+        <span className="inline-block w-3.5 h-0.5 rounded-full" style={{ background: "#FFE299" }} />
         Lote urbano
       </p>
       {extras.map((c) => (

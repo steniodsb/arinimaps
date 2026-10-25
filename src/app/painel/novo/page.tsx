@@ -284,7 +284,7 @@ export default function NovoImovel() {
               className={"flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors " +
                 (e.pronto ? "border-verde/40 bg-verde/8 text-texto" : "border-linha text-texto-2 hover:border-linha-forte hover:text-texto")}>
               <span className={"grid size-6 place-items-center rounded-full text-xs font-bold " +
-                (e.pronto ? "bg-verde text-[#0A1F14]" : "bg-superficie-2 text-texto-2")}>
+                (e.pronto ? "bg-verde text-fundo" : "bg-superficie-2 text-texto-2")}>
                 {e.pronto ? <Check className="size-3.5" /> : i + 1}
               </span>
               {e.rotulo}

@@ -23,7 +23,7 @@ export default async function NaoEncontrada() {
         <div className="lp-container relative py-24 md:py-32">
           <p className="lp-eyebrow">Erro 404</p>
           <h1 className="lp-display mt-3 max-w-3xl text-4xl text-white md:text-6xl">
-            Esta página saiu do <span className="text-[#5FE09A]">mapa</span>
+            Esta página saiu do <span className="text-[#FFE299]">mapa</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-white/80 md:text-xl">
             O endereço pode ter mudado ou o anúncio não está mais publicado. Procure pelo mapa ou pela

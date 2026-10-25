@@ -2,7 +2,7 @@ import type { StyleSpecification, RasterSourceSpecification } from "maplibre-gl"
 
 /** Cores por status no mapa (legenda fixa). */
 export const STATUS_CORES: Record<string, string> = {
-  publicado: "#3FCF7F",
+  publicado: "#6FB08F",
   em_negociacao: "#E0B341",
   vendido: "#7E9187",
   // imóvel de leilão disponível: cor própria no mapa, na legenda e no filtro

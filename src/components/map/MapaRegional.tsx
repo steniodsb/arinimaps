@@ -180,7 +180,7 @@ function CartaoCar({ car, onFechar, oficiais = [] }: { car: CarProps; onFechar: 
 }
 
 const CARTO_CORES = {
-  satelite: { linha: "#FFE9A8", contorno: "#1A1204" },
+  satelite: { linha: "#FFE299", contorno: "#1A1204" },
   ruas: { linha: "#8FB3A1", contorno: "#05100C" },
 } as const;
 
@@ -637,7 +637,7 @@ export default function MapaRegional({
         map.addSource("municipios", { type: "geojson", data: municipios });
         map.addLayer({
           id: "municipios-linha", type: "line", source: "municipios",
-          paint: { "line-color": "#3FCF7F", "line-width": 1.2, "line-opacity": 0.35, "line-dasharray": [3, 2] },
+          paint: { "line-color": "#6FB08F", "line-width": 1.2, "line-opacity": 0.35, "line-dasharray": [3, 2] },
         });
 
         // Lotes urbanos clicáveis (pedido do Carlos, 01/10/2026). O preenchimento
@@ -651,7 +651,7 @@ export default function MapaRegional({
         map.addLayer({
           id: "lotes-fill", type: "fill", source: "lotes", "source-layer": "lotes", minzoom: LOTE_ZOOM_MIN,
           paint: {
-            "fill-color": "#FFE9A8",
+            "fill-color": "#FFE299",
             "fill-opacity": ["case", ["boolean", ["feature-state", "sel"], false], 0.42,
               ["boolean", ["feature-state", "hover"], false], 0.25, 0.01] as never,
           },
@@ -659,7 +659,7 @@ export default function MapaRegional({
         map.addLayer({
           id: "lotes-borda", type: "line", source: "lotes", "source-layer": "lotes", minzoom: LOTE_ZOOM_MIN,
           paint: {
-            "line-color": ["case", ["boolean", ["feature-state", "sel"], false], "#FFD45E", CARTO_CORES[baseRef.current].linha] as never,
+            "line-color": ["case", ["boolean", ["feature-state", "sel"], false], "#D9BD6F", CARTO_CORES[baseRef.current].linha] as never,
             // o zoom só pode ser a entrada do interpolate mais externo; o estado
             // (clicado / sob o cursor) entra dentro de cada parada
             "line-width": ["interpolate", ["linear"], ["zoom"],
@@ -704,7 +704,7 @@ export default function MapaRegional({
             "text-size": ["interpolate", ["linear"], ["zoom"], 18, 12, 20, 16],
             "text-padding": 2,
           },
-          paint: { "text-color": "#FFD45E", "text-halo-color": "rgba(10,19,16,0.92)", "text-halo-width": 1.6 },
+          paint: { "text-color": "#D9BD6F", "text-halo-color": "rgba(10,34,25,0.92)", "text-halo-width": 1.6 },
         });
 
         // malha do CAR: abaixo dos anúncios (quem está à venda fica por cima).
@@ -761,7 +761,7 @@ export default function MapaRegional({
             "circle-color": CORES_MATCH as never,
             "circle-radius": ["case", ["boolean", ["feature-state", "hover"], false], 7, 5] as never,
             "circle-stroke-width": 1.5,
-            "circle-stroke-color": "#0A1310",
+            "circle-stroke-color": "#0A2219",
           },
         });
 
@@ -820,7 +820,7 @@ export default function MapaRegional({
             .setHTML(
               `<div style="padding:10px 12px;font-family:inherit">
                  <p style="font-weight:600;font-size:13px;color:#E9F1EB;margin:0">${escaparHtml(p.titulo)}</p>
-                 <p style="font-size:12px;color:#3FCF7F;font-weight:600;margin:2px 0 0">${escaparHtml(formatBRL(p.valor))}</p>
+                 <p style="font-size:12px;color:#6FB08F;font-weight:600;margin:2px 0 0">${escaparHtml(formatBRL(p.valor))}</p>
                </div>`
             )
             .addTo(map);
@@ -958,7 +958,7 @@ export default function MapaRegional({
     const cores = CARTO_CORES[base];
     if (map.getLayer("lotes-borda")) {
       map.setPaintProperty("lotes-borda", "line-color",
-        ["case", ["boolean", ["feature-state", "sel"], false], "#FFD45E", cores.linha]);
+        ["case", ["boolean", ["feature-state", "sel"], false], "#D9BD6F", cores.linha]);
       map.setPaintProperty("lotes-contorno", "line-color", cores.contorno);
       map.setPaintProperty("lotes-medidas", "text-color", base === "satelite" ? "#FFFFFF" : cores.linha);
     }
@@ -1304,11 +1304,11 @@ export default function MapaRegional({
                 map.addLayer({
                   id: "kml-fill", type: "fill", source: "kml-importado",
                   filter: ["==", ["geometry-type"], "Polygon"],
-                  paint: { "fill-color": "#C9A14E", "fill-opacity": 0.2 },
+                  paint: { "fill-color": "#D9BD6F", "fill-opacity": 0.2 },
                 });
                 map.addLayer({
                   id: "kml-linha", type: "line", source: "kml-importado",
-                  paint: { "line-color": "#E4C77E", "line-width": 2.5 },
+                  paint: { "line-color": "#FFE299", "line-width": 2.5 },
                 });
               }
 

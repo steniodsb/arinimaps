@@ -69,17 +69,17 @@ export default function Ferramentas({
       mapa.addLayer({
         id: "medicao-area", type: "fill", source: "medicao",
         filter: ["==", ["geometry-type"], "Polygon"],
-        paint: { "fill-color": "#3FCF7F", "fill-opacity": 0.22 },
+        paint: { "fill-color": "#6FB08F", "fill-opacity": 0.22 },
       });
       mapa.addLayer({
         id: "medicao-linha", type: "line", source: "medicao",
         filter: ["!=", ["geometry-type"], "Point"],
-        paint: { "line-color": "#3FCF7F", "line-width": 2.5, "line-dasharray": [2, 1] },
+        paint: { "line-color": "#6FB08F", "line-width": 2.5, "line-dasharray": [2, 1] },
       });
       mapa.addLayer({
         id: "medicao-pontos", type: "circle", source: "medicao",
         filter: ["==", ["geometry-type"], "Point"],
-        paint: { "circle-color": "#0A1310", "circle-radius": 4.5, "circle-stroke-color": "#3FCF7F", "circle-stroke-width": 2 },
+        paint: { "circle-color": "#0A2219", "circle-radius": 4.5, "circle-stroke-color": "#6FB08F", "circle-stroke-width": 2 },
       });
     } else {
       for (const id of CAMADAS_MEDICAO) if (mapa.getLayer(id)) mapa.moveLayer(id);

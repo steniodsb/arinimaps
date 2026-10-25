@@ -119,7 +119,7 @@ export default function VitrineConsultas({ consultas }: Props) {
         {/* a faixa é sempre escura: o fundo dela é o satélite, em qualquer tema */}
         <div
           ref={faixaRef}
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0A1310] text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]"
+          className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0A2219] text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]"
         >
           {/* ---------- mapa (bloco de 260px no celular; fundo inteiro no desktop) ---------- */}
           <div className="relative h-[260px] lg:absolute lg:inset-0 lg:h-auto">
@@ -135,7 +135,7 @@ export default function VitrineConsultas({ consultas }: Props) {
             />
 
             {/* escurece para o texto ler: de baixo no celular, da esquerda no desktop */}
-            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#0A1310]/90 via-[#0A1310]/25 to-transparent lg:bg-gradient-to-r lg:from-[#0A1310]/95 lg:via-[#0A1310]/55 lg:to-[#0A1310]/15" />
+            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#0A2219]/90 via-[#0A2219]/25 to-transparent lg:bg-gradient-to-r lg:from-[#0A2219]/95 lg:via-[#0A2219]/55 lg:to-[#0A2219]/15" />
 
             {/* legenda da cena */}
             <div className="pointer-events-none absolute bottom-4 left-4 z-20 flex items-center gap-3 sm:left-6 lg:bottom-6 lg:left-10">
@@ -144,8 +144,8 @@ export default function VitrineConsultas({ consultas }: Props) {
                 className="vitrine-legenda inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-1.5 text-xs text-white backdrop-blur"
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3FCF7F] opacity-70" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3FCF7F]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6FB08F] opacity-70" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#6FB08F]" />
                 </span>
                 {legenda}
               </div>
@@ -155,7 +155,7 @@ export default function VitrineConsultas({ consultas }: Props) {
                     key={c.id}
                     className={
                       "h-1.5 rounded-full transition-all duration-500 " +
-                      (i === cena ? "w-5 bg-[#3FCF7F]" : "w-1.5 bg-white/40")
+                      (i === cena ? "w-5 bg-[#6FB08F]" : "w-1.5 bg-white/40")
                     }
                   />
                 ))}
@@ -168,7 +168,7 @@ export default function VitrineConsultas({ consultas }: Props) {
             <div className="flex flex-col justify-center p-6 sm:p-8 lg:p-12 lg:pb-20 lg:pointer-events-auto">
               <p className="lp-eyebrow">Consultas</p>
               <h2 className="lp-display mt-3 text-4xl text-balance md:text-[3.2rem]">
-                Entre na área de <span className="text-[#5FE09A]">consultas</span>
+                Entre na área de <span className="text-[#FFE299]">consultas</span>
               </h2>
               <p className="mt-5 max-w-md text-lg leading-relaxed text-white/85">
                 Mapa, busca de imóveis e relatórios ficam numa área própria, com menu lateral e atalhos para cada camada oficial.

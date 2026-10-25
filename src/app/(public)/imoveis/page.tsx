@@ -188,7 +188,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
             return (
               <Link key={t.id} href={com({ tipo: t.id, area_min: null, area_max: null })} aria-current={on ? "true" : undefined}
                 className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${on
-                  ? "border-verde bg-verde text-[#06140D]"
+                  ? "border-verde bg-verde text-fundo"
                   : "border-linha-forte bg-superficie/60 text-texto-3 hover:border-verde/60 hover:text-texto"}`}>
                 {t.rotulo}
               </Link>
@@ -350,7 +350,7 @@ export default async function BuscarImoveis({ searchParams }: PageProps<"/imovei
 
 const botaoPagina = (on: boolean) =>
   `inline-flex min-w-10 items-center justify-center gap-1 rounded-xl border px-3 py-2 text-sm font-semibold tabular-nums transition ${on
-    ? "border-verde bg-verde text-[#06140D]"
+    ? "border-verde bg-verde text-fundo"
     : "border-linha bg-superficie text-texto-2 hover:border-verde/60 hover:text-texto"}`;
 
 /** 1 … 4 5 [6] 7 8 … 20 */

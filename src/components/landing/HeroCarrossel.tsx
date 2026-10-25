@@ -225,13 +225,13 @@ export default function HeroCarrossel({ slides, h1 }: { slides: SlideHero[]; h1:
         <>
           <button
             type="button" onClick={() => ir(i - 1)} aria-label="Destaque anterior"
-            className="absolute left-3 top-1/2 z-[4] hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-white/50 text-white transition hover:border-white hover:bg-white hover:text-[#0A1F14] md:grid xl:left-6"
+            className="absolute left-3 top-1/2 z-[4] hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-white/50 text-white transition hover:border-white hover:bg-white hover:text-[#124431] md:grid xl:left-6"
           >
             <ChevronLeft className="size-7" />
           </button>
           <button
             type="button" onClick={() => ir(i + 1)} aria-label="Próximo destaque"
-            className="absolute right-3 top-1/2 z-[4] hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-white/50 text-white transition hover:border-white hover:bg-white hover:text-[#0A1F14] md:grid xl:right-6"
+            className="absolute right-3 top-1/2 z-[4] hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-white/50 text-white transition hover:border-white hover:bg-white hover:text-[#124431] md:grid xl:right-6"
           >
             <ChevronRight className="size-7" />
           </button>
@@ -297,7 +297,7 @@ export default function HeroCarrossel({ slides, h1 }: { slides: SlideHero[]; h1:
                   {k === i && (
                     <span
                       key={`${s.id}-${i}`}
-                      className="lp-progresso block h-full bg-[#3FCF7F]"
+                      className="lp-progresso block h-full bg-[#6FB08F]"
                       onAnimationEnd={() => { if (!reduce) ir(i + 1); }}
                     />
                   )}
@@ -332,7 +332,7 @@ function TextoSlide({ s, animar }: { s: SlideHero; animar: boolean }) {
         {todas.map(({ p, d }, k) => (
           <span key={k} className="inline-block overflow-hidden pb-[0.1em] align-bottom" aria-hidden>
             <motion.span
-              className={`inline-block ${d ? "text-[#5FE09A]" : ""}`}
+              className={`inline-block ${d ? "text-[#FFE299]" : ""}`}
               initial={animar ? { y: "110%" } : false}
               animate={{ y: "0%" }}
               transition={{ duration: 0.8, delay: k * 0.05, ease: EASE }}

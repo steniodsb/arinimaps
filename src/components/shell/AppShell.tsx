@@ -2,7 +2,7 @@
 
 /**
  * Casca da aplicação, com a cara da página inicial:
- *  - desktop: sidebar fixa à esquerda (logo, navegação em Urbanist, atalhos
+ *  - desktop: sidebar fixa à esquerda (logo, navegação em Quicksand, atalhos
  *    e um convite em faixa escura) + topbar com busca, tema e avatar
  *  - mobile: conteúdo em tela cheia + barra inferior com botão de ação central
  *
@@ -19,6 +19,7 @@ import {
   LayoutDashboard, Map as Mapa, Menu, Plus, Search, Sparkles, X,
 } from "lucide-react";
 import BotaoTema from "./BotaoTema";
+import MarcaArini from "@/components/marca/MarcaArini";
 import ChatIA, { abrirAssistente } from "@/components/ia/ChatIA";
 import Avatar from "./Avatar";
 import { usePreferencias } from "@/lib/usePreferencias";
@@ -65,24 +66,20 @@ const NAV_MOBILE: ItemMenu[] = [
   { href: "/painel", rotulo: "Menu", icone: Menu },
 ];
 
-/** Marca: losango com miolo (o ◈ de sempre, agora desenhado) + nome em Urbanist. */
-export function Logo({ compacto = false }: { compacto?: boolean }) {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-verde/30 bg-verde-escuro text-ouro shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
-        <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden>
-          <path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M12 8.2 15.8 12 12 15.8 8.2 12Z" fill="currentColor" />
-        </svg>
-      </span>
-      {!compacto && (
-        <span className="leading-none">
-          <span className="block font-display text-[1.05rem] font-extrabold tracking-[0.06em] text-texto">ARINI</span>
-          <span className="mt-1 block whitespace-nowrap text-[9px] font-semibold tracking-[0.24em] text-texto-2">IMÓVEIS BRASIL</span>
-        </span>
-      )}
-    </span>
-  );
+/**
+ * Marca (brandbook v1.0, out/2026): assinatura completa; no compacto, o
+ * símbolo (o A com o radar). Altura escolhida para respeitar o mínimo do
+ * manual: 120 px de largura na assinatura, 32 px no símbolo.
+ */
+export function Logo({ compacto = false, negativa = false }: {
+  compacto?: boolean;
+  /** sobre foto ou faixa escura em qualquer tema: letras em off-white */
+  negativa?: boolean;
+}) {
+  const cor = negativa ? "text-[#F2F2EC]" : "text-marca";
+  return compacto
+    ? <MarcaArini variante="simbolo" className={`h-[46px] w-auto shrink-0 ${cor}`} />
+    : <MarcaArini className={`h-[42px] w-auto shrink-0 ${cor}`} titulo="Arini Imóveis Brasil" />;
 }
 
 export default function AppShell({
@@ -283,8 +280,8 @@ export default function AppShell({
         {/* círculo: não usa .btn-verde porque o raio daquela classe venceria o rounded-full */}
         <Link href="/painel/novo"
           aria-label="Anunciar imóvel"
-          className="-mt-7 grid size-14 shrink-0 place-items-center rounded-full border-4 border-superficie text-[#06140D] shadow-xl"
-          style={{ background: "linear-gradient(180deg, #45D98A 0%, #2FA866 100%)" }}>
+          className="-mt-7 grid size-14 shrink-0 place-items-center rounded-full border-4 border-superficie text-[#124431] shadow-xl"
+          style={{ background: "#D9BD6F" }}>
           <Plus className="size-6" strokeWidth={2.5} />
         </Link>
 

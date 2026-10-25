@@ -35,8 +35,8 @@ type Props = {
 };
 
 const COR_CAR = "#FF9D3D";
-const COR_LOTE = "#FFE9A8";
-const COR_MUNICIPIO = "#3FCF7F";
+const COR_LOTE = "#FFE299";
+const COR_MUNICIPIO = "#6FB08F";
 
 /** Deriva lenta dentro da cena. */
 const DURACAO_PASSEIO = 8000;
@@ -196,7 +196,7 @@ export default function MapaVitrine({ onCena, onPronto, cena, ativo = true }: Pr
             filter: ["==", ["geometry-type"], "Point"],
             paint: {
               "circle-color": CORES_STATUS as never, "circle-radius": 4.5,
-              "circle-stroke-width": 1.5, "circle-stroke-color": "#0A1310",
+              "circle-stroke-width": 1.5, "circle-stroke-color": "#0A2219",
             },
           },
           // de longe o polígono some; cada imóvel vira um marcador na cor do status

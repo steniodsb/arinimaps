@@ -61,7 +61,7 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
           ) : (
             <div className="lp-malha-escura w-full h-full" />
           )}
-          <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#07130E]/65 px-6 text-center text-white">
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0A2219]/65 px-6 text-center text-white">
             <span className="grid size-16 place-items-center rounded-full bg-ouro text-[#10201A] shadow-xl transition group-hover/tour:scale-105">
               <Play className="size-7 translate-x-0.5" fill="currentColor" />
             </span>
@@ -118,7 +118,7 @@ export default function GaleriaImovel({ slides, titulo }: { slides: Slide[]; tit
                   </span>
                 )}
                 {s.tipo === "tour" && (
-                  <span className="flex h-full w-full flex-col items-center justify-center gap-1 bg-verde px-1 text-center text-[10px] font-bold tracking-wider text-[#0A1F14]">
+                  <span className="flex h-full w-full flex-col items-center justify-center gap-1 bg-verde px-1 text-center text-[10px] font-bold tracking-wider text-fundo">
                     <Rotate3d className="size-4" /> TOUR 3D
                   </span>
                 )}

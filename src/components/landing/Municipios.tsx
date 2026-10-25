@@ -38,7 +38,7 @@ export default function Municipios({ municipios }: { municipios: MunicipioCartao
         >
           <Link
             href={`/imoveis?municipio=${m.id}`}
-            className="spotlight lp-escuro group relative block aspect-[16/10] overflow-hidden rounded-xl bg-[#0E2C1E] ring-1 ring-linha transition hover:ring-2 hover:ring-[#3FCF7F]"
+            className="spotlight lp-escuro group relative block aspect-[16/10] overflow-hidden rounded-xl bg-[#124431] ring-1 ring-linha transition hover:ring-2 hover:ring-[#6FB08F]"
           >
             <div className="absolute inset-0 transition duration-700 ease-out group-hover:scale-[1.07]">
               <MosaicoSatelite lng={m.lng} lat={m.lat} z={13} alt={`Satélite de ${m.nome}`} />
@@ -48,7 +48,7 @@ export default function Municipios({ municipios }: { municipios: MunicipioCartao
               <ArrowUpRight className="size-5" />
             </span>
             <span className="absolute inset-x-0 bottom-0 flex items-end gap-3 p-4 text-white md:p-5">
-              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#3FCF7F] text-[#0A1F14]">
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#6FB08F] text-[#124431]">
                 {m.lotes > 0 ? <Building2 className="size-5" strokeWidth={1.8} /> : <MapPin className="size-5" strokeWidth={1.8} />}
               </span>
               <span className="min-w-0">

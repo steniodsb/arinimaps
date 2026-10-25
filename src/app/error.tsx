@@ -20,7 +20,7 @@ export default function ErroInesperado({ error, reset }: { error: Error & { dige
       </header>
       <main className="lp-container relative flex flex-1 items-center pb-24">
         <div>
-          <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#E4C77E]">
+          <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#FFE299]">
             <AlertTriangle className="size-7" />
           </span>
           <p className="lp-eyebrow mt-8">Algo deu errado</p>

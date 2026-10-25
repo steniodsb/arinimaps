@@ -322,7 +322,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
         map.addLayer({
           id: "planta", type: "line", source: "planta",
           paint: {
-            "line-color": "#FFE9A8",
+            "line-color": "#FFE299",
             "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1, 16, 1.6, 19, 2.6] as never,
             "line-opacity": camada.opacidade ?? 0.85,
           },
@@ -386,7 +386,7 @@ export default function CalibrarPlanta({ camada, onFechar }: { camada: Camada; o
           filter: ["!=", ["get", "tipo"], "liga"],
           paint: {
             "circle-radius": 6,
-            "circle-color": ["case", ["==", ["get", "tipo"], "planta"], "#FFE9A8", "#3FCF7F"],
+            "circle-color": ["case", ["==", ["get", "tipo"], "planta"], "#FFE299", "#6FB08F"],
             "circle-stroke-width": 2, "circle-stroke-color": "#0B140F",
           },
         });

@@ -15,7 +15,7 @@ export function TituloSecao({ eyebrow, titulo, destaque = 0, subtitulo, centro =
       <TextReveal
         text={titulo}
         destaque={destaque}
-        corDestaque={claro ? "text-[#5FE09A]" : "text-verde"}
+        corDestaque={claro ? "text-[#FFE299]" : "text-verde"}
         className={`lp-display ${eyebrow ? "mt-3" : ""} text-4xl md:text-[3.4rem] ${claro ? "text-white" : "text-texto"}`}
       />
       {subtitulo && (

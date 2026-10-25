@@ -24,7 +24,7 @@ function aneisDe(g: GeoDivisa): Anel[] {
 }
 
 export default function MiniaturaDivisa({
-  geom, proporcao = 16 / 10, soContorno = false, className = "", cor = "#45D98A",
+  geom, proporcao = 16 / 10, soContorno = false, className = "", cor = "#D9BD6F",
 }: {
   geom: GeoDivisa; proporcao?: number; soContorno?: boolean; className?: string; cor?: string;
 }) {
@@ -75,7 +75,7 @@ export default function MiniaturaDivisa({
     for (let ty = Math.floor(oy / lado); ty <= Math.floor((oy + h) / lado); ty++) tiles.push({ x: tx, y: ty });
 
   return (
-    <svg viewBox={vb.join(" ")} preserveAspectRatio="xMidYMid slice" className={`bg-[#0E2C1E] ${className}`} aria-hidden="true">
+    <svg viewBox={vb.join(" ")} preserveAspectRatio="xMidYMid slice" className={`bg-[#124431] ${className}`} aria-hidden="true">
       {tiles.map((t) => (
         <image key={`${t.x}-${t.y}`} href={urlTileAtivo(zt, t.x, t.y)} x={t.x * lado - ox} y={t.y * lado - oy}
           width={lado + 0.5} height={lado + 0.5} preserveAspectRatio="none" />

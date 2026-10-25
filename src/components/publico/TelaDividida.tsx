@@ -46,7 +46,7 @@ export default function TelaDividida({
   return (
     <div className="min-h-screen bg-fundo lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* ---------- faixa da marca ---------- */}
-      <aside className="lp-escuro relative isolate overflow-hidden bg-[#07130E]">
+      <aside className="lp-escuro relative isolate overflow-hidden bg-[#0A2219]">
         <Image src="/img/aerea-campo.jpg" alt="" fill priority sizes="(min-width: 1024px) 50vw, 100vw"
           className="-z-20 object-cover opacity-45" />
         <div className="lp-malha-escura absolute inset-0 -z-10 opacity-85" aria-hidden />

@@ -188,7 +188,7 @@ export default async function PaginaImovel({ params }: PageProps<"/imovel/[codig
           </Link>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${vendido ? "bg-white/10 text-texto-2" : leilao ? "bg-[#B18CFF] text-[#160B2E]" : "bg-verde text-[#0A1F14]"}`}>
+            <span className={`rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${vendido ? "bg-white/10 text-texto-2" : leilao ? "bg-[#B18CFF] text-[#160B2E]" : "bg-verde text-fundo"}`}>
               {vendido ? "Vendido" : leilao ? "Leilão" : "Disponível"}
             </span>
             <span className="flex items-center gap-1.5 text-[15px] text-texto-2">

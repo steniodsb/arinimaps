@@ -157,7 +157,7 @@ export default function ComoUsar() {
             <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-base text-white/85">
               {aba.pontos.map((p) => (
                 <li key={p} className="flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-[#3FCF7F]" aria-hidden="true" /> {p}
+                  <span className="size-1.5 rounded-full bg-[#6FB08F]" aria-hidden="true" /> {p}
                 </li>
               ))}
             </ul>

@@ -82,8 +82,8 @@ export default async function Planos() {
                   className={"cartao relative flex flex-col gap-6 p-6 md:p-7 " + (p.destaque ? "!border-ouro/60 ring-1 ring-ouro/40 shadow-xl" : "")}>
                   {(p.destaque || atual) && (
                     <div className="absolute -top-3 left-6 flex gap-2">
-                      {p.destaque && <span className="rounded-md bg-ouro px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#06140D]">Mais completo</span>}
-                      {atual && <span className="rounded-md bg-verde px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#06140D]">Seu plano</span>}
+                      {p.destaque && <span className="rounded-md bg-ouro px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-fundo">Mais completo</span>}
+                      {atual && <span className="rounded-md bg-verde px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-fundo">Seu plano</span>}
                     </div>
                   )}
                   <div className="space-y-2 pt-1">

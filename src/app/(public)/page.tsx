@@ -245,24 +245,30 @@ export default async function Home() {
           <MarcaArini variante="radar" titulo="" className="pointer-events-none absolute right-5 top-6 hidden w-9 md:right-8 md:block" />
           <div className="lp-container relative">
             <TituloSecao
+              centro
               eyebrow="02 · Posicionamento"
               titulo="Do anúncio à decisão."
               destaque={1}
               subtitulo="Mais do que um portal de anúncios: a Arini leva o imóvel do mapa à escritura, com o território conferido em cada etapa."
             />
-            <Reveal delay={0.2} className="mt-6 flex flex-wrap gap-2.5">
+            <Reveal delay={0.2} className="mt-6 flex flex-wrap justify-center gap-2.5">
               <PilulaPonto>Inteligência</PilulaPonto>
               <PilulaPonto>Segurança</PilulaPonto>
               <PilulaPonto>Transparência</PilulaPonto>
             </Reveal>
             <Stagger className="mt-12 grid gap-5 md:grid-cols-3" gap={0.12} itemClassName="h-full">
               {[
-                { t: "Imóveis urbanos e rurais", d: "Lotes, casas, fazendas e sítios no mesmo mapa, cada um com a divisa real e a área medida sobre o satélite." },
-                { t: "Inteligência territorial", d: "CAR, embargos, queimadas e processos minerários cruzados com a divisa, com a data e a fonte de cada consulta." },
-                { t: "Transação intermediada", d: "Todo anúncio é conferido antes de ir ao ar e todo interessado passa pela central, do primeiro contato à escritura." },
+                { t: "Imóveis urbanos e rurais", d: "Lotes, casas, fazendas e sítios no mesmo mapa, cada um com a divisa real e a área medida sobre o satélite.", img: "/img/fazenda-gado.jpg", alt: "Casa em bairro residencial" },
+                { t: "Inteligência territorial", d: "CAR, embargos, queimadas e processos minerários cruzados com a divisa, com a data e a fonte de cada consulta.", img: "/img/aerea-campo.jpg", alt: "Lavoura em linhas vista do alto" },
+                { t: "Transação intermediada", d: "Todo anúncio é conferido antes de ir ao ar e todo interessado passa pela central, do primeiro contato à escritura.", img: "/img/casa-urbana.jpg", alt: "Casa iluminada ao anoitecer" },
               ].map((p, k) => (
-                <div key={p.t} className="cartao h-full p-6 md:p-7">
-                  <ItemNumerado numero={k + 1} titulo={p.t}>{p.d}</ItemNumerado>
+                <div key={p.t} className="cartao lp-lift flex h-full flex-col overflow-hidden">
+                  <div className="relative aspect-[16/10] shrink-0">
+                    <Image src={p.img} alt={p.alt} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+                  </div>
+                  <div className="flex-1 p-6 md:p-7">
+                    <ItemNumerado numero={k + 1} titulo={p.t} className="!border-t-0 !pt-0">{p.d}</ItemNumerado>
+                  </div>
                 </div>
               ))}
             </Stagger>

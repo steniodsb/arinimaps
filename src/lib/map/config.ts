@@ -17,13 +17,15 @@ export const CENTRO_REGIAO: [number, number] = [-50.196, -19.728]; // Iturama
 /**
  * Fonte de satélite, em ordem de preferência:
  *
- * 1. Esri World Imagery LICENCIADO (env NEXT_PUBLIC_ARCGIS_KEY) — conta do
- *    ArcGIS Location Platform, com licença de uso comercial. Free tier de 2
- *    milhões de tiles/mês (~7 a 10 mil visitas ao mapa), depois US$ 0,15 por
- *    mil. Decidido em 23/09/2026. É a mesma imagem da Esri, mas o endpoint
- *    licenciado serve o MOSAICO ATUAL, não um release congelado — medido em
- *    23/09: Limeira 0,1% e União 0,0% de nuvem, Iturama média 8,5% com um tile
- *    de 52,9%. Confira em Admin › Regiões depois de ligar a chave.
+ * 1. Esri World Imagery com a chave da conta (env NEXT_PUBLIC_ARCGIS_KEY,
+ *    ArcGIS Location Platform, decidido em 23/09/2026). A chave vai junto do
+ *    release FIXO do Wayback, não do mosaico atual do endpoint licenciado
+ *    (ibasemaps-api): o mosaico atual voltou a trazer nuvem sobre Iturama.
+ *    Medido em 26/10/2026 numa grade de 25 tiles z14 em volta da cidade:
+ *    mosaico atual 5,0% de média, um tile com 44,2% e 4 tiles acima de 10%;
+ *    Wayback 20512, com ou sem a chave, 0,0% em todos. O Stenio escolheu o
+ *    Wayback com a chave em 26/10/2026; falta confirmar com a Esri se o
+ *    Wayback entra na licença comercial e na cota do Location Platform.
  *    Restrinja a chave aos domínios do site no painel da Esri: ela vai no
  *    JavaScript do navegador, como qualquer chave de mapa.
  * 2. MapTiler (env NEXT_PUBLIC_MAPTILER_KEY) — o plano gratuito é só para uso
@@ -73,7 +75,7 @@ export const PROVEDOR_SATELITE: ProvedorSatelite =
 /** Tile do satélite que o mapa está usando AGORA — o medidor de nuvem confere este. */
 export const urlTileAtivo = (z: number | string, x: number | string, y: number | string) =>
   PROVEDOR_SATELITE === "esri"
-    ? `https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}?token=${ARCGIS_KEY}`
+    ? `${urlTileSatelite(z, x, y)}?token=${ARCGIS_KEY}`
     : PROVEDOR_SATELITE === "maptiler"
       ? `https://api.maptiler.com/tiles/satellite-v2/${z}/${x}/${y}.jpg?key=${MAPTILER_KEY}`
       : urlTileSatelite(z, x, y);
@@ -95,9 +97,9 @@ export const SATELITE: RasterSourceSpecification = PROVEDOR_SATELITE === "esri"
       type: "raster",
       tiles: [urlTileAtivo("{z}", "{x}", "{y}")],
       tileSize: 256,
-      // z18 na região devolve o placeholder "sem dados" (medido em 23/09/2026)
+      // z18 na região devolve 404 no release 20512 (medido em 10/09/2026)
       maxzoom: 17,
-      attribution: "Powered by Esri · Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+      attribution: "Powered by Esri · Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community (World Imagery, 2025-10-23)",
     }
   : PROVEDOR_SATELITE === "maptiler"
   ? {

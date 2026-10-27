@@ -82,7 +82,7 @@ export default function ConfereSatelite() {
           <h2 className="lp-display mt-2 text-2xl md:text-[1.75rem] text-texto">Nuvem na imagem de satélite</h2>
           <p className="mt-1.5 text-base text-texto-2">
             {PROVEDOR_SATELITE === "esri"
-              ? "A imagem é o mosaico licenciado da Esri, que a Esri atualiza sem aviso — uma atualização pode trazer nuvem. Rode isto depois de ligar a chave, ao incluir um município novo e de tempos em tempos."
+              ? `A imagem é um release congelado da Esri (${SATELITE_RELEASE}), pedido com a chave da conta: não muda sozinha, então a nuvem não volta numa atualização da Esri. Rode isto ao incluir um município novo: nada garante que o release esteja limpo sobre uma cidade que não existia no mapa quando ele foi escolhido.`
               : PROVEDOR_SATELITE === "maptiler"
                 ? "A imagem vem do MapTiler. Rode isto ao incluir um município novo."
                 : `A imagem é um release congelado da Esri (${SATELITE_RELEASE}), escolhido por ser o mais limpo sobre a região. Rode isto ao incluir um município novo: nada garante que o release esteja limpo sobre uma cidade que não existia no mapa quando ele foi escolhido.`}
@@ -141,7 +141,7 @@ export default function ConfereSatelite() {
             <p className="font-semibold text-alerta">
               {comProblema.map((l) => l.nome).join(", ")} {comProblema.length > 1 ? "estão" : "está"} com nuvem.
             </p>
-            {PROVEDOR_SATELITE !== "wayback" ? (
+            {PROVEDOR_SATELITE === "maptiler" ? (
             <p className="text-texto-2">
               A fonte licenciada em uso tem nuvem sobre {comProblema.length > 1 ? "esses municípios" : "esse município"}.
               Ela é atualizada pelo fornecedor e costuma limpar na próxima passagem; se o cliente precisar da imagem

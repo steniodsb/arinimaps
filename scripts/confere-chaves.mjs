@@ -43,12 +43,12 @@ try {
     ok(`Configurações: ${nome} ligado`, !!c?.ligado, c ? "" : "card não encontrado");
   }
 
-  // 2. Satélite no mapa: tiles vindos do endpoint licenciado e respondendo 200
+  // 2. Satélite no mapa: tiles do release fixo do Wayback, pedidos com a chave da conta, respondendo 200
   const tiles = [];
-  p.on("response", (r) => { if (r.url().includes("ibasemaps-api.arcgis.com")) tiles.push(r.status()); });
+  p.on("response", (r) => { if (r.url().includes("wayback.maptiles.arcgis.com") && r.url().includes("token=")) tiles.push(r.status()); });
   await p.goto(`${BASE}/mapa`, { waitUntil: "networkidle2", timeout: 180000 });
   await new Promise((r) => setTimeout(r, 8000));
-  ok("mapa pede tiles da Esri licenciada", tiles.length > 0, `${tiles.length} tiles`);
+  ok("mapa pede tiles da Esri com a chave", tiles.length > 0, `${tiles.length} tiles`);
   ok("todos os tiles da Esri com 200", tiles.length > 0 && tiles.every((s) => s === 200), [...new Set(tiles)].join(","));
   if (process.env.PRINT) await p.screenshot({ path: process.env.PRINT });
 

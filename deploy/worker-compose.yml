@@ -5,7 +5,9 @@ services:
     build: ../worker
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL}                 # postgres://postgres:SENHA@db.qtpjryvqifcmmabebccf.supabase.co:5432/postgres
+      # pooler em modo sessão (IPv4): o host direto db.<ref>.supabase.co é só IPv6
+      # e a maioria das VPS não sai por IPv6 (conferido em 26/10/2026)
+      DATABASE_URL: ${DATABASE_URL}                 # postgres://postgres.qtpjryvqifcmmabebccf:SENHA@aws-0-sa-east-1.pooler.supabase.com:5432/postgres
       SUPABASE_URL: ${SUPABASE_URL}                 # https://qtpjryvqifcmmabebccf.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       SITE_URL: ${SITE_URL}                         # https://arinibrasil.com.br (ou URL do app no Dokploy)
@@ -17,6 +19,7 @@ services:
       SAUDE_TOKEN: ${SAUDE_TOKEN}
       ALERTA_EMAILS: ${ALERTA_EMAILS}
       RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM: ${RESEND_FROM}
       WORKER_INTERVALO_MS: "15000"
     deploy:
       resources:

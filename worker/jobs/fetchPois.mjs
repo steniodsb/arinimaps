@@ -10,13 +10,65 @@ const CATEGORIAS = [
   { categoria: "acesso_rodovia", seletor: '"highway"~"motorway|trunk|primary"' },
 ];
 
+/*
+  O Overpass público vive sobrecarregado: na fila de 26/10/2026, 11 imóveis
+  falharam com 429/502/504 em sequência, porque o job tentava um servidor só e
+  o worker repetia na hora. Agora: três espelhos públicos, espera crescente
+  entre as voltas e uma pausa curta depois de cada consulta, por cortesia.
+*/
+const ESPELHOS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+];
+const ESPERAS_MS = [0, 20_000, 60_000];
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function consultarOverpass(consulta) {
+  let ultimo = "";
+  for (const espera of ESPERAS_MS) {
+    if (espera) await dormir(espera);
+    for (const url of ESPELHOS) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: "data=" + encodeURIComponent(consulta),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)",
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(40_000),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          await dormir(2_000);
+          return json;
+        }
+        ultimo = `Overpass ${res.status} (${new URL(url).host})`;
+        // 4xx que não é limite de uso: a consulta está errada, outro espelho não resolve
+        if (res.status < 500 && res.status !== 429) throw new Error(ultimo);
+      } catch (e) {
+        if (e instanceof Error && e.message === ultimo) throw e;
+        ultimo = `Overpass ${e instanceof Error ? e.message : e} (${new URL(url).host})`;
+      }
+    }
+  }
+  throw new Error(ultimo);
+}
+
 export async function fetchPois(payload, db) {
   const { property_id } = payload;
   const { rows: [prop] } = await db.query(`
     select p.tipo, st_x(g.centroid) as lng, st_y(g.centroid) as lat
     from properties p join property_geometries g on g.property_id = p.id
     where p.id = $1`, [property_id]);
-  if (!prop) throw new Error("imóvel sem geometria");
+  // imóvel apagado (ou sem divisa) depois de entrar na fila: não há o que
+  // buscar, e repetir não muda nada — encerra em vez de virar erro
+  if (!prop) {
+    console.log(`[pois] imóvel ${property_id} sem geometria ou removido; nada a fazer`);
+    return;
+  }
 
   const { rows: [cfg] } = await db.query(
     `select valor from settings where chave = $1`,
@@ -24,17 +76,7 @@ export async function fetchPois(payload, db) {
   const raio = Number(cfg?.valor ?? 10000);
 
   const blocos = CATEGORIAS.map((c) => `nwr[${c.seletor}](around:${raio},${prop.lat},${prop.lng});`).join("");
-  const res = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    body: "data=" + encodeURIComponent(`[out:json][timeout:25];(${blocos});out center 120;`),
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "AriniImoveisBrasil/1.0 (contato@arinibrasil.com.br)",
-      Accept: "application/json",
-    },
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const json = await res.json();
+  const json = await consultarOverpass(`[out:json][timeout:25];(${blocos});out center 120;`);
 
   for (const el of json.elements ?? []) {
     const lat = el.lat ?? el.center?.lat;

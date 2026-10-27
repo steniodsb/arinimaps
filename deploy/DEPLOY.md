@@ -74,11 +74,40 @@ app subir.
 
 ---
 
-## 3. Worker (opcional nesta rodada)
+## 3. Worker
 
-Segundo serviço, a partir de `deploy/worker-compose.yml`. Envs: `DATABASE_URL`,
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SITE_URL` e, se precisar,
-`CHROMIUM_PATH` e `WORKER_INTERVALO_MS`.
+Segundo serviço, a partir de `deploy/worker-compose.yml`. Não roda na Vercel.
+De 08/10 a 26/10/2026 ficou sem rodar em lugar nenhum: a fila parou (pontos de
+interesse, vídeo, imagem de compartilhamento, checagem das fontes, descarte LGPD).
+
+### No Vibe Host (Dokploy) — recomendado em 26/10/2026
+
+1. Dokploy › projeto **Arini** (o mesmo do CRM) › **Create Service › Compose**,
+   nome `arini-imoveis-worker`.
+2. Provider **GitHub**, repositório `steniodsb/arinimaps`, branch `main`,
+   Compose Path `./deploy/worker-compose.yml`. O `build: ../worker` resolve a
+   partir dessa pasta.
+3. Aba **Environment**: colar o conteúdo de `deploy/.env.worker`. O arquivo é
+   gerado do `.env.local` e fica fora do git.
+4. **Deploy**. O log deve mostrar a fila andando (`[job …] fetch_pois …
+   concluído`). Sem domínio e sem porta: o worker só fala com o banco.
+5. Na **Vercel** (projeto `arinimaps-lgbh`), criar `SAUDE_TOKEN` com o mesmo valor
+   do `.env.worker` e fazer redeploy, senão o monitor só vê ok/falha em `/api/saude`.
+6. Ligar **Autodeploy** no serviço para acompanhar o `main`.
+
+Envs: `DATABASE_URL` (pooler `aws-0-sa-east-1` em modo sessão, porta 5432 — o
+host direto `db.<ref>` é só IPv6), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`SITE_URL`, `SITE_SENHA`, `SITE_BLOQUEIO_SEGREDO`, `SAUDE_TOKEN`, `RESEND_*`,
+`ALERTA_EMAILS` e, se precisar, `CHROMIUM_PATH` e `WORKER_INTERVALO_MS`.
+Teto de 1 GB de memória no compose (a VPS é compartilhada).
+
+O próprio worker agenda as rotinas: pontos de interesse uma vez por dia,
+verificação das fontes a cada 30 min, descarte por prazo de guarda e
+inteligência de mercado uma vez por dia (conferido de hora em hora). Não
+precisa de cron externo.
+
+Emergência sem servidor: `node scripts/worker-local.mjs --uma-vez` processa a
+fila daqui com o `.env.local` e sai.
 
 O worker também gera os **lotes urbanos clicáveis** (job `gerar_lotes`) quando uma
 planta é enviada ou recalibrada. Sem ele, rode `node scripts/gera-lotes.mjs` na

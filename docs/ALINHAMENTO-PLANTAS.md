@@ -60,7 +60,7 @@ do OSM no centro e no oeste da cidade.
 | −19,53368, −50,33087 | 22 | −0,9 | +5,3 | 5,4 m N | 7,0 |
 | −19,53122, −50,33468 | 138 | +4,1 | −3,1 | 5,2 m SE | 6,7 |
 
-**Aplicado em 08/10/2026:** conferido no satélite (zoom 18,5, centro da cidade: divisas ~6 m a leste das ruas, como medido) e calibração levada de (−10, −10) para **(−15,8, −9,0)**; lotes gerados de novo (1.170). Depois da troca, as ruas do satélite ficam centradas entre as quadras. Falta a numeração (`numera-lotes.mjs`), que depende do DXF.
+**Aplicado em 08/10/2026:** conferido no satélite (zoom 18,5, centro da cidade: divisas ~6 m a leste das ruas, como medido) e calibração levada de (−10, −10) para **(−15,8, −9,0)**; lotes gerados de novo (1.170). Depois da troca, as ruas do satélite ficam centradas entre as quadras. Numeração feita em 27/10/2026 (DWG convertido para DXF com o LibreDWG): 1.034 lotes com número e 877 com quadra.
 
 ~~Ação sugerida:~~ em Admin › Cartografia, conferir sobre o satélite e, se
 confirmar, levar a calibração de (−10, −10) para cerca de **(−16, −9)** — e então

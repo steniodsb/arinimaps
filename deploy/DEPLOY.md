@@ -185,8 +185,11 @@ isso não aparece para o usuário.
 2. **Cache do mapa:** Caching › Cache Rules › regra "URI Path starts with `/api/tiles/`" → *Eligible for cache*,
    *Edge TTL: respeitar o cabeçalho de origem* (o app já manda `s-maxage=86400`). Com 500+ pessoas
    simultâneas é o que tira os tiles do banco (`docs/INFRA-NACIONAL.md` §5).
-3. **R2 (CAR nacional e, depois, vídeos):** criar o bucket `arini-mapas`, ligar um domínio próprio
-   (ex.: `mapas.arinibrasil.com.br`) e a política de CORS:
+3. **R2 (CAR nacional e, depois, vídeos):** **feito em 27/10/2026.** Bucket `arinimaps` (conta
+   arinibrasil, região ENAM), domínio `mapas.arinibrasil.com.br`, token `arini-car-nacional`
+   (Object Read & Write só nesse bucket) e o CAR publicado em
+   `https://mapas.arinibrasil.com.br/car/car-brasil.pmtiles`. Os origins do CORS incluem
+   também `https://www.arinibrasil.com.br` e `http://localhost:3000`/`3001`. Política de CORS:
    ```json
    [{ "AllowedOrigins": ["https://arinibrasil.com.br"], "AllowedMethods": ["GET", "HEAD"],
       "AllowedHeaders": ["Range", "If-Match"], "ExposeHeaders": ["ETag", "Content-Length", "Content-Range"], "MaxAgeSeconds": 86400 }]
